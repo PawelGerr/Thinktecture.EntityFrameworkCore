@@ -1,0 +1,18 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <PropertyGroup>
+    <Copyright>(c) 2019, Pawel Gerr. All rights reserved.</Copyright>
+    <VersionPrefix>1.0.0</VersionPrefix>
+    <Authors>Pawel Gerr</Authors>    
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <PackageIconUrl>http://thinktecture.com/images/Logo_T_Nontransparent.png</PackageIconUrl>
+    <PackageProjectUrl>https://dev.azure.com/pawelgerr/Thinktecture.EntityFrameworkCore</PackageProjectUrl>
+    <PackageLicenseUrl>https://dev.azure.com/pawelgerr/_git/Thinktecture.EntityFrameworkCore/master/LICENCE.md</PackageLicenseUrl>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>ggit@ssh.dev.azure.com:v3/pawelgerr/Thinktecture.EntityFrameworkCore/Thinktecture.EntityFrameworkCore</RepositoryUrl>
+    <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
+    <RootNamespace>Thinktecture</RootNamespace>
+    <LangVersion>7.3</LangVersion>
+  </PropertyGroup>
+
+</Project>

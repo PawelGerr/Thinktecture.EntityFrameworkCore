@@ -1,0 +1,7 @@
+**/.vs/**
+**/.idea/**
+**/bin/**
+**/obj/**
+**/packages/**
+
+*\.sln\.DotSettings\.user
