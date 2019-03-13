@@ -7,9 +7,9 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <PackageIconUrl>http://thinktecture.com/images/Logo_T_Nontransparent.png</PackageIconUrl>
     <PackageProjectUrl>https://dev.azure.com/pawelgerr/Thinktecture.EntityFrameworkCore</PackageProjectUrl>
-    <PackageLicenseUrl>https://dev.azure.com/pawelgerr/_git/Thinktecture.EntityFrameworkCore/master/LICENCE.md</PackageLicenseUrl>
+    <PackageLicenseUrl>https://dev.azure.com/pawelgerr/_git/Thinktecture.EntityFrameworkCore?path=%2FLICENCE.md</PackageLicenseUrl>
     <RepositoryType>git</RepositoryType>
-    <RepositoryUrl>ggit@ssh.dev.azure.com:v3/pawelgerr/Thinktecture.EntityFrameworkCore/Thinktecture.EntityFrameworkCore</RepositoryUrl>
+    <RepositoryUrl>git@ssh.dev.azure.com:v3/pawelgerr/Thinktecture.EntityFrameworkCore/Thinktecture.EntityFrameworkCore</RepositoryUrl>
     <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
     <RootNamespace>Thinktecture</RootNamespace>
     <LangVersion>7.3</LangVersion>

@@ -1,0 +1,18 @@
+trigger:
+- master
+- develop
+- refs/tags/*
+
+variables:
+  solution: 'Thinktecture.EntityFrameworkCore.sln'
+  buildConfiguration: 'Release'
+
+steps:
+
+- script: |
+    echo dotnet --version
+    dotnet --version
+  displayName: 'print infos'
+
+- script: dotnet build $(solution) --configuration $(buildConfiguration)
+  displayName: 'dotnet build'
