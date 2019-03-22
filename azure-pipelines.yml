@@ -2,7 +2,6 @@ trigger:
 - master
 - develop
 - refs/tags/*
-- ci-test
 
 variables:
   solution: 'Thinktecture.EntityFrameworkCore.sln'
@@ -29,10 +28,12 @@ steps:
     arguments: --configuration $(buildConfiguration)
 
 - task: PublishBuildArtifacts@1
+  displayName: 'publish build artifacts'
   inputs:
     artifactName: 'NugetPackages'
 
 - task: NuGetCommand@2
+  displayName: 'push to nuget.org'
   condition: startsWith(variables['Build.SourceBranch'], 'refs/tags/')
   inputs:
     command: push
