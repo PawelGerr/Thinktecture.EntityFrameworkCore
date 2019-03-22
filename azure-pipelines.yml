@@ -2,6 +2,7 @@ trigger:
 - master
 - develop
 - refs/tags/*
+- ci-test
 
 variables:
   solution: 'Thinktecture.EntityFrameworkCore.sln'
@@ -14,5 +15,19 @@ steps:
     dotnet --version
   displayName: 'print infos'
 
-- script: dotnet build $(solution) --configuration $(buildConfiguration)
-  displayName: 'dotnet build'
+- powershell: |
+    . ./ci/ci.ps1
+    Set-VersionSuffixOnTag "$Env:BUILD_SOURCESDIRECTORY" "$Env:BUILD_SOURCEBRANCH"
+  condition: startsWith(variables['Build.SourceBranch'], 'refs/tags/')
+  displayName: 'set version suffix'
+
+- task: DotNetCoreCLI@2
+  displayName: 'dotnet pack'
+  inputs:
+    command: pack
+    projects: $(solution)
+    arguments: --configuration $(buildConfiguration)
+
+- task: PublishBuildArtifacts@1
+  inputs:
+    artifactName: 'NugetPackages'

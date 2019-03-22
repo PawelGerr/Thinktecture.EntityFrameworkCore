@@ -10,6 +10,14 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Thinktecture.EntityFramewor
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Thinktecture.EntityFrameworkCore.SqlServer", "src\Thinktecture.EntityFrameworkCore.SqlServer\Thinktecture.EntityFrameworkCore.SqlServer.csproj", "{FCB9BC17-69FE-4CB1-A8E8-665316B68B30}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "assets", "assets", "{2CFD0F6C-599B-41DA-A754-03A202B68D12}"
+ProjectSection(SolutionItems) = preProject
+	ci\ci.ps1 = ci\ci.ps1
+	azure-pipelines.yml = azure-pipelines.yml
+	LICENCE.md = LICENCE.md
+	README.md = README.md
+EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
