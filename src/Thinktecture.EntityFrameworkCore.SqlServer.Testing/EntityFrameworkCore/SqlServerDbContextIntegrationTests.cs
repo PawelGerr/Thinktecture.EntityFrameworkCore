@@ -79,30 +79,41 @@ namespace Thinktecture.EntityFrameworkCore
 
       public virtual void Dispose()
       {
+         if (_dbContext == null)
+            return;
+
          if (_useSharedTables)
          {
-            _tx.Rollback();
+            _tx?.Rollback();
+            _tx?.Dispose();
          }
          else
          {
-            RollbackMigrations();
-            CleanUpDatabase();
+            RollbackMigrations(_dbContext);
+            CleanUpDatabase(_dbContext, Schema);
          }
 
-         _tx?.Dispose();
-         _dbContext?.Dispose();
+         _dbContext.Dispose();
       }
 
-      private void RollbackMigrations()
+      private static void RollbackMigrations([NotNull] T ctx)
       {
-         _dbContext?.GetService<IMigrator>().Migrate("0");
+         if (ctx == null)
+            throw new ArgumentNullException(nameof(ctx));
+
+         ctx.GetService<IMigrator>().Migrate("0");
       }
 
-      private void CleanUpDatabase()
+      private static void CleanUpDatabase([NotNull] T ctx, [NotNull] string schema)
       {
-         _dbContext?.Database.ExecuteSqlCommand((string)$@"
+         if (ctx == null)
+            throw new ArgumentNullException(nameof(ctx));
+         if (schema == null)
+            throw new ArgumentNullException(nameof(schema));
+
+         ctx.Database.ExecuteSqlCommand((string)$@"
 DECLARE @crlf NVARCHAR(MAX) = CHAR(13) + CHAR(10);
-DECLARE @schema NVARCHAR(MAX) = '{Schema}';
+DECLARE @schema NVARCHAR(MAX) = '{schema}';
 DECLARE @sql NVARCHAR(MAX);
 DECLARE @cursor CURSOR
 
@@ -157,7 +168,7 @@ WHERE
 
 EXEC(@sql);
 ");
-         _dbContext?.Database.ExecuteSqlCommand((string)$"DROP SCHEMA [{Schema}]");
+         ctx.Database.ExecuteSqlCommand((string)$"DROP SCHEMA [{schema}]");
       }
    }
 }
