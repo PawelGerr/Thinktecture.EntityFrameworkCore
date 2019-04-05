@@ -6,7 +6,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{FC71B400
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "samples", "samples", "{30567A9D-BDC2-49C1-B0B4-91D37FB5CCC1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Thinktecture.EntityFrameworkCore", "src\Thinktecture.EntityFrameworkCore\Thinktecture.EntityFrameworkCore.csproj", "{B43A04CC-FB33-4B06-AC9B-BBDE177EF0E4}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Thinktecture.EntityFrameworkCore.Relational", "src\Thinktecture.EntityFrameworkCore.Relational\Thinktecture.EntityFrameworkCore.Relational.csproj", "{B43A04CC-FB33-4B06-AC9B-BBDE177EF0E4}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Thinktecture.EntityFrameworkCore.SqlServer", "src\Thinktecture.EntityFrameworkCore.SqlServer\Thinktecture.EntityFrameworkCore.SqlServer.csproj", "{FCB9BC17-69FE-4CB1-A8E8-665316B68B30}"
 EndProject
