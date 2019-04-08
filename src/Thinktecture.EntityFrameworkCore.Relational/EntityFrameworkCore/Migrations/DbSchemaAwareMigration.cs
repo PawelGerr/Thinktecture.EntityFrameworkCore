@@ -7,16 +7,28 @@ using Microsoft.EntityFrameworkCore.Migrations.Operations;
 
 namespace Thinktecture.EntityFrameworkCore.Migrations
 {
+   /// <summary>
+   /// A migration that takes the schema into account.
+   /// </summary>
    public abstract class DbSchemaAwareMigration : Migration
    {
+      /// <summary>
+      /// Database schema to use.
+      /// </summary>
       protected string Schema { get; }
 
       /// <inheritdoc />
+      [NotNull]
       public override IReadOnlyList<MigrationOperation> UpOperations => SetSchema(base.UpOperations);
 
       /// <inheritdoc />
+      [NotNull]
       public override IReadOnlyList<MigrationOperation> DownOperations => SetSchema(base.DownOperations);
 
+      /// <summary>
+      /// Initializes a new instance of <see cref="DbSchemaAwareMigration"/>.
+      /// </summary>
+      /// <param name="schema">Schema to use.</param>
       protected DbSchemaAwareMigration([CanBeNull] IDbContextSchema schema)
       {
          Schema = schema?.Schema;

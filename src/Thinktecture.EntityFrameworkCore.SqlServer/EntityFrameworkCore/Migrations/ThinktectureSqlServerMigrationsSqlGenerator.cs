@@ -7,8 +7,16 @@ using Microsoft.EntityFrameworkCore.Storage;
 
 namespace Thinktecture.EntityFrameworkCore.Migrations
 {
+   /// <summary>
+   /// Extended migration SQL generator.
+   /// </summary>
    public class ThinktectureSqlServerMigrationsSqlGenerator : SqlServerMigrationsSqlGenerator
    {
+      /// <summary>
+      /// Initializes <see cref="ThinktectureSqlServerMigrationsSqlGenerator"/>.
+      /// </summary>
+      /// <param name="dependencies">Dependencies.</param>
+      /// <param name="migrationsAnnotations">Migration annotations.</param>
       public ThinktectureSqlServerMigrationsSqlGenerator([NotNull] MigrationsSqlGeneratorDependencies dependencies, [NotNull] IMigrationsAnnotationProvider migrationsAnnotations)
          : base(dependencies, migrationsAnnotations)
       {

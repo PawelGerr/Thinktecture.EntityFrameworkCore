@@ -10,6 +10,9 @@ using Microsoft.EntityFrameworkCore.Migrations.Internal;
 
 namespace Thinktecture.EntityFrameworkCore.Migrations
 {
+   /// <summary>
+   /// An implementation of <see cref="IMigrationsAssembly"/> that is able to instantiate migrations requiring an <see cref="IDbContextSchema"/>.
+   /// </summary>
    public class DbSchemaAwareMigrationAssembly : MigrationsAssembly
    {
       private readonly DbContext _context;
@@ -30,14 +33,14 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
 
          var hasCtorWithSchema = migrationClass.GetConstructor(new[] { typeof(IDbContextSchema) }) != null;
 
-         if (hasCtorWithSchema && _context is IDbContextSchema schema)
-         {
-            var instance = (Migration)Activator.CreateInstance(migrationClass.AsType(), schema);
-            instance.ActiveProvider = activeProvider;
-            return instance;
-         }
+         // ReSharper disable once SuspiciousTypeConversion.Global
+         if (!hasCtorWithSchema || !(_context is IDbContextSchema schema))
+            return base.CreateMigration(migrationClass, activeProvider);
 
-         return base.CreateMigration(migrationClass, activeProvider);
+         var instance = (Migration)Activator.CreateInstance(migrationClass.AsType(), schema);
+         instance.ActiveProvider = activeProvider;
+
+         return instance;
       }
    }
 }

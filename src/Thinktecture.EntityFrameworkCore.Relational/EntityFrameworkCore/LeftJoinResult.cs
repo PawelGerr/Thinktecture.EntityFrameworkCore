@@ -1,8 +1,20 @@
 namespace Thinktecture.EntityFrameworkCore
 {
-   public class LeftJoinResult<TOuter, TInner>
+   /// <summary>
+   /// Result of a LEFT JOIN.
+   /// </summary>
+   /// <typeparam name="TLeft">Type of the entity on the left side of the JOIN.</typeparam>
+   /// <typeparam name="TRight">Type of the entity  on the right side of the JOIN.</typeparam>
+   public class LeftJoinResult<TLeft, TRight>
    {
-      public TOuter Outer { get; set; }
-      public TInner Inner { get; set; }
+      /// <summary>
+      /// Entity on the left side of the JOIN.
+      /// </summary>
+      public TLeft Left { get; set; }
+
+      /// <summary>
+      /// Entity  on the right side of the JOIN.
+      /// </summary>
+      public TRight Right { get; set; }
    }
 }

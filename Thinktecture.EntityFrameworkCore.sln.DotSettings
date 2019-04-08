@@ -618,5 +618,6 @@
 	<s:Boolean x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=EE4CEFB198186C4E88B8126B60581EBE/ShortenReferences/@EntryValue">False</s:Boolean>
 	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=EE4CEFB198186C4E88B8126B60581EBE/SuppressionKey/@EntryValue">TaskMethodsWithoutAsyncSuffix</s:String>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=serilog/@EntryIndexedValue">True</s:Boolean>
+	<s:Boolean x:Key="/Default/UserDictionary/Words/=tempdb/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=Thinktecture/@EntryIndexedValue">True</s:Boolean>
 </wpf:ResourceDictionary>

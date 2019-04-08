@@ -4,6 +4,9 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 
 namespace Thinktecture.EntityFrameworkCore.Infrastructure
 {
+   /// <summary>
+   /// Cache key factory that takes the schema into account.
+   /// </summary>
    public class DbSchemaAwareModelCacheKeyFactory : IModelCacheKeyFactory
    {
       /// <inheritdoc />
@@ -13,6 +16,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
          return new
                 {
                    Type = context.GetType(),
+                   // ReSharper disable once SuspiciousTypeConversion.Global
                    Schema = context is IDbContextSchema schema ? schema.Schema : null
                 };
       }

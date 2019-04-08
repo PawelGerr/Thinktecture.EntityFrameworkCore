@@ -5,8 +5,14 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Thinktecture.EntityFrameworkCore.ValueConversion
 {
+   /// <summary>
+   /// Value converter for row version.
+   /// </summary>
    public class RowVersionValueConverter : ValueConverter<ulong, byte[]>
    {
+      /// <summary>
+      /// Initializes new instance of <see cref="RowVersionValueConverter"/>.
+      /// </summary>
       public RowVersionValueConverter()
          : base(GetToBytesExpression(), GetToNumberExpression())
       {

@@ -193,7 +193,20 @@ namespace Thinktecture.EntityFrameworkCore
          if (schema == null)
             throw new ArgumentNullException(nameof(schema));
 
-         ctx.Database.ExecuteSqlCommand((string)$@"
+         ctx.Database.ExecuteSqlCommand(GetSqlForCleanup(schema));
+         ctx.Database.ExecuteSqlCommand(GetDropSchemaSql(schema));
+      }
+
+      [NotNull]
+      private static string GetDropSchemaSql(string schema)
+      {
+         return $"DROP SCHEMA [{schema}]";
+      }
+
+      [NotNull]
+      private static string GetSqlForCleanup(string schema)
+      {
+         return $@"
 DECLARE @crlf NVARCHAR(MAX) = CHAR(13) + CHAR(10);
 DECLARE @schema NVARCHAR(MAX) = '{schema}';
 DECLARE @sql NVARCHAR(MAX);
@@ -249,8 +262,7 @@ WHERE
    schema_id = SCHEMA_ID(@schema)
 
 EXEC(@sql);
-");
-         ctx.Database.ExecuteSqlCommand((string)$"DROP SCHEMA [{schema}]");
+";
       }
    }
 }
