@@ -12,6 +12,9 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
    /// </summary>
    public abstract class DbSchemaAwareMigration : Migration
    {
+      private readonly Lazy<IReadOnlyList<MigrationOperation>> _upLazy;
+      private readonly Lazy<IReadOnlyList<MigrationOperation>> _downLazy;
+
       /// <summary>
       /// Database schema to use.
       /// </summary>
@@ -19,11 +22,11 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
 
       /// <inheritdoc />
       [NotNull]
-      public override IReadOnlyList<MigrationOperation> UpOperations => SetSchema(base.UpOperations);
+      public override IReadOnlyList<MigrationOperation> UpOperations => _upLazy.Value;
 
       /// <inheritdoc />
       [NotNull]
-      public override IReadOnlyList<MigrationOperation> DownOperations => SetSchema(base.DownOperations);
+      public override IReadOnlyList<MigrationOperation> DownOperations => _downLazy.Value;
 
       /// <summary>
       /// Initializes a new instance of <see cref="DbSchemaAwareMigration"/>.
@@ -32,6 +35,8 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
       protected DbSchemaAwareMigration([CanBeNull] IDbContextSchema schema)
       {
          Schema = schema?.Schema;
+         _upLazy = new Lazy<IReadOnlyList<MigrationOperation>>(() => SetSchema(base.UpOperations));
+         _downLazy = new Lazy<IReadOnlyList<MigrationOperation>>(() => SetSchema(base.DownOperations));
       }
 
       [NotNull]
@@ -52,35 +57,73 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
          if (operation == null)
             throw new ArgumentNullException(nameof(operation));
 
-         if (operation is CreateTableOperation createTable)
+         switch (operation)
          {
-            SetSchema(createTable);
-         }
-         else
-         {
-            var opType = operation.GetType();
-            SetSchema(operation, opType, "Schema");
-            SetSchema(operation, opType, "PrincipalSchema");
+            case CreateTableOperation createTable:
+               SetSchema(createTable);
+               break;
+            case RenameTableOperation renameTable:
+               SetSchema(renameTable);
+               break;
+            case AddForeignKeyOperation addForeignKey:
+               SetSchema(addForeignKey);
+               break;
+            default:
+               var opType = operation.GetType();
+               SetSchema(operation, opType, "Schema");
+               SetSchema(operation, opType, "PrincipalSchema");
+               break;
          }
 
          return operation;
       }
 
-      private void SetSchema([NotNull] CreateTableOperation createTable)
+      private void SetSchema([NotNull] CreateTableOperation op)
       {
-         if (createTable == null)
-            throw new ArgumentNullException(nameof(createTable));
+         if (op == null)
+            throw new ArgumentNullException(nameof(op));
 
-         createTable.Schema = Schema;
+         op.Schema = Schema;
+         SetSchema(op.PrimaryKey);
 
-         foreach (var key in createTable.ForeignKeys)
+         foreach (var column in op.Columns)
          {
-            if (key.Schema == null)
-               key.Schema = Schema;
-
-            if (key.PrincipalSchema == null)
-               key.PrincipalSchema = Schema;
+            SetSchema(column);
          }
+
+         foreach (var key in op.ForeignKeys)
+         {
+            SetSchema(key);
+         }
+
+         foreach (var key in op.UniqueConstraints)
+         {
+            SetSchema(key);
+         }
+      }
+
+      private void SetSchema([NotNull] RenameTableOperation op)
+      {
+         if (op == null)
+            throw new ArgumentNullException(nameof(op));
+
+         if (op.Schema == null)
+            op.Schema = Schema;
+
+         if (op.NewSchema == null)
+            op.NewSchema = Schema;
+      }
+
+      private void SetSchema([NotNull] AddForeignKeyOperation op)
+      {
+         if (op == null)
+            throw new ArgumentNullException(nameof(op));
+
+         if (op.Schema == null)
+            op.Schema = Schema;
+
+         if (op.PrincipalSchema == null)
+            op.PrincipalSchema = Schema;
       }
 
       private void SetSchema([NotNull] MigrationOperation operation, [NotNull] Type opType, [NotNull] string propertyName)

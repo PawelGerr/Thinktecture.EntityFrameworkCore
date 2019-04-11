@@ -20,6 +20,8 @@ EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Thinktecture.EntityFrameworkCore.SqlServer.Testing", "src\Thinktecture.EntityFrameworkCore.SqlServer.Testing\Thinktecture.EntityFrameworkCore.SqlServer.Testing.csproj", "{4A68E5B4-B0C9-4076-875A-C88AFAC5EB5F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Thinktecture.EntityFrameworkCore.Relational.Tests", "tests\Thinktecture.EntityFrameworkCore.Relational.Tests\Thinktecture.EntityFrameworkCore.Relational.Tests.csproj", "{629B6159-5050-4510-A24A-51630CD46854}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -29,6 +31,7 @@ Global
 		{B43A04CC-FB33-4B06-AC9B-BBDE177EF0E4} = {564262E5-94E5-4B32-8B0E-444D454DD35F}
 		{FCB9BC17-69FE-4CB1-A8E8-665316B68B30} = {564262E5-94E5-4B32-8B0E-444D454DD35F}
 		{4A68E5B4-B0C9-4076-875A-C88AFAC5EB5F} = {564262E5-94E5-4B32-8B0E-444D454DD35F}
+		{629B6159-5050-4510-A24A-51630CD46854} = {FC71B400-ACDA-4BBE-BCC1-D1CFB4EDEFE3}
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{B43A04CC-FB33-4B06-AC9B-BBDE177EF0E4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
@@ -43,5 +46,9 @@ Global
 		{4A68E5B4-B0C9-4076-875A-C88AFAC5EB5F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4A68E5B4-B0C9-4076-875A-C88AFAC5EB5F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4A68E5B4-B0C9-4076-875A-C88AFAC5EB5F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{629B6159-5050-4510-A24A-51630CD46854}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{629B6159-5050-4510-A24A-51630CD46854}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{629B6159-5050-4510-A24A-51630CD46854}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{629B6159-5050-4510-A24A-51630CD46854}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

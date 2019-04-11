@@ -28,14 +28,19 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
       /// <inheritdoc />
       public override Migration CreateMigration(TypeInfo migrationClass, string activeProvider)
       {
+         if (migrationClass == null)
+            throw new ArgumentNullException(nameof(migrationClass));
          if (activeProvider == null)
             throw new ArgumentNullException(nameof(activeProvider));
 
          var hasCtorWithSchema = migrationClass.GetConstructor(new[] { typeof(IDbContextSchema) }) != null;
 
          // ReSharper disable once SuspiciousTypeConversion.Global
-         if (!hasCtorWithSchema || !(_context is IDbContextSchema schema))
+         if (!hasCtorWithSchema)
             return base.CreateMigration(migrationClass, activeProvider);
+
+         if (!(_context is IDbContextSchema schema))
+            throw new ArgumentException($"For instantiation of database schema aware migration of type '{migrationClass.Name}' the database context of type '{_context.GetType().Name}' has to implement the interface {nameof(IDbContextSchema)}.", nameof(migrationClass));
 
          var instance = (Migration)Activator.CreateInstance(migrationClass.AsType(), schema);
          instance.ActiveProvider = activeProvider;
