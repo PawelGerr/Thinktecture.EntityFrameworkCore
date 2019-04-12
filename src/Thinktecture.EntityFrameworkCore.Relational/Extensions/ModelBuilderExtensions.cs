@@ -42,10 +42,49 @@ namespace Thinktecture
          }
       }
 
-         foreach (var entityType in entityTypes)
-         {
-            entityType.Relational().Schema = schema;
-         }
+      /// <summary>
+      /// Introduces and configures a temp table.
+      /// </summary>
+      /// <param name="modelBuilder">A model builder.</param>
+      /// <typeparam name="TColumn1">Type of the column.</typeparam>
+      /// <returns>An entity type builder for further configuration.</returns>
+      /// <exception cref="ArgumentNullException"></exception>
+      [NotNull]
+      public static EntityTypeBuilder ConfigureTempTable<TColumn1>([NotNull] this ModelBuilder modelBuilder)
+      {
+         return modelBuilder.ConfigureTempTable(typeof(TempTable<TColumn1>));
+      }
+
+      /// <summary>
+      /// Introduces and configures a temp table.
+      /// </summary>
+      /// <param name="modelBuilder">A model builder.</param>
+      /// <typeparam name="TColumn1">Type of the column 1.</typeparam>
+      /// <typeparam name="TColumn2">Type of the column 2.</typeparam>
+      /// <returns>An entity type builder for further configuration.</returns>
+      /// <exception cref="ArgumentNullException"><see cref="ModelBuilder"/> is <c>null</c>.</exception>
+      [NotNull]
+      public static EntityTypeBuilder ConfigureTempTable<TColumn1, TColumn2>([NotNull] this ModelBuilder modelBuilder)
+      {
+         return modelBuilder.ConfigureTempTable(typeof(TempTable<TColumn1, TColumn2>));
+      }
+
+      [NotNull]
+      private static EntityTypeBuilder ConfigureTempTable([NotNull] this ModelBuilder modelBuilder, [NotNull] Type entityType)
+      {
+         if (modelBuilder == null)
+            throw new ArgumentNullException(nameof(modelBuilder));
+
+         var entityBuilder = modelBuilder.Entity(entityType).ToTable(GenerateTempTableName(entityType));
+         entityBuilder.HasKey(entityType.GetProperties(BindingFlags.Public | BindingFlags.Instance).Select(p => p.Name).ToArray());
+
+         return entityBuilder;
+      }
+
+      [NotNull]
+      private static string GenerateTempTableName([NotNull] Type entityType)
+      {
+         return "#" + entityType.DisplayName(false);
       }
    }
 }
