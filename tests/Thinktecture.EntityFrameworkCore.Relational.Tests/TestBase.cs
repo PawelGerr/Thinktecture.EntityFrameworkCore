@@ -8,19 +8,37 @@ namespace Thinktecture
 {
    public class TestBase
    {
-      private readonly DbContextOptions<DbContextWithSchema> _option;
+      protected DbContextOptionsBuilder<DbContextWithSchema> OptionBuilder { get; }
       private DbContextWithSchema _ctx;
 
       // use different schemas because EF Core uses static cache
+      private string _schema;
+      private bool _isSchemaSet;
+
+      protected string Schema
+      {
+         get
+         {
+            if (!_isSchemaSet && _schema == null)
+               _schema = Guid.NewGuid().ToString();
+
+            return _schema;
+         }
+         set
+         {
+            _schema = value;
+            _isSchemaSet = true;
+         }
+      }
+
       [NotNull]
-      protected DbContextWithSchema DbContextWithRandomSchema => _ctx ?? (_ctx = new DbContextWithSchema(_option, Guid.NewGuid().ToString()));
+      protected DbContextWithSchema DbContextWithSchema => _ctx ?? (_ctx = new DbContextWithSchema(OptionBuilder.Options, Schema));
 
       protected TestBase()
       {
-         _option = new DbContextOptionsBuilder<DbContextWithSchema>()
-                   .UseInMemoryDatabase("TestDatabase")
-                   .ReplaceService<IModelCacheKeyFactory, DbSchemaAwareModelCacheKeyFactory>()
-                   .Options;
+         OptionBuilder = new DbContextOptionsBuilder<DbContextWithSchema>()
+                         .UseInMemoryDatabase("TestDatabase")
+                         .ReplaceService<IModelCacheKeyFactory, DbSchemaAwareModelCacheKeyFactory>();
       }
 
       [NotNull]

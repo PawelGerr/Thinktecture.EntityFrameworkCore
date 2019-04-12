@@ -26,15 +26,21 @@ namespace Thinktecture
       /// Model builder is <c>null</c>
       /// - or the predicate is <c>null</c>.
       /// </exception>
-      public static void SetSchema([NotNull] this ModelBuilder modelBuilder, [CanBeNull] string schema, [CanBeNull] Func<IMutableEntityType, bool> predicate = null)
+      public static void SetSchema([NotNull] this ModelBuilder modelBuilder, [CanBeNull] string schema, [CanBeNull] Func<IRelationalEntityTypeAnnotations, bool> predicate = null)
       {
          if (modelBuilder == null)
             throw new ArgumentNullException(nameof(modelBuilder));
 
          var entityTypes = modelBuilder.Model.GetEntityTypes();
 
-         if (predicate != null)
-            entityTypes = entityTypes.Where(predicate);
+         foreach (var entityType in entityTypes)
+         {
+            var relational = entityType.Relational();
+
+            if (predicate?.Invoke(relational) != false)
+               relational.Schema = schema;
+         }
+      }
 
          foreach (var entityType in entityTypes)
          {
