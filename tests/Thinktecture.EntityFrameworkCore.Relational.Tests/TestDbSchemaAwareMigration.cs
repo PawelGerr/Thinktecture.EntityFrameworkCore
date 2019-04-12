@@ -8,7 +8,7 @@ namespace Thinktecture
 {
    public class TestDbSchemaAwareMigration : DbSchemaAwareMigration
    {
-      public string Schema => base.Schema;
+      public new string Schema => base.Schema;
 
       public Action<MigrationBuilder> ConfigureUp { get; set; }
       public Action<MigrationBuilder> ConfigureDown { get; set; }
