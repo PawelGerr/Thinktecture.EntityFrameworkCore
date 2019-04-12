@@ -7,6 +7,7 @@ using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using Microsoft.EntityFrameworkCore.Storage;
 using Thinktecture.EntityFrameworkCore.TempTables;
 using Thinktecture.EntityFrameworkCore.ValueConversion;
 
@@ -41,6 +42,8 @@ namespace Thinktecture
 
          using (var command = ctx.Database.GetDbConnection().CreateCommand())
          {
+            command.Transaction = ctx.Database.CurrentTransaction?.GetDbTransaction();
+
             await ctx.Database.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
             command.CommandText = "SELECT MIN_ACTIVE_ROWVERSION();";
             var bytes = (byte[])await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);

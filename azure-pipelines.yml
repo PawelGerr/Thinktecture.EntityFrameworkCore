@@ -15,10 +15,26 @@ steps:
   displayName: 'print infos'
 
 - powershell: |
+    Write-Host '##vso[task.setvariable variable=ConnectionStrings:default]$(ConnectionString)'
+  displayName: 'set env variables'
+
+- powershell: |
     . ./ci/ci.ps1
     Set-VersionSuffixOnTag "$Env:BUILD_SOURCESDIRECTORY" "$Env:BUILD_SOURCEBRANCH"
   condition: startsWith(variables['Build.SourceBranch'], 'refs/tags/')
   displayName: 'set version suffix'
+
+- task: DotNetCoreCLI@2
+  displayName: 'dotnet build'
+  inputs:
+    configuration: '$(buildConfiguration)'
+
+- task: DotNetCoreCLI@2
+  displayName: 'dotnet test'
+  inputs:
+    command: test
+    configuration: '$(buildConfiguration)'
+    projects: tests/**/*.csproj
 
 - task: DotNetCoreCLI@2
   displayName: 'dotnet pack'

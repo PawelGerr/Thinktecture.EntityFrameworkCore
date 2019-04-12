@@ -23,7 +23,7 @@ namespace Thinktecture
       /// <param name="services">Service collection.</param>
       /// <param name="optionsAction">Allows further configuration of the database context.</param>
       /// <typeparam name="T">Type of the database context.</typeparam>
-      /// <returns>Provided <see cref="services"/>.</returns>
+      /// <returns>Provided <paramref name="services"/>.</returns>
       /// <exception cref="ArgumentNullException">Service collection is <c>null</c>.</exception>
       public static IServiceCollection AddSchemaAwareSqlServerDbContext<T>([NotNull] this IServiceCollection services,
                                                                            [CanBeNull] Action<DbContextOptionsBuilder> optionsAction = null)
@@ -32,11 +32,11 @@ namespace Thinktecture
          if (services == null)
             throw new ArgumentNullException(nameof(services));
 
-         return services.AddSchemaAwareDbContext<T>(builder =>
-                                                    {
-                                                       builder.ReplaceService<IMigrationsSqlGenerator, ThinktectureSqlServerMigrationsSqlGenerator>();
-                                                       optionsAction?.Invoke(builder);
-                                                    });
+         return services.AddDbContext<T>(builder =>
+                                         {
+                                            builder.AddSchemaAwareSqlServerComponents();
+                                            optionsAction?.Invoke(builder);
+                                         });
       }
    }
 }

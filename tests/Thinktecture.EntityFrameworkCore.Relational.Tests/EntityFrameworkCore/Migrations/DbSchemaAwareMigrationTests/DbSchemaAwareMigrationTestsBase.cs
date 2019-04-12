@@ -4,7 +4,7 @@ namespace Thinktecture.EntityFrameworkCore.Migrations.DbSchemaAwareMigrationTest
 {
    public class DbSchemaAwareMigrationTestsBase : TestBase
    {
-      protected IDbContextSchema Schema { get; set; }
+      protected new IDbContextSchema Schema { get; set; }
 
       private TestDbSchemaAwareMigration _sut;
 

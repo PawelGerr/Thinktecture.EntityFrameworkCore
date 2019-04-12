@@ -132,9 +132,7 @@ namespace Thinktecture.EntityFrameworkCore
 
          var builder = new DbContextOptionsBuilder<T>()
                        .UseSqlServer(connString, ConfigureSqlServer)
-                       .ReplaceService<IMigrationsSqlGenerator, ThinktectureSqlServerMigrationsSqlGenerator>()
-                       .ReplaceService<IMigrationsAssembly, DbSchemaAwareMigrationAssembly>()
-                       .ReplaceService<IModelCacheKeyFactory, DbSchemaAwareModelCacheKeyFactory>();
+                       .AddSchemaAwareSqlServerComponents();
 
          if (_loggerFactory != null)
             builder.UseLoggerFactory(_loggerFactory);
