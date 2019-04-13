@@ -20,7 +20,6 @@ namespace Thinktecture
          Schema = schema;
       }
 
-      /// <inheritdoc />
       protected override void OnModelCreating(ModelBuilder modelBuilder)
       {
          base.OnModelCreating(modelBuilder);

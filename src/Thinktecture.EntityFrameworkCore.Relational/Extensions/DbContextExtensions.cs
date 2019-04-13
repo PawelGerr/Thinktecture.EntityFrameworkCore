@@ -1,6 +1,7 @@
 using System;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Internal;
 
 // ReSharper disable once CheckNamespace
 namespace Thinktecture
@@ -24,7 +25,12 @@ namespace Thinktecture
          if (type == null)
             throw new ArgumentNullException(nameof(type));
 
-         var relational = ctx.Model.FindEntityType(type).Relational();
+         var entityType = ctx.Model.FindEntityType(type);
+
+         if (entityType == null)
+            throw new ArgumentException($"The provided type '{type.DisplayName()}' is not an entity.", nameof(type));
+
+         var relational = entityType.Relational();
          return (relational.Schema, relational.TableName);
       }
    }

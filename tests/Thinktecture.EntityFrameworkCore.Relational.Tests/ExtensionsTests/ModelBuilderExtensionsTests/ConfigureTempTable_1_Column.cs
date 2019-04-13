@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Thinktecture.EntityFrameworkCore.TempTables;
@@ -16,7 +17,7 @@ namespace Thinktecture.ExtensionsTests.ModelBuilderExtensionsTests
 
          var entityType = DbContextWithSchema.Model.FindEntityType(typeof(TempTable<int>));
          entityType.Should().NotBeNull();
-         entityType.IsQueryType.Should().BeFalse();
+         entityType.IsQueryType.Should().BeTrue();
       }
 
       [Fact]
@@ -33,7 +34,6 @@ namespace Thinktecture.ExtensionsTests.ModelBuilderExtensionsTests
          var property = properties.First();
          property.Name.Should().Be("Column1");
          property.IsNullable.Should().BeFalse();
-         property.IsKey().Should().BeTrue();
       }
 
       [Fact]
@@ -49,8 +49,19 @@ namespace Thinktecture.ExtensionsTests.ModelBuilderExtensionsTests
 
          var property = properties.First();
          property.Name.Should().Be("Column1");
-         property.IsNullable.Should().BeFalse(); // because it is the PK
-         property.IsKey().Should().BeTrue();
+         property.IsNullable.Should().BeTrue();
+      }
+
+      [Fact]
+      public void Should_flag_nullable_int_as_not_nullable_if_set_via_modelbuilder()
+      {
+         DbContextWithSchema.ConfigureModel = builder => builder.ConfigureTempTable<int?>().Property(t => t.Column1).IsRequired();
+
+         var entityType = DbContextWithSchema.Model.FindEntityType(typeof(TempTable<int?>));
+         entityType.Name.Should().Be("Thinktecture.EntityFrameworkCore.TempTables.TempTable<System.Nullable<int>>");
+
+         var properties = entityType.GetProperties();
+         properties.First().IsNullable.Should().BeFalse();
       }
 
       [Fact]
@@ -66,8 +77,7 @@ namespace Thinktecture.ExtensionsTests.ModelBuilderExtensionsTests
 
          var property = properties.First();
          property.Name.Should().Be("Column1");
-         property.IsNullable.Should().BeFalse(); // because it is the PK
-         property.IsKey().Should().BeTrue();
+         property.IsNullable.Should().BeTrue();
       }
 
       [Fact]

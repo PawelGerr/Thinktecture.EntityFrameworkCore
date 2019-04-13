@@ -1,6 +1,5 @@
 using System;
 using System.Linq;
-using System.Reflection;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Internal;
@@ -50,9 +49,9 @@ namespace Thinktecture
       /// <returns>An entity type builder for further configuration.</returns>
       /// <exception cref="ArgumentNullException"></exception>
       [NotNull]
-      public static EntityTypeBuilder ConfigureTempTable<TColumn1>([NotNull] this ModelBuilder modelBuilder)
+      public static QueryTypeBuilder<TempTable<TColumn1>> ConfigureTempTable<TColumn1>([NotNull] this ModelBuilder modelBuilder)
       {
-         return modelBuilder.ConfigureTempTable(typeof(TempTable<TColumn1>));
+         return modelBuilder.Query<TempTable<TColumn1>>().SetTableName();
       }
 
       /// <summary>
@@ -64,27 +63,17 @@ namespace Thinktecture
       /// <returns>An entity type builder for further configuration.</returns>
       /// <exception cref="ArgumentNullException"><see cref="ModelBuilder"/> is <c>null</c>.</exception>
       [NotNull]
-      public static EntityTypeBuilder ConfigureTempTable<TColumn1, TColumn2>([NotNull] this ModelBuilder modelBuilder)
+      public static QueryTypeBuilder<TempTable<TColumn1, TColumn2>> ConfigureTempTable<TColumn1, TColumn2>([NotNull] this ModelBuilder modelBuilder)
       {
-         return modelBuilder.ConfigureTempTable(typeof(TempTable<TColumn1, TColumn2>));
+         return modelBuilder.Query<TempTable<TColumn1, TColumn2>>().SetTableName();
       }
 
-      [NotNull]
-      private static EntityTypeBuilder ConfigureTempTable([NotNull] this ModelBuilder modelBuilder, [NotNull] Type entityType)
+      private static QueryTypeBuilder<T> SetTableName<T>([NotNull] this QueryTypeBuilder<T> builder)
+         where T : class
       {
-         if (modelBuilder == null)
-            throw new ArgumentNullException(nameof(modelBuilder));
+         var tableName = "#" + typeof(T).DisplayName(false);
 
-         var entityBuilder = modelBuilder.Entity(entityType).ToTable(GenerateTempTableName(entityType));
-         entityBuilder.HasKey(entityType.GetProperties(BindingFlags.Public | BindingFlags.Instance).Select(p => p.Name).ToArray());
-
-         return entityBuilder;
-      }
-
-      [NotNull]
-      private static string GenerateTempTableName([NotNull] Type entityType)
-      {
-         return "#" + entityType.DisplayName(false);
+         return builder.ToView(tableName);
       }
    }
 }

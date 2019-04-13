@@ -22,6 +22,13 @@ namespace Thinktecture.ExtensionsTests.DbContextExtensionsTests
       }
 
       [Fact]
+      public void Should_throw_if_type_is_unknown_to_ctx()
+      {
+         // ReSharper disable once AssignNullToNotNullAttribute
+         DbContextWithSchema.Invoking(ctx => ctx.GetTableIdentifier(typeof(string))).Should().Throw<ArgumentException>();
+      }
+
+      [Fact]
       public void Should_return_table_id_of_implicitly_specified_entity_set()
       {
          Schema = null;
