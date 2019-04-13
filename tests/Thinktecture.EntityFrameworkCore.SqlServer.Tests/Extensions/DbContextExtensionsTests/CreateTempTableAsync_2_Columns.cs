@@ -1,0 +1,34 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using FluentAssertions;
+using JetBrains.Annotations;
+using Thinktecture.EntityFrameworkCore.TempTables;
+using Xunit;
+using Xunit.Abstractions;
+
+namespace Thinktecture.Extensions.DbContextExtensionsTests
+{
+   public class CreateTempTableAsync_2_Columns : CreateTempTableAsyncBase
+   {
+      public CreateTempTableAsync_2_Columns([NotNull] ITestOutputHelper testOutputHelper)
+         : base(testOutputHelper)
+      {
+      }
+
+      [Fact]
+      public async Task Should_create_temp_table_with_2_columns()
+      {
+         ConfigureModel = builder => builder.ConfigureTempTable<int, string>();
+
+         await DbContext.CreateTempTableAsync<int, string>().ConfigureAwait(false);
+
+         DbContext.GetTempTableColumns<int, string>().ToList().Should().HaveCount(2);
+
+         var columns = DbContext.GetTempTableColumns<int, string>().ToList();
+         ValidateColumn(columns[0], nameof(TempTable<int, string>.Column1), "int", false);
+         ValidateColumn(columns[1], nameof(TempTable<int, string>.Column2), "nvarchar", true);
+      }
+   }
+}

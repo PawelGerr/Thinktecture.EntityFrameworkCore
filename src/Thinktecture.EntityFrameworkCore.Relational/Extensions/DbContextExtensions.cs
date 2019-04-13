@@ -28,7 +28,7 @@ namespace Thinktecture
          var entityType = ctx.Model.FindEntityType(type);
 
          if (entityType == null)
-            throw new ArgumentException($"The provided type '{type.DisplayName()}' is not an entity.", nameof(type));
+            throw new ArgumentException($"The provided type '{type.DisplayName()}' is not known by the database context '{ctx.GetType().DisplayName()}'.", nameof(type));
 
          var relational = entityType.Relational();
          return (relational.Schema, relational.TableName);

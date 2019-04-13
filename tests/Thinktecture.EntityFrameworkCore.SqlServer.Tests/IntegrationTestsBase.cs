@@ -1,10 +1,12 @@
 using System;
+using System.Threading.Tasks;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Serilog;
 using Serilog.Core;
 using Thinktecture.EntityFrameworkCore;
+using Thinktecture.TestDatabaseContext;
 using Xunit.Abstractions;
 
 namespace Thinktecture
@@ -12,6 +14,8 @@ namespace Thinktecture
    public class IntegrationTestsBase : SqlServerDbContextIntegrationTests<TestDbContext>
    {
       protected LoggingLevelSwitch LogLevelSwitch { get; }
+
+      public Action<ModelBuilder> ConfigureModel { get; set; }
 
       protected IntegrationTestsBase([NotNull] ITestOutputHelper testOutputHelper, bool useSharedTables)
          : base(TestContext.Instance.ConnectionString, useSharedTables)
@@ -24,7 +28,7 @@ namespace Thinktecture
       /// <inheritdoc />
       protected override TestDbContext CreateContext(DbContextOptions<TestDbContext> options, IDbContextSchema schema)
       {
-         return new TestDbContext(options, schema);
+         return new TestDbContext(options, schema) { ConfigureModel = ConfigureModel };
       }
 
       private ILoggerFactory CreateLoggerFactory([NotNull] ITestOutputHelper testOutputHelper, LoggingLevelSwitch loggingLevelSwitch)
