@@ -12,6 +12,22 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
       public TColumn1 Column1 { get; set; }
 
       /// <summary>
+      /// Initializes <see cref="TempTable{TColumn1}"/>.
+      /// </summary>
+      public TempTable()
+      {
+      }
+
+      /// <summary>
+      /// Initializes <see cref="TempTable{TColumn1}"/>.
+      /// </summary>
+      /// <param name="column1">Value of <see cref="Column1"/>.</param>
+      public TempTable(TColumn1 column1)
+      {
+         Column1 = column1;
+      }
+
+      /// <summary>
       /// Implicit conversion from value of type <typeparamref name="TColumn1"/> to <see cref="TempTable{TColumn1}"/>.
       /// </summary>
       /// <param name="columnValue">Value to convert.</param>
@@ -35,6 +51,24 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
 
       /// <inheritdoc />
       public TColumn2 Column2 { get; set; }
+
+      /// <summary>
+      /// Initializes <see cref="TempTable{TColumn1,TColumn2}"/>.
+      /// </summary>
+      public TempTable()
+      {
+      }
+
+      /// <summary>
+      /// Initializes <see cref="TempTable{TColumn1,TColumn2}"/>.
+      /// </summary>
+      /// <param name="column1">Value of <see cref="Column1"/>.</param>
+      /// <param name="column2">Value of <see cref="Column2"/>.</param>
+      public TempTable(TColumn1 column1, TColumn2 column2)
+      {
+         Column1 = column1;
+         Column2 = column2;
+      }
 
       /// <summary>
       /// Implicit conversion from value of type <typeparamref name="TColumn1"/> to <see cref="TempTable{TColumn1,TColumn2}"/>.

@@ -56,60 +56,56 @@ namespace Thinktecture.TestDatabaseContext
             throw new ArgumentNullException(nameof(type));
 
          var tableName = this.GetTableIdentifier(type).TableName;
-         var sql = $@"
+
+         return Query<InformationSchemaColumn>().FromSql($@"
 SELECT
    * 
 FROM
    tempdb.INFORMATION_SCHEMA.COLUMNS WITH (NOLOCK)
 WHERE
-   OBJECT_ID(TABLE_CATALOG + '..' + TABLE_NAME) = OBJECT_ID('tempdb..{tableName}')";
-
-         return Query<InformationSchemaColumn>().FromSql(sql);
+   OBJECT_ID(TABLE_CATALOG + '..' + TABLE_NAME) = OBJECT_ID({"tempdb.." + tableName})");
       }
 
       [NotNull]
       public IQueryable<InformationSchemaTableConstraint> GetTempTableConstraints<TColumn1>()
       {
          var tableName = this.GetTableIdentifier(typeof(TempTable<TColumn1>)).TableName;
-         var sql = $@"
+
+         return Query<InformationSchemaTableConstraint>().FromSql($@"
 SELECT
    * 
 FROM
    tempdb.INFORMATION_SCHEMA.TABLE_CONSTRAINTS WITH (NOLOCK)
 WHERE
-   OBJECT_ID(TABLE_CATALOG + '..' + TABLE_NAME) = OBJECT_ID('tempdb..{tableName}')";
-
-         return Query<InformationSchemaTableConstraint>().FromSql(sql);
+   OBJECT_ID(TABLE_CATALOG + '..' + TABLE_NAME) = OBJECT_ID({"tempdb.." + tableName})");
       }
 
       [NotNull]
       public IQueryable<InformationSchemaConstraintColumn> GetTempTableConstraintsColumns<TColumn1>()
       {
          var tableName = this.GetTableIdentifier(typeof(TempTable<TColumn1>)).TableName;
-         var sql = $@"
+
+         return Query<InformationSchemaConstraintColumn>().FromSql($@"
 SELECT
    * 
 FROM
    tempdb.INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE WITH (NOLOCK)
 WHERE
-   OBJECT_ID(TABLE_CATALOG + '..' + TABLE_NAME) = OBJECT_ID('tempdb..{tableName}')";
-
-         return Query<InformationSchemaConstraintColumn>().FromSql(sql);
+   OBJECT_ID(TABLE_CATALOG + '..' + TABLE_NAME) = OBJECT_ID({"tempdb.." + tableName})");
       }
 
       [NotNull]
       public IQueryable<InformationSchemaKeyColumn> GetTempTableKeyColumns<TColumn1>()
       {
          var tableName = this.GetTableIdentifier(typeof(TempTable<TColumn1>)).TableName;
-         var sql = $@"
+
+         return Query<InformationSchemaKeyColumn>().FromSql($@"
 SELECT
    * 
 FROM
    tempdb.INFORMATION_SCHEMA.KEY_COLUMN_USAGE WITH (NOLOCK) 
 WHERE
-   OBJECT_ID(TABLE_CATALOG + '..' + TABLE_NAME) = OBJECT_ID('tempdb..{tableName}')";
-
-         return Query<InformationSchemaKeyColumn>().FromSql(sql);
+   OBJECT_ID(TABLE_CATALOG + '..' + TABLE_NAME) = OBJECT_ID({"tempdb.." + tableName})");
       }
    }
 }
