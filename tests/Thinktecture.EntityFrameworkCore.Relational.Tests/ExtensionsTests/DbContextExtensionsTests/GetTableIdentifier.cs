@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
+using Thinktecture.TestDatabaseContext;
 using Xunit;
 
 namespace Thinktecture.ExtensionsTests.DbContextExtensionsTests

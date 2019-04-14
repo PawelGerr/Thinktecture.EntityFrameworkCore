@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Thinktecture.TestDatabaseContext;
 using Xunit;
 
 namespace Thinktecture.EntityFrameworkCore.Migrations.DbSchemaAwareMigrationTests

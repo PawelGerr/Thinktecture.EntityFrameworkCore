@@ -3,6 +3,7 @@ using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Thinktecture.EntityFrameworkCore.Infrastructure;
+using Thinktecture.TestDatabaseContext;
 
 namespace Thinktecture
 {

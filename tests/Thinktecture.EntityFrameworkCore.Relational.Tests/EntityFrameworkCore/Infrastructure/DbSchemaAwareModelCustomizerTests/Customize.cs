@@ -1,6 +1,7 @@
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Thinktecture.TestDatabaseContext;
 using Xunit;
 
 namespace Thinktecture.EntityFrameworkCore.Infrastructure.DbSchemaAwareModelCustomizerTests

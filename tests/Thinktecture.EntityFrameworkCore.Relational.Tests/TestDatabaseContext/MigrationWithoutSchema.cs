@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore.Migrations;
 
-namespace Thinktecture
+namespace Thinktecture.TestDatabaseContext
 {
    public class MigrationWithoutSchema : Migration
    {

@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 
-namespace Thinktecture
+namespace Thinktecture.TestDatabaseContext
 {
    public class DbContextWithoutSchema : DbContext
    {

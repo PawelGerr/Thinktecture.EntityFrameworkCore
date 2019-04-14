@@ -1,6 +1,7 @@
 using System;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
+using Thinktecture.TestDatabaseContext;
 using Xunit;
 
 namespace Thinktecture.ExtensionsTests.ModelBuilderExtensionsTests

@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 using Thinktecture.EntityFrameworkCore;
 using Thinktecture.EntityFrameworkCore.Migrations;
 
-namespace Thinktecture
+namespace Thinktecture.TestDatabaseContext
 {
    public class TestDbSchemaAwareMigration : DbSchemaAwareMigration
    {

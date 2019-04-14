@@ -1,4 +1,5 @@
 using JetBrains.Annotations;
+using Thinktecture.TestDatabaseContext;
 
 namespace Thinktecture.EntityFrameworkCore.Migrations.DbSchemaAwareMigrationTests
 {

@@ -2,7 +2,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Thinktecture.EntityFrameworkCore;
 
-namespace Thinktecture
+namespace Thinktecture.TestDatabaseContext
 {
    public class DbContextWithSchema : DbContext, IDbContextSchema
    {
