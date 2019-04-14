@@ -12,7 +12,7 @@ namespace Thinktecture
    public static class DbContextExtensions
    {
       /// <summary>
-      /// Get table schema and name
+      /// Get the table schema and name of the provided <paramref name="type"/>.
       /// </summary>
       /// <param name="ctx">An instance of <see cref="DbContext"/> the provided entity type belongs to.</param>
       /// <param name="type">Entity type to fetch the table schema and name for.</param>

@@ -45,9 +45,23 @@ namespace Thinktecture
       /// Introduces and configures a temp table.
       /// </summary>
       /// <param name="modelBuilder">A model builder.</param>
+      /// <typeparam name="T">Type of the temp table.</typeparam>
+      /// <returns>An entity type builder for further configuration.</returns>
+      /// <exception cref="ArgumentNullException"><paramref name="modelBuilder"/> is <c>null</c>.</exception>
+      [NotNull]
+      public static QueryTypeBuilder<T> ConfigureCustomTempTable<T>([NotNull] this ModelBuilder modelBuilder)
+         where T : class
+      {
+         return modelBuilder.Query<T>().SetTableName();
+      }
+
+      /// <summary>
+      /// Introduces and configures a temp table.
+      /// </summary>
+      /// <param name="modelBuilder">A model builder.</param>
       /// <typeparam name="TColumn1">Type of the column.</typeparam>
       /// <returns>An entity type builder for further configuration.</returns>
-      /// <exception cref="ArgumentNullException"></exception>
+      /// <exception cref="ArgumentNullException"><paramref name="modelBuilder"/> is <c>null</c>.</exception>
       [NotNull]
       public static QueryTypeBuilder<TempTable<TColumn1>> ConfigureTempTable<TColumn1>([NotNull] this ModelBuilder modelBuilder)
       {
@@ -61,7 +75,7 @@ namespace Thinktecture
       /// <typeparam name="TColumn1">Type of the column 1.</typeparam>
       /// <typeparam name="TColumn2">Type of the column 2.</typeparam>
       /// <returns>An entity type builder for further configuration.</returns>
-      /// <exception cref="ArgumentNullException"><see cref="ModelBuilder"/> is <c>null</c>.</exception>
+      /// <exception cref="ArgumentNullException"><paramref name="modelBuilder"/> is <c>null</c>.</exception>
       [NotNull]
       public static QueryTypeBuilder<TempTable<TColumn1, TColumn2>> ConfigureTempTable<TColumn1, TColumn2>([NotNull] this ModelBuilder modelBuilder)
       {

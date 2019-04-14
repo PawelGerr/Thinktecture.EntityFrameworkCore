@@ -24,9 +24,9 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
 
          await DbContext.CreateTempTableAsync<int, string>().ConfigureAwait(false);
 
-         DbContext.GetTempTableColumns<int, string>().ToList().Should().HaveCount(2);
-
          var columns = DbContext.GetTempTableColumns<int, string>().ToList();
+         columns.Should().HaveCount(2);
+
          ValidateColumn(columns[0], nameof(TempTable<int, string>.Column1), "int", false);
          ValidateColumn(columns[1], nameof(TempTable<int, string>.Column2), "nvarchar", true);
       }

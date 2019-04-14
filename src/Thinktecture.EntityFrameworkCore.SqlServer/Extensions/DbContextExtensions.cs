@@ -49,6 +49,18 @@ namespace Thinktecture
       }
 
       /// <summary>
+      /// Creates a temp table using custom type '<typeparamref name="T"/>'.
+      /// </summary>
+      /// <param name="ctx">Database context to use.</param>
+      /// <typeparam name="T">Type of custom temp table.</typeparam>
+      /// <exception cref="ArgumentNullException"><paramref name="ctx"/> is <c>null</c>.</exception>
+      public static async Task CreateCustomTempTableAsync<T>([NotNull] this DbContext ctx)
+         where T : class
+      {
+         await CreateTempTableAsync(ctx, typeof(T)).ConfigureAwait(false);
+      }
+
+      /// <summary>
       /// Creates a temp table.
       /// </summary>
       /// <param name="ctx">Database context to use.</param>
@@ -100,7 +112,7 @@ ELSE
 BEGIN
       CREATE TABLE [{tableName}]
       (
-          {GetColumnsDefinitions(ctx, type)}
+{GetColumnsDefinitions(ctx, type)}
       );
 END
 ";
@@ -131,14 +143,15 @@ END
 
             var relational = property.Relational();
 
-            sb.Append(relational.ColumnName).Append(" ")
+            sb.Append("\t\t")
+              .Append(relational.ColumnName).Append(" ")
               .Append(relational.ColumnType).Append(" ")
               .Append(property.IsNullable ? "NULL" : "NOT NULL");
 
             isFirst = false;
          }
 
-         return sb.AppendLine().ToString();
+         return sb.ToString();
       }
    }
 }

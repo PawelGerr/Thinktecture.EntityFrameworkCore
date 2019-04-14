@@ -33,6 +33,12 @@ namespace Thinktecture.TestDatabaseContext
       }
 
       [NotNull]
+      public IQueryable<InformationSchemaColumn> GetCustomTempTableColumns<T>()
+      {
+         return GetTempTableColumns(typeof(T));
+      }
+
+      [NotNull]
       public IQueryable<InformationSchemaColumn> GetTempTableColumns<TColumn1>()
       {
          return GetTempTableColumns(typeof(TempTable<TColumn1>));
