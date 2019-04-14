@@ -10,6 +10,7 @@ using Xunit.Abstractions;
 
 namespace Thinktecture.Extensions.DbContextExtensionsTests
 {
+   // ReSharper disable once InconsistentNaming
    public class CreateTempTableAsync_2_Columns : CreateTempTableAsyncBase
    {
       public CreateTempTableAsync_2_Columns([NotNull] ITestOutputHelper testOutputHelper)

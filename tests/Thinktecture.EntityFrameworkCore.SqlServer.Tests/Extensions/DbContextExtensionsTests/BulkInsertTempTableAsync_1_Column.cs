@@ -11,6 +11,7 @@ using Xunit.Abstractions;
 
 namespace Thinktecture.Extensions.DbContextExtensionsTests
 {
+   // ReSharper disable once InconsistentNaming
    public class BulkInsertTempTableAsync_1_Column : IntegrationTestsBase
    {
       public BulkInsertTempTableAsync_1_Column([NotNull] ITestOutputHelper testOutputHelper)

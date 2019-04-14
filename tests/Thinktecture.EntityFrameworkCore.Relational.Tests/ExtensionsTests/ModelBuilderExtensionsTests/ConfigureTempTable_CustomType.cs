@@ -1,12 +1,12 @@
 using System.Linq;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
-using Thinktecture.EntityFrameworkCore.TempTables;
 using Thinktecture.TestDatabaseContext;
 using Xunit;
 
 namespace Thinktecture.ExtensionsTests.ModelBuilderExtensionsTests
 {
+   // ReSharper disable once InconsistentNaming
    public class ConfigureTempTable_CustomType : TestBase
    {
       [Fact]

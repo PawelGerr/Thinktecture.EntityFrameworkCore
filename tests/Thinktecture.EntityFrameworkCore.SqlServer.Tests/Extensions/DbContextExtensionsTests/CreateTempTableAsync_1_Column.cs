@@ -6,12 +6,12 @@ using FluentAssertions;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Thinktecture.EntityFrameworkCore.TempTables;
-using Thinktecture.TestDatabaseContext;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace Thinktecture.Extensions.DbContextExtensionsTests
 {
+   // ReSharper disable once InconsistentNaming
    public class CreateTempTableAsync_1_Column : CreateTempTableAsyncBase
    {
       public CreateTempTableAsync_1_Column([NotNull] ITestOutputHelper testOutputHelper)

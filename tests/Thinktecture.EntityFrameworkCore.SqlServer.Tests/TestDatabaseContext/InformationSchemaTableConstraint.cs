@@ -2,6 +2,8 @@ using System.Collections.Generic;
 
 namespace Thinktecture.TestDatabaseContext
 {
+   // ReSharper disable InconsistentNaming
+   // ReSharper disable UnusedMember.Global
    public class InformationSchemaTableConstraint
    {
       public string CONSTRAINT_CATALOG { get; set; }

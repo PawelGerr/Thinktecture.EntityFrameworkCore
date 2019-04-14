@@ -1,12 +1,8 @@
 using System;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.DependencyInjection;
 using Thinktecture.EntityFrameworkCore;
-using Thinktecture.EntityFrameworkCore.Infrastructure;
-using Thinktecture.EntityFrameworkCore.Migrations;
 
 // ReSharper disable once CheckNamespace
 namespace Thinktecture

@@ -7,6 +7,7 @@ using Xunit.Abstractions;
 
 namespace Thinktecture.Extensions.DbContextExtensionsTests
 {
+   // ReSharper disable once InconsistentNaming
    public class GetMinActiveRowVersionAsync : IntegrationTestsBase
    {
       public GetMinActiveRowVersionAsync([NotNull] ITestOutputHelper testOutputHelper)

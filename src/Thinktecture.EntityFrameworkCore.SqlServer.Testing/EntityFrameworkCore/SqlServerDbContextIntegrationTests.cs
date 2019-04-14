@@ -7,8 +7,6 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
-using Thinktecture.EntityFrameworkCore.Infrastructure;
-using Thinktecture.EntityFrameworkCore.Migrations;
 
 namespace Thinktecture.EntityFrameworkCore
 {

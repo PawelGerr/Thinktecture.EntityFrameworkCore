@@ -1,5 +1,7 @@
 namespace Thinktecture.TestDatabaseContext
 {
+   // ReSharper disable InconsistentNaming
+   // ReSharper disable UnusedMember.Global
    public class InformationSchemaConstraintColumn
    {
       public string TABLE_CATALOG { get; set; }

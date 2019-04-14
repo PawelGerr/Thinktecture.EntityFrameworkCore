@@ -7,6 +7,7 @@ using Xunit;
 
 namespace Thinktecture.ExtensionsTests.ModelBuilderExtensionsTests
 {
+   // ReSharper disable once InconsistentNaming
    public class ConfigureTempTable_2_Columns : TestBase
    {
       [Fact]
