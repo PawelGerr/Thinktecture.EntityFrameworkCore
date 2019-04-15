@@ -55,51 +55,48 @@ namespace Thinktecture
       /// Creates a temp table using custom type '<typeparamref name="T"/>'.
       /// </summary>
       /// <param name="ctx">Database context to use.</param>
+      /// <param name="makeTableNameUnique">Indication whether the table name should be unique.</param>
       /// <typeparam name="T">Type of custom temp table.</typeparam>
       /// <exception cref="ArgumentNullException"><paramref name="ctx"/> is <c>null</c>.</exception>
-      public static async Task CreateCustomTempTableAsync<T>([NotNull] this DbContext ctx)
+      /// <returns>Table name</returns>
+      [ItemNotNull]
+      public static async Task<string> CreateCustomTempTableAsync<T>([NotNull] this DbContext ctx, bool makeTableNameUnique = false)
          where T : class
       {
-         await CreateTempTableAsync(ctx, typeof(T)).ConfigureAwait(false);
+         return await CreateTempTableAsync(ctx, typeof(T), makeTableNameUnique).ConfigureAwait(false);
       }
 
       /// <summary>
       /// Creates a temp table.
       /// </summary>
       /// <param name="ctx">Database context to use.</param>
+      /// <param name="makeTableNameUnique">Indication whether the table name should be unique.</param>
       /// <typeparam name="TColumn1">Type of the column 1.</typeparam>
       /// <exception cref="ArgumentNullException"><paramref name="ctx"/> is <c>null</c>.</exception>
-      public static async Task CreateTempTableAsync<TColumn1>([NotNull] this DbContext ctx)
+      /// <returns>Table name</returns>
+      [ItemNotNull]
+      public static async Task<string> CreateTempTableAsync<TColumn1>([NotNull] this DbContext ctx, bool makeTableNameUnique = false)
       {
-         await CreateTempTableAsync(ctx, typeof(TempTable<TColumn1>)).ConfigureAwait(false);
+         return await CreateTempTableAsync(ctx, typeof(TempTable<TColumn1>), makeTableNameUnique).ConfigureAwait(false);
       }
 
       /// <summary>
       /// Creates a temp table.
       /// </summary>
       /// <param name="ctx">Database context to use.</param>
+      /// <param name="makeTableNameUnique">Indication whether the table name should be unique.</param>
       /// <typeparam name="TColumn1">Type of the column 1.</typeparam>
       /// <typeparam name="TColumn2">Type of the column 2.</typeparam>
       /// <exception cref="ArgumentNullException"><paramref name="ctx"/> is <c>null</c>.</exception>
-      public static async Task CreateTempTableAsync<TColumn1, TColumn2>([NotNull] this DbContext ctx)
+      /// <returns>Table name</returns>
+      [ItemNotNull]
+      public static async Task<string> CreateTempTableAsync<TColumn1, TColumn2>([NotNull] this DbContext ctx, bool makeTableNameUnique = false)
       {
-         await CreateTempTableAsync(ctx, typeof(TempTable<TColumn1, TColumn2>)).ConfigureAwait(false);
+         return await CreateTempTableAsync(ctx, typeof(TempTable<TColumn1, TColumn2>), makeTableNameUnique).ConfigureAwait(false);
       }
 
-      private static async Task CreateTempTableAsync([NotNull] DbContext ctx, [NotNull] Type type)
-      {
-         if (ctx == null)
-            throw new ArgumentNullException(nameof(ctx));
-         if (type == null)
-            throw new ArgumentNullException(nameof(type));
-
-         var sql = GetTempTableCreationSql(ctx, type);
-
-         await ctx.Database.ExecuteSqlCommandAsync(sql).ConfigureAwait(false);
-      }
-
-      [NotNull]
-      private static string GetTempTableCreationSql([NotNull] DbContext ctx, [NotNull] Type type)
+      [ItemNotNull]
+      private static async Task<string> CreateTempTableAsync([NotNull] DbContext ctx, [NotNull] Type type, bool makeTableNameUnique)
       {
          if (ctx == null)
             throw new ArgumentNullException(nameof(ctx));
@@ -108,19 +105,45 @@ namespace Thinktecture
 
          var (_, tableName) = ctx.GetTableIdentifier(type);
 
+         if (makeTableNameUnique)
+            tableName = $"{tableName}_{Guid.NewGuid():N}";
+
+         var sql = GetTempTableCreationSql(ctx, type, tableName, makeTableNameUnique);
+
+#pragma warning disable EF1000
+         await ctx.Database.ExecuteSqlCommandAsync(sql).ConfigureAwait(false);
+#pragma warning restore EF1000
+
+         return tableName;
+      }
+
+      [NotNull]
+      private static string GetTempTableCreationSql([NotNull] DbContext ctx, [NotNull] Type type, [NotNull] string tableName, bool isUnique)
+      {
+         if (ctx == null)
+            throw new ArgumentNullException(nameof(ctx));
+         if (type == null)
+            throw new ArgumentNullException(nameof(type));
+         if (tableName == null)
+            throw new ArgumentNullException(nameof(tableName));
+
          var sql = $@"
+      CREATE TABLE [{tableName}]
+      (
+{GetColumnsDefinitions(ctx, type)}
+      );";
+
+         if (isUnique)
+            return sql;
+
+         return $@"
 IF(OBJECT_ID('tempdb..{tableName}') IS NOT NULL)
       TRUNCATE TABLE [{tableName}];
 ELSE
 BEGIN
-      CREATE TABLE [{tableName}]
-      (
-{GetColumnsDefinitions(ctx, type)}
-      );
+{sql}
 END
 ";
-
-         return sql;
       }
 
       [NotNull]
@@ -177,14 +200,15 @@ END
          if (entities == null)
             throw new ArgumentNullException(nameof(entities));
 
-         await ctx.CreateCustomTempTableAsync<T>().ConfigureAwait(false);
+         options = options ?? new SqlBulkInsertOptions();
+         var tableName = await ctx.CreateCustomTempTableAsync<T>(options.MakeTableNameUnique).ConfigureAwait(false);
 
          using (var reader = new TempTableDataReader<T, TColumn1>(entities))
          {
-            await BulkInsertAsync<T>(ctx, reader, options, cancellationToken).ConfigureAwait(false);
+            await BulkInsertAsync<T>(ctx, reader, tableName, options, cancellationToken).ConfigureAwait(false);
          }
 
-         return ctx.Query<T>();
+         return ctx.GetTempTableQuery<T>(tableName);
       }
 
       /// <summary>
@@ -212,14 +236,15 @@ END
          if (entities == null)
             throw new ArgumentNullException(nameof(entities));
 
-         await ctx.CreateCustomTempTableAsync<T>().ConfigureAwait(false);
+         options = options ?? new SqlBulkInsertOptions();
+         var tableName = await ctx.CreateCustomTempTableAsync<T>(options.MakeTableNameUnique).ConfigureAwait(false);
 
          using (var reader = new TempTableDataReader<T, TColumn1, TColumn2>(entities))
          {
-            await BulkInsertAsync<T>(ctx, reader, options, cancellationToken).ConfigureAwait(false);
+            await BulkInsertAsync<T>(ctx, reader, tableName, options, cancellationToken).ConfigureAwait(false);
          }
 
-         return ctx.Query<T>();
+         return ctx.GetTempTableQuery<T>(tableName);
       }
 
       /// <summary>
@@ -244,16 +269,16 @@ END
          if (values == null)
             throw new ArgumentNullException(nameof(values));
 
-         await ctx.CreateTempTableAsync<TColumn1>().ConfigureAwait(false);
-
+         options = options ?? new SqlBulkInsertOptions();
+         var tableName = await ctx.CreateTempTableAsync<TColumn1>(options.MakeTableNameUnique).ConfigureAwait(false);
          var entities = values.Select(v => new TempTable<TColumn1>(v));
 
          using (var reader = new TempTableDataReader<TempTable<TColumn1>, TColumn1>(entities))
          {
-            await BulkInsertAsync<TempTable<TColumn1>>(ctx, reader, options, cancellationToken).ConfigureAwait(false);
+            await BulkInsertAsync<TempTable<TColumn1>>(ctx, reader, tableName, options, cancellationToken).ConfigureAwait(false);
          }
 
-         return ctx.Query<TempTable<TColumn1>>();
+         return ctx.GetTempTableQuery<TempTable<TColumn1>>(tableName);
       }
 
       /// <summary>
@@ -279,32 +304,49 @@ END
          if (values == null)
             throw new ArgumentNullException(nameof(values));
 
-         await ctx.CreateTempTableAsync<TColumn1, TColumn2>().ConfigureAwait(false);
-
+         options = options ?? new SqlBulkInsertOptions();
+         var tableName = await ctx.CreateTempTableAsync<TColumn1, TColumn2>(options.MakeTableNameUnique).ConfigureAwait(false);
          var entities = values.Select(t => new TempTable<TColumn1, TColumn2>(t.column1, t.column2));
 
          using (var reader = new TempTableDataReader<TempTable<TColumn1, TColumn2>, TColumn1, TColumn2>(entities))
          {
-            await BulkInsertAsync<TempTable<TColumn1, TColumn2>>(ctx, reader, options, cancellationToken).ConfigureAwait(false);
+            await BulkInsertAsync<TempTable<TColumn1, TColumn2>>(ctx, reader, tableName, options, cancellationToken).ConfigureAwait(false);
          }
 
-         return ctx.Query<TempTable<TColumn1, TColumn2>>();
+         return ctx.GetTempTableQuery<TempTable<TColumn1, TColumn2>>(tableName);
+      }
+
+      private static IQueryable<T> GetTempTableQuery<T>([NotNull] this DbContext ctx, [NotNull] string tableName)
+         where T : class
+      {
+         if (ctx == null)
+            throw new ArgumentNullException(nameof(ctx));
+         if (tableName == null)
+            throw new ArgumentNullException(nameof(tableName));
+
+         var sql = $"SELECT * FROM [{tableName}]";
+
+#pragma warning disable EF1000
+         return ctx.Query<T>().FromSql(sql);
+#pragma warning restore EF1000
       }
 
       private static async Task BulkInsertAsync<T>([NotNull] this DbContext ctx,
                                                    [NotNull] ITempTableDataReaderBase reader,
-                                                   [CanBeNull] SqlBulkInsertOptions options,
+                                                   [NotNull] string tableName,
+                                                   [NotNull] SqlBulkInsertOptions options,
                                                    CancellationToken cancellationToken)
       {
          if (ctx == null)
             throw new ArgumentNullException(nameof(ctx));
          if (reader == null)
             throw new ArgumentNullException(nameof(reader));
-
-         options = options ?? new SqlBulkInsertOptions();
+         if (tableName == null)
+            throw new ArgumentNullException(nameof(tableName));
+         if (options == null)
+            throw new ArgumentNullException(nameof(options));
 
          var entityType = ctx.GetEntityType<T>();
-         var (_, tableName) = ctx.GetTableIdentifier(typeof(T));
          var sqlCon = (SqlConnection)ctx.Database.GetDbConnection();
          var sqlTx = (SqlTransaction)ctx.Database.CurrentTransaction?.GetDbTransaction();
 

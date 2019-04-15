@@ -29,5 +29,11 @@ namespace Thinktecture.EntityFrameworkCore
       /// Default is set to <c>true</c>.
       /// </summary>
       public bool EnableStreaming { get; set; } = true;
+
+      /// <summary>
+      /// Indication whether the name of the temp table should be unique.
+      /// Default is set to <c>true</c>.
+      /// </summary>
+      public bool MakeTableNameUnique { get; set; } = true;
    }
 }
