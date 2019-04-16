@@ -28,11 +28,11 @@ namespace Thinktecture
       }
 
       /// <summary>
-      /// Fetches MIN_ACTIVE_ROWVERSION from SQL Server.
+      /// Fetches <c>MIN_ACTIVE_ROWVERSION</c> from SQL Server.
       /// </summary>
       /// <param name="ctx">Database context to use.</param>
       /// <param name="cancellationToken">Cancellation token.</param>
-      /// <returns>The result of MIN_ACTIVE_ROWVERSION call.</returns>
+      /// <returns>The result of <c>MIN_ACTIVE_ROWVERSION</c> call.</returns>
       /// <exception cref="ArgumentNullException"><paramref name="ctx"/> is <c>null</c>.</exception>
       public static async Task<ulong> GetMinActiveRowVersionAsync([NotNull] this DbContext ctx, CancellationToken cancellationToken)
       {
@@ -56,14 +56,15 @@ namespace Thinktecture
       /// </summary>
       /// <param name="ctx">Database context to use.</param>
       /// <param name="makeTableNameUnique">Indication whether the table name should be unique.</param>
+      /// <param name="cancellationToken">Cancellation token.</param>
       /// <typeparam name="T">Type of custom temp table.</typeparam>
       /// <exception cref="ArgumentNullException"><paramref name="ctx"/> is <c>null</c>.</exception>
       /// <returns>Table name</returns>
       [ItemNotNull]
-      public static async Task<string> CreateCustomTempTableAsync<T>([NotNull] this DbContext ctx, bool makeTableNameUnique = false)
+      public static async Task<string> CreateCustomTempTableAsync<T>([NotNull] this DbContext ctx, bool makeTableNameUnique = false, CancellationToken cancellationToken = default)
          where T : class
       {
-         return await CreateTempTableAsync(ctx, typeof(T), makeTableNameUnique).ConfigureAwait(false);
+         return await CreateTempTableAsync(ctx, typeof(T), makeTableNameUnique, cancellationToken).ConfigureAwait(false);
       }
 
       /// <summary>
@@ -71,13 +72,14 @@ namespace Thinktecture
       /// </summary>
       /// <param name="ctx">Database context to use.</param>
       /// <param name="makeTableNameUnique">Indication whether the table name should be unique.</param>
+      /// <param name="cancellationToken">Cancellation token.</param>
       /// <typeparam name="TColumn1">Type of the column 1.</typeparam>
       /// <exception cref="ArgumentNullException"><paramref name="ctx"/> is <c>null</c>.</exception>
       /// <returns>Table name</returns>
       [ItemNotNull]
-      public static async Task<string> CreateTempTableAsync<TColumn1>([NotNull] this DbContext ctx, bool makeTableNameUnique = false)
+      public static async Task<string> CreateTempTableAsync<TColumn1>([NotNull] this DbContext ctx, bool makeTableNameUnique = false, CancellationToken cancellationToken = default)
       {
-         return await CreateTempTableAsync(ctx, typeof(TempTable<TColumn1>), makeTableNameUnique).ConfigureAwait(false);
+         return await CreateTempTableAsync(ctx, typeof(TempTable<TColumn1>), makeTableNameUnique, cancellationToken).ConfigureAwait(false);
       }
 
       /// <summary>
@@ -85,18 +87,19 @@ namespace Thinktecture
       /// </summary>
       /// <param name="ctx">Database context to use.</param>
       /// <param name="makeTableNameUnique">Indication whether the table name should be unique.</param>
+      /// <param name="cancellationToken">Cancellation token.</param>
       /// <typeparam name="TColumn1">Type of the column 1.</typeparam>
       /// <typeparam name="TColumn2">Type of the column 2.</typeparam>
       /// <exception cref="ArgumentNullException"><paramref name="ctx"/> is <c>null</c>.</exception>
       /// <returns>Table name</returns>
       [ItemNotNull]
-      public static async Task<string> CreateTempTableAsync<TColumn1, TColumn2>([NotNull] this DbContext ctx, bool makeTableNameUnique = false)
+      public static async Task<string> CreateTempTableAsync<TColumn1, TColumn2>([NotNull] this DbContext ctx, bool makeTableNameUnique = false, CancellationToken cancellationToken = default)
       {
-         return await CreateTempTableAsync(ctx, typeof(TempTable<TColumn1, TColumn2>), makeTableNameUnique).ConfigureAwait(false);
+         return await CreateTempTableAsync(ctx, typeof(TempTable<TColumn1, TColumn2>), makeTableNameUnique, cancellationToken).ConfigureAwait(false);
       }
 
       [ItemNotNull]
-      private static async Task<string> CreateTempTableAsync([NotNull] DbContext ctx, [NotNull] Type type, bool makeTableNameUnique)
+      private static async Task<string> CreateTempTableAsync([NotNull] DbContext ctx, [NotNull] Type type, bool makeTableNameUnique, CancellationToken cancellationToken)
       {
          if (ctx == null)
             throw new ArgumentNullException(nameof(ctx));
@@ -110,8 +113,10 @@ namespace Thinktecture
 
          var sql = GetTempTableCreationSql(ctx, type, tableName, makeTableNameUnique);
 
+         await ctx.Database.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
+
 #pragma warning disable EF1000
-         await ctx.Database.ExecuteSqlCommandAsync(sql).ConfigureAwait(false);
+         await ctx.Database.ExecuteSqlCommandAsync(sql, cancellationToken).ConfigureAwait(false);
 #pragma warning restore EF1000
 
          return tableName;
@@ -201,7 +206,7 @@ END
             throw new ArgumentNullException(nameof(entities));
 
          options = options ?? new SqlBulkInsertOptions();
-         var tableName = await ctx.CreateCustomTempTableAsync<T>(options.MakeTableNameUnique).ConfigureAwait(false);
+         var tableName = await ctx.CreateCustomTempTableAsync<T>(options.MakeTableNameUnique, cancellationToken).ConfigureAwait(false);
 
          using (var reader = new TempTableDataReader<T, TColumn1>(entities))
          {
@@ -237,7 +242,7 @@ END
             throw new ArgumentNullException(nameof(entities));
 
          options = options ?? new SqlBulkInsertOptions();
-         var tableName = await ctx.CreateCustomTempTableAsync<T>(options.MakeTableNameUnique).ConfigureAwait(false);
+         var tableName = await ctx.CreateCustomTempTableAsync<T>(options.MakeTableNameUnique, cancellationToken).ConfigureAwait(false);
 
          using (var reader = new TempTableDataReader<T, TColumn1, TColumn2>(entities))
          {
@@ -270,7 +275,7 @@ END
             throw new ArgumentNullException(nameof(values));
 
          options = options ?? new SqlBulkInsertOptions();
-         var tableName = await ctx.CreateTempTableAsync<TColumn1>(options.MakeTableNameUnique).ConfigureAwait(false);
+         var tableName = await ctx.CreateTempTableAsync<TColumn1>(options.MakeTableNameUnique, cancellationToken).ConfigureAwait(false);
          var entities = values.Select(v => new TempTable<TColumn1>(v));
 
          using (var reader = new TempTableDataReader<TempTable<TColumn1>, TColumn1>(entities))
@@ -305,7 +310,7 @@ END
             throw new ArgumentNullException(nameof(values));
 
          options = options ?? new SqlBulkInsertOptions();
-         var tableName = await ctx.CreateTempTableAsync<TColumn1, TColumn2>(options.MakeTableNameUnique).ConfigureAwait(false);
+         var tableName = await ctx.CreateTempTableAsync<TColumn1, TColumn2>(options.MakeTableNameUnique, cancellationToken).ConfigureAwait(false);
          var entities = values.Select(t => new TempTable<TColumn1, TColumn2>(t.column1, t.column2));
 
          using (var reader = new TempTableDataReader<TempTable<TColumn1, TColumn2>, TColumn1, TColumn2>(entities))
