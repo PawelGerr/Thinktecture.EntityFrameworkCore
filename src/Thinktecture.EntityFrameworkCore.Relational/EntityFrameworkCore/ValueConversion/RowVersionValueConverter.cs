@@ -8,7 +8,7 @@ namespace Thinktecture.EntityFrameworkCore.ValueConversion
    /// <summary>
    /// Value converter for row version.
    /// </summary>
-   public class RowVersionValueConverter : ValueConverter<ulong, byte[]>
+   public class RowVersionValueConverter : ValueConverter<long, byte[]>
    {
       /// <summary>
       /// Initializes new instance of <see cref="RowVersionValueConverter"/>.
@@ -19,7 +19,7 @@ namespace Thinktecture.EntityFrameworkCore.ValueConversion
       }
 
       [NotNull]
-      private static Expression<Func<byte[], ulong>> GetToNumberExpression()
+      private static Expression<Func<byte[], long>> GetToNumberExpression()
       {
          if (!BitConverter.IsLittleEndian)
             return bytes => ConvertBytes(bytes);
@@ -27,13 +27,13 @@ namespace Thinktecture.EntityFrameworkCore.ValueConversion
          return bytes => ConvertBytes(ReverseLong(bytes));
       }
 
-      private static ulong ConvertBytes([NotNull] byte[] bytes)
+      private static long ConvertBytes([NotNull] byte[] bytes)
       {
-         return bytes.Length == 0 ? 0 : BitConverter.ToUInt64(bytes, 0);
+         return bytes.Length == 0 ? 0 : BitConverter.ToInt64(bytes, 0);
       }
 
       [NotNull]
-      private static Expression<Func<ulong, byte[]>> GetToBytesExpression()
+      private static Expression<Func<long, byte[]>> GetToBytesExpression()
       {
          if (!BitConverter.IsLittleEndian)
             return rowVersion => BitConverter.GetBytes(rowVersion);

@@ -34,7 +34,7 @@ namespace Thinktecture
       /// <param name="cancellationToken">Cancellation token.</param>
       /// <returns>The result of <c>MIN_ACTIVE_ROWVERSION</c> call.</returns>
       /// <exception cref="ArgumentNullException"><paramref name="ctx"/> is <c>null</c>.</exception>
-      public static async Task<ulong> GetMinActiveRowVersionAsync([NotNull] this DbContext ctx, CancellationToken cancellationToken)
+      public static async Task<long> GetMinActiveRowVersionAsync([NotNull] this DbContext ctx, CancellationToken cancellationToken)
       {
          if (ctx == null)
             throw new ArgumentNullException(nameof(ctx));
@@ -47,7 +47,7 @@ namespace Thinktecture
             command.CommandText = "SELECT MIN_ACTIVE_ROWVERSION();";
             var bytes = (byte[])await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
 
-            return (ulong)_rowVersionConverter.ConvertFromProvider(bytes);
+            return (long)_rowVersionConverter.ConvertFromProvider(bytes);
          }
       }
 
