@@ -12,32 +12,26 @@ namespace Thinktecture
    {
       static async Task Main(string[] args)
       {
-         var sp = CreateServiceProvider();
+         var sp = SamplesContext.Instance.CreateServiceProvider();
 
          using (var scope = sp.CreateScope())
          {
             var ctx = scope.ServiceProvider.GetRequiredService<TestDbContext>();
+            await ctx.Database.MigrateAsync();
 
-            await DoBulkInsertAsync(ctx);
+            var customerIds = new List<Guid> { await ctx.EnsureCustomerAsync(new Guid("11D67C68-6F1A-407B-9BD3-56C84FE15BB1")) };
+            await DoBulkInsertAsync(ctx, customerIds);
          }
 
          Console.WriteLine("Exiting samples...");
       }
 
-      private static async Task DoBulkInsertAsync(TestDbContext ctx)
+      private static async Task DoBulkInsertAsync(TestDbContext ctx, List<Guid> customerIds)
       {
-         var query = await ctx.BulkInsertTempTableAsync(new List<Guid>() { new Guid("11D67C68-6F1A-407B-9BD3-56C84FE15BB1") });
+         var tempTableQuery = await ctx.BulkInsertTempTableAsync(customerIds);
+         var customers = await ctx.Customers.Join(tempTableQuery, c => c.Id, t => t.Column1, (c, t) => c).ToListAsync();
 
-         var records = await query.ToListAsync();
-         Console.WriteLine($"Records: {String.Join(", ", records.Select(r => r.Column1))}");
-      }
-
-      private static IServiceProvider CreateServiceProvider()
-      {
-         var services = new ServiceCollection()
-            .AddDbContext<TestDbContext>(builder => builder.UseSqlServer("server=localhost;database=test;integrated security=true"));
-
-         return services.BuildServiceProvider();
+         Console.WriteLine($"Found customers: {String.Join(", ", customers.Select(r => r.Id))}");
       }
    }
 }
