@@ -19,8 +19,14 @@ namespace Thinktecture
             var ctx = scope.ServiceProvider.GetRequiredService<TestDbContext>();
             await ctx.Database.MigrateAsync();
 
-            var customerIds = new List<Guid> { await ctx.EnsureCustomerAsync(new Guid("11D67C68-6F1A-407B-9BD3-56C84FE15BB1")) };
-            await DoBulkInsertAsync(ctx, customerIds);
+            var customerId = await ctx.EnsureCustomerAsync(new Guid("11D67C68-6F1A-407B-9BD3-56C84FE15BB1"));
+            var productId = await ctx.EnsureProductAsync(new Guid("872BCAC2-1A85-4B22-AC0F-7D920563A000"));
+            var orderId = await ctx.EnsureOrderAsync(new Guid("EC1CBF87-F53F-4EF4-B286-8F5EB0AE810D"), customerId);
+            await ctx.EnsureOrderItemAsync(orderId, productId, 42);
+
+            await DoBulkInsertAsync(ctx, new List<Guid> { customerId });
+
+            await DoBulkInsertAsync(ctx, new List<(Guid, Guid)> { (customerId, productId) });
          }
 
          Console.WriteLine("Exiting samples...");
@@ -31,7 +37,19 @@ namespace Thinktecture
          var tempTableQuery = await ctx.BulkInsertTempTableAsync(customerIds);
          var customers = await ctx.Customers.Join(tempTableQuery, c => c.Id, t => t.Column1, (c, t) => c).ToListAsync();
 
-         Console.WriteLine($"Found customers: {String.Join(", ", customers.Select(r => r.Id))}");
+         Console.WriteLine($"Found customers: {String.Join(", ", customers.Select(c => c.Id))}");
+      }
+
+      private static async Task DoBulkInsertAsync(TestDbContext ctx, List<(Guid customerId, Guid productId)> tuples)
+      {
+         var tempTableQuery = await ctx.BulkInsertTempTableAsync(tuples);
+         var orderItems = await ctx.OrderItems.Join(tempTableQuery,
+                                                    i => new { i.Order.CustomerId, i.ProductId },
+                                                    t => new { CustomerId = t.Column1, ProductId = t.Column2 },
+                                                    (i, t) => i)
+                                   .ToListAsync();
+
+         Console.WriteLine($"Found order items: {String.Join(", ", orderItems.Select(i => $"{{ OrderId={i.OrderId}, ProductId={i.ProductId}, Count={i.Count} }}"))}");
       }
    }
 }

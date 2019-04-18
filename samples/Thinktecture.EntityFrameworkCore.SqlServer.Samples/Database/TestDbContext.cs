@@ -22,6 +22,7 @@ namespace Thinktecture.Database
          base.OnModelCreating(modelBuilder);
 
          modelBuilder.ConfigureTempTable<Guid>();
+         modelBuilder.ConfigureTempTable<Guid, Guid>();
 
          modelBuilder.Entity<OrderItem>().HasKey(i => new { i.OrderId, i.ProductId });
       }
