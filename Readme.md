@@ -5,7 +5,7 @@
 [![Thinktecture.EntityFrameworkCore.SqlServer.Testing](https://img.shields.io/nuget/v/Thinktecture.EntityFrameworkCore.SqlServer.Testing.svg?label=Thinktecture.EntityFrameworkCore.SqlServer.Testing&maxAge=3600)](https://www.nuget.org/packages/Thinktecture.EntityFrameworkCore.SqlServer.Testing/)
 
 #Summary
-These libraries extend [Entity Framework Core](https://docs.microsoft.com/en-us/ef/core/) by a few features to make easier to work with and for easier integration testing or get more performance in some special cases.
+These libraries extend [Entity Framework Core](https://docs.microsoft.com/en-us/ef/core/) by a few features to make it easier to work with EF and for easier integration testing or to get more performance in some special cases.
 
 Performance:
 * [Contains-check having big collections](https://dev.azure.com/pawelgerr/Thinktecture.EntityFrameworkCore/_wiki/wikis/Thinktecture.EntityFrameworkCore.wiki?wikiVersion=GBwikiMaster&pagePath=%2FContains%252Dcheck%20having%20big%20collections) (SQL Server)
