@@ -10,7 +10,7 @@ using Thinktecture.Database;
 namespace Thinktecture.Migrations
 {
     [DbContext(typeof(DemoDbContext))]
-    [Migration("20190418120841_Initial_Migration")]
+    [Migration("20190509195617_Initial_Migration")]
     partial class Initial_Migration
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -25,6 +25,11 @@ namespace Thinktecture.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd();
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate();
 
                     b.HasKey("Id");
 

@@ -11,6 +11,7 @@ namespace Thinktecture.Database
       {
          var options = new DbContextOptionsBuilder<DemoDbContext>()
                        .UseSqlServer(SamplesContext.Instance.ConnectionString)
+                       .AddSchemaAwareComponents()
                        .Options;
 
          return new DemoDbContext(options);

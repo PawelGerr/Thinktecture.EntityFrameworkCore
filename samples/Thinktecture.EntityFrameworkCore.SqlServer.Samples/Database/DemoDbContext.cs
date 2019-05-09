@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Thinktecture.EntityFrameworkCore;
+using Thinktecture.EntityFrameworkCore.ValueConversion;
 
 namespace Thinktecture.Database
 {
@@ -29,6 +30,11 @@ namespace Thinktecture.Database
 
          modelBuilder.ConfigureTempTable<Guid>();
          modelBuilder.ConfigureTempTable<Guid, Guid>();
+
+         modelBuilder.Entity<Customer>()
+                     .Property(c => c.RowVersion)
+                     .IsRowVersion()
+                     .HasConversion(RowVersionValueConverter.Instance);
 
          modelBuilder.Entity<OrderItem>().HasKey(i => new { i.OrderId, i.ProductId });
       }

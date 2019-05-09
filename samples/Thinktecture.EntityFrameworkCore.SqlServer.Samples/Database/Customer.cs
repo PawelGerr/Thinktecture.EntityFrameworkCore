@@ -6,6 +6,7 @@ namespace Thinktecture.Database
    public class Customer
    {
       public Guid Id { get; set; }
+      public long RowVersion { get; set; }
 
       private List<Order> _orders;
 

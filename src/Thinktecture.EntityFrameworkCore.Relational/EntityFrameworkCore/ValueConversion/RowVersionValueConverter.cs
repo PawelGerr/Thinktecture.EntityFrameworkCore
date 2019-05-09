@@ -11,6 +11,11 @@ namespace Thinktecture.EntityFrameworkCore.ValueConversion
    public class RowVersionValueConverter : ValueConverter<long, byte[]>
    {
       /// <summary>
+      /// An instance of <see cref="RowVersionValueConverter"/>.
+      /// </summary>
+      public static readonly RowVersionValueConverter Instance = new RowVersionValueConverter();
+
+      /// <summary>
       /// Initializes new instance of <see cref="RowVersionValueConverter"/>.
       /// </summary>
       public RowVersionValueConverter()

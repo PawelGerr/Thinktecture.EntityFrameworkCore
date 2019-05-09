@@ -1,16 +1,25 @@
 ﻿using System;
+using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore.Migrations;
+using Thinktecture.EntityFrameworkCore;
+using Thinktecture.EntityFrameworkCore.Migrations;
 
 namespace Thinktecture.Migrations
 {
-   public partial class Initial_Migration : Migration
+   public partial class Initial_Migration : DbSchemaAwareMigration
    {
+      public Initial_Migration([CanBeNull] IDbContextSchema schema)
+         : base(schema)
+      {
+      }
+
       protected override void Up(MigrationBuilder migrationBuilder)
       {
          migrationBuilder.CreateTable("Customers",
                                       table => new
                                                {
-                                                  Id = table.Column<Guid>()
+                                                  Id = table.Column<Guid>(),
+                                                  RowVersion = table.Column<byte[]>(rowVersion: true)
                                                },
                                       constraints: table => table.PrimaryKey("PK_Customers", x => x.Id));
 
@@ -48,19 +57,23 @@ namespace Thinktecture.Migrations
                                       constraints: table =>
                                                    {
                                                       table.PrimaryKey("PK_OrderItems", x => new { x.OrderId, x.ProductId });
-                                                      table.ForeignKey("FK_OrderItems_Orders_OrderId",
+                                                      table.ForeignKey(
+                                                                       "FK_OrderItems_Orders_OrderId",
                                                                        x => x.OrderId,
                                                                        "Orders",
                                                                        "Id",
                                                                        onDelete: ReferentialAction.Cascade);
-                                                      table.ForeignKey("FK_OrderItems_Products_ProductId",
+                                                      table.ForeignKey(
+                                                                       "FK_OrderItems_Products_ProductId",
                                                                        x => x.ProductId,
                                                                        "Products",
                                                                        "Id",
                                                                        onDelete: ReferentialAction.Cascade);
                                                    });
 
-         migrationBuilder.CreateIndex("IX_OrderItems_ProductId", "OrderItems", "ProductId");
+         migrationBuilder.CreateIndex("IX_OrderItems_ProductId", "OrderItems", "ProductId")
+                         .IncludeColumns("OrderId", "Count");
+         migrationBuilder.CreateIndex("IX_OrderItems_ProductId", "OrderItems", "ProductId").IfNotExists();
          migrationBuilder.CreateIndex("IX_Orders_CustomerId", "Orders", "CustomerId");
       }
 

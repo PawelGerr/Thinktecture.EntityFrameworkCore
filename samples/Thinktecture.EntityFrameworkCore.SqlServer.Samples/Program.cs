@@ -12,7 +12,7 @@ namespace Thinktecture
    {
       static async Task Main(string[] args)
       {
-         var sp = SamplesContext.Instance.CreateServiceProvider();
+         var sp = SamplesContext.Instance.CreateServiceProvider("demo");
 
          using (var scope = sp.CreateScope())
          {
