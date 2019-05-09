@@ -9,7 +9,7 @@ using Thinktecture.Database;
 
 namespace Thinktecture.Migrations
 {
-    [DbContext(typeof(TestDbContext))]
+    [DbContext(typeof(DemoDbContext))]
     [Migration("20190418120841_Initial_Migration")]
     partial class Initial_Migration
     {

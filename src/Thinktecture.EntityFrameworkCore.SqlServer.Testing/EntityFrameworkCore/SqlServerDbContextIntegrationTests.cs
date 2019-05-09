@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
+using Thinktecture.EntityFrameworkCore.Migrations;
 
 namespace Thinktecture.EntityFrameworkCore
 {
@@ -130,7 +131,8 @@ namespace Thinktecture.EntityFrameworkCore
 
          var builder = new DbContextOptionsBuilder<T>()
                        .UseSqlServer(connString, ConfigureSqlServer)
-                       .AddSchemaAwareSqlServerComponents();
+                       .AddSchemaAwareComponents()
+                       .ReplaceService<IMigrationsSqlGenerator, ThinktectureSqlServerMigrationsSqlGenerator>();
 
          if (_loggerFactory != null)
             builder.UseLoggerFactory(_loggerFactory);

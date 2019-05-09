@@ -4,16 +4,16 @@ using Microsoft.EntityFrameworkCore.Design;
 
 namespace Thinktecture.Database
 {
-   public class TestDbContextDesignTimeDbContextFactory : IDesignTimeDbContextFactory<TestDbContext>
+   public class DemoDbContextDesignTimeDbContextFactory : IDesignTimeDbContextFactory<DemoDbContext>
    {
       [NotNull]
-      public TestDbContext CreateDbContext(string[] args)
+      public DemoDbContext CreateDbContext(string[] args)
       {
-         var options = new DbContextOptionsBuilder<TestDbContext>()
+         var options = new DbContextOptionsBuilder<DemoDbContext>()
                        .UseSqlServer(SamplesContext.Instance.ConnectionString)
                        .Options;
 
-         return new TestDbContext(options);
+         return new DemoDbContext(options);
       }
    }
 }

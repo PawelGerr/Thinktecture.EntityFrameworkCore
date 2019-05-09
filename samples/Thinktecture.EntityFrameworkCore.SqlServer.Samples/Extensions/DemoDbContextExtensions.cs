@@ -8,9 +8,9 @@ using Thinktecture.Database;
 // ReSharper disable once CheckNamespace
 namespace Thinktecture
 {
-   public static class TestDbContextExtensions
+   public static class DemoDbContextExtensions
    {
-      public static async Task<Guid> EnsureCustomerAsync([NotNull] this TestDbContext ctx, Guid id)
+      public static async Task<Guid> EnsureCustomerAsync([NotNull] this DemoDbContext ctx, Guid id)
       {
          if (ctx == null)
             throw new ArgumentNullException(nameof(ctx));
@@ -24,7 +24,7 @@ namespace Thinktecture
          return id;
       }
 
-      public static async Task<Guid> EnsureProductAsync([NotNull] this TestDbContext ctx, Guid id)
+      public static async Task<Guid> EnsureProductAsync([NotNull] this DemoDbContext ctx, Guid id)
       {
          if (ctx == null)
             throw new ArgumentNullException(nameof(ctx));
@@ -38,7 +38,7 @@ namespace Thinktecture
          return id;
       }
 
-      public static async Task<Guid> EnsureOrderAsync([NotNull] this TestDbContext ctx, Guid id, Guid customerId)
+      public static async Task<Guid> EnsureOrderAsync([NotNull] this DemoDbContext ctx, Guid id, Guid customerId)
       {
          if (ctx == null)
             throw new ArgumentNullException(nameof(ctx));
@@ -52,7 +52,7 @@ namespace Thinktecture
          return id;
       }
 
-      public static async Task EnsureOrderItemAsync([NotNull] this TestDbContext ctx, Guid orderId, Guid productId, int count)
+      public static async Task EnsureOrderItemAsync([NotNull] this DemoDbContext ctx, Guid orderId, Guid productId, int count)
       {
          if (ctx == null)
             throw new ArgumentNullException(nameof(ctx));

@@ -8,8 +8,8 @@ using Thinktecture.Database;
 
 namespace Thinktecture.Migrations
 {
-    [DbContext(typeof(TestDbContext))]
-    partial class TestDbContextModelSnapshot : ModelSnapshot
+    [DbContext(typeof(DemoDbContext))]
+    partial class DemoDbContextModelSnapshot : ModelSnapshot
     {
         protected override void BuildModel(ModelBuilder modelBuilder)
         {

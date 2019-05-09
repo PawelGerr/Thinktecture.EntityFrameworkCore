@@ -39,7 +39,7 @@ namespace Thinktecture
       public IServiceProvider CreateServiceProvider()
       {
          var services = new ServiceCollection()
-            .AddDbContext<TestDbContext>(builder => builder.UseSqlServer(ConnectionString));
+            .AddDbContext<DemoDbContext>(builder => builder.UseSqlServer(ConnectionString));
 
          return services.BuildServiceProvider();
       }
