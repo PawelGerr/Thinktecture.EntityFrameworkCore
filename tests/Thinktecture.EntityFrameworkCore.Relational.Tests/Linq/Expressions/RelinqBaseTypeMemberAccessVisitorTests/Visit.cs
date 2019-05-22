@@ -35,6 +35,20 @@ namespace Thinktecture.Linq.Expressions.RelinqBaseTypeMemberAccessVisitorTests
       }
 
       [Fact]
+      public void Should_change_property_expression_of_implicit_implemented_interface_with_setter_to_one_of_concrete_type()
+      {
+         var expression = GetInterfaceImplementingExpression<MyImplicitImplementingObjectWithSetter>();
+
+         var visitedExpression = RelinqInterfaceMemberAccessVisitor.Instance.Visit(expression);
+
+         var memberExpression = visitedExpression.As<LambdaExpression>().Body.As<MemberExpression>();
+
+         memberExpression.Should().NotBeNull();
+         memberExpression.Member.Should().Be(typeof(MyImplicitImplementingObjectWithSetter).GetProperty(nameof(MyImplicitImplementingObjectWithSetter.MyProperty), BindingFlags.Instance | BindingFlags.Public));
+         memberExpression.Expression.Should().Be(expression.Parameters[0]);
+      }
+
+      [Fact]
       public void Should_change_property_expression_of_explicit_implemented_interface_to_one_of_concrete_type()
       {
          var expression = GetInterfaceImplementingExpression<MyExplicitImplementingObject>();
@@ -80,6 +94,11 @@ namespace Thinktecture.Linq.Expressions.RelinqBaseTypeMemberAccessVisitorTests
       private class MyImplicitImplementingObject : IMyObject
       {
          public string MyProperty { get; }
+      }
+
+      private class MyImplicitImplementingObjectWithSetter : IMyObject
+      {
+         public string MyProperty { get; set; }
       }
 
       private class MyExplicitImplementingObject : IMyObject

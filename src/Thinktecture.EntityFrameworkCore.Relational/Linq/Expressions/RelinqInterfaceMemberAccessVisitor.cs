@@ -25,12 +25,12 @@ namespace Thinktecture.Linq.Expressions
          {
             var conversion = (UnaryExpression)node.Expression;
 
-            if (conversion.Type.IsAssignableFrom(conversion.Operand.Type))
+            if (conversion.Type.IsInterface && conversion.Type.IsAssignableFrom(conversion.Operand.Type))
             {
                MemberInfo member = null;
 
                if (node.Member.MemberType == MemberTypes.Property)
-                  member = FindProperty(conversion.Operand.Type, (PropertyInfo)node.Member);
+                  member = FindProperty(conversion.Operand.Type, conversion.Type, (PropertyInfo)node.Member);
 
                if (member == null)
                   throw new Exception($"Member with name '{node.Member.Name}' not found in '{conversion.Operand.Type.DisplayName()}'.");
@@ -44,10 +44,31 @@ namespace Thinktecture.Linq.Expressions
       }
 
       [CanBeNull]
-      private static MemberInfo FindProperty([NotNull] Type type, [NotNull] PropertyInfo baseTypeMember)
+      private static MemberInfo FindProperty([NotNull] Type dstType, Type interfaceType, [NotNull] PropertyInfo interfaceMember)
       {
-         return type.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
-                    .FirstOrDefault(p => p.GetMethod == baseTypeMember.GetMethod || p.SetMethod == baseTypeMember.SetMethod);
+         var map = dstType.GetInterfaceMap(interfaceType);
+         var targetMethod = FindTargetMethod(map, interfaceMember);
+
+         if (targetMethod != null)
+         {
+            return dstType.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
+                          .FirstOrDefault(p => p.GetMethod == targetMethod || p.SetMethod == targetMethod);
+         }
+
+         return null;
+      }
+
+      private static MethodInfo FindTargetMethod(InterfaceMapping map, PropertyInfo interfaceProperty)
+      {
+         for (var i = 0; i < map.InterfaceMethods.Length; i++)
+         {
+            var interfaceMethod = map.InterfaceMethods[i];
+
+            if (interfaceMethod == interfaceProperty.GetMethod || interfaceMethod == interfaceProperty.SetMethod)
+               return map.TargetMethods[i];
+         }
+
+         return null;
       }
    }
 }
