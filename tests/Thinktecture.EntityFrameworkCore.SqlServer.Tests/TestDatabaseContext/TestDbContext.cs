@@ -99,6 +99,19 @@ WHERE
       {
          var tableName = this.GetTableIdentifier(typeof(TempTable<TColumn1>)).TableName;
 
+         return GetTempTableKeyColumns(tableName);
+      }
+
+      [NotNull]
+      public IQueryable<InformationSchemaKeyColumn> GetTempTableKeyColumns<TColumn1, TColumn2>()
+      {
+         var tableName = this.GetTableIdentifier(typeof(TempTable<TColumn1, TColumn2>)).TableName;
+
+         return GetTempTableKeyColumns(tableName);
+      }
+
+      private IQueryable<InformationSchemaKeyColumn> GetTempTableKeyColumns(string tableName)
+      {
          return Query<InformationSchemaKeyColumn>().FromSql($@"
 SELECT
    * 

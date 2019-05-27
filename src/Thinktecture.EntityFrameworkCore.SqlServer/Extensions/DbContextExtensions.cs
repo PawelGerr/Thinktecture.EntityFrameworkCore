@@ -375,6 +375,35 @@ END
 
             await bulkCopy.WriteToServerAsync(reader, cancellationToken).ConfigureAwait(false);
          }
+
+         if (options.CreatePrimaryKey)
+            await ctx.CreatePrimaryKeyAsync<T>(tableName, !options.MakeTableNameUnique, cancellationToken).ConfigureAwait(false);
+      }
+
+      private static async Task CreatePrimaryKeyAsync<T>([NotNull] this DbContext ctx, string tableName, bool checkForExistence, CancellationToken cancellationToken)
+      {
+         if (ctx == null)
+            throw new ArgumentNullException(nameof(ctx));
+         var entityType = ctx.GetEntityType<T>();
+         var columnNames = entityType.GetProperties().Select(p => p.Relational().ColumnName);
+
+         var sql = $@"
+ALTER TABLE [{tableName}]
+ADD CONSTRAINT [PK_{tableName}] PRIMARY KEY CLUSTERED ({String.Join(", ", columnNames)});
+";
+
+         if (checkForExistence)
+         {
+            sql = $@"
+IF(NOT EXISTS (SELECT * FROM tempdb.INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE OBJECT_ID(TABLE_CATALOG + '..' + TABLE_NAME) = OBJECT_ID('tempdb..{tableName}')))
+BEGIN
+{sql}
+END
+";
+         }
+#pragma warning disable EF1000
+         await ctx.Database.ExecuteSqlCommandAsync(sql, cancellationToken).ConfigureAwait(false);
+#pragma warning restore EF1000
       }
    }
 }

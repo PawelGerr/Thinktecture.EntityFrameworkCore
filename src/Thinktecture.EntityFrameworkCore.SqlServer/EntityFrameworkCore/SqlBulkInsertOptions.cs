@@ -35,5 +35,11 @@ namespace Thinktecture.EntityFrameworkCore
       /// Default is set to <c>true</c>.
       /// </summary>
       public bool MakeTableNameUnique { get; set; } = true;
+
+      /// <summary>
+      /// Creates a clustered primary key spanning all columns of the temp table after the bulk insert.
+      /// Default is set to <c>true</c>.
+      /// </summary>
+      public bool CreatePrimaryKey { get; set; } = true;
    }
 }

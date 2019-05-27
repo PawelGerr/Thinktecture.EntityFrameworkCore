@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.Data.SqlClient;
 using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -54,7 +56,7 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
          ConfigureModel = builder => builder.ConfigureTempTable<int?>();
 
          var values = new List<int?> { 1, null };
-         var query = await DbContext.BulkInsertTempTableAsync(values).ConfigureAwait(false);
+         var query = await DbContext.BulkInsertTempTableAsync(values, new SqlBulkInsertOptions { CreatePrimaryKey = false }).ConfigureAwait(false);
 
          var tempTable = await query.ToListAsync().ConfigureAwait(false);
          tempTable.Should()
@@ -68,12 +70,56 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
          ConfigureModel = builder => builder.ConfigureTempTable<string>();
 
          var values = new List<string> { "value1", null };
-         var query = await DbContext.BulkInsertTempTableAsync(values).ConfigureAwait(false);
+         var query = await DbContext.BulkInsertTempTableAsync(values, new SqlBulkInsertOptions { CreatePrimaryKey = false }).ConfigureAwait(false);
 
          var tempTable = await query.ToListAsync().ConfigureAwait(false);
          tempTable.Should()
                   .HaveCount(2).And
                   .BeEquivalentTo(new TempTable<string>("value1"), new TempTable<string>(null));
+      }
+
+      [Fact]
+      public async Task Should_create_pk_by_default_on_string_column()
+      {
+         ConfigureModel = builder => builder.ConfigureTempTable<string>().Property(t => t.Column1).HasMaxLength(100).IsRequired();
+
+         await DbContext.BulkInsertTempTableAsync(new List<string> { "value" }, new SqlBulkInsertOptions { MakeTableNameUnique = false }).ConfigureAwait(false);
+
+         var keys = DbContext.GetTempTableKeyColumns<string>().ToList();
+         keys.Should().HaveCount(1);
+         keys[0].COLUMN_NAME.Should().Be(nameof(TempTable<string>.Column1));
+      }
+
+      [Fact]
+      public void Should_throw_when_trying_to_create_pk_on_nullable_column()
+      {
+         ConfigureModel = builder => builder.ConfigureTempTable<int?>();
+
+         DbContext.Awaiting(ctx => ctx.BulkInsertTempTableAsync(new List<int?> { 1 }, new SqlBulkInsertOptions { MakeTableNameUnique = false }))
+                  .Should().Throw<SqlException>();
+      }
+
+      [Fact]
+      public async Task Should_create_pk_by_default()
+      {
+         ConfigureModel = builder => builder.ConfigureTempTable<int>();
+
+         await DbContext.BulkInsertTempTableAsync(new List<int> { 1 }, new SqlBulkInsertOptions { MakeTableNameUnique = false }).ConfigureAwait(false);
+
+         var keys = DbContext.GetTempTableKeyColumns<int>().ToList();
+         keys.Should().HaveCount(1);
+         keys[0].COLUMN_NAME.Should().Be(nameof(TempTable<int>.Column1));
+      }
+
+      [Fact]
+      public async Task Should_not_create_pk_if_specified_in_options()
+      {
+         ConfigureModel = builder => builder.ConfigureTempTable<int>();
+
+         await DbContext.BulkInsertTempTableAsync(new List<int> { 1 }, new SqlBulkInsertOptions { MakeTableNameUnique = false, CreatePrimaryKey = false }).ConfigureAwait(false);
+
+         var keys = DbContext.GetTempTableKeyColumns<int>().ToList();
+         keys.Should().HaveCount(0);
       }
    }
 }
