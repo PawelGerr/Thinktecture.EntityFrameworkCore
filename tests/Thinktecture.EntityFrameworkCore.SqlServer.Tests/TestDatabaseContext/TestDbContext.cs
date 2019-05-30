@@ -12,6 +12,8 @@ namespace Thinktecture.TestDatabaseContext
       /// <inheritdoc />
       public string Schema { get; }
 
+      public DbSet<TestEntity> TestEntities { get; set; }
+      
       public Action<ModelBuilder> ConfigureModel { get; set; }
 
       public TestDbContext([NotNull] DbContextOptions<TestDbContext> options, [CanBeNull] IDbContextSchema schema)

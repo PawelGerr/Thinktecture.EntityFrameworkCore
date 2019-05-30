@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Logging;
 using Serilog;
 using Serilog.Core;
@@ -42,6 +43,14 @@ namespace Thinktecture
 
          return new LoggerFactory()
             .AddSerilog(loggerConfig.CreateLogger());
+      }
+
+      /// <inheritdoc />
+      protected override void ConfigureSqlServer(SqlServerDbContextOptionsBuilder builder)
+      {
+         base.ConfigureSqlServer(builder);
+
+         builder.AddRowNumberSupport();
       }
 
       /// <inheritdoc />
