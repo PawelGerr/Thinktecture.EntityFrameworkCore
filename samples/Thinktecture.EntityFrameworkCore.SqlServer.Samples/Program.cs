@@ -29,9 +29,25 @@ namespace Thinktecture
             await DoBulkInsertAsync(ctx, new List<(Guid, Guid)> { (customerId, productId) });
 
             await DoLeftJoinAsync(ctx);
+
+            await DoRowNumberAsync(ctx);
          }
 
          Console.WriteLine("Exiting samples...");
+      }
+
+      private static async Task DoRowNumberAsync(DemoDbContext ctx)
+      {
+         var customers = await ctx.Customers
+                                      .Select(c => new
+                                                   {
+                                                      c.Id,
+                                                      RowNumber = EF.Functions.RowNumber(c.Id)
+                                                   })
+                                      .ToListAsync();
+
+         Console.WriteLine($"Found customers: {String.Join(", ", customers.Select(c => $"{{ CustomerId={c.Id}, RowNumber={c.RowNumber} }}"))}");
+
       }
 
       private static async Task DoLeftJoinAsync(DemoDbContext ctx)

@@ -47,6 +47,8 @@ namespace Thinktecture
                                                                                     {
                                                                                        if (schema != null)
                                                                                           sqlOptions.MigrationsHistoryTable("__EFMigrationsHistory", schema);
+
+                                                                                       sqlOptions.AddRowNumberSupport();
                                                                                     })
                                                     .AddSchemaAwareComponents()
                                                     .ReplaceService<IMigrationsSqlGenerator, ThinktectureSqlServerMigrationsSqlGenerator>());
