@@ -37,6 +37,25 @@ namespace Thinktecture.Extensions.DbFunctionsExtensions
       }
 
       [Fact]
+      public void Generates_RowNumber_with_orderby_and_one_struct_column()
+      {
+         DbContext.TestEntities.Add(new TestEntity { Id = new Guid("18CF65B3-F53D-4F45-8DF5-DD62DCC8B2EB") });
+         DbContext.TestEntities.Add(new TestEntity { Id = new Guid("28CF65B3-F53D-4F45-8DF5-DD62DCC8B2EB") });
+         DbContext.SaveChanges();
+
+         var result = DbContext.TestEntities
+                               .Select(e => new
+                                            {
+                                               e.Id,
+                                               RowNumber = EF.Functions.RowNumber(e.Id)
+                                            })
+                               .ToList();
+
+         result.First(t => t.Id == new Guid("18CF65B3-F53D-4F45-8DF5-DD62DCC8B2EB")).RowNumber.Should().Be(1);
+         result.First(t => t.Id == new Guid("28CF65B3-F53D-4F45-8DF5-DD62DCC8B2EB")).RowNumber.Should().Be(2);
+      }
+
+      [Fact]
       public void Generates_RowNumber_with_orderby_desc_and_one_column()
       {
          DbContext.TestEntities.Add(new TestEntity { Id = new Guid("4883F7E0-FC8C-45FF-A579-DF351A3E79BF"), Name = "1" });

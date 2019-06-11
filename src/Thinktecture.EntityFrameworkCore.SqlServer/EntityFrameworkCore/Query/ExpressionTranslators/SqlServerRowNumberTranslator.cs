@@ -89,6 +89,9 @@ namespace Thinktecture.EntityFrameworkCore.Query.ExpressionTranslators
          if (expression is ColumnExpression)
             return expression;
 
+         if (expression.NodeType == ExpressionType.Convert)
+            return ExtractOrderBy(((UnaryExpression)expression).Operand);
+
          if (expression is MethodCallExpression methodCall && methodCall.Method == _descendingMethodInfo)
             return new DescendingExpression(methodCall.Arguments[1]);
 
