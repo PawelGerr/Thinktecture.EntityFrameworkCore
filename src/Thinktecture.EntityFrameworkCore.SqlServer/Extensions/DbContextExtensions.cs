@@ -60,10 +60,11 @@ namespace Thinktecture
       /// <param name="makeTableNameUnique">Indication whether the table name should be unique.</param>
       /// <param name="cancellationToken">Cancellation token.</param>
       /// <typeparam name="T">Type of custom temp table.</typeparam>
-      /// <exception cref="ArgumentNullException"><paramref name="ctx"/> is <c>null</c>.</exception>
       /// <returns>Table name</returns>
+      /// <exception cref="ArgumentNullException"><paramref name="ctx"/> is <c>null</c>.</exception>
+      /// <exception cref="ArgumentException">The provided type <typeparamref name="T"/> is not known by provided <paramref name="ctx"/>.</exception>
       [ItemNotNull]
-      public static async Task<string> CreateCustomTempTableAsync<T>([NotNull] this DbContext ctx, bool makeTableNameUnique = false, CancellationToken cancellationToken = default)
+      public static async Task<string> CreateTempTableAsync<T>([NotNull] this DbContext ctx, bool makeTableNameUnique = false, CancellationToken cancellationToken = default)
          where T : class
       {
          return await CreateTempTableAsync(ctx, typeof(T), makeTableNameUnique, cancellationToken).ConfigureAwait(false);
@@ -73,35 +74,18 @@ namespace Thinktecture
       /// Creates a temp table.
       /// </summary>
       /// <param name="ctx">Database context to use.</param>
+      /// <param name="type">Type of the entity.</param>
       /// <param name="makeTableNameUnique">Indication whether the table name should be unique.</param>
       /// <param name="cancellationToken">Cancellation token.</param>
-      /// <typeparam name="TColumn1">Type of the column 1.</typeparam>
-      /// <exception cref="ArgumentNullException"><paramref name="ctx"/> is <c>null</c>.</exception>
       /// <returns>Table name</returns>
+      /// <exception cref="ArgumentNullException">
+      /// <paramref name="ctx"/> is <c>null</c>
+      /// - or
+      /// <paramref name="type"/> is <c>null</c>.
+      /// </exception>
+      /// <exception cref="ArgumentException">The provided type <paramref name="type"/> is not known by provided <paramref name="ctx"/>.</exception>
       [ItemNotNull]
-      public static async Task<string> CreateTempTableAsync<TColumn1>([NotNull] this DbContext ctx, bool makeTableNameUnique = false, CancellationToken cancellationToken = default)
-      {
-         return await CreateTempTableAsync(ctx, typeof(TempTable<TColumn1>), makeTableNameUnique, cancellationToken).ConfigureAwait(false);
-      }
-
-      /// <summary>
-      /// Creates a temp table.
-      /// </summary>
-      /// <param name="ctx">Database context to use.</param>
-      /// <param name="makeTableNameUnique">Indication whether the table name should be unique.</param>
-      /// <param name="cancellationToken">Cancellation token.</param>
-      /// <typeparam name="TColumn1">Type of the column 1.</typeparam>
-      /// <typeparam name="TColumn2">Type of the column 2.</typeparam>
-      /// <exception cref="ArgumentNullException"><paramref name="ctx"/> is <c>null</c>.</exception>
-      /// <returns>Table name</returns>
-      [ItemNotNull]
-      public static async Task<string> CreateTempTableAsync<TColumn1, TColumn2>([NotNull] this DbContext ctx, bool makeTableNameUnique = false, CancellationToken cancellationToken = default)
-      {
-         return await CreateTempTableAsync(ctx, typeof(TempTable<TColumn1, TColumn2>), makeTableNameUnique, cancellationToken).ConfigureAwait(false);
-      }
-
-      [ItemNotNull]
-      private static async Task<string> CreateTempTableAsync([NotNull] DbContext ctx, [NotNull] Type type, bool makeTableNameUnique, CancellationToken cancellationToken)
+      public static async Task<string> CreateTempTableAsync([NotNull] DbContext ctx, [NotNull] Type type, bool makeTableNameUnique, CancellationToken cancellationToken)
       {
          if (ctx == null)
             throw new ArgumentNullException(nameof(ctx));
@@ -210,7 +194,7 @@ END
             throw new ArgumentNullException(nameof(entities));
 
          options = options ?? new SqlBulkInsertOptions();
-         var tableName = await ctx.CreateCustomTempTableAsync<T>(options.MakeTableNameUnique, cancellationToken).ConfigureAwait(false);
+         var tableName = await ctx.CreateTempTableAsync<T>(options.MakeTableNameUnique, cancellationToken).ConfigureAwait(false);
 
          await BulkInsertAsync(ctx, entities, tableName, options, cancellationToken).ConfigureAwait(false);
 
@@ -353,7 +337,7 @@ END
 
          var sql = $@"
 ALTER TABLE [{tableName}]
-ADD CONSTRAINT [PK_{tableName}] PRIMARY KEY CLUSTERED ({String.Join(", ", columnNames)});
+ADD CONSTRAINT [PK_{tableName}_{Guid.NewGuid():N}] PRIMARY KEY CLUSTERED ({String.Join(", ", columnNames)});
 ";
 
          if (checkForExistence)

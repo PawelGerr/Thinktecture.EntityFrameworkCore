@@ -22,7 +22,7 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
       [Fact]
       public void Should_throw_if_temp_table_is_not_introduced()
       {
-         DbContext.Awaiting(async ctx => await ctx.CreateTempTableAsync<int>().ConfigureAwait(false))
+         DbContext.Awaiting(async ctx => await ctx.CreateTempTableAsync<TempTable<int>>().ConfigureAwait(false))
                   .Should().Throw<ArgumentException>();
       }
 
@@ -31,9 +31,9 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
       {
          ConfigureModel = builder => builder.ConfigureTempTable<int>();
 
-         await DbContext.CreateTempTableAsync<int>().ConfigureAwait(false);
+         await DbContext.CreateTempTableAsync<TempTable<int>>().ConfigureAwait(false);
 
-         DbContext.GetTempTableColumns<int>().ToList().Should().HaveCount(1);
+         DbContext.GetTempTableColumns<TempTable<int>>().ToList().Should().HaveCount(1);
       }
 
       [Fact]
@@ -41,9 +41,9 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
       {
          ConfigureModel = builder => builder.ConfigureTempTable<int>();
 
-         await DbContext.CreateTempTableAsync<int>().ConfigureAwait(false);
+         await DbContext.CreateTempTableAsync<TempTable<int>>().ConfigureAwait(false);
 
-         var constraints = await DbContext.GetTempTableConstraints<int>().ToListAsync().ConfigureAwait(false);
+         var constraints = await DbContext.GetTempTableConstraints<TempTable<int>>().ToListAsync().ConfigureAwait(false);
          constraints.Should().HaveCount(0);
       }
 
@@ -52,9 +52,9 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
       {
          ConfigureModel = builder => builder.ConfigureTempTable<int>();
 
-         await DbContext.CreateTempTableAsync<int>().ConfigureAwait(false);
+         await DbContext.CreateTempTableAsync<TempTable<int>>().ConfigureAwait(false);
 
-         var columns = DbContext.GetTempTableColumns<int>().ToList();
+         var columns = DbContext.GetTempTableColumns<TempTable<int>>().ToList();
          ValidateColumn(columns[0], nameof(TempTable<int>.Column1), "int", false);
       }
 
@@ -63,9 +63,9 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
       {
          ConfigureModel = builder => builder.ConfigureTempTable<int?>();
 
-         await DbContext.CreateTempTableAsync<int?>().ConfigureAwait(false);
+         await DbContext.CreateTempTableAsync<TempTable<int?>>().ConfigureAwait(false);
 
-         var columns = DbContext.GetTempTableColumns<int?>().ToList();
+         var columns = DbContext.GetTempTableColumns<TempTable<int?>>().ToList();
          ValidateColumn(columns[0], nameof(TempTable<int?>.Column1), "int", true);
       }
 
@@ -74,9 +74,9 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
       {
          ConfigureModel = builder => builder.ConfigureTempTable<int?>().Property(t => t.Column1).IsRequired();
 
-         await DbContext.CreateTempTableAsync<int?>().ConfigureAwait(false);
+         await DbContext.CreateTempTableAsync<TempTable<int?>>().ConfigureAwait(false);
 
-         var columns = DbContext.GetTempTableColumns<int?>().ToList();
+         var columns = DbContext.GetTempTableColumns<TempTable<int?>>().ToList();
          ValidateColumn(columns[0], nameof(TempTable<int?>.Column1), "int", false);
       }
 
@@ -85,9 +85,9 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
       {
          ConfigureModel = builder => builder.ConfigureTempTable<double>();
 
-         await DbContext.CreateTempTableAsync<double>().ConfigureAwait(false);
+         await DbContext.CreateTempTableAsync<TempTable<double>>().ConfigureAwait(false);
 
-         var columns = DbContext.GetTempTableColumns<double>().ToList();
+         var columns = DbContext.GetTempTableColumns<TempTable<double>>().ToList();
          ValidateColumn(columns[0], nameof(TempTable<double>.Column1), "float", false);
       }
 
@@ -96,9 +96,9 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
       {
          ConfigureModel = builder => builder.ConfigureTempTable<decimal>();
 
-         await DbContext.CreateTempTableAsync<decimal>().ConfigureAwait(false);
+         await DbContext.CreateTempTableAsync<TempTable<decimal>>().ConfigureAwait(false);
 
-         var columns = DbContext.GetTempTableColumns<decimal>().ToList();
+         var columns = DbContext.GetTempTableColumns<TempTable<decimal>>().ToList();
          ValidateColumn(columns[0], nameof(TempTable<decimal>.Column1), "decimal", false);
       }
 
@@ -107,9 +107,9 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
       {
          ConfigureModel = builder => builder.ConfigureTempTable<decimal>().Property(t => t.Column1).HasColumnType("decimal(20,5)");
 
-         await DbContext.CreateTempTableAsync<decimal>().ConfigureAwait(false);
+         await DbContext.CreateTempTableAsync<TempTable<decimal>>().ConfigureAwait(false);
 
-         var columns = DbContext.GetTempTableColumns<decimal>().ToList();
+         var columns = DbContext.GetTempTableColumns<TempTable<decimal>>().ToList();
          ValidateColumn(columns[0], nameof(TempTable<decimal>.Column1), "decimal", false, 20, 5);
       }
 
@@ -118,9 +118,9 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
       {
          ConfigureModel = builder => builder.ConfigureTempTable<bool>();
 
-         await DbContext.CreateTempTableAsync<bool>().ConfigureAwait(false);
+         await DbContext.CreateTempTableAsync<TempTable<bool>>().ConfigureAwait(false);
 
-         var columns = DbContext.GetTempTableColumns<bool>().ToList();
+         var columns = DbContext.GetTempTableColumns<TempTable<bool>>().ToList();
          ValidateColumn(columns[0], nameof(TempTable<bool>.Column1), "bit", false);
       }
 
@@ -129,9 +129,9 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
       {
          ConfigureModel = builder => builder.ConfigureTempTable<string>();
 
-         await DbContext.CreateTempTableAsync<string>().ConfigureAwait(false);
+         await DbContext.CreateTempTableAsync<TempTable<string>>().ConfigureAwait(false);
 
-         var columns = DbContext.GetTempTableColumns<string>().ToList();
+         var columns = DbContext.GetTempTableColumns<TempTable<string>>().ToList();
          ValidateColumn(columns[0], nameof(TempTable<string>.Column1), "nvarchar", true);
       }
 
@@ -140,9 +140,9 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
       {
          ConfigureModel = builder => builder.ConfigureTempTable<string>().Property(t => t.Column1).HasMaxLength(50);
 
-         await DbContext.CreateTempTableAsync<string>().ConfigureAwait(false);
+         await DbContext.CreateTempTableAsync<TempTable<string>>().ConfigureAwait(false);
 
-         var columns = DbContext.GetTempTableColumns<string>().ToList();
+         var columns = DbContext.GetTempTableColumns<TempTable<string>>().ToList();
          ValidateColumn(columns[0], nameof(TempTable<string>.Column1), "nvarchar", true, charMaxLength: 50);
       }
    }

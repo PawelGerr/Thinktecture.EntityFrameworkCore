@@ -32,7 +32,11 @@ namespace Thinktecture
       /// <param name="ctx">Database context.</param>
       /// <param name="type">Entity type.</param>
       /// <returns>An instance of type <see cref="IEntityType"/>.</returns>
-      /// <exception cref="ArgumentNullException"><paramref name="ctx"/> is <c>null</c>.</exception>
+      /// <exception cref="ArgumentNullException">
+      /// <paramref name="ctx"/> is <c>null</c>
+      /// - or
+      /// <paramref name="type"/> is <c>null</c>.
+      /// </exception>
       /// <exception cref="ArgumentException">The provided type <paramref name="type"/> is not known by provided <paramref name="ctx"/>.</exception>
       [NotNull]
       public static IEntityType GetEntityType([NotNull] this DbContext ctx, [NotNull] Type type)
@@ -56,7 +60,12 @@ namespace Thinktecture
       /// <param name="ctx">An instance of <see cref="DbContext"/> the provided entity type belongs to.</param>
       /// <param name="type">Entity type to fetch the table schema and name for.</param>
       /// <returns>Table schema and table name for provided entity type.</returns>
-      /// <exception cref="ArgumentNullException"></exception>
+      /// <exception cref="ArgumentNullException">
+      /// <paramref name="ctx"/> is <c>null</c>
+      /// - or
+      /// <paramref name="type"/> is <c>null</c>.
+      /// </exception>
+      /// <exception cref="ArgumentException">The provided type <paramref name="type"/> is not known by provided <paramref name="ctx"/>.</exception>
       public static (string Schema, string TableName) GetTableIdentifier([NotNull] this DbContext ctx, [NotNull] Type type)
       {
          var relational = ctx.GetEntityType(type).Relational();

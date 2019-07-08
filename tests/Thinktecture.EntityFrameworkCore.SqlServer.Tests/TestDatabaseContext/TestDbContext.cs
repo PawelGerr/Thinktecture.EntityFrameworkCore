@@ -13,7 +13,7 @@ namespace Thinktecture.TestDatabaseContext
       public string Schema { get; }
 
       public DbSet<TestEntity> TestEntities { get; set; }
-      
+
       public Action<ModelBuilder> ConfigureModel { get; set; }
 
       public TestDbContext([NotNull] DbContextOptions<TestDbContext> options, [CanBeNull] IDbContextSchema schema)
@@ -41,15 +41,10 @@ namespace Thinktecture.TestDatabaseContext
       }
 
       [NotNull]
-      public IQueryable<InformationSchemaColumn> GetTempTableColumns<TColumn1>()
+      public IQueryable<InformationSchemaColumn> GetTempTableColumns<T>()
+         where T : class
       {
-         return GetTempTableColumns(typeof(TempTable<TColumn1>));
-      }
-
-      [NotNull]
-      public IQueryable<InformationSchemaColumn> GetTempTableColumns<TColumn1, TColumn2>()
-      {
-         return GetTempTableColumns(typeof(TempTable<TColumn1, TColumn2>));
+         return GetTempTableColumns(typeof(T));
       }
 
       private IQueryable<InformationSchemaColumn> GetTempTableColumns([NotNull] Type type)
@@ -58,6 +53,9 @@ namespace Thinktecture.TestDatabaseContext
             throw new ArgumentNullException(nameof(type));
 
          var tableName = this.GetTableIdentifier(type).TableName;
+
+         if (!tableName.StartsWith("#", StringComparison.Ordinal))
+            tableName = $"#{tableName}";
 
          return Query<InformationSchemaColumn>().FromSql($@"
 SELECT
@@ -69,9 +67,12 @@ WHERE
       }
 
       [NotNull]
-      public IQueryable<InformationSchemaTableConstraint> GetTempTableConstraints<TColumn1>()
+      public IQueryable<InformationSchemaTableConstraint> GetTempTableConstraints<T>()
       {
-         var tableName = this.GetTableIdentifier(typeof(TempTable<TColumn1>)).TableName;
+         var tableName = this.GetTableIdentifier(typeof(T)).TableName;
+
+         if (!tableName.StartsWith("#", StringComparison.Ordinal))
+            tableName = $"#{tableName}";
 
          return Query<InformationSchemaTableConstraint>().FromSql($@"
 SELECT
@@ -83,9 +84,12 @@ WHERE
       }
 
       [NotNull]
-      public IQueryable<InformationSchemaConstraintColumn> GetTempTableConstraintsColumns<TColumn1>()
+      public IQueryable<InformationSchemaConstraintColumn> GetTempTableConstraintsColumns<T>()
       {
-         var tableName = this.GetTableIdentifier(typeof(TempTable<TColumn1>)).TableName;
+         var tableName = this.GetTableIdentifier(typeof(T)).TableName;
+
+         if (!tableName.StartsWith("#", StringComparison.Ordinal))
+            tableName = $"#{tableName}";
 
          return Query<InformationSchemaConstraintColumn>().FromSql($@"
 SELECT
@@ -114,6 +118,9 @@ WHERE
 
       private IQueryable<InformationSchemaKeyColumn> GetTempTableKeyColumns(string tableName)
       {
+         if (!tableName.StartsWith("#", StringComparison.Ordinal))
+            tableName = $"#{tableName}";
+
          return Query<InformationSchemaKeyColumn>().FromSql($@"
 SELECT
    * 
