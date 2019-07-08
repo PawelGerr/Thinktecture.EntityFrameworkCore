@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -44,6 +46,44 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
 #pragma warning restore EF1000
 
          return tableName;
+      }
+
+      /// <inheritdoc />
+      public async Task CreatePrimaryKeyAsync<T>(DbContext ctx, string tableName, bool checkForExistence = false, CancellationToken cancellationToken = default)
+      {
+         if (ctx == null)
+            throw new ArgumentNullException(nameof(ctx));
+
+         var entityType = ctx.GetEntityType<T>();
+         IEnumerable<string> columnNames;
+
+         if (entityType.IsQueryType)
+         {
+            columnNames = entityType.GetProperties().Select(p => p.Relational().ColumnName);
+         }
+         else
+         {
+            var pk = entityType.FindPrimaryKey();
+            columnNames = pk.Properties.Select(p => p.Relational().ColumnName);
+         }
+
+         var sql = $@"
+ALTER TABLE [{tableName}]
+ADD CONSTRAINT [PK_{tableName}_{Guid.NewGuid():N}] PRIMARY KEY CLUSTERED ({String.Join(", ", columnNames)});
+";
+
+         if (checkForExistence)
+         {
+            sql = $@"
+IF(NOT EXISTS (SELECT * FROM tempdb.INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE CONSTRAINT_TYPE = 'PRIMARY KEY' AND OBJECT_ID(TABLE_CATALOG + '..' + TABLE_NAME) = OBJECT_ID('tempdb..{tableName}')))
+BEGIN
+{sql}
+END
+";
+         }
+#pragma warning disable EF1000
+         await ctx.Database.ExecuteSqlCommandAsync(sql, cancellationToken).ConfigureAwait(false);
+#pragma warning restore EF1000
       }
 
       [NotNull]

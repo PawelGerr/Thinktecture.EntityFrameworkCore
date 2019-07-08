@@ -53,38 +53,6 @@ namespace Thinktecture
          }
       }
 
-
-      /// <summary>
-      /// Copies <paramref name="entities"/> into a temp table using <see cref="SqlBulkCopy"/>
-      /// and returns the query for accessing the inserted records.
-      /// </summary>
-      /// <param name="ctx">Database context.</param>
-      /// <param name="entities">Entities to insert.</param>
-      /// <param name="options">Options.</param>
-      /// <param name="cancellationToken">Cancellation token.</param>
-      /// <typeparam name="T">Entity type.</typeparam>
-      /// <returns>A query for accessing the inserted values.</returns>
-      /// <exception cref="ArgumentNullException"> <paramref name="ctx"/> or <paramref name="entities"/> is <c>null</c>.</exception>
-      [NotNull]
-      public static async Task<IQueryable<T>> BulkInsertIntoTempTableAsync<T>([NotNull] this DbContext ctx,
-                                                                              [NotNull] IEnumerable<T> entities,
-                                                                              [CanBeNull] SqlBulkInsertOptions options = null,
-                                                                              CancellationToken cancellationToken = default)
-         where T : class
-      {
-         if (ctx == null)
-            throw new ArgumentNullException(nameof(ctx));
-         if (entities == null)
-            throw new ArgumentNullException(nameof(entities));
-
-         options = options ?? new SqlBulkInsertOptions();
-         var tableName = await ctx.CreateTempTableAsync<T>(options.MakeTableNameUnique, cancellationToken).ConfigureAwait(false);
-
-         await BulkInsertAsync(ctx, entities, tableName, options, cancellationToken).ConfigureAwait(false);
-
-         return ctx.GetTempTableQuery<T>(tableName);
-      }
-
       /// <summary>
       /// Copies <paramref name="values"/> into a temp table using <see cref="SqlBulkCopy"/>
       /// and returns the query for accessing the inserted records.
@@ -134,6 +102,37 @@ namespace Thinktecture
          var entities = values.Select(t => new TempTable<TColumn1, TColumn2>(t.column1, t.column2));
 
          return ctx.BulkInsertIntoTempTableAsync(entities, options, cancellationToken);
+      }
+
+      /// <summary>
+      /// Copies <paramref name="entities"/> into a temp table using <see cref="SqlBulkCopy"/>
+      /// and returns the query for accessing the inserted records.
+      /// </summary>
+      /// <param name="ctx">Database context.</param>
+      /// <param name="entities">Entities to insert.</param>
+      /// <param name="options">Options.</param>
+      /// <param name="cancellationToken">Cancellation token.</param>
+      /// <typeparam name="T">Entity type.</typeparam>
+      /// <returns>A query for accessing the inserted values.</returns>
+      /// <exception cref="ArgumentNullException"> <paramref name="ctx"/> or <paramref name="entities"/> is <c>null</c>.</exception>
+      [NotNull]
+      public static async Task<IQueryable<T>> BulkInsertIntoTempTableAsync<T>([NotNull] this DbContext ctx,
+                                                                              [NotNull] IEnumerable<T> entities,
+                                                                              [CanBeNull] SqlBulkInsertOptions options = null,
+                                                                              CancellationToken cancellationToken = default)
+         where T : class
+      {
+         if (ctx == null)
+            throw new ArgumentNullException(nameof(ctx));
+         if (entities == null)
+            throw new ArgumentNullException(nameof(entities));
+
+         options = options ?? new SqlBulkInsertOptions();
+         var tableName = await ctx.CreateTempTableAsync<T>(options.MakeTableNameUnique, cancellationToken).ConfigureAwait(false);
+
+         await BulkInsertAsync(ctx, entities, tableName, options, cancellationToken).ConfigureAwait(false);
+
+         return ctx.GetTempTableQuery<T>(tableName);
       }
 
       private static IQueryable<T> GetTempTableQuery<T>([NotNull] this DbContext ctx, [NotNull] string tableName)
@@ -199,43 +198,7 @@ namespace Thinktecture
          }
 
          if (options.CreatePrimaryKey)
-            await ctx.CreatePrimaryKeyAsync<T>(tableName, !options.MakeTableNameUnique, cancellationToken).ConfigureAwait(false);
-      }
-
-      private static async Task CreatePrimaryKeyAsync<T>([NotNull] this DbContext ctx, string tableName, bool checkForExistence, CancellationToken cancellationToken)
-      {
-         if (ctx == null)
-            throw new ArgumentNullException(nameof(ctx));
-         var entityType = ctx.GetEntityType<T>();
-         IEnumerable<string> columnNames;
-
-         if (entityType.IsQueryType)
-         {
-            columnNames = entityType.GetProperties().Select(p => p.Relational().ColumnName);
-         }
-         else
-         {
-            var pk = entityType.FindPrimaryKey();
-            columnNames = pk.Properties.Select(p => p.Relational().ColumnName);
-         }
-
-         var sql = $@"
-ALTER TABLE [{tableName}]
-ADD CONSTRAINT [PK_{tableName}_{Guid.NewGuid():N}] PRIMARY KEY CLUSTERED ({String.Join(", ", columnNames)});
-";
-
-         if (checkForExistence)
-         {
-            sql = $@"
-IF(NOT EXISTS (SELECT * FROM tempdb.INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE OBJECT_ID(TABLE_CATALOG + '..' + TABLE_NAME) = OBJECT_ID('tempdb..{tableName}')))
-BEGIN
-{sql}
-END
-";
-         }
-#pragma warning disable EF1000
-         await ctx.Database.ExecuteSqlCommandAsync(sql, cancellationToken).ConfigureAwait(false);
-#pragma warning restore EF1000
+            await ctx.GetService<ITempTableCreator>().CreatePrimaryKeyAsync<T>(ctx, tableName, !options.MakeTableNameUnique, cancellationToken).ConfigureAwait(false);
       }
    }
 }

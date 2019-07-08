@@ -101,9 +101,9 @@ WHERE
       }
 
       [NotNull]
-      public IQueryable<InformationSchemaKeyColumn> GetTempTableKeyColumns<TColumn1>()
+      public IQueryable<InformationSchemaKeyColumn> GetTempTableKeyColumns<T>()
       {
-         var tableName = this.GetTableIdentifier(typeof(TempTable<TColumn1>)).TableName;
+         var tableName = this.GetTableIdentifier(typeof(T)).TableName;
 
          return GetTempTableKeyColumns(tableName);
       }
