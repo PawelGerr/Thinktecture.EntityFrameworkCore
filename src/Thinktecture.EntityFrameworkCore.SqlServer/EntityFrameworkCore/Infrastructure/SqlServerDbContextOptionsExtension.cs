@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Query.ExpressionTranslators;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Thinktecture.EntityFrameworkCore.BulkOperations;
 using Thinktecture.EntityFrameworkCore.Data;
 using Thinktecture.EntityFrameworkCore.Query.ExpressionTranslators;
 using Thinktecture.EntityFrameworkCore.TempTables;
@@ -40,6 +41,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
             services.TryAddSingleton<IEntityDataReaderFactory, EntityDataReaderFactory>();
             services.TryAddSingleton<IEntityDataReaderGenerator, EntityDataReaderGenerator>();
             services.TryAddSingleton<ITempTableCreator, SqlServerTempTableCreator>();
+            services.TryAddSingleton<ISqlServerBulkOperationExecutor, SqlServerBulkOperationExecutor>();
          }
 
          return false;

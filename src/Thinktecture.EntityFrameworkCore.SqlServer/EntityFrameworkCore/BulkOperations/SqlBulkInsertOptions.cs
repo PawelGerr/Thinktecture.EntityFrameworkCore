@@ -2,7 +2,7 @@ using System;
 using System.Data;
 using System.Data.SqlClient;
 
-namespace Thinktecture.EntityFrameworkCore
+namespace Thinktecture.EntityFrameworkCore.BulkOperations
 {
    /// <summary>
    /// Options used by <see cref="DbContextExtensions.BulkInsertTempTableAsync{TColumn1}"/> and similar method overloads..
@@ -29,17 +29,5 @@ namespace Thinktecture.EntityFrameworkCore
       /// Default is set to <c>true</c>.
       /// </summary>
       public bool EnableStreaming { get; set; } = true;
-
-      /// <summary>
-      /// Indication whether the name of the temp table should be unique.
-      /// Default is set to <c>true</c>.
-      /// </summary>
-      public bool MakeTableNameUnique { get; set; } = true;
-
-      /// <summary>
-      /// Creates a clustered primary key spanning all columns of the temp table after the bulk insert.
-      /// Default is set to <c>true</c>.
-      /// </summary>
-      public bool CreatePrimaryKey { get; set; } = true;
    }
 }

@@ -10,6 +10,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
 using Thinktecture.EntityFrameworkCore;
+using Thinktecture.EntityFrameworkCore.BulkOperations;
 using Thinktecture.EntityFrameworkCore.Data;
 using Thinktecture.EntityFrameworkCore.TempTables;
 using Thinktecture.EntityFrameworkCore.ValueConversion;
@@ -67,7 +68,7 @@ namespace Thinktecture
       [NotNull]
       public static Task<IQueryable<TempTable<TColumn1>>> BulkInsertTempTableAsync<TColumn1>([NotNull] this DbContext ctx,
                                                                                              [NotNull] IEnumerable<TColumn1> values,
-                                                                                             [CanBeNull] SqlBulkInsertOptions options = null,
+                                                                                             [CanBeNull] SqlTempTableBulkInsertOptions options = null,
                                                                                              CancellationToken cancellationToken = default)
       {
          if (values == null)
@@ -93,7 +94,7 @@ namespace Thinktecture
       [NotNull]
       public static Task<IQueryable<TempTable<TColumn1, TColumn2>>> BulkInsertTempTableAsync<TColumn1, TColumn2>([NotNull] this DbContext ctx,
                                                                                                                  [NotNull] IEnumerable<(TColumn1 column1, TColumn2 column2)> values,
-                                                                                                                 [CanBeNull] SqlBulkInsertOptions options = null,
+                                                                                                                 [CanBeNull] SqlTempTableBulkInsertOptions options = null,
                                                                                                                  CancellationToken cancellationToken = default)
       {
          if (values == null)
@@ -118,7 +119,7 @@ namespace Thinktecture
       [NotNull]
       public static async Task<IQueryable<T>> BulkInsertIntoTempTableAsync<T>([NotNull] this DbContext ctx,
                                                                               [NotNull] IEnumerable<T> entities,
-                                                                              [CanBeNull] SqlBulkInsertOptions options = null,
+                                                                              [CanBeNull] SqlTempTableBulkInsertOptions options = null,
                                                                               CancellationToken cancellationToken = default)
          where T : class
       {
@@ -127,10 +128,13 @@ namespace Thinktecture
          if (entities == null)
             throw new ArgumentNullException(nameof(entities));
 
-         options = options ?? new SqlBulkInsertOptions();
+         options = options ?? new SqlTempTableBulkInsertOptions();
          var tableName = await ctx.CreateTempTableAsync<T>(options.MakeTableNameUnique, cancellationToken).ConfigureAwait(false);
 
-         await BulkInsertAsync(ctx, entities, tableName, options, cancellationToken).ConfigureAwait(false);
+         await ctx.GetService<ISqlServerBulkOperationExecutor>().BulkInsertAsync(ctx, entities, tableName, options, cancellationToken).ConfigureAwait(false);
+
+         if (options.CreatePrimaryKey)
+            await ctx.GetService<ITempTableCreator>().CreatePrimaryKeyAsync<T>(ctx, tableName, !options.MakeTableNameUnique, cancellationToken).ConfigureAwait(false);
 
          return ctx.GetTempTableQuery<T>(tableName);
       }
@@ -152,53 +156,6 @@ namespace Thinktecture
 
          return ctx.Set<T>().FromSql(sql);
 #pragma warning restore EF1000
-      }
-
-      private static async Task BulkInsertAsync<T>([NotNull] this DbContext ctx,
-                                                   [NotNull] IEnumerable<T> entities,
-                                                   [NotNull] string tableName,
-                                                   [NotNull] SqlBulkInsertOptions options,
-                                                   CancellationToken cancellationToken)
-         where T : class
-      {
-         if (ctx == null)
-            throw new ArgumentNullException(nameof(ctx));
-         if (entities == null)
-            throw new ArgumentNullException(nameof(entities));
-         if (tableName == null)
-            throw new ArgumentNullException(nameof(tableName));
-         if (options == null)
-            throw new ArgumentNullException(nameof(options));
-
-         var factory = ctx.GetService<IEntityDataReaderFactory>();
-         var entityType = ctx.GetEntityType<T>();
-         var sqlCon = (SqlConnection)ctx.Database.GetDbConnection();
-         var sqlTx = (SqlTransaction)ctx.Database.CurrentTransaction?.GetDbTransaction();
-
-         using (var reader = factory.Create(entities, entityType))
-         using (var bulkCopy = new SqlBulkCopy(sqlCon, options.SqlBulkCopyOptions, sqlTx))
-         {
-            bulkCopy.DestinationTableName = $"[{tableName}]";
-            bulkCopy.EnableStreaming = options.EnableStreaming;
-
-            if (options.BulkCopyTimeout.HasValue)
-               bulkCopy.BulkCopyTimeout = (int)options.BulkCopyTimeout.Value.TotalSeconds;
-
-            if (options.BatchSize.HasValue)
-               bulkCopy.BatchSize = options.BatchSize.Value;
-
-            foreach (var property in entityType.GetProperties())
-            {
-               var relational = property.Relational();
-               var index = reader.GetPropertyIndex(property.PropertyInfo);
-               bulkCopy.ColumnMappings.Add(new SqlBulkCopyColumnMapping(index, relational.ColumnName));
-            }
-
-            await bulkCopy.WriteToServerAsync(reader, cancellationToken).ConfigureAwait(false);
-         }
-
-         if (options.CreatePrimaryKey)
-            await ctx.GetService<ITempTableCreator>().CreatePrimaryKeyAsync<T>(ctx, tableName, !options.MakeTableNameUnique, cancellationToken).ConfigureAwait(false);
       }
    }
 }
