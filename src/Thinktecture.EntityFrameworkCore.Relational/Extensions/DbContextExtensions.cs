@@ -1,8 +1,12 @@
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Thinktecture.EntityFrameworkCore.TempTables;
 
 // ReSharper disable once CheckNamespace
 namespace Thinktecture
@@ -71,6 +75,43 @@ namespace Thinktecture
          var relational = ctx.GetEntityType(type).Relational();
 
          return (relational.Schema, relational.TableName);
+      }
+
+      /// <summary>
+      /// Creates a temp table using custom type '<typeparamref name="T"/>'.
+      /// </summary>
+      /// <param name="ctx">Database context to use.</param>
+      /// <param name="makeTableNameUnique">Indication whether the table name should be unique.</param>
+      /// <param name="cancellationToken">Cancellation token.</param>
+      /// <typeparam name="T">Type of custom temp table.</typeparam>
+      /// <returns>Table name</returns>
+      /// <exception cref="ArgumentNullException"><paramref name="ctx"/> is <c>null</c>.</exception>
+      /// <exception cref="ArgumentException">The provided type <typeparamref name="T"/> is not known by provided <paramref name="ctx"/>.</exception>
+      [NotNull, ItemNotNull]
+      public static Task<string> CreateTempTableAsync<T>([NotNull] this DbContext ctx, bool makeTableNameUnique = false, CancellationToken cancellationToken = default)
+         where T : class
+      {
+         return ctx.GetService<ITempTableCreator>().CreateTempTableAsync<T>(ctx, makeTableNameUnique, cancellationToken);
+      }
+
+      /// <summary>
+      /// Creates a temp table.
+      /// </summary>
+      /// <param name="ctx">Database context to use.</param>
+      /// <param name="type">Type of the entity.</param>
+      /// <param name="makeTableNameUnique">Indication whether the table name should be unique.</param>
+      /// <param name="cancellationToken">Cancellation token.</param>
+      /// <returns>Table name</returns>
+      /// <exception cref="ArgumentNullException">
+      /// <paramref name="ctx"/> is <c>null</c>
+      /// - or
+      /// <paramref name="type"/> is <c>null</c>.
+      /// </exception>
+      /// <exception cref="ArgumentException">The provided type <paramref name="type"/> is not known by provided <paramref name="ctx"/>.</exception>
+      [NotNull, ItemNotNull]
+      public static Task<string> CreateTempTableAsync([NotNull] DbContext ctx, [NotNull] Type type, bool makeTableNameUnique, CancellationToken cancellationToken)
+      {
+         return ctx.GetService<ITempTableCreator>().CreateTempTableAsync(ctx, type, makeTableNameUnique, cancellationToken);
       }
    }
 }
