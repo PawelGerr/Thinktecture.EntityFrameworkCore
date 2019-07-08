@@ -1,12 +1,10 @@
 using System;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Thinktecture.Database;
 using Thinktecture.EntityFrameworkCore;
-using Thinktecture.EntityFrameworkCore.Migrations;
 
 namespace Thinktecture
 {
@@ -43,15 +41,14 @@ namespace Thinktecture
       {
          var services = new ServiceCollection()
             .AddDbContext<DemoDbContext>(builder => builder
-                                                    .UseSqlServer(ConnectionString, sqlOptions =>
-                                                                                    {
-                                                                                       if (schema != null)
-                                                                                          sqlOptions.MigrationsHistoryTable("__EFMigrationsHistory", schema);
+                                            .UseSqlServer(ConnectionString, sqlOptions =>
+                                                                            {
+                                                                               if (schema != null)
+                                                                                  sqlOptions.MigrationsHistoryTable("__EFMigrationsHistory", schema);
 
-                                                                                       sqlOptions.AddRowNumberSupport();
-                                                                                    })
-                                                    .AddSchemaAwareComponents()
-                                                    .ReplaceService<IMigrationsSqlGenerator, ThinktectureSqlServerMigrationsSqlGenerator>());
+                                                                               sqlOptions.AddRowNumberSupport()
+                                                                                         .UseThinktectureSqlServerMigrationsSqlGenerator();
+                                                                            }));
 
          if (schema != null)
             services.AddSingleton<IDbContextSchema>(new DbContextSchema(schema));

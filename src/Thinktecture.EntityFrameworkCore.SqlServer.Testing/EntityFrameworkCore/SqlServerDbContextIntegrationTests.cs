@@ -131,8 +131,7 @@ namespace Thinktecture.EntityFrameworkCore
 
          var builder = new DbContextOptionsBuilder<T>()
                        .UseSqlServer(connString, ConfigureSqlServer)
-                       .AddSchemaAwareComponents()
-                       .ReplaceService<IMigrationsSqlGenerator, ThinktectureSqlServerMigrationsSqlGenerator>();
+                       .AddSchemaAwareComponents();
 
          if (_loggerFactory != null)
             builder.UseLoggerFactory(_loggerFactory);
@@ -150,7 +149,8 @@ namespace Thinktecture.EntityFrameworkCore
          if (builder == null)
             throw new ArgumentNullException(nameof(builder));
 
-         builder.MigrationsHistoryTable(_HISTORY_TABLE_NAME, Schema);
+         builder.MigrationsHistoryTable(_HISTORY_TABLE_NAME, Schema)
+                .UseThinktectureSqlServerMigrationsSqlGenerator();
       }
 
       /// <summary>

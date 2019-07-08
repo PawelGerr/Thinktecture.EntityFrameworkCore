@@ -1,7 +1,9 @@
 using System;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Thinktecture.EntityFrameworkCore.Infrastructure;
+using Thinktecture.EntityFrameworkCore.Migrations;
 
 // ReSharper disable once CheckNamespace
 namespace Thinktecture
@@ -31,6 +33,17 @@ namespace Thinktecture
       public static SqlServerDbContextOptionsBuilder AddTempTableSupport([NotNull] this SqlServerDbContextOptionsBuilder sqlServerOptionsBuilder)
       {
          return AddOrUpdateExtensions(sqlServerOptionsBuilder, extension => extension.AddTempTableSupport = true);
+      }
+
+      /// <summary>
+      /// Changes the implementation of <see cref="IMigrationsSqlGenerator"/> to <see cref="ThinktectureSqlServerMigrationsSqlGenerator"/>.
+      /// </summary>
+      /// <param name="sqlServerOptionsBuilder">SQL Server options builder.</param>
+      /// <returns>Provided <paramref name="sqlServerOptionsBuilder"/>.</returns>
+      [NotNull]
+      public static SqlServerDbContextOptionsBuilder UseThinktectureSqlServerMigrationsSqlGenerator([NotNull] this SqlServerDbContextOptionsBuilder sqlServerOptionsBuilder)
+      {
+         return AddOrUpdateExtensions(sqlServerOptionsBuilder, extension => extension.UseThinktectureSqlServerMigrationsSqlGenerator = true);
       }
 
       [NotNull]
