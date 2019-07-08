@@ -4,13 +4,13 @@ using System.Data;
 using System.Reflection;
 using JetBrains.Annotations;
 
-namespace Thinktecture.EntityFrameworkCore.TempTables
+namespace Thinktecture.EntityFrameworkCore.Data
 {
    /// <summary>
    /// Data reader to be used for bulk inserts.
    /// </summary>
    /// <typeparam name="T">Type of the entity.</typeparam>
-   public abstract class TempTableDataReaderBase<T> : ITempTableDataReaderBase
+   public abstract class EntityDataReaderBase<T> : IEntityDataReader
       where T : class
    {
       private readonly IEnumerator<T> _enumerator;
@@ -25,10 +25,10 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
       public abstract int FieldCount { get; }
 
       /// <summary>
-      /// Initializes <see cref="TempTableDataReaderBase{T}"/>
+      /// Initializes <see cref="EntityDataReaderBase{T}"/>
       /// </summary>
       /// <param name="entities"></param>
-      protected TempTableDataReaderBase([NotNull] IEnumerable<T> entities)
+      protected EntityDataReaderBase([NotNull] IEnumerable<T> entities)
       {
          if (entities == null)
             throw new ArgumentNullException(nameof(entities));

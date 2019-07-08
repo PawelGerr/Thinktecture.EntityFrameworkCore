@@ -7,8 +7,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
 using Thinktecture.EntityFrameworkCore;
+using Thinktecture.EntityFrameworkCore.Data;
 using Thinktecture.EntityFrameworkCore.TempTables;
 using Thinktecture.EntityFrameworkCore.ValueConversion;
 
@@ -108,6 +110,9 @@ namespace Thinktecture
 
          var (_, tableName) = ctx.GetTableIdentifier(type);
 
+         if (!tableName.StartsWith("#", StringComparison.Ordinal))
+            tableName = $"#{tableName}";
+
          if (makeTableNameUnique)
             tableName = $"{tableName}_{Guid.NewGuid():N}";
 
@@ -190,15 +195,14 @@ END
       /// <param name="options">Options.</param>
       /// <param name="cancellationToken">Cancellation token.</param>
       /// <typeparam name="T">Entity type.</typeparam>
-      /// <typeparam name="TColumn1">Type of the values to insert.</typeparam>
       /// <returns>A query for accessing the inserted values.</returns>
       /// <exception cref="ArgumentNullException"> <paramref name="ctx"/> or <paramref name="entities"/> is <c>null</c>.</exception>
       [NotNull]
-      public static async Task<IQueryable<T>> BulkInsertCustomTempTableAsync<T, TColumn1>([NotNull] this DbContext ctx,
-                                                                                          [NotNull] IEnumerable<T> entities,
-                                                                                          [CanBeNull] SqlBulkInsertOptions options = null,
-                                                                                          CancellationToken cancellationToken = default)
-         where T : class, ITempTable<TColumn1>
+      public static async Task<IQueryable<T>> BulkInsertIntoTempTableAsync<T>([NotNull] this DbContext ctx,
+                                                                              [NotNull] IEnumerable<T> entities,
+                                                                              [CanBeNull] SqlBulkInsertOptions options = null,
+                                                                              CancellationToken cancellationToken = default)
+         where T : class
       {
          if (ctx == null)
             throw new ArgumentNullException(nameof(ctx));
@@ -208,46 +212,7 @@ END
          options = options ?? new SqlBulkInsertOptions();
          var tableName = await ctx.CreateCustomTempTableAsync<T>(options.MakeTableNameUnique, cancellationToken).ConfigureAwait(false);
 
-         using (var reader = new TempTableDataReader<T, TColumn1>(entities))
-         {
-            await BulkInsertAsync<T>(ctx, reader, tableName, options, cancellationToken).ConfigureAwait(false);
-         }
-
-         return ctx.GetTempTableQuery<T>(tableName);
-      }
-
-      /// <summary>
-      /// Copies <paramref name="entities"/> into a temp table using <see cref="SqlBulkCopy"/>
-      /// and returns the query for accessing the inserted records.
-      /// </summary>
-      /// <param name="ctx">Database context.</param>
-      /// <param name="entities">Entities to insert.</param>
-      /// <param name="options">Options.</param>
-      /// <param name="cancellationToken">Cancellation token.</param>
-      /// <typeparam name="T">Entity type.</typeparam>
-      /// <typeparam name="TColumn1">Type of the column 1.</typeparam>
-      /// <typeparam name="TColumn2">Type of the column 2.</typeparam>
-      /// <returns>A query for accessing the inserted values.</returns>
-      /// <exception cref="ArgumentNullException"> <paramref name="ctx"/> or <paramref name="entities"/> is <c>null</c>.</exception>
-      [NotNull]
-      public static async Task<IQueryable<T>> BulkInsertCustomTempTableAsync<T, TColumn1, TColumn2>([NotNull] this DbContext ctx,
-                                                                                                    [NotNull] IEnumerable<T> entities,
-                                                                                                    [CanBeNull] SqlBulkInsertOptions options = null,
-                                                                                                    CancellationToken cancellationToken = default)
-         where T : class, ITempTable<TColumn1, TColumn2>
-      {
-         if (ctx == null)
-            throw new ArgumentNullException(nameof(ctx));
-         if (entities == null)
-            throw new ArgumentNullException(nameof(entities));
-
-         options = options ?? new SqlBulkInsertOptions();
-         var tableName = await ctx.CreateCustomTempTableAsync<T>(options.MakeTableNameUnique, cancellationToken).ConfigureAwait(false);
-
-         using (var reader = new TempTableDataReader<T, TColumn1, TColumn2>(entities))
-         {
-            await BulkInsertAsync<T>(ctx, reader, tableName, options, cancellationToken).ConfigureAwait(false);
-         }
+         await BulkInsertAsync(ctx, entities, tableName, options, cancellationToken).ConfigureAwait(false);
 
          return ctx.GetTempTableQuery<T>(tableName);
       }
@@ -264,26 +229,17 @@ END
       /// <returns>A query for accessing the inserted values.</returns>
       /// <exception cref="ArgumentNullException"> <paramref name="ctx"/> or <paramref name="values"/> is <c>null</c>.</exception>
       [NotNull]
-      public static async Task<IQueryable<TempTable<TColumn1>>> BulkInsertTempTableAsync<TColumn1>([NotNull] this DbContext ctx,
-                                                                                                   [NotNull] IEnumerable<TColumn1> values,
-                                                                                                   [CanBeNull] SqlBulkInsertOptions options = null,
-                                                                                                   CancellationToken cancellationToken = default)
+      public static Task<IQueryable<TempTable<TColumn1>>> BulkInsertTempTableAsync<TColumn1>([NotNull] this DbContext ctx,
+                                                                                             [NotNull] IEnumerable<TColumn1> values,
+                                                                                             [CanBeNull] SqlBulkInsertOptions options = null,
+                                                                                             CancellationToken cancellationToken = default)
       {
-         if (ctx == null)
-            throw new ArgumentNullException(nameof(ctx));
          if (values == null)
             throw new ArgumentNullException(nameof(values));
 
-         options = options ?? new SqlBulkInsertOptions();
-         var tableName = await ctx.CreateTempTableAsync<TColumn1>(options.MakeTableNameUnique, cancellationToken).ConfigureAwait(false);
          var entities = values.Select(v => new TempTable<TColumn1>(v));
 
-         using (var reader = new TempTableDataReader<TempTable<TColumn1>, TColumn1>(entities))
-         {
-            await BulkInsertAsync<TempTable<TColumn1>>(ctx, reader, tableName, options, cancellationToken).ConfigureAwait(false);
-         }
-
-         return ctx.GetTempTableQuery<TempTable<TColumn1>>(tableName);
+         return ctx.BulkInsertIntoTempTableAsync(entities, options, cancellationToken);
       }
 
       /// <summary>
@@ -299,26 +255,17 @@ END
       /// <returns>A query for accessing the inserted values.</returns>
       /// <exception cref="ArgumentNullException"> <paramref name="ctx"/> or <paramref name="values"/> is <c>null</c>.</exception>
       [NotNull]
-      public static async Task<IQueryable<TempTable<TColumn1, TColumn2>>> BulkInsertTempTableAsync<TColumn1, TColumn2>([NotNull] this DbContext ctx,
-                                                                                                                       [NotNull] IEnumerable<(TColumn1 column1, TColumn2 column2)> values,
-                                                                                                                       [CanBeNull] SqlBulkInsertOptions options = null,
-                                                                                                                       CancellationToken cancellationToken = default)
+      public static Task<IQueryable<TempTable<TColumn1, TColumn2>>> BulkInsertTempTableAsync<TColumn1, TColumn2>([NotNull] this DbContext ctx,
+                                                                                                                 [NotNull] IEnumerable<(TColumn1 column1, TColumn2 column2)> values,
+                                                                                                                 [CanBeNull] SqlBulkInsertOptions options = null,
+                                                                                                                 CancellationToken cancellationToken = default)
       {
-         if (ctx == null)
-            throw new ArgumentNullException(nameof(ctx));
          if (values == null)
             throw new ArgumentNullException(nameof(values));
 
-         options = options ?? new SqlBulkInsertOptions();
-         var tableName = await ctx.CreateTempTableAsync<TColumn1, TColumn2>(options.MakeTableNameUnique, cancellationToken).ConfigureAwait(false);
          var entities = values.Select(t => new TempTable<TColumn1, TColumn2>(t.column1, t.column2));
 
-         using (var reader = new TempTableDataReader<TempTable<TColumn1, TColumn2>, TColumn1, TColumn2>(entities))
-         {
-            await BulkInsertAsync<TempTable<TColumn1, TColumn2>>(ctx, reader, tableName, options, cancellationToken).ConfigureAwait(false);
-         }
-
-         return ctx.GetTempTableQuery<TempTable<TColumn1, TColumn2>>(tableName);
+         return ctx.BulkInsertIntoTempTableAsync(entities, options, cancellationToken);
       }
 
       private static IQueryable<T> GetTempTableQuery<T>([NotNull] this DbContext ctx, [NotNull] string tableName)
@@ -329,32 +276,39 @@ END
          if (tableName == null)
             throw new ArgumentNullException(nameof(tableName));
 
+         var entityType = ctx.GetEntityType<T>();
          var sql = $"SELECT * FROM [{tableName}]";
 
 #pragma warning disable EF1000
-         return ctx.Query<T>().FromSql(sql);
+         if (entityType.IsQueryType)
+            return ctx.Query<T>().FromSql(sql);
+
+         return ctx.Set<T>().FromSql(sql);
 #pragma warning restore EF1000
       }
 
       private static async Task BulkInsertAsync<T>([NotNull] this DbContext ctx,
-                                                   [NotNull] ITempTableDataReaderBase reader,
+                                                   [NotNull] IEnumerable<T> entities,
                                                    [NotNull] string tableName,
                                                    [NotNull] SqlBulkInsertOptions options,
                                                    CancellationToken cancellationToken)
+         where T : class
       {
          if (ctx == null)
             throw new ArgumentNullException(nameof(ctx));
-         if (reader == null)
-            throw new ArgumentNullException(nameof(reader));
+         if (entities == null)
+            throw new ArgumentNullException(nameof(entities));
          if (tableName == null)
             throw new ArgumentNullException(nameof(tableName));
          if (options == null)
             throw new ArgumentNullException(nameof(options));
 
+         var factory = ctx.GetService<IEntityDataReaderFactory>();
          var entityType = ctx.GetEntityType<T>();
          var sqlCon = (SqlConnection)ctx.Database.GetDbConnection();
          var sqlTx = (SqlTransaction)ctx.Database.CurrentTransaction?.GetDbTransaction();
 
+         using (var reader = factory.Create(entities, entityType))
          using (var bulkCopy = new SqlBulkCopy(sqlCon, options.SqlBulkCopyOptions, sqlTx))
          {
             bulkCopy.DestinationTableName = $"[{tableName}]";
@@ -385,7 +339,17 @@ END
          if (ctx == null)
             throw new ArgumentNullException(nameof(ctx));
          var entityType = ctx.GetEntityType<T>();
-         var columnNames = entityType.GetProperties().Select(p => p.Relational().ColumnName);
+         IEnumerable<string> columnNames;
+
+         if (entityType.IsQueryType)
+         {
+            columnNames = entityType.GetProperties().Select(p => p.Relational().ColumnName);
+         }
+         else
+         {
+            var pk = entityType.FindPrimaryKey();
+            columnNames = pk.Properties.Select(p => p.Relational().ColumnName);
+         }
 
          var sql = $@"
 ALTER TABLE [{tableName}]

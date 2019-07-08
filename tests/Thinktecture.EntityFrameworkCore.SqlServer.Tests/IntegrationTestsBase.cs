@@ -50,7 +50,8 @@ namespace Thinktecture
       {
          base.ConfigureSqlServer(builder);
 
-         builder.AddRowNumberSupport();
+         builder.AddRowNumberSupport()
+                .AddTempTableSupport();
       }
 
       /// <inheritdoc />

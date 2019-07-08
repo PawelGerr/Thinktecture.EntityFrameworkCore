@@ -22,6 +22,17 @@ namespace Thinktecture
          return AddOrUpdateExtensions(sqlServerOptionsBuilder, extension => extension.AddRowNumberSupport = true);
       }
 
+      /// <summary>
+      /// Adds support for temp tables.
+      /// </summary>
+      /// <param name="sqlServerOptionsBuilder">SQL Server options builder.</param>
+      /// <returns>Provided <paramref name="sqlServerOptionsBuilder"/>.</returns>
+      [NotNull]
+      public static SqlServerDbContextOptionsBuilder AddTempTableSupport([NotNull] this SqlServerDbContextOptionsBuilder sqlServerOptionsBuilder)
+      {
+         return AddOrUpdateExtensions(sqlServerOptionsBuilder, extension => extension.AddTempTableSupport = true);
+      }
+
       [NotNull]
       private static SqlServerDbContextOptionsBuilder AddOrUpdateExtensions([NotNull] this SqlServerDbContextOptionsBuilder sqlServerOptionsBuilder,
                                                                             [NotNull] Action<SqlServerDbContextOptionsExtension> callback)
