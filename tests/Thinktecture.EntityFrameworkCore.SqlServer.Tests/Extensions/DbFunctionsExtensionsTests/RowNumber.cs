@@ -7,7 +7,7 @@ using Thinktecture.TestDatabaseContext;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Thinktecture.Extensions.DbFunctionsExtensions
+namespace Thinktecture.Extensions.DbFunctionsExtensionsTests
 {
    // ReSharper disable once InconsistentNaming
    public class RowNumber : IntegrationTestsBase
