@@ -15,6 +15,7 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
 {
    // ReSharper disable once InconsistentNaming
    [SuppressMessage("ReSharper", "AwaitedMethodsWithoutConfigureAwait")]
+   [Collection("BulkInsertTempTableAsync")]
    public class BulkInsertIntoTempTableAsync : IntegrationTestsBase
    {
       public BulkInsertIntoTempTableAsync([NotNull] ITestOutputHelper testOutputHelper)

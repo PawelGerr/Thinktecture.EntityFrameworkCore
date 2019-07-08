@@ -13,6 +13,7 @@ using Xunit.Abstractions;
 namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorTests
 {
    [SuppressMessage("ReSharper", "AwaitedMethodsWithoutConfigureAwait")]
+   [Collection("BulkInsertTempTableAsync")]
    public class CreatePrimaryKeyAsync : IntegrationTestsBase
    {
       private readonly SqlServerTempTableCreator _sut = new SqlServerTempTableCreator();
