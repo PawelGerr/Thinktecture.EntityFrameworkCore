@@ -16,8 +16,23 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
    public class SqlServerBulkOperationExecutor : ISqlServerBulkOperationExecutor
    {
       /// <inheritdoc />
+      public Task BulkInsertAsync<T>(DbContext ctx, IEnumerable<T> entities, SqlBulkInsertOptions options, CancellationToken cancellationToken = default)
+         where T : class
+      {
+         var entityType = ctx.GetEntityType<T>();
+
+         if (entityType.IsQueryType)
+            throw new InvalidOperationException("The provided 'entities' are of 'Query Type' that do not have a table to insert into. Use the other overload that takes the 'tableName' as a parameter.");
+
+         var tableId = ctx.GetTableIdentifier(typeof(T));
+
+         return BulkInsertAsync(ctx, entities, tableId.Schema, tableId.TableName, options, cancellationToken);
+      }
+
+      /// <inheritdoc />
       public async Task BulkInsertAsync<T>(DbContext ctx,
                                            IEnumerable<T> entities,
+                                           string schema,
                                            string tableName,
                                            SqlBulkInsertOptions options,
                                            CancellationToken cancellationToken = default)
@@ -41,6 +56,10 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
          using (var bulkCopy = new SqlBulkCopy(sqlCon, options.SqlBulkCopyOptions, sqlTx))
          {
             bulkCopy.DestinationTableName = $"[{tableName}]";
+
+            if (!String.IsNullOrWhiteSpace(schema))
+               bulkCopy.DestinationTableName = $"[{schema}].{bulkCopy.DestinationTableName}";
+
             bulkCopy.EnableStreaming = options.EnableStreaming;
 
             if (options.BulkCopyTimeout.HasValue)

@@ -9,9 +9,7 @@ using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
-using Thinktecture.EntityFrameworkCore;
 using Thinktecture.EntityFrameworkCore.BulkOperations;
-using Thinktecture.EntityFrameworkCore.Data;
 using Thinktecture.EntityFrameworkCore.TempTables;
 using Thinktecture.EntityFrameworkCore.ValueConversion;
 
@@ -131,7 +129,7 @@ namespace Thinktecture
          options = options ?? new SqlTempTableBulkInsertOptions();
          var tableName = await ctx.CreateTempTableAsync<T>(options.MakeTableNameUnique, cancellationToken).ConfigureAwait(false);
 
-         await ctx.GetService<ISqlServerBulkOperationExecutor>().BulkInsertAsync(ctx, entities, tableName, options, cancellationToken).ConfigureAwait(false);
+         await ctx.GetService<ISqlServerBulkOperationExecutor>().BulkInsertAsync(ctx, entities, null, tableName, options, cancellationToken).ConfigureAwait(false);
 
          if (options.CreatePrimaryKey)
             await ctx.GetService<ITempTableCreator>().CreatePrimaryKeyAsync<T>(ctx, tableName, !options.MakeTableNameUnique, cancellationToken).ConfigureAwait(false);
