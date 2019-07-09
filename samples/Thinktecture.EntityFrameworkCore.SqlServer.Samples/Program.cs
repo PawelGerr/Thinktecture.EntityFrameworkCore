@@ -1,13 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading.Tasks;
+using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Thinktecture.Database;
 
 namespace Thinktecture
 {
+   [SuppressMessage("ReSharper", "AwaitedMethodsWithoutConfigureAwait")]
    class Program
    {
       static async Task Main(string[] args)
@@ -36,7 +39,7 @@ namespace Thinktecture
          Console.WriteLine("Exiting samples...");
       }
 
-      private static async Task DoRowNumberAsync(DemoDbContext ctx)
+      private static async Task DoRowNumberAsync([NotNull] DemoDbContext ctx)
       {
          var customers = await ctx.Customers
                                       .Select(c => new
@@ -50,7 +53,7 @@ namespace Thinktecture
 
       }
 
-      private static async Task DoLeftJoinAsync(DemoDbContext ctx)
+      private static async Task DoLeftJoinAsync([NotNull] DemoDbContext ctx)
       {
          var customerOrder = await ctx.Customers
                                       .LeftJoin(ctx.Orders,
@@ -62,7 +65,7 @@ namespace Thinktecture
          Console.WriteLine($"Found customers: {String.Join(", ", customerOrder.Select(co => $"{{ CustomerId={co.Customer.Id}, OrderId={co.Order.Id} }}"))}");
       }
 
-      private static async Task DoBulkInsertAsync(DemoDbContext ctx, List<Guid> customerIds)
+      private static async Task DoBulkInsertAsync([NotNull] DemoDbContext ctx, [NotNull] List<Guid> customerIds)
       {
          var tempTableQuery = await ctx.BulkInsertTempTableAsync(customerIds);
          var customers = await ctx.Customers.Join(tempTableQuery, c => c.Id, t => t.Column1, (c, t) => c).ToListAsync();
@@ -70,7 +73,7 @@ namespace Thinktecture
          Console.WriteLine($"Found customers: {String.Join(", ", customers.Select(c => c.Id))}");
       }
 
-      private static async Task DoBulkInsertAsync(DemoDbContext ctx, List<(Guid customerId, Guid productId)> tuples)
+      private static async Task DoBulkInsertAsync([NotNull] DemoDbContext ctx, [NotNull] List<(Guid customerId, Guid productId)> tuples)
       {
          var tempTableQuery = await ctx.BulkInsertTempTableAsync(tuples);
          var orderItems = await ctx.OrderItems.Join(tempTableQuery,

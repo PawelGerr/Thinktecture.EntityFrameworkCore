@@ -41,14 +41,16 @@ namespace Thinktecture
       {
          var services = new ServiceCollection()
             .AddDbContext<DemoDbContext>(builder => builder
-                                            .UseSqlServer(ConnectionString, sqlOptions =>
-                                                                            {
-                                                                               if (schema != null)
-                                                                                  sqlOptions.MigrationsHistoryTable("__EFMigrationsHistory", schema);
+                                                    .UseSqlServer(ConnectionString, sqlOptions =>
+                                                                                    {
+                                                                                       if (schema != null)
+                                                                                          sqlOptions.MigrationsHistoryTable("__EFMigrationsHistory", schema);
 
-                                                                               sqlOptions.AddRowNumberSupport()
-                                                                                         .UseThinktectureSqlServerMigrationsSqlGenerator();
-                                                                            }));
+                                                                                       sqlOptions.AddRowNumberSupport()
+                                                                                                 .AddTempTableSupport()
+                                                                                                 .UseThinktectureSqlServerMigrationsSqlGenerator();
+                                                                                    })
+                                                    .AddSchemaAwareComponents());
 
          if (schema != null)
             services.AddSingleton<IDbContextSchema>(new DbContextSchema(schema));
