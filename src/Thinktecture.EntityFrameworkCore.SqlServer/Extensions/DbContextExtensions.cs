@@ -124,9 +124,12 @@ namespace Thinktecture
          options = options ?? new SqlTempTableBulkInsertOptions();
          var tableName = await ctx.CreateTempTableAsync<T>(options.MakeTableNameUnique, cancellationToken).ConfigureAwait(false);
 
+         if (options.PrimaryKeyCreation == PrimaryKeyCreation.BeforeBulkInsert)
+            await ctx.GetService<ITempTableCreator>().CreatePrimaryKeyAsync<T>(ctx, tableName, !options.MakeTableNameUnique, cancellationToken).ConfigureAwait(false);
+
          await ctx.GetService<ISqlServerBulkOperationExecutor>().BulkInsertAsync(ctx, entities, null, tableName, options, cancellationToken).ConfigureAwait(false);
 
-         if (options.CreatePrimaryKey)
+         if (options.PrimaryKeyCreation == PrimaryKeyCreation.AfterBulkInsert)
             await ctx.GetService<ITempTableCreator>().CreatePrimaryKeyAsync<T>(ctx, tableName, !options.MakeTableNameUnique, cancellationToken).ConfigureAwait(false);
 
          return ctx.GetTempTableQuery<T>(tableName);

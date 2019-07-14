@@ -57,7 +57,7 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
          ConfigureModel = builder => builder.ConfigureTempTable<int?>();
 
          var values = new List<int?> { 1, null };
-         var query = await DbContext.BulkInsertTempTableAsync(values, new SqlTempTableBulkInsertOptions { CreatePrimaryKey = false }).ConfigureAwait(false);
+         var query = await DbContext.BulkInsertTempTableAsync(values, new SqlTempTableBulkInsertOptions { PrimaryKeyCreation = PrimaryKeyCreation.None }).ConfigureAwait(false);
 
          var tempTable = await query.ToListAsync().ConfigureAwait(false);
          tempTable.Should()
@@ -71,7 +71,7 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
          ConfigureModel = builder => builder.ConfigureTempTable<string>();
 
          var values = new List<string> { "value1", null };
-         var query = await DbContext.BulkInsertTempTableAsync(values, new SqlTempTableBulkInsertOptions { CreatePrimaryKey = false }).ConfigureAwait(false);
+         var query = await DbContext.BulkInsertTempTableAsync(values, new SqlTempTableBulkInsertOptions { PrimaryKeyCreation = PrimaryKeyCreation.None }).ConfigureAwait(false);
 
          var tempTable = await query.ToListAsync().ConfigureAwait(false);
          tempTable.Should()
@@ -117,7 +117,7 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
       {
          ConfigureModel = builder => builder.ConfigureTempTable<int>();
 
-         await DbContext.BulkInsertTempTableAsync(new List<int> { 1 }, new SqlTempTableBulkInsertOptions { MakeTableNameUnique = false, CreatePrimaryKey = false }).ConfigureAwait(false);
+         await DbContext.BulkInsertTempTableAsync(new List<int> { 1 }, new SqlTempTableBulkInsertOptions { MakeTableNameUnique = false, PrimaryKeyCreation = PrimaryKeyCreation.None }).ConfigureAwait(false);
 
          var keys = DbContext.GetTempTableKeyColumns<TempTable<int>>().ToList();
          keys.Should().HaveCount(0);

@@ -15,6 +15,6 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       /// Creates a clustered primary key spanning all columns of the temp table after the bulk insert.
       /// Default is set to <c>true</c>.
       /// </summary>
-      public bool CreatePrimaryKey { get; set; } = true;
+      public PrimaryKeyCreation PrimaryKeyCreation { get; set; } = PrimaryKeyCreation.AfterBulkInsert;
    }
 }
