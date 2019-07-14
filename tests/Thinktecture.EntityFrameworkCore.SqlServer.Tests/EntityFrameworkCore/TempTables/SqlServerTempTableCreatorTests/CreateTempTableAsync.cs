@@ -10,6 +10,7 @@ using Xunit.Abstractions;
 
 namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorTests
 {
+   // ReSharper disable once InconsistentNaming
    public class CreateTempTableAsync : IntegrationTestsBase
    {
       private readonly SqlServerTempTableCreator _sut = new SqlServerTempTableCreator();
@@ -24,6 +25,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
       {
          ConfigureModel = builder => builder.ConfigureCustomTempTable<CustomTempTable>();
 
+         // ReSharper disable once RedundantArgumentDefaultValue
          await _sut.CreateTempTableAsync<CustomTempTable>(DbContext, false).ConfigureAwait(false);
 
          var columns = DbContext.GetCustomTempTableColumns<CustomTempTable>().ToList();
@@ -36,6 +38,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
       [Fact]
       public async Task Should_create_temp_table_for_entityType()
       {
+         // ReSharper disable once RedundantArgumentDefaultValue
          await _sut.CreateTempTableAsync<TestEntity>(DbContext, false).ConfigureAwait(false);
 
          var columns = DbContext.GetCustomTempTableColumns<TestEntity>().OrderBy(c => c.COLUMN_NAME).ToList();
@@ -187,7 +190,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
          ValidateColumn(columns[1], nameof(TempTable<int, string>.Column2), "nvarchar", true);
       }
 
-      protected void ValidateColumn([NotNull] InformationSchemaColumn column, string name, string type, bool isNullable, byte? numericPrecision = null, int? numericScale = null, int? charMaxLength = null)
+      private void ValidateColumn([NotNull] InformationSchemaColumn column, string name, string type, bool isNullable, byte? numericPrecision = null, int? numericScale = null, int? charMaxLength = null)
       {
          if (column == null)
             throw new ArgumentNullException(nameof(column));

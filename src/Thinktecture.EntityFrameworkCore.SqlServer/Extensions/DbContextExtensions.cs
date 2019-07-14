@@ -21,12 +21,7 @@ namespace Thinktecture
    /// </summary>
    public static class DbContextExtensions
    {
-      private static readonly RowVersionValueConverter _rowVersionConverter;
-
-      static DbContextExtensions()
-      {
-         _rowVersionConverter = new RowVersionValueConverter();
-      }
+      private static readonly RowVersionValueConverter _rowVersionConverter = new RowVersionValueConverter();
 
       /// <summary>
       /// Fetches <c>MIN_ACTIVE_ROWVERSION</c> from SQL Server.

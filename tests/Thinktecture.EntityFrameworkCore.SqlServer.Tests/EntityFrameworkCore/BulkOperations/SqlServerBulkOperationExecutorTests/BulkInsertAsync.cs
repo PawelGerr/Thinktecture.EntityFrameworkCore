@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -13,7 +12,7 @@ using Xunit.Abstractions;
 
 namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperationExecutorTests
 {
-   [SuppressMessage("ReSharper", "AwaitedMethodsWithoutConfigureAwait")]
+   // ReSharper disable once InconsistentNaming
    public class BulkInsertAsync : IntegrationTestsBase
    {
       private readonly SqlServerBulkOperationExecutor _sut = new SqlServerBulkOperationExecutor();

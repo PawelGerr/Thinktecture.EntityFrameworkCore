@@ -29,7 +29,7 @@ namespace Thinktecture.ExtensionsTests.ModelBuilderExtensionsTests
          var entityType = DbContextWithSchema.Model.FindEntityType(typeof(TempTable<int>));
          entityType.Name.Should().Be("Thinktecture.EntityFrameworkCore.TempTables.TempTable<int>");
 
-         var properties = entityType.GetProperties();
+         var properties = entityType.GetProperties().ToList();
          properties.Should().HaveCount(1);
 
          var property = properties.First();

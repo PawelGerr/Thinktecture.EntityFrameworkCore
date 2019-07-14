@@ -16,29 +16,22 @@ namespace Thinktecture.Linq.Expressions
       /// </summary>
       public static readonly ExpressionBodyExtractingVisitor Instance = new ExpressionBodyExtractingVisitor();
 
-      private static readonly MethodInfo _extractBodyMethod;
-
-      static ExpressionBodyExtractingVisitor()
-      {
-         _extractBodyMethod = typeof(ExpressionExtensions).GetMethod(nameof(ExpressionExtensions.ExtractBody), BindingFlags.Static | BindingFlags.Public);
-      }
+      private static readonly MethodInfo _extractBodyMethod = typeof(ExpressionExtensions).GetMethod(nameof(ExpressionExtensions.ExtractBody), BindingFlags.Static | BindingFlags.Public);
 
       /// <inheritdoc />
       protected override Expression VisitMethodCall(MethodCallExpression node)
       {
-         if (node.Method.IsGenericMethod && node.Method.GetGenericMethodDefinition() == _extractBodyMethod)
-         {
-            var newParameter = node.Arguments[1];
-            var lambda = LambdaExpressionSearchingVisitor.Instance.GetLambda(node.Arguments[0]);
-            var oldParameter = lambda.Parameters[0];
+         if (!node.Method.IsGenericMethod || node.Method.GetGenericMethodDefinition() != _extractBodyMethod)
+            return base.VisitMethodCall(node);
 
-            var expressionReplacer = new ExpressionReplacingVisitor(oldParameter, newParameter);
-            var expression = expressionReplacer.Visit(lambda.Body);
+         var newParameter = node.Arguments[1];
+         var lambda = LambdaExpressionSearchingVisitor.Instance.GetLambda(node.Arguments[0]);
+         var oldParameter = lambda.Parameters[0];
 
-            return Visit(expression);
-         }
+         var expressionReplacer = new ExpressionReplacingVisitor(oldParameter, newParameter);
+         var expression = expressionReplacer.Visit(lambda.Body);
 
-         return base.VisitMethodCall(node);
+         return Visit(expression);
       }
    }
 }

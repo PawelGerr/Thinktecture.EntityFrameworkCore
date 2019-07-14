@@ -1,6 +1,5 @@
 using System;
 using System.Data.SqlClient;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -12,8 +11,8 @@ using Xunit.Abstractions;
 
 namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorTests
 {
-   [SuppressMessage("ReSharper", "AwaitedMethodsWithoutConfigureAwait")]
    [Collection("BulkInsertTempTableAsync")]
+   // ReSharper disable once InconsistentNaming
    public class CreatePrimaryKeyAsync : IntegrationTestsBase
    {
       private readonly SqlServerTempTableCreator _sut = new SqlServerTempTableCreator();
@@ -73,6 +72,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
          var tableName = await DbContext.CreateTempTableAsync<TestEntity>();
          await _sut.CreatePrimaryKeyAsync<TestEntity>(DbContext, tableName);
 
+         // ReSharper disable once RedundantArgumentDefaultValue
          _sut.Awaiting(async sut => await sut.CreatePrimaryKeyAsync<TestEntity>(DbContext, tableName, false))
              .Should()
              .Throw<SqlException>();

@@ -55,9 +55,9 @@ namespace Thinktecture
       }
 
       /// <inheritdoc />
-      protected override string GetSchema(bool useSharedTables)
+      protected override string DetermineSchema(bool useSharedTables)
       {
-         return useSharedTables ? $"{TestContext.Instance.Configuration["SourceBranchName"]}_tests" : base.GetSchema(false);
+         return useSharedTables ? $"{TestContext.Instance.Configuration["SourceBranchName"]}_tests" : base.DetermineSchema(false);
       }
    }
 }

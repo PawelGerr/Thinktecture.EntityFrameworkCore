@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using JetBrains.Annotations;
 
 namespace Thinktecture.Database
 {
@@ -9,6 +10,8 @@ namespace Thinktecture.Database
 
       private List<OrderItem> _orderItems;
 
+      [NotNull]
+      // ReSharper disable once UnusedMember.Global
       public List<OrderItem> OrderItems
       {
          get => _orderItems ?? (_orderItems = new List<OrderItem>());

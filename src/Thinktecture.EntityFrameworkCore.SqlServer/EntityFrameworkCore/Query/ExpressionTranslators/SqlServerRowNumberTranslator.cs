@@ -18,16 +18,9 @@ namespace Thinktecture.EntityFrameworkCore.Query.ExpressionTranslators
    /// </summary>
    public class SqlServerRowNumberTranslator : IMethodCallTranslator
    {
-      private static readonly MethodInfo _rowNumberWithPartitionByMethod;
-      private static readonly MethodInfo _rowNumberMethod;
-      private static readonly MethodInfo _descendingMethodInfo;
-
-      static SqlServerRowNumberTranslator()
-      {
-         _rowNumberWithPartitionByMethod = typeof(DbFunctionsExtensions).GetMethod(nameof(DbFunctionsExtensions.RowNumber), new[] { typeof(DbFunctions), typeof(object), typeof(object) });
-         _rowNumberMethod = typeof(DbFunctionsExtensions).GetMethod(nameof(DbFunctionsExtensions.RowNumber), new[] { typeof(DbFunctions), typeof(object) });
-         _descendingMethodInfo = typeof(DbFunctionsExtensions).GetMethod(nameof(DbFunctionsExtensions.Descending), BindingFlags.Public | BindingFlags.Static);
-      }
+      private static readonly MethodInfo _rowNumberWithPartitionByMethod = typeof(DbFunctionsExtensions).GetMethod(nameof(DbFunctionsExtensions.RowNumber), new[] { typeof(DbFunctions), typeof(object), typeof(object) });
+      private static readonly MethodInfo _rowNumberMethod = typeof(DbFunctionsExtensions).GetMethod(nameof(DbFunctionsExtensions.RowNumber), new[] { typeof(DbFunctions), typeof(object) });
+      private static readonly MethodInfo _descendingMethodInfo = typeof(DbFunctionsExtensions).GetMethod(nameof(DbFunctionsExtensions.Descending), BindingFlags.Public | BindingFlags.Static);
 
       /// <inheritdoc />
       [NotNull]
@@ -86,16 +79,24 @@ namespace Thinktecture.EntityFrameworkCore.Query.ExpressionTranslators
       [NotNull]
       private static Expression ExtractOrderBy([NotNull] Expression expression)
       {
-         if (expression is ColumnExpression)
-            return expression;
+         while (true)
+         {
+            if (expression is ColumnExpression)
+               return expression;
 
-         if (expression.NodeType == ExpressionType.Convert)
-            return ExtractOrderBy(((UnaryExpression)expression).Operand);
-
-         if (expression is MethodCallExpression methodCall && methodCall.Method == _descendingMethodInfo)
-            return new DescendingExpression(methodCall.Arguments[1]);
-
-         throw new Exception($"Unexpected 'order by' expression. Type: {expression.GetType().DisplayName()}.");
+            if (expression.NodeType == ExpressionType.Convert)
+            {
+               expression = ((UnaryExpression)expression).Operand;
+            }
+            else if (expression is MethodCallExpression methodCall && methodCall.Method == _descendingMethodInfo)
+            {
+               return new DescendingExpression(methodCall.Arguments[1]);
+            }
+            else
+            {
+               throw new ArgumentException($"Unexpected 'order by' expression. Type: {expression.GetType().DisplayName()}.");
+            }
+         }
       }
    }
 }

@@ -6,6 +6,8 @@ using Thinktecture.EntityFrameworkCore.Migrations;
 
 namespace Thinktecture.Migrations
 {
+   // ReSharper disable once UnusedMember.Global
+   // ReSharper disable once InconsistentNaming
    public partial class Initial_Migration : DbSchemaAwareMigration
    {
       /// <inheritdoc />

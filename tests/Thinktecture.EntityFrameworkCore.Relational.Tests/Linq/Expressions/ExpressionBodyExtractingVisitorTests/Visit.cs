@@ -9,13 +9,7 @@ namespace Thinktecture.Linq.Expressions.ExpressionBodyExtractingVisitorTests
 {
    public class Visit
    {
-      private static readonly PropertyInfo _myOtherProperty;
-
-      static Visit()
-      {
-         _myOtherProperty = typeof(MyObject).GetProperty(nameof(MyObject.MyOtherProperty), BindingFlags.Instance | BindingFlags.Public);
-         _myOtherProperty.Should().NotBeNull();
-      }
+      private static readonly PropertyInfo _myOtherProperty = typeof(MyObject).GetProperty(nameof(MyObject.MyOtherProperty), BindingFlags.Instance | BindingFlags.Public);
 
       [Fact]
       public void Should_return_the_same_expression_if_no_ExtractBody_found()
@@ -98,14 +92,17 @@ namespace Thinktecture.Linq.Expressions.ExpressionBodyExtractingVisitorTests
 
       private class MyObject
       {
+         // ReSharper disable once UnusedAutoPropertyAccessor.Local
          public string MyProperty { get; set; }
          public string MyOtherProperty { get; set; }
 
+         [NotNull]
          public static Expression<Func<MyObject, string>> GetExpressionFromStaticMethod()
          {
             return o => o.MyOtherProperty;
          }
 
+         [NotNull]
          public Expression<Func<MyObject, string>> GetExpressionFromInstanceMethod()
          {
             return o => o.MyOtherProperty;

@@ -1,5 +1,3 @@
-using JetBrains.Annotations;
-
 namespace Thinktecture.EntityFrameworkCore.TempTables
 {
    /// <summary>
@@ -16,6 +14,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
       /// <summary>
       /// Initializes <see cref="TempTable{TColumn1}"/>.
       /// </summary>
+      // ReSharper disable once UnusedMember.Global
       public TempTable()
       {
       }
@@ -27,17 +26,6 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
       public TempTable(TColumn1 column1)
       {
          Column1 = column1;
-      }
-
-      /// <summary>
-      /// Implicit conversion from value of type <typeparamref name="TColumn1"/> to <see cref="TempTable{TColumn1}"/>.
-      /// </summary>
-      /// <param name="columnValue">Value to convert.</param>
-      /// <returns>An instance of <see cref="TempTable{TColumn1}"/>.</returns>
-      [NotNull]
-      public static implicit operator TempTable<TColumn1>(TColumn1 columnValue)
-      {
-         return new TempTable<TColumn1> { Column1 = columnValue };
       }
    }
 
@@ -61,6 +49,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
       /// <summary>
       /// Initializes <see cref="TempTable{TColumn1,TColumn2}"/>.
       /// </summary>
+      // ReSharper disable once UnusedMember.Global
       public TempTable()
       {
       }
@@ -74,17 +63,6 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
       {
          Column1 = column1;
          Column2 = column2;
-      }
-
-      /// <summary>
-      /// Implicit conversion from value of type <typeparamref name="TColumn1"/> to <see cref="TempTable{TColumn1,TColumn2}"/>.
-      /// </summary>
-      /// <param name="columnValues">Tuple containing values for columns.</param>
-      /// <returns>An instance of <see cref="TempTable{TColumn1,TColumn2}"/>.</returns>
-      [NotNull]
-      public static implicit operator TempTable<TColumn1, TColumn2>((TColumn1 column1, TColumn2 column2) columnValues)
-      {
-         return new TempTable<TColumn1, TColumn2> { Column1 = columnValues.column1, Column2 = columnValues.column2 };
       }
    }
 }

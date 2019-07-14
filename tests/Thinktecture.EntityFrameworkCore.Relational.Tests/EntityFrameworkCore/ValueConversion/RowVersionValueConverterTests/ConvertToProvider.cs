@@ -30,7 +30,7 @@ namespace Thinktecture.EntityFrameworkCore.ValueConversion.RowVersionValueConver
       [Fact]
       public void Should_throw_if_parameter_not_ulong_and_cannot_be_converted()
       {
-         SUT.Invoking(sut => sut.ConvertToProvider(new int[0])).Should().Throw<InvalidCastException>();
+         SUT.Invoking(sut => sut.ConvertToProvider(Array.Empty<int>())).Should().Throw<InvalidCastException>();
       }
 
       [Fact]

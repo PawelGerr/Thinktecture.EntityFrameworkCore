@@ -7,7 +7,6 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
-using Thinktecture.EntityFrameworkCore.Migrations;
 
 namespace Thinktecture.EntityFrameworkCore
 {
@@ -37,7 +36,7 @@ namespace Thinktecture.EntityFrameworkCore
       /// </summary>
       [NotNull]
       // ReSharper disable once MemberCanBePrivate.Global
-      protected string Schema => _schema ?? (_schema = GetSchema(_useSharedTables));
+      protected string Schema => _schema ?? (_schema = DetermineSchema(_useSharedTables));
 
       /// <summary>
       /// Database context being used for the tests.
@@ -72,9 +71,11 @@ namespace Thinktecture.EntityFrameworkCore
       /// <param name="useSharedTables">Indication whether a new schema should be generated or a shared one.</param>
       /// <returns>A database schema.</returns>
       [NotNull]
-      protected virtual string GetSchema(bool useSharedTables)
+      protected virtual string DetermineSchema(bool useSharedTables)
       {
+#pragma warning disable CA1305
          return useSharedTables ? "tests" : Guid.NewGuid().ToString("N");
+#pragma warning restore CA1305
       }
 
       /// <summary>
@@ -157,8 +158,21 @@ namespace Thinktecture.EntityFrameworkCore
       /// Rollbacks transaction if shared tables are used
       /// otherwise the migrations are rolled back and all tables, functions, views and the newly generated schema are deleted.
       /// </summary>
-      public virtual void Dispose()
+      public void Dispose()
       {
+         Dispose(true);
+         GC.SuppressFinalize(this);
+      }
+
+      /// <summary>
+      /// Disposes of inner resources.
+      /// </summary>
+      /// <param name="disposing">Indication whether this method is being called by the method <see cref="Dispose"/>.</param>
+      protected virtual void Dispose(bool disposing)
+      {
+         if (!disposing)
+            return;
+
          if (_dbContext == null)
             return;
 

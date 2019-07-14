@@ -7,7 +7,7 @@ using Thinktecture.TestDatabaseContext;
 
 namespace Thinktecture
 {
-   public class TestBase
+   public class TestBase : IDisposable
    {
       protected DbContextOptionsBuilder<DbContextWithSchema> OptionBuilder { get; }
       private DbContextWithSchema _ctx;
@@ -54,6 +54,11 @@ namespace Thinktecture
       {
          var options = new DbContextOptionsBuilder<DbContextWithoutSchema>().Options;
          return new DbContextWithoutSchema(options);
+      }
+
+      public void Dispose()
+      {
+         _ctx?.Dispose();
       }
    }
 }

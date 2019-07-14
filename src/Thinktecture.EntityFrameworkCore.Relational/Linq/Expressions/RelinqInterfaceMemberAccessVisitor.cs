@@ -33,7 +33,7 @@ namespace Thinktecture.Linq.Expressions
                   member = FindProperty(conversion.Operand.Type, conversion.Type, (PropertyInfo)node.Member);
 
                if (member == null)
-                  throw new Exception($"Member with name '{node.Member.Name}' not found in '{conversion.Operand.Type.DisplayName()}'.");
+                  throw new MissingMemberException(conversion.Operand.Type.DisplayName(), node.Member.Name);
 
                var operand = Visit(conversion.Operand);
                return Expression.MakeMemberAccess(operand, member);
@@ -44,7 +44,7 @@ namespace Thinktecture.Linq.Expressions
       }
 
       [CanBeNull]
-      private static MemberInfo FindProperty([NotNull] Type dstType, Type interfaceType, [NotNull] PropertyInfo interfaceMember)
+      private static MemberInfo FindProperty([NotNull] Type dstType, [NotNull] Type interfaceType, [NotNull] PropertyInfo interfaceMember)
       {
          var map = dstType.GetInterfaceMap(interfaceType);
          var targetMethod = FindTargetMethod(map, interfaceMember);

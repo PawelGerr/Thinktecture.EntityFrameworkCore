@@ -1,6 +1,10 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using JetBrains.Annotations;
 using Microsoft.Extensions.Configuration;
+
+[assembly: SuppressMessage("ReSharper", "CA1707")]
+[assembly: SuppressMessage("ReSharper", "CA2007")]
 
 namespace Thinktecture
 {

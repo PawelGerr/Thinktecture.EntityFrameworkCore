@@ -50,10 +50,10 @@ namespace Thinktecture.EntityFrameworkCore.Data
       [NotNull]
       private static UnaryExpression GenerateThrowIndexOutOfRangeException(int numberOfColumns, [NotNull] ParameterExpression indexParam)
       {
-         var createExceptionMethod = typeof(EntityDataReaderGenerator).GetMethod(nameof(CreateIndexOutOfRangeException), BindingFlags.Static | BindingFlags.NonPublic);
+         var createExceptionMethod = typeof(EntityDataReaderGenerator).GetMethod(nameof(CreateArgumentOutOfRangeException), BindingFlags.Static | BindingFlags.NonPublic);
 
          if (createExceptionMethod == null)
-            throw new Exception($"The method '{nameof(CreateIndexOutOfRangeException)}' not found.");
+            throw new MissingMethodException(nameof(EntityDataReaderGenerator), nameof(CreateArgumentOutOfRangeException));
 
          var newException = Expression.Call(null,
                                             createExceptionMethod,
@@ -63,9 +63,9 @@ namespace Thinktecture.EntityFrameworkCore.Data
       }
 
       [NotNull]
-      private static IndexOutOfRangeException CreateIndexOutOfRangeException(int numberOfColumns, int index)
+      private static ArgumentOutOfRangeException CreateArgumentOutOfRangeException(int numberOfColumns, int index)
       {
-         return new IndexOutOfRangeException($"The temp table has {numberOfColumns} column(s) only. Provided index: {index}");
+         return new ArgumentOutOfRangeException($"The temp table has {numberOfColumns} column(s) only. Provided index: {index}");
       }
    }
 }

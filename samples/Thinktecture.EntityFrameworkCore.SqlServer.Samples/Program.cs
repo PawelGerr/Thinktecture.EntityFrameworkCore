@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -8,12 +8,17 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Thinktecture.Database;
 
+[assembly: SuppressMessage("ReSharper", "CA2007")]
+[assembly: SuppressMessage("ReSharper", "CA1052")]
+[assembly: SuppressMessage("ReSharper", "CA2227")]
+
 namespace Thinktecture
 {
-   [SuppressMessage("ReSharper", "AwaitedMethodsWithoutConfigureAwait")]
-   class Program
+   // ReSharper disable once ClassNeverInstantiated.Global
+   public class Program
    {
-      static async Task Main(string[] args)
+      // ReSharper disable once InconsistentNaming
+      public static async Task Main(string[] args)
       {
          var sp = SamplesContext.Instance.CreateServiceProvider("demo");
 

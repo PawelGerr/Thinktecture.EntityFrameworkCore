@@ -11,17 +11,17 @@ namespace Thinktecture.EntityFrameworkCore.Migrations.DbSchemaAwareMigrationAsse
 {
    public abstract class DbSchemaAwareMigrationAssemblyTests : TestBase
    {
-      protected readonly Mock<ICurrentDbContext> CurrentCtxMock;
-      protected readonly Mock<IDbContextOptions> OptionsMock;
-      protected readonly Mock<IMigrationsIdGenerator> IdGeneratorMock;
-      protected readonly Mock<IDiagnosticsLogger<DbLoggerCategory.Migrations>> LoggerMock;
+      protected Mock<ICurrentDbContext> CurrentCtxMock { get; }
+      protected Mock<IDbContextOptions> OptionsMock { get; }
+      protected Mock<IMigrationsIdGenerator> IdGeneratorMock { get; }
+      protected Mock<IDiagnosticsLogger<DbLoggerCategory.Migrations>> LoggerMock { get; }
 
       private DbSchemaAwareMigrationAssembly _sut;
 
       [NotNull]
       protected DbSchemaAwareMigrationAssembly SUT => _sut ?? (_sut = new DbSchemaAwareMigrationAssembly(CurrentCtxMock.Object, OptionsMock.Object, IdGeneratorMock.Object, LoggerMock.Object));
 
-      public DbSchemaAwareMigrationAssemblyTests()
+      protected DbSchemaAwareMigrationAssemblyTests()
       {
          CurrentCtxMock = new Mock<ICurrentDbContext>(MockBehavior.Strict);
          OptionsMock = new Mock<IDbContextOptions>(MockBehavior.Strict);

@@ -12,7 +12,7 @@ namespace Thinktecture.EntityFrameworkCore.ValueConversion.RowVersionValueConver
       [Fact]
       public void Should_convert_empty_byte_array_to_0()
       {
-         SUT.ConvertFromProvider(new byte[0]).Should().Be(0UL);
+         SUT.ConvertFromProvider(Array.Empty<byte>()).Should().Be(0UL);
       }
 
       [Fact]
@@ -24,7 +24,7 @@ namespace Thinktecture.EntityFrameworkCore.ValueConversion.RowVersionValueConver
       [Fact]
       public void Should_throw_if_parameter_not_byte_array()
       {
-         SUT.Invoking(sut => sut.ConvertFromProvider(new int[0])).Should().Throw<InvalidCastException>();
+         SUT.Invoking(sut => sut.ConvertFromProvider(Array.Empty<int>())).Should().Throw<InvalidCastException>();
       }
 
       // actually, it is the behavior of the base class

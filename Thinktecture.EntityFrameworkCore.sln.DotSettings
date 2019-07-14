@@ -1,4 +1,4 @@
-<wpf:ResourceDictionary xml:space="preserve" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:s="clr-namespace:System;assembly=mscorlib" xmlns:ss="urn:shemas-jetbrains-com:settings-storage-xaml" xmlns:wpf="http://schemas.microsoft.com/winfx/2006/xaml/presentation">
+﻿<wpf:ResourceDictionary xml:space="preserve" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:s="clr-namespace:System;assembly=mscorlib" xmlns:ss="urn:shemas-jetbrains-com:settings-storage-xaml" xmlns:wpf="http://schemas.microsoft.com/winfx/2006/xaml/presentation">
 	<s:Boolean x:Key="/Default/CodeEditing/ContextActionTable/DisabledContextActions/=JetBrains_002EReSharper_002EIntentions_002ECSharp_002EContextActions_002EPullExpressionAction/@EntryIndexedValue">False</s:Boolean>
 	<s:Boolean x:Key="/Default/CodeEditing/ContextActionTable/DisabledContextActions/=JetBrains_002EReSharper_002EIntentions_002ECSharp_002EContextActions_002EPushExpressionAction/@EntryIndexedValue">False</s:Boolean>
 	<s:String x:Key="/Default/CodeEditing/GenerateMemberBody/DocumentationGenerationKind/@EntryValue">Inherit</s:String>
@@ -19,6 +19,12 @@
 	<s:Int64 x:Key="/Default/CodeEditing/NullCheckPatterns/PatternTypeNamesToPriority/=JetBrains_002EReSharper_002EFeature_002EServices_002ECSharp_002ENullChecking_002ETraceAssertPattern/@EntryIndexedValue">50</s:Int64>
 	<s:Boolean x:Key="/Default/CodeEditing/TypingAssist/Asp/FormatOnClosingTag/@EntryValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/CodeEditing/TypingAssist/Asp/FormatOnEnter/@EntryValue">True</s:Boolean>
+	<s:String x:Key="/Default/CodeInspection/ExcludedFiles/GeneratedFilesAndFolders/=D2A55DD1_002D3642_002D4355_002D9E36_002D599238C80C14_002Fd_003AMigrations_002Ff_003ADemoDbContextModelSnapshot_002Ecs/@EntryIndexedValue">D2A55DD1-3642-4355-9E36-599238C80C14/d:Migrations/f:DemoDbContextModelSnapshot.cs</s:String>
+	<s:String x:Key="/Default/CodeInspection/ExcludedFiles/GeneratedFilesAndFolders/=_002E_005Ctests_005CThinktecture_002EEntityFrameworkCore_002ESqlServer_002ETests_005CMigrations_005CTestDbContextModelSnapshot_002Ecs/@EntryIndexedValue"></s:String>
+	<s:Boolean x:Key="/Default/CodeInspection/ExcludedFiles/GeneratedFilesAndFolders/=_002E_005Ctests_005CThinktecture_002EEntityFrameworkCore_002ESqlServer_002ETests_005CMigrations_005CTestDbContextModelSnapshot_002Ecs/@EntryIndexRemoved">True</s:Boolean>
+	<s:String x:Key="/Default/CodeInspection/ExcludedFiles/GeneratedFilesAndFolders/=B6A31BA8_002D19A3_002D4563_002DBD4E_002D313C950A012F_002Fd_003AMigrations_002Ff_003ATestDbContextModelSnapshot_002Ecs/@EntryIndexedValue">B6A31BA8-19A3-4563-BD4E-313C950A012F/d:Migrations/f:TestDbContextModelSnapshot.cs</s:String>
+	<s:String x:Key="/Default/CodeInspection/GeneratedCode/GeneratedCodeRegions/=_002F_002F_0020_003Cauto_002Dgenerated_0020_002F_003E/@EntryIndexedValue"></s:String>
+	<s:Boolean x:Key="/Default/CodeInspection/GeneratedCode/GeneratedCodeRegions/=_002F_002F_0020_003Cauto_002Dgenerated_0020_002F_003E/@EntryIndexRemoved">True</s:Boolean>
 	
 	<s:Boolean x:Key="/Default/CodeInspection/Highlighting/IncludeWarningsInSwea/@EntryValue">True</s:Boolean>
 	<s:String x:Key="/Default/CodeInspection/Highlighting/InspectionSeverities/=AnnotateCanBeNullParameter/@EntryIndexedValue">WARNING</s:String>
@@ -449,26 +455,26 @@
 	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=283423E14FAEAA41A2FAEF3953E8C03E/SearchPattern/@EntryValue">$expression$.Wait($args$)</s:String>
 	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=283423E14FAEAA41A2FAEF3953E8C03E/Severity/@EntryValue">WARNING</s:String>
 	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=283423E14FAEAA41A2FAEF3953E8C03E/SuppressionKey/@EntryValue">SynchronnizationViaWait</s:String>
-	<s:Boolean x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=51EE25612E09D348A54CF6BE2FB92DAA/@KeyIndexDefined">True</s:Boolean>
-	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=51EE25612E09D348A54CF6BE2FB92DAA/Comment/@EntryValue">Awaited methods without ConfigureAwait()</s:String>
-	<s:Boolean x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=51EE25612E09D348A54CF6BE2FB92DAA/CustomPatternPlaceholder/=method/@KeyIndexDefined">True</s:Boolean>
-	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=51EE25612E09D348A54CF6BE2FB92DAA/CustomPatternPlaceholder/=method/Properties/=ExactType/@EntryIndexedValue">False</s:String>
-	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=51EE25612E09D348A54CF6BE2FB92DAA/CustomPatternPlaceholder/=method/Properties/=ExpressionType/@EntryIndexedValue">System.Threading.Tasks.Task</s:String>
-	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=51EE25612E09D348A54CF6BE2FB92DAA/CustomPatternPlaceholder/=method/Type/@EntryValue">ExpressionPlaceholder</s:String>
-	<s:Boolean x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=51EE25612E09D348A54CF6BE2FB92DAA/CustomPatternPlaceholder/=value/@KeyIndexDefined">True</s:Boolean>
-	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=51EE25612E09D348A54CF6BE2FB92DAA/CustomPatternPlaceholder/=value/Properties/=Maximal/@EntryIndexedValue">1</s:String>
-	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=51EE25612E09D348A54CF6BE2FB92DAA/CustomPatternPlaceholder/=value/Properties/=Minimal/@EntryIndexedValue">1</s:String>
-	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=51EE25612E09D348A54CF6BE2FB92DAA/CustomPatternPlaceholder/=value/Type/@EntryValue">ArgumentPlaceholder</s:String>
 	
-	<s:Boolean x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=51EE25612E09D348A54CF6BE2FB92DAA/IsReplacePattern/@EntryValue">True</s:Boolean>
-	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=51EE25612E09D348A54CF6BE2FB92DAA/LanguageName/@EntryValue">CSHARP</s:String>
-	<s:Boolean x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=51EE25612E09D348A54CF6BE2FB92DAA/MatchCatchClauseWithoutExceptionFilter/@EntryValue">False</s:Boolean>
-	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=51EE25612E09D348A54CF6BE2FB92DAA/ReplaceComment/@EntryValue">Call 'ConfigureAwait(false)'</s:String>
-	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=51EE25612E09D348A54CF6BE2FB92DAA/ReplacePattern/@EntryValue">await $method$.ConfigureAwait(false)</s:String>
-	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=51EE25612E09D348A54CF6BE2FB92DAA/SearchPattern/@EntryValue">await $method$</s:String>
-	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=51EE25612E09D348A54CF6BE2FB92DAA/Severity/@EntryValue">WARNING</s:String>
-	<s:Boolean x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=51EE25612E09D348A54CF6BE2FB92DAA/ShortenReferences/@EntryValue">False</s:Boolean>
-	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=51EE25612E09D348A54CF6BE2FB92DAA/SuppressionKey/@EntryValue">AwaitedMethodsWithoutConfigureAwait</s:String>
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	<s:Boolean x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=62D0E977545E4947ADA8025F203BF6E4/@KeyIndexDefined">True</s:Boolean>
 	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=62D0E977545E4947ADA8025F203BF6E4/Comment/@EntryValue">Public methods returning Task without suffix "Async"</s:String>
 	<s:Boolean x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=62D0E977545E4947ADA8025F203BF6E4/CustomPatternPlaceholder/=args/@KeyIndexDefined">True</s:Boolean>
@@ -618,6 +624,8 @@
 	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=EE4CEFB198186C4E88B8126B60581EBE/Severity/@EntryValue">WARNING</s:String>
 	<s:Boolean x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=EE4CEFB198186C4E88B8126B60581EBE/ShortenReferences/@EntryValue">False</s:Boolean>
 	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=EE4CEFB198186C4E88B8126B60581EBE/SuppressionKey/@EntryValue">TaskMethodsWithoutAsyncSuffix</s:String>
+	<s:Boolean x:Key="/Default/UserDictionary/Words/=Relinq/@EntryIndexedValue">True</s:Boolean>
+	<s:Boolean x:Key="/Default/UserDictionary/Words/=ROWVERSION/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=serilog/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=Thinktecture/@EntryIndexedValue">True</s:Boolean>
 </wpf:ResourceDictionary>

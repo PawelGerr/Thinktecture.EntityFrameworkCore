@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -14,7 +13,6 @@ using Xunit.Abstractions;
 namespace Thinktecture.Extensions.DbContextExtensionsTests
 {
    // ReSharper disable once InconsistentNaming
-   [SuppressMessage("ReSharper", "AwaitedMethodsWithoutConfigureAwait")]
    [Collection("BulkInsertTempTableAsync")]
    public class BulkInsertIntoTempTableAsync : IntegrationTestsBase
    {

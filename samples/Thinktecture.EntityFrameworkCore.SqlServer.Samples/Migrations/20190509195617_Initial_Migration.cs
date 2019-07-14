@@ -6,6 +6,8 @@ using Thinktecture.EntityFrameworkCore.Migrations;
 
 namespace Thinktecture.Migrations
 {
+   // ReSharper disable once InconsistentNaming
+   // ReSharper disable once UnusedMember.Global
    public partial class Initial_Migration : DbSchemaAwareMigration
    {
       public Initial_Migration([CanBeNull] IDbContextSchema schema)

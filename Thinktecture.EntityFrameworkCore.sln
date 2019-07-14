@@ -16,6 +16,8 @@ ProjectSection(SolutionItems) = preProject
 	azure-pipelines.yml = azure-pipelines.yml
 	LICENCE.md = LICENCE.md
 	README.md = README.md
+	Directory.Build.props = Directory.Build.props
+	.gitignore = .gitignore
 EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Thinktecture.EntityFrameworkCore.SqlServer.Testing", "src\Thinktecture.EntityFrameworkCore.SqlServer.Testing\Thinktecture.EntityFrameworkCore.SqlServer.Testing.csproj", "{4A68E5B4-B0C9-4076-875A-C88AFAC5EB5F}"

@@ -70,7 +70,9 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
                break;
             default:
                var opType = operation.GetType();
+#pragma warning disable CA1507
                SetSchema(operation, opType, "Schema");
+#pragma warning restore CA1507
                SetSchema(operation, opType, "PrincipalSchema");
                break;
          }

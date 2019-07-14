@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -8,6 +9,8 @@ using Xunit;
 
 namespace Thinktecture.Linq.Expressions.RelinqBaseTypeMemberAccessVisitorTests
 {
+   [SuppressMessage("ReSharper", "UnassignedGetOnlyAutoProperty")]
+   [SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Local")]
    public class Visit
    {
       [Fact]
