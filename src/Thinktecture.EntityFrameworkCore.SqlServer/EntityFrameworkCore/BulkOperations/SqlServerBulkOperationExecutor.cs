@@ -2,8 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
+using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -50,7 +52,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
 
          var factory = ctx.GetService<IEntityDataReaderFactory>();
          var entityType = ctx.GetEntityType<T>();
-         var entityPropertyInfos = entityType.GetProperties().Select(p => p.PropertyInfo).ToList();
+         var entityPropertyInfos = options.PropertiesProvider?.GetProperties() ?? entityType.GetProperties().Select(p => p.PropertyInfo).ToList();
          var sqlCon = (SqlConnection)ctx.Database.GetDbConnection();
          var sqlTx = (SqlTransaction)ctx.Database.CurrentTransaction?.GetDbTransaction();
 
@@ -70,10 +72,10 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
             if (options.BatchSize.HasValue)
                bulkCopy.BatchSize = options.BatchSize.Value;
 
-            foreach (var property in entityType.GetProperties())
+            foreach (var property in reader.GetProperties())
             {
-               var relational = property.Relational();
-               var index = reader.GetPropertyIndex(property.PropertyInfo);
+               var relational = entityType.FindProperty(property)?.Relational() ?? throw new ArgumentException($"The property '{property.Name}' does not belong to entity '{entityType.Name}'.");
+               var index = reader.GetPropertyIndex(property);
                bulkCopy.ColumnMappings.Add(new SqlBulkCopyColumnMapping(index, relational.ColumnName));
             }
 

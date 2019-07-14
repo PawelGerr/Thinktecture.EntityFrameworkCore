@@ -17,7 +17,7 @@ namespace Thinktecture.ExtensionsTests.ModelBuilderExtensionsTests
          var entityType = DbContextWithSchema.Model.FindEntityType(typeof(CustomTempTable));
          entityType.Name.Should().Be("Thinktecture.TestDatabaseContext.CustomTempTable");
 
-         var properties = entityType.GetProperties();
+         var properties = entityType.GetProperties().ToList();
          properties.Should().HaveCount(2);
 
          var intProperty = properties.First();

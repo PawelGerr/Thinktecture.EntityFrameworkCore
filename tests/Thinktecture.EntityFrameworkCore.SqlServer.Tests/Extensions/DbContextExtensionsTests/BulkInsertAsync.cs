@@ -1,34 +1,21 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
-using Thinktecture.EntityFrameworkCore.TempTables;
 using Thinktecture.TestDatabaseContext;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperationExecutorTests
+namespace Thinktecture.Extensions.DbContextExtensionsTests
 {
    // ReSharper disable once InconsistentNaming
    public class BulkInsertAsync : IntegrationTestsBase
    {
-      private readonly SqlServerBulkOperationExecutor _sut = new SqlServerBulkOperationExecutor();
-
+      /// <inheritdoc />
       public BulkInsertAsync([NotNull] ITestOutputHelper testOutputHelper)
          : base(testOutputHelper, true)
       {
-      }
-
-      [Fact]
-      public void Should_throw_when_inserting_queryType_without_providing_tablename()
-      {
-         ConfigureModel = builder => builder.ConfigureTempTable<int>();
-
-         _sut.Awaiting(sut => sut.BulkInsertAsync(DbContext, new List<TempTable<int>>(), new SqlBulkInsertOptions()))
-             .Should().Throw<InvalidOperationException>();
       }
 
       [Fact]
@@ -42,7 +29,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
                           };
          var testEntities = new[] { testEntity };
 
-         await _sut.BulkInsertAsync(DbContext, testEntities, new SqlBulkInsertOptions());
+         await DbContext.BulkInsertAsync(testEntities);
 
          var loadedEntities = await DbContext.TestEntities.ToListAsync();
          loadedEntities.Should().HaveCount(1);
@@ -65,13 +52,8 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
                              Count = 42
                           };
          var testEntities = new[] { testEntity };
-         var idProperty = typeof(TestEntity).GetProperty(nameof(TestEntity.Id));
-         var countProperty = typeof(TestEntity).GetProperty(nameof(TestEntity.Count));
 
-         await _sut.BulkInsertAsync(DbContext, testEntities, new SqlBulkInsertOptions
-                                                             {
-                                                                PropertiesProvider = new PropertiesProvider(new[] { idProperty, countProperty })
-                                                             });
+         await DbContext.BulkInsertAsync(testEntities, entity => new { entity.Id, entity.Count });
 
          var loadedEntities = await DbContext.TestEntities.ToListAsync();
          loadedEntities.Should().HaveCount(1);

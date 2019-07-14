@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -45,6 +46,52 @@ namespace Thinktecture
 
             return (long)_rowVersionConverter.ConvertFromProvider(bytes);
          }
+      }
+
+      /// <summary>
+      /// Copies <paramref name="entities"/> into a table using <see cref="SqlBulkCopy"/>.
+      /// </summary>
+      /// <param name="ctx">Database context.</param>
+      /// <param name="entities">Entities to insert.</param>
+      /// <param name="propertiesToInsert">Properties to insert.</param>
+      /// <param name="cancellationToken">Cancellation token.</param>
+      /// <typeparam name="T">Entity type.</typeparam>
+      /// <exception cref="ArgumentNullException"> <paramref name="ctx"/> or <paramref name="entities"/> is <c>null</c>.</exception>
+      [NotNull]
+      public static Task BulkInsertAsync<T>([NotNull] this DbContext ctx,
+                                            [NotNull] IEnumerable<T> entities,
+                                            [NotNull] Expression<Func<T, object>> propertiesToInsert,
+                                            CancellationToken cancellationToken = default)
+         where T : class
+      {
+         var options = new SqlBulkInsertOptions { PropertiesProvider = PropertiesProvider.From(propertiesToInsert) };
+         return BulkInsertAsync(ctx, entities, options, cancellationToken);
+      }
+
+      /// <summary>
+      /// Copies <paramref name="entities"/> into a table using <see cref="SqlBulkCopy"/>.
+      /// </summary>
+      /// <param name="ctx">Database context.</param>
+      /// <param name="entities">Entities to insert.</param>
+      /// <param name="options">Options.</param>
+      /// <param name="cancellationToken">Cancellation token.</param>
+      /// <typeparam name="T">Entity type.</typeparam>
+      /// <exception cref="ArgumentNullException"> <paramref name="ctx"/> or <paramref name="entities"/> is <c>null</c>.</exception>
+      [NotNull]
+      public static async Task BulkInsertAsync<T>([NotNull] this DbContext ctx,
+                                                  [NotNull] IEnumerable<T> entities,
+                                                  [CanBeNull] SqlBulkInsertOptions options = null,
+                                                  CancellationToken cancellationToken = default)
+         where T : class
+      {
+         if (ctx == null)
+            throw new ArgumentNullException(nameof(ctx));
+         if (entities == null)
+            throw new ArgumentNullException(nameof(entities));
+
+         options = options ?? new SqlBulkInsertOptions();
+
+         await ctx.GetService<ISqlServerBulkOperationExecutor>().BulkInsertAsync(ctx, entities, options, cancellationToken).ConfigureAwait(false);
       }
 
       /// <summary>

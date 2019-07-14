@@ -123,7 +123,7 @@ namespace Thinktecture.Linq.Expressions
       }
 
       [NotNull]
-      private static Exception NotSupported(Expression node)
+      private static Exception NotSupported([NotNull] Expression node)
       {
          return new NotSupportedException($"Node of type '{node.GetType().DisplayName()}' is not supported.");
       }

@@ -13,6 +13,7 @@ namespace Thinktecture.EntityFrameworkCore.Data
    public abstract class EntityDataReaderBase<T> : IEntityDataReader
       where T : class
    {
+      private readonly IReadOnlyList<PropertyInfo> _properties;
       private readonly IEnumerator<T> _enumerator;
 
       /// <summary>
@@ -22,17 +23,19 @@ namespace Thinktecture.EntityFrameworkCore.Data
       protected T Current => _enumerator.Current ?? throw new InvalidOperationException("The entities to insert cannot be null.");
 
       /// <inheritdoc />
-      public abstract int FieldCount { get; }
+      public int FieldCount => _properties.Count;
 
       /// <summary>
       /// Initializes <see cref="EntityDataReaderBase{T}"/>
       /// </summary>
-      /// <param name="entities"></param>
-      protected EntityDataReaderBase([NotNull] IEnumerable<T> entities)
+      /// <param name="entities">Entities to read.</param>
+      /// <param name="properties">Properties to read.</param>
+      protected EntityDataReaderBase([NotNull] IEnumerable<T> entities, [NotNull] IReadOnlyList<PropertyInfo> properties)
       {
          if (entities == null)
             throw new ArgumentNullException(nameof(entities));
 
+         _properties = properties ?? throw new ArgumentNullException(nameof(properties));
          _enumerator = entities.GetEnumerator();
       }
 
@@ -42,6 +45,12 @@ namespace Thinktecture.EntityFrameworkCore.Data
       /// <param name="propertyInfo">Property info to get index for.</param>
       /// <returns>Index of the property.</returns>
       public abstract int GetPropertyIndex(PropertyInfo propertyInfo);
+
+      /// <inheritdoc />
+      public IReadOnlyList<PropertyInfo> GetProperties()
+      {
+         return _properties;
+      }
 
       /// <inheritdoc />
       public abstract object GetValue(int i);

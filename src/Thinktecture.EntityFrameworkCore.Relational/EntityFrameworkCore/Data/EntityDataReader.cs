@@ -13,7 +13,6 @@ namespace Thinktecture.EntityFrameworkCore.Data
    public class EntityDataReader<T> : EntityDataReaderBase<T>
       where T : class
    {
-      private readonly IReadOnlyList<PropertyInfo> _propertiesToRead;
       private readonly IReadOnlyList<PropertyInfo> _getValuePropertyInfos;
       private readonly Func<T, int, object> _getValue;
 
@@ -31,15 +30,11 @@ namespace Thinktecture.EntityFrameworkCore.Data
                               [NotNull] IReadOnlyList<PropertyInfo> propertiesToRead,
                               [NotNull] IReadOnlyList<PropertyInfo> getValuePropertyInfos,
                               [NotNull] Func<T, int, object> getValue)
-         : base(entities)
+         : base(entities, propertiesToRead)
       {
-         _propertiesToRead = propertiesToRead ?? throw new ArgumentNullException(nameof(propertiesToRead));
          _getValuePropertyInfos = getValuePropertyInfos ?? throw new ArgumentNullException(nameof(getValuePropertyInfos));
          _getValue = getValue ?? throw new ArgumentNullException(nameof(getValue));
       }
-
-      /// <inheritdoc />
-      public override int FieldCount => _propertiesToRead.Count;
 
       /// <inheritdoc />
       public override int GetPropertyIndex([NotNull] PropertyInfo propertyInfo)

@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
+using JetBrains.Annotations;
 
 namespace Thinktecture.EntityFrameworkCore.BulkOperations
 {
@@ -29,5 +31,11 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       /// Default is set to <c>true</c>.
       /// </summary>
       public bool EnableStreaming { get; set; } = true;
+
+      /// <summary>
+      /// Properties to insert.
+      /// </summary>
+      [CanBeNull]
+      public IPropertiesProvider PropertiesProvider { get; set; }
    }
 }

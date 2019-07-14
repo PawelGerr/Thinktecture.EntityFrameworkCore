@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Data;
 using System.Reflection;
 
@@ -14,5 +15,11 @@ namespace Thinktecture.EntityFrameworkCore.Data
       /// <param name="propertyInfo">Property info to get index for.</param>
       /// <returns>Index of the property.</returns>
       int GetPropertyIndex(PropertyInfo propertyInfo);
+
+      /// <summary>
+      /// Gets the properties the reader is created for.
+      /// </summary>
+      /// <returns>A collection of <see cref="PropertyInfo"/>.</returns>
+      IReadOnlyList<PropertyInfo> GetProperties();
    }
 }
