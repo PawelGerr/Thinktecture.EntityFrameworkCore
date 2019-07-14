@@ -1,10 +1,9 @@
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using JetBrains.Annotations;
-using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace Thinktecture.EntityFrameworkCore.Data
 {
@@ -15,39 +14,89 @@ namespace Thinktecture.EntityFrameworkCore.Data
    public class EntityDataReaderFactory : IEntityDataReaderFactory
    {
       private readonly IPropertiesAccessorGenerator _generator;
-      private readonly ConcurrentDictionary<IEntityType, ReaderCacheItem> _cache;
+      private readonly IMemoryCache _cache;
 
       /// <summary>
       /// Creates instances of <see cref="IEntityDataReader"/>.
       /// </summary>
       /// <param name="generator">Generates code required by <see cref="IEntityDataReader"/>.</param>
-      public EntityDataReaderFactory([NotNull] IPropertiesAccessorGenerator generator)
+      /// <param name="cache">In-memory cache for caching the output of the code generation.</param>
+      public EntityDataReaderFactory([NotNull] IPropertiesAccessorGenerator generator, IMemoryCache cache)
       {
          _generator = generator ?? throw new ArgumentNullException(nameof(generator));
-         _cache = new ConcurrentDictionary<IEntityType, ReaderCacheItem>();
+         _cache = cache;
       }
 
       /// <inheritdoc />
-      public IEntityDataReader Create<T>(IEnumerable<T> entities, IEntityType entityType)
+      public IEntityDataReader Create<T>(IEnumerable<T> entities)
+         where T : class
+      {
+         return CreateInternal(entities, GetRelevantProperties(typeof(T)));
+      }
+
+      /// <inheritdoc />
+      public IEntityDataReader Create<T>(IEnumerable<T> entities, IReadOnlyList<PropertyInfo> properties)
+         where T : class
+      {
+         return CreateInternal(entities, properties);
+      }
+
+      [NotNull]
+      private IEntityDataReader CreateInternal<T>([NotNull] IEnumerable<T> entities, [NotNull] IReadOnlyList<PropertyInfo> properties)
          where T : class
       {
          if (entities == null)
             throw new ArgumentNullException(nameof(entities));
-         if (entityType == null)
-            throw new ArgumentNullException(nameof(entityType));
+         if (properties == null)
+            throw new ArgumentNullException(nameof(properties));
 
-         var cachedItem = _cache.GetOrAdd(entityType, type => GenerateDataReaderDependencies<T>(entityType));
+         var cachedItem = _cache.GetOrCreate(new EntityDataReaderFactoryCacheKey(typeof(T)), item => GenerateDataReaderDependencies<T>());
 
-         return new EntityDataReader<T>(entities, cachedItem.Properties, (Func<T, int, object>)cachedItem.GetValueDelegate);
+         return new EntityDataReader<T>(entities, properties, cachedItem.Properties, (Func<T, int, object>)cachedItem.GetValueDelegate);
       }
 
       [NotNull]
-      private ReaderCacheItem GenerateDataReaderDependencies<T>([NotNull] IEntityType entityType)
+      private ReaderCacheItem GenerateDataReaderDependencies<T>()
       {
-         var properties = entityType.GetProperties().Select(p => p.PropertyInfo).ToList().AsReadOnly();
+         var properties = GetRelevantProperties(typeof(T));
          var getValue = _generator.CreatePropertiesAccessor<T>(properties);
 
          return new ReaderCacheItem(properties, getValue);
+      }
+
+      [NotNull]
+      private static IReadOnlyList<PropertyInfo> GetRelevantProperties([NotNull] Type type)
+      {
+         return type.GetProperties(BindingFlags.Instance | BindingFlags.Public);
+      }
+
+      // use wrapper around the type so the cached items do not collide with items of other components
+      private readonly struct EntityDataReaderFactoryCacheKey : IEquatable<EntityDataReaderFactoryCacheKey>
+      {
+         private readonly Type _type;
+
+         public EntityDataReaderFactoryCacheKey([NotNull] Type type)
+         {
+            _type = type ?? throw new ArgumentNullException(nameof(type));
+         }
+
+         /// <inheritdoc />
+         public bool Equals(EntityDataReaderFactoryCacheKey other)
+         {
+            return _type == other._type;
+         }
+
+         /// <inheritdoc />
+         public override bool Equals(object obj)
+         {
+            return obj is EntityDataReaderFactoryCacheKey other && Equals(other);
+         }
+
+         /// <inheritdoc />
+         public override int GetHashCode()
+         {
+            return _type != null ? _type.GetHashCode() : 0;
+         }
       }
 
       private class ReaderCacheItem

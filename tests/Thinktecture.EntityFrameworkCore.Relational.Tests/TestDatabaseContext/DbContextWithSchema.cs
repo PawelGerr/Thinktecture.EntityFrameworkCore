@@ -1,4 +1,5 @@
 using System;
+using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Thinktecture.EntityFrameworkCore;
 
@@ -14,7 +15,7 @@ namespace Thinktecture.TestDatabaseContext
 
       public Action<ModelBuilder> ConfigureModel { get; set; }
 
-      public DbContextWithSchema(DbContextOptions<DbContextWithSchema> options, string schema)
+      public DbContextWithSchema([NotNull] DbContextOptions<DbContextWithSchema> options, string schema)
          : base(options)
       {
          Schema = schema;

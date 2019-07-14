@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
@@ -49,10 +50,11 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
 
          var factory = ctx.GetService<IEntityDataReaderFactory>();
          var entityType = ctx.GetEntityType<T>();
+         var entityPropertyInfos = entityType.GetProperties().Select(p => p.PropertyInfo).ToList();
          var sqlCon = (SqlConnection)ctx.Database.GetDbConnection();
          var sqlTx = (SqlTransaction)ctx.Database.CurrentTransaction?.GetDbTransaction();
 
-         using (var reader = factory.Create(entities, entityType))
+         using (var reader = factory.Create(entities, entityPropertyInfos))
          using (var bulkCopy = new SqlBulkCopy(sqlCon, options.SqlBulkCopyOptions, sqlTx))
          {
             bulkCopy.DestinationTableName = $"[{tableName}]";

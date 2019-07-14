@@ -13,29 +13,33 @@ namespace Thinktecture.EntityFrameworkCore.Data
    public class EntityDataReader<T> : EntityDataReaderBase<T>
       where T : class
    {
-      private readonly IReadOnlyList<PropertyInfo> _propertyInfos;
+      private readonly IReadOnlyList<PropertyInfo> _propertiesToRead;
+      private readonly IReadOnlyList<PropertyInfo> _getValuePropertyInfos;
       private readonly Func<T, int, object> _getValue;
 
       /// <summary>
       /// Initializes new instance of <see cref="EntityDataReader{T}"/>.
       /// </summary>
       /// <param name="entities">Entities to iterate over.</param>
-      /// <param name="propertyInfos">PropertyInfos of scalar properties of the entity.</param>
+      /// <param name="propertiesToRead">Properties to read.</param>
+      /// <param name="getValuePropertyInfos">Properties of the entity used to generated the delegate <paramref name="getValue"/>.</param>
       /// <param name="getValue">
       /// Callback for getting a value of the property with a specific index.
-      /// The index must match with the provided <paramref name="propertyInfos"/>.
+      /// The index must match with the provided <paramref name="getValuePropertyInfos"/>.
       /// </param>
       public EntityDataReader([NotNull] IEnumerable<T> entities,
-                              [NotNull] IReadOnlyList<PropertyInfo> propertyInfos,
+                              [NotNull] IReadOnlyList<PropertyInfo> propertiesToRead,
+                              [NotNull] IReadOnlyList<PropertyInfo> getValuePropertyInfos,
                               [NotNull] Func<T, int, object> getValue)
          : base(entities)
       {
-         _propertyInfos = propertyInfos ?? throw new ArgumentNullException(nameof(propertyInfos));
+         _propertiesToRead = propertiesToRead ?? throw new ArgumentNullException(nameof(propertiesToRead));
+         _getValuePropertyInfos = getValuePropertyInfos ?? throw new ArgumentNullException(nameof(getValuePropertyInfos));
          _getValue = getValue ?? throw new ArgumentNullException(nameof(getValue));
       }
 
       /// <inheritdoc />
-      public override int FieldCount => _propertyInfos.Count;
+      public override int FieldCount => _propertiesToRead.Count;
 
       /// <inheritdoc />
       public override int GetPropertyIndex([NotNull] PropertyInfo propertyInfo)
@@ -43,7 +47,7 @@ namespace Thinktecture.EntityFrameworkCore.Data
          if (propertyInfo == null)
             throw new ArgumentNullException(nameof(propertyInfo));
 
-         var index = _propertyInfos.IndexOf(propertyInfo);
+         var index = _getValuePropertyInfos.IndexOf(propertyInfo);
 
          if (index >= 0)
             return index;
