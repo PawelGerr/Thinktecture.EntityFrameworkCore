@@ -14,14 +14,14 @@ namespace Thinktecture.EntityFrameworkCore.Data
    // ReSharper disable once ClassNeverInstantiated.Global
    public class EntityDataReaderFactory : IEntityDataReaderFactory
    {
-      private readonly IEntityDataReaderGenerator _generator;
+      private readonly IPropertiesAccessorGenerator _generator;
       private readonly ConcurrentDictionary<IEntityType, ReaderCacheItem> _cache;
 
       /// <summary>
       /// Creates instances of <see cref="IEntityDataReader"/>.
       /// </summary>
       /// <param name="generator">Generates code required by <see cref="IEntityDataReader"/>.</param>
-      public EntityDataReaderFactory([NotNull] IEntityDataReaderGenerator generator)
+      public EntityDataReaderFactory([NotNull] IPropertiesAccessorGenerator generator)
       {
          _generator = generator ?? throw new ArgumentNullException(nameof(generator));
          _cache = new ConcurrentDictionary<IEntityType, ReaderCacheItem>();

@@ -8,7 +8,7 @@ namespace Thinktecture.EntityFrameworkCore.Data
    /// <summary>
    /// Generates code required by the <see cref="EntityDataReader{T}"/>
    /// </summary>
-   public interface IEntityDataReaderGenerator
+   public interface IPropertiesAccessorGenerator
    {
       /// <summary>
       /// Create property accessor.

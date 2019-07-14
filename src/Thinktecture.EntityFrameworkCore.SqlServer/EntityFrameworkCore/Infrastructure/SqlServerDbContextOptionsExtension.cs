@@ -46,7 +46,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
          if (AddTempTableSupport)
          {
             services.TryAddSingleton<IEntityDataReaderFactory, EntityDataReaderFactory>();
-            services.TryAddSingleton<IEntityDataReaderGenerator, EntityDataReaderGenerator>();
+            services.TryAddSingleton<IPropertiesAccessorGenerator, PropertiesAccessorGenerator>();
             services.TryAddSingleton<ITempTableCreator, SqlServerTempTableCreator>();
             services.TryAddSingleton<ISqlServerBulkOperationExecutor, SqlServerBulkOperationExecutor>();
          }
