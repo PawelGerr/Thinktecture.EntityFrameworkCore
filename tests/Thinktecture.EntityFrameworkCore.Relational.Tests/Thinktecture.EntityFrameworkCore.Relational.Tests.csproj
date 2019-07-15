@@ -2,7 +2,7 @@
 
     <PropertyGroup>
         <TargetFramework>netcoreapp2.2</TargetFramework>
-        <NoWarn>$(NoWarn);CS1591</NoWarn>
+        <NoWarn>$(NoWarn);CS1591;CA1063;CA1812;CA1816;CA1822;CA2000</NoWarn>
     </PropertyGroup>
 
     <ItemGroup>

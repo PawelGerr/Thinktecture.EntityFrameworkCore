@@ -1,9 +1,14 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Thinktecture.EntityFrameworkCore.Infrastructure;
 using Thinktecture.TestDatabaseContext;
+
+[assembly: SuppressMessage("ReSharper", "CA1063")]
+[assembly: SuppressMessage("ReSharper", "CA1816")]
+[assembly: SuppressMessage("ReSharper", "CA1822")]
 
 namespace Thinktecture
 {

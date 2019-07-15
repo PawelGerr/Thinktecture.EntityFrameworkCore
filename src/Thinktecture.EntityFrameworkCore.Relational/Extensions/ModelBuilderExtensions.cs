@@ -52,6 +52,9 @@ namespace Thinktecture
       public static QueryTypeBuilder<T> ConfigureCustomTempTable<T>([NotNull] this ModelBuilder modelBuilder)
          where T : class
       {
+         if (modelBuilder == null)
+            throw new ArgumentNullException(nameof(modelBuilder));
+
          return modelBuilder.Query<T>().SetTableName();
       }
 
@@ -65,6 +68,9 @@ namespace Thinktecture
       [NotNull]
       public static QueryTypeBuilder<TempTable<TColumn1>> ConfigureTempTable<TColumn1>([NotNull] this ModelBuilder modelBuilder)
       {
+         if (modelBuilder == null)
+            throw new ArgumentNullException(nameof(modelBuilder));
+
          return modelBuilder.Query<TempTable<TColumn1>>().SetTableName();
       }
 
@@ -79,6 +85,9 @@ namespace Thinktecture
       [NotNull]
       public static QueryTypeBuilder<TempTable<TColumn1, TColumn2>> ConfigureTempTable<TColumn1, TColumn2>([NotNull] this ModelBuilder modelBuilder)
       {
+         if (modelBuilder == null)
+            throw new ArgumentNullException(nameof(modelBuilder));
+
          return modelBuilder.Query<TempTable<TColumn1, TColumn2>>().SetTableName();
       }
 

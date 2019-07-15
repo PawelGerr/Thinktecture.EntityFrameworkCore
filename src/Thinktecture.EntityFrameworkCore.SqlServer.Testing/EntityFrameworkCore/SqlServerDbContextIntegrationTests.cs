@@ -167,7 +167,7 @@ namespace Thinktecture.EntityFrameworkCore
       /// <summary>
       /// Disposes of inner resources.
       /// </summary>
-      /// <param name="disposing">Indication whether this method is being called by the method <see cref="Dispose"/>.</param>
+      /// <param name="disposing">Indication whether this method is being called by the method <see cref="SqlServerDbContextIntegrationTests{T}.Dispose()"/>.</param>
       protected virtual void Dispose(bool disposing)
       {
          if (!disposing)

@@ -19,7 +19,9 @@ namespace Thinktecture
       /// <typeparam name="TIn">Type of the argument of the <paramref name="lambda"/>.</typeparam>
       /// <typeparam name="TOut">Return type of the <paramref name="lambda"/>.</typeparam>
       /// <exception cref="InvalidOperationException">The method is called directly instead being used with <see cref="ExpressionBodyExtractingVisitor"/>.</exception>
+#pragma warning disable CA1801
       public static TOut ExtractBody<TIn, TOut>(this Expression<Func<TIn, TOut>> lambda, TIn parameter)
+#pragma warning restore CA1801
       {
          throw new InvalidOperationException($"This method is not intended to be used directly but with the '{nameof(ExpressionBodyExtractingVisitor)}'.");
       }

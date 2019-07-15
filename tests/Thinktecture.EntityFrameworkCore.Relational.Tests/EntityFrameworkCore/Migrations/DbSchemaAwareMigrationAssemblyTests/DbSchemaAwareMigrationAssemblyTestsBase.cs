@@ -9,7 +9,7 @@ using Moq;
 
 namespace Thinktecture.EntityFrameworkCore.Migrations.DbSchemaAwareMigrationAssemblyTests
 {
-   public abstract class DbSchemaAwareMigrationAssemblyTests : TestBase
+   public abstract class DbSchemaAwareMigrationAssemblyTestsBase : TestBase
    {
       protected Mock<ICurrentDbContext> CurrentCtxMock { get; }
       protected Mock<IDbContextOptions> OptionsMock { get; }
@@ -21,7 +21,7 @@ namespace Thinktecture.EntityFrameworkCore.Migrations.DbSchemaAwareMigrationAsse
       [NotNull]
       protected DbSchemaAwareMigrationAssembly SUT => _sut ?? (_sut = new DbSchemaAwareMigrationAssembly(CurrentCtxMock.Object, OptionsMock.Object, IdGeneratorMock.Object, LoggerMock.Object));
 
-      protected DbSchemaAwareMigrationAssemblyTests()
+      protected DbSchemaAwareMigrationAssemblyTestsBase()
       {
          CurrentCtxMock = new Mock<ICurrentDbContext>(MockBehavior.Strict);
          OptionsMock = new Mock<IDbContextOptions>(MockBehavior.Strict);

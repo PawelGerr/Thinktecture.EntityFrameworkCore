@@ -13,6 +13,7 @@
     <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
     <RootNamespace>Thinktecture</RootNamespace>
     <LangVersion>7.3</LangVersion>
+    <NoWarn>$(NoWarn);CA1303;CA1062;CA1707;CA1801</NoWarn>
   </PropertyGroup>
 
 </Project>

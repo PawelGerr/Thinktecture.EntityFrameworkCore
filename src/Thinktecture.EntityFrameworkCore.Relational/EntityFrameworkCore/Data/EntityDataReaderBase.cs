@@ -77,7 +77,7 @@ namespace Thinktecture.EntityFrameworkCore.Data
       /// <summary>
       /// Disposes of inner resources.
       /// </summary>
-      /// <param name="disposing">Indication whether this method is being called by the method <see cref="Dispose"/>.</param>
+      /// <param name="disposing">Indication whether this method is being called by the method <see cref="EntityDataReaderBase{T}.Dispose()"/>.</param>
       protected virtual void Dispose(bool disposing)
       {
          if (disposing)

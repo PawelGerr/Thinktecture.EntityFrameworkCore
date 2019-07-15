@@ -8,7 +8,7 @@ using Xunit;
 
 namespace Thinktecture.EntityFrameworkCore.Migrations.DbSchemaAwareMigrationAssemblyTests
 {
-   public class CreateMigration : DbSchemaAwareMigrationAssemblyTests
+   public class CreateMigration : DbSchemaAwareMigrationAssemblyTestsBase
    {
       [Fact]
       public void Should_throw_when_schema_type_is_null()
