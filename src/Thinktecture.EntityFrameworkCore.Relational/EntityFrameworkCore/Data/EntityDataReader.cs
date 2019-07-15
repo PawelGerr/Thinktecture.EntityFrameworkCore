@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore.Internal;
@@ -32,7 +33,12 @@ namespace Thinktecture.EntityFrameworkCore.Data
                               [NotNull] Func<T, int, object> getValue)
          : base(entities, propertiesToRead)
       {
-         _getValuePropertyInfos = getValuePropertyInfos ?? throw new ArgumentNullException(nameof(getValuePropertyInfos));
+         if (getValuePropertyInfos == null)
+            throw new ArgumentNullException(nameof(getValuePropertyInfos));
+         if (getValuePropertyInfos.Count == 0)
+            throw new ArgumentException("The 'getValuePropertyInfos' collection cannot be null.", nameof(getValuePropertyInfos));
+
+         _getValuePropertyInfos = getValuePropertyInfos;
          _getValue = getValue ?? throw new ArgumentNullException(nameof(getValue));
       }
 
@@ -41,6 +47,8 @@ namespace Thinktecture.EntityFrameworkCore.Data
       {
          if (propertyInfo == null)
             throw new ArgumentNullException(nameof(propertyInfo));
+         if (!Properties.Contains(propertyInfo))
+            throw new ArgumentException($"The provided property '{propertyInfo.Name}' cannot be read using current data reader.", nameof(propertyInfo));
 
          var index = _getValuePropertyInfos.IndexOf(propertyInfo);
 

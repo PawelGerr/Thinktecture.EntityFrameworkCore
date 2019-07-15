@@ -31,18 +31,11 @@ namespace Thinktecture.EntityFrameworkCore.Data
       public IEntityDataReader Create<T>(IEnumerable<T> entities)
          where T : class
       {
-         return CreateInternal(entities, GetRelevantProperties(typeof(T)));
+         return Create(entities, GetRelevantProperties(typeof(T)));
       }
 
       /// <inheritdoc />
       public IEntityDataReader Create<T>(IEnumerable<T> entities, IReadOnlyList<PropertyInfo> properties)
-         where T : class
-      {
-         return CreateInternal(entities, properties);
-      }
-
-      [NotNull]
-      private IEntityDataReader CreateInternal<T>([NotNull] IEnumerable<T> entities, [NotNull] IReadOnlyList<PropertyInfo> properties)
          where T : class
       {
          if (entities == null)

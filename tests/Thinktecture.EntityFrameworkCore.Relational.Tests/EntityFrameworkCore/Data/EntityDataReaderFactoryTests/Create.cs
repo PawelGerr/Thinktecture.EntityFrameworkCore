@@ -13,6 +13,8 @@ namespace Thinktecture.EntityFrameworkCore.Data.EntityDataReaderFactoryTests
 {
    public class Create : IDisposable
    {
+      public delegate object GetValue<in T>(T entity, int index);
+
       private readonly Mock<IPropertiesAccessorGenerator> _generatorMock = new Mock<IPropertiesAccessorGenerator>();
       private readonly IMemoryCache _memoryCache = new MemoryCache(new MemoryCacheOptions());
 
@@ -52,45 +54,55 @@ namespace Thinktecture.EntityFrameworkCore.Data.EntityDataReaderFactoryTests
       }
 
       [Fact]
+      public void Should_use_propertyAccessor_from_cache()
+      {
+         _generatorMock.Setup(g => g.CreatePropertiesAccessor<TestEntity>(It.IsAny<IReadOnlyList<PropertyInfo>>())).Returns((entity, i) => throw new InvalidOperationException());
+
+         SUT.Create(Array.Empty<TestEntity>());
+         SUT.Create(Array.Empty<TestEntity>());
+
+         _generatorMock.Verify(g => g.CreatePropertiesAccessor<TestEntity>(It.IsAny<IReadOnlyList<PropertyInfo>>()), Times.Once);
+      }
+
+      [Fact]
       public void Should_generate_factory_for_all_properties()
       {
-         _generatorMock.Setup(g => g.CreatePropertiesAccessor<CustomTempTable>(It.IsAny<IReadOnlyList<PropertyInfo>>())).Returns((entity, i) =>
-                                                                                                                                 {
-                                                                                                                                    if (i == 0)
-                                                                                                                                       return entity.Column1;
-                                                                                                                                    if (i == 1)
-                                                                                                                                       return entity.Column2;
+         var delegateMock = new Mock<GetValue<CustomTempTable>>();
+         delegateMock.Setup(_ => _(It.IsAny<CustomTempTable>(), It.IsAny<int>())).Returns(null);
+         _generatorMock.Setup(g => g.CreatePropertiesAccessor<CustomTempTable>(It.IsAny<IReadOnlyList<PropertyInfo>>())).Returns((e, i) => delegateMock.Object(e, i));
 
-                                                                                                                                    throw new ArgumentException("out of range");
-                                                                                                                                 });
-
-         var factory = SUT.Create(new[] { new CustomTempTable { Column1 = 42, Column2 = "foo" } });
+         var entity = new CustomTempTable();
+         var factory = SUT.Create(new[] { entity });
 
          factory.FieldCount.Should().Be(2);
          factory.Read().Should().BeTrue();
-         factory.GetValue(0).Should().Be(42);
-         factory.GetValue(1).Should().Be("foo");
+
+         factory.GetValue(0).Should().BeNull();
+         delegateMock.Verify(_ => _(entity, 0), Times.Once);
+
+         factory.GetValue(1).Should().BeNull();
+         delegateMock.Verify(_ => _(entity, 1), Times.Once);
+
          factory.Read().Should().BeFalse();
+
+         delegateMock.Verify(_ => _(It.IsAny<CustomTempTable>(), It.IsAny<int>()), Times.Exactly(2));
       }
 
       [Fact]
       public void Should_generate_factory_for_provided_properties()
       {
-         _generatorMock.Setup(g => g.CreatePropertiesAccessor<CustomTempTable>(It.IsAny<IReadOnlyList<PropertyInfo>>())).Returns((entity, i) =>
-                                                                                                                                 {
-                                                                                                                                    if (i == 0)
-                                                                                                                                       return entity.Column1;
-                                                                                                                                    if (i == 1)
-                                                                                                                                       return entity.Column2;
+         var delegateMock = new Mock<GetValue<CustomTempTable>>();
+         delegateMock.Setup(_ => _(It.IsAny<CustomTempTable>(), It.IsAny<int>())).Returns(null);
+         _generatorMock.Setup(g => g.CreatePropertiesAccessor<CustomTempTable>(It.IsAny<IReadOnlyList<PropertyInfo>>())).Returns((e, i) => delegateMock.Object(e, i));
 
-                                                                                                                                    throw new ArgumentException("out of range");
-                                                                                                                                 });
          var property = typeof(CustomTempTable).GetProperty(nameof(CustomTempTable.Column2));
-         var factory = SUT.Create(new[] { new CustomTempTable { Column1 = 42, Column2 = "foo" } }, new[] { property });
+         var entity = new CustomTempTable();
+         var factory = SUT.Create(new[] { entity }, new[] { property });
 
          factory.FieldCount.Should().Be(1);
          factory.Read().Should().BeTrue();
-         factory.GetValue(1).Should().Be("foo");
+         factory.GetValue(1).Should().BeNull();
+         delegateMock.Verify(_ => _(entity, 1), Times.Once);
       }
 
       public void Dispose()

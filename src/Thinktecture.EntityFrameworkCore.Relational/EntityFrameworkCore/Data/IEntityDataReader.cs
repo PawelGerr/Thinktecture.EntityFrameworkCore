@@ -10,16 +10,16 @@ namespace Thinktecture.EntityFrameworkCore.Data
    public interface IEntityDataReader : IDataReader
    {
       /// <summary>
+      /// Gets the properties the reader is created for.
+      /// </summary>
+      /// <returns>A collection of <see cref="PropertyInfo"/>.</returns>
+      IReadOnlyList<PropertyInfo> Properties { get; }
+
+      /// <summary>
       /// Gets the index of the provided <paramref name="propertyInfo"/> used by <see cref="IDataRecord.GetValue"/>.
       /// </summary>
       /// <param name="propertyInfo">Property info to get index for.</param>
       /// <returns>Index of the property.</returns>
       int GetPropertyIndex(PropertyInfo propertyInfo);
-
-      /// <summary>
-      /// Gets the properties the reader is created for.
-      /// </summary>
-      /// <returns>A collection of <see cref="PropertyInfo"/>.</returns>
-      IReadOnlyList<PropertyInfo> GetProperties();
    }
 }

@@ -2,10 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
-using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -72,7 +70,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
             if (options.BatchSize.HasValue)
                bulkCopy.BatchSize = options.BatchSize.Value;
 
-            foreach (var property in reader.GetProperties())
+            foreach (var property in reader.Properties)
             {
                var relational = entityType.FindProperty(property)?.Relational() ?? throw new ArgumentException($"The property '{property.Name}' does not belong to entity '{entityType.Name}'.");
                var index = reader.GetPropertyIndex(property);
