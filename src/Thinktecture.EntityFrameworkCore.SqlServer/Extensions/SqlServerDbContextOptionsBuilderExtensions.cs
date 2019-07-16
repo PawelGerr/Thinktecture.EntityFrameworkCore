@@ -36,6 +36,17 @@ namespace Thinktecture
       }
 
       /// <summary>
+      /// Adds support for bulk operations.
+      /// </summary>
+      /// <param name="sqlServerOptionsBuilder">SQL Server options builder.</param>
+      /// <returns>Provided <paramref name="sqlServerOptionsBuilder"/>.</returns>
+      [NotNull]
+      public static SqlServerDbContextOptionsBuilder AddBulkOperationSupport([NotNull] this SqlServerDbContextOptionsBuilder sqlServerOptionsBuilder)
+      {
+         return AddOrUpdateExtensions(sqlServerOptionsBuilder, extension => extension.AddBulkOperationSupport = true);
+      }
+
+      /// <summary>
       /// Changes the implementation of <see cref="IMigrationsSqlGenerator"/> to <see cref="ThinktectureSqlServerMigrationsSqlGenerator"/>.
       /// </summary>
       /// <param name="sqlServerOptionsBuilder">SQL Server options builder.</param>

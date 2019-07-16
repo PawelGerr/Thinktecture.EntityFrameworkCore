@@ -77,6 +77,8 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
                bulkCopy.ColumnMappings.Add(new SqlBulkCopyColumnMapping(index, relational.ColumnName));
             }
 
+            await ctx.Database.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
+
             await bulkCopy.WriteToServerAsync(reader, cancellationToken).ConfigureAwait(false);
          }
       }

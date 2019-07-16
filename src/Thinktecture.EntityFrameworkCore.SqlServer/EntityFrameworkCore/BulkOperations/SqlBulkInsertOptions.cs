@@ -7,7 +7,7 @@ using JetBrains.Annotations;
 namespace Thinktecture.EntityFrameworkCore.BulkOperations
 {
    /// <summary>
-   /// Options used by <see cref="DbContextExtensions.BulkInsertTempTableAsync{TColumn1}"/> and similar method overloads..
+   /// Options used by <see cref="DbContextExtensions.BulkInsertValuesIntoTempTableAsync{TColumn1}"/> and similar method overloads..
    /// </summary>
    public class SqlBulkInsertOptions
    {

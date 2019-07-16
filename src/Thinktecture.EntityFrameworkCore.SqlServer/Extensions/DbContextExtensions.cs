@@ -106,7 +106,7 @@ namespace Thinktecture
       /// <returns>A query for accessing the inserted values.</returns>
       /// <exception cref="ArgumentNullException"> <paramref name="ctx"/> or <paramref name="values"/> is <c>null</c>.</exception>
       [NotNull]
-      public static Task<IQueryable<TempTable<TColumn1>>> BulkInsertTempTableAsync<TColumn1>([NotNull] this DbContext ctx,
+      public static Task<IQueryable<TempTable<TColumn1>>> BulkInsertValuesIntoTempTableAsync<TColumn1>([NotNull] this DbContext ctx,
                                                                                              [NotNull] IEnumerable<TColumn1> values,
                                                                                              [CanBeNull] SqlTempTableBulkInsertOptions options = null,
                                                                                              CancellationToken cancellationToken = default)
@@ -132,7 +132,7 @@ namespace Thinktecture
       /// <returns>A query for accessing the inserted values.</returns>
       /// <exception cref="ArgumentNullException"> <paramref name="ctx"/> or <paramref name="values"/> is <c>null</c>.</exception>
       [NotNull]
-      public static Task<IQueryable<TempTable<TColumn1, TColumn2>>> BulkInsertTempTableAsync<TColumn1, TColumn2>([NotNull] this DbContext ctx,
+      public static Task<IQueryable<TempTable<TColumn1, TColumn2>>> BulkInsertValuesIntoTempTableAsync<TColumn1, TColumn2>([NotNull] this DbContext ctx,
                                                                                                                  [NotNull] IEnumerable<(TColumn1 column1, TColumn2 column2)> values,
                                                                                                                  [CanBeNull] SqlTempTableBulkInsertOptions options = null,
                                                                                                                  CancellationToken cancellationToken = default)
@@ -174,7 +174,7 @@ namespace Thinktecture
          if (options.PrimaryKeyCreation == PrimaryKeyCreation.BeforeBulkInsert)
             await ctx.GetService<ITempTableCreator>().CreatePrimaryKeyAsync<T>(ctx, tableName, !options.MakeTableNameUnique, cancellationToken).ConfigureAwait(false);
 
-         await ctx.GetService<ISqlServerBulkOperationExecutor>().BulkInsertAsync(ctx, entities, null, tableName, options, cancellationToken).ConfigureAwait(false);
+         await ctx.GetService<ISqlServerBulkOperationExecutor>().BulkInsertAsync(ctx, entities, null, tableName, options.BulkInsertOptions , cancellationToken).ConfigureAwait(false);
 
          if (options.PrimaryKeyCreation == PrimaryKeyCreation.AfterBulkInsert)
             await ctx.GetService<ITempTableCreator>().CreatePrimaryKeyAsync<T>(ctx, tableName, !options.MakeTableNameUnique, cancellationToken).ConfigureAwait(false);

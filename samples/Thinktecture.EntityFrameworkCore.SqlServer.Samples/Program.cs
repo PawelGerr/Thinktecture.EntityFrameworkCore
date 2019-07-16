@@ -32,10 +32,12 @@ namespace Thinktecture
             var orderId = await ctx.EnsureOrderAsync(new Guid("EC1CBF87-F53F-4EF4-B286-8F5EB0AE810D"), customerId);
             await ctx.EnsureOrderItemAsync(orderId, productId, 42);
 
-            await DoBulkInsertAsync(ctx, new List<Guid> { customerId });
+            await DoBulkInsertIntoRealTableAsync(ctx);
+            await DoBulkInsertSpecifiedColumnsIntoRealTableAsync(ctx);
 
-            await DoBulkInsertAsync(ctx, new List<(Guid, Guid)> { (customerId, productId) });
-
+            await DoBulkInsertEntitiesIntoTempTableAsync(ctx);
+            await DoBulkInsertIntoTempTableAsync(ctx, new List<Guid> { customerId });
+            await DoBulkInsertIntoTempTableAsync(ctx, new List<(Guid, Guid)> { (customerId, productId) });
             await DoLeftJoinAsync(ctx);
 
             await DoRowNumberAsync(ctx);
@@ -47,15 +49,14 @@ namespace Thinktecture
       private static async Task DoRowNumberAsync([NotNull] DemoDbContext ctx)
       {
          var customers = await ctx.Customers
-                                      .Select(c => new
-                                                   {
-                                                      c.Id,
-                                                      RowNumber = EF.Functions.RowNumber(c.Id)
-                                                   })
-                                      .ToListAsync();
+                                  .Select(c => new
+                                               {
+                                                  c.Id,
+                                                  RowNumber = EF.Functions.RowNumber(c.Id)
+                                               })
+                                  .ToListAsync();
 
          Console.WriteLine($"Found customers: {String.Join(", ", customers.Select(c => $"{{ CustomerId={c.Id}, RowNumber={c.RowNumber} }}"))}");
-
       }
 
       private static async Task DoLeftJoinAsync([NotNull] DemoDbContext ctx)
@@ -67,20 +68,46 @@ namespace Thinktecture
                                                 result => new { Customer = result.Left, Order = result.Right })
                                       .ToListAsync();
 
-         Console.WriteLine($"Found customers: {String.Join(", ", customerOrder.Select(co => $"{{ CustomerId={co.Customer.Id}, OrderId={co.Order.Id} }}"))}");
+         Console.WriteLine($"Found customers: {String.Join(", ", customerOrder.Select(co => $"{{ CustomerId={co.Customer.Id}, OrderId={co.Order?.Id} }}"))}");
       }
 
-      private static async Task DoBulkInsertAsync([NotNull] DemoDbContext ctx, [NotNull] List<Guid> customerIds)
+      private static async Task DoBulkInsertIntoRealTableAsync([NotNull] DemoDbContext ctx)
       {
-         var tempTableQuery = await ctx.BulkInsertTempTableAsync(customerIds);
+         var customersToInsert = new Customer { Id = Guid.NewGuid() };
+         await ctx.BulkInsertAsync(new[] { customersToInsert });
+
+         var insertedCustomer = await ctx.Customers.FirstAsync(c => c.Id == customersToInsert.Id);
+
+         Console.WriteLine($"Inserted customers: {insertedCustomer.Id}");
+      }
+
+      private static async Task DoBulkInsertSpecifiedColumnsIntoRealTableAsync([NotNull] DemoDbContext ctx)
+      {
+         var customersToInsert = new Customer { Id = Guid.NewGuid() };
+
+         // only "Id" is sent to the DB
+         // alternative ways to specify the column:
+         // * c => new { c.Id }
+         // * c => c.Id
+         // * new SqlBulkInsertOptions { PropertiesProvider = PropertiesProvider.From<Customer>(c => new { c.Id })}
+         await ctx.BulkInsertAsync(new[] { customersToInsert }, c => new { c.Id });
+
+         var insertedCustomer = await ctx.Customers.FirstAsync(c => c.Id == customersToInsert.Id);
+
+         Console.WriteLine($"Inserted customers: {insertedCustomer.Id}");
+      }
+
+      private static async Task DoBulkInsertIntoTempTableAsync([NotNull] DemoDbContext ctx, [NotNull] List<Guid> customerIds)
+      {
+         var tempTableQuery = await ctx.BulkInsertValuesIntoTempTableAsync(customerIds);
          var customers = await ctx.Customers.Join(tempTableQuery, c => c.Id, t => t.Column1, (c, t) => c).ToListAsync();
 
          Console.WriteLine($"Found customers: {String.Join(", ", customers.Select(c => c.Id))}");
       }
 
-      private static async Task DoBulkInsertAsync([NotNull] DemoDbContext ctx, [NotNull] List<(Guid customerId, Guid productId)> tuples)
+      private static async Task DoBulkInsertIntoTempTableAsync([NotNull] DemoDbContext ctx, [NotNull] List<(Guid customerId, Guid productId)> tuples)
       {
-         var tempTableQuery = await ctx.BulkInsertTempTableAsync(tuples);
+         var tempTableQuery = await ctx.BulkInsertValuesIntoTempTableAsync(tuples);
          var orderItems = await ctx.OrderItems.Join(tempTableQuery,
                                                     i => new { i.Order.CustomerId, i.ProductId },
                                                     t => new { CustomerId = t.Column1, ProductId = t.Column2 },
@@ -88,6 +115,16 @@ namespace Thinktecture
                                    .ToListAsync();
 
          Console.WriteLine($"Found order items: {String.Join(", ", orderItems.Select(i => $"{{ OrderId={i.OrderId}, ProductId={i.ProductId}, Count={i.Count} }}"))}");
+      }
+
+      private static async Task DoBulkInsertEntitiesIntoTempTableAsync([NotNull] DemoDbContext ctx)
+      {
+         var customersToInsert = new[] { new Customer { Id = Guid.NewGuid() } };
+
+         var tempTableQuery = await ctx.BulkInsertIntoTempTableAsync(customersToInsert);
+         var tempCustomers = await tempTableQuery.ToListAsync();
+
+         Console.WriteLine($"Customers in temp table: {String.Join(", ", tempCustomers.Select(c => c.Id))}");
       }
    }
 }

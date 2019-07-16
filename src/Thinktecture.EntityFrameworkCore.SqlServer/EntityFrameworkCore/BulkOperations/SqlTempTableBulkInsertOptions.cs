@@ -1,10 +1,24 @@
+using JetBrains.Annotations;
+
 namespace Thinktecture.EntityFrameworkCore.BulkOperations
 {
    /// <summary>
    /// Options used by the <see cref="ISqlServerBulkOperationExecutor"/>.
    /// </summary>
-   public class SqlTempTableBulkInsertOptions : SqlBulkInsertOptions
+   public class SqlTempTableBulkInsertOptions
    {
+      private SqlBulkInsertOptions _bulkInsertOptions;
+
+      /// <summary>
+      /// Options for bulk insert.
+      /// </summary>
+      [NotNull]
+      public SqlBulkInsertOptions BulkInsertOptions
+      {
+         get => _bulkInsertOptions ?? (_bulkInsertOptions = new SqlBulkInsertOptions());
+         set => _bulkInsertOptions = value;
+      }
+
       /// <summary>
       /// Indication whether the name of the temp table should be unique.
       /// Default is set to <c>true</c>.

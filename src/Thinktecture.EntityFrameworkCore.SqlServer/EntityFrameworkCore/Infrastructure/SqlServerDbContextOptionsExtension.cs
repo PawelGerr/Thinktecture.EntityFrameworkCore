@@ -32,6 +32,17 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       /// </summary>
       public bool AddTempTableSupport { get; set; }
 
+      private bool _addBulkOperationSupport;
+
+      /// <summary>
+      /// Enables and disables support for bulk operations.
+      /// </summary>
+      public bool AddBulkOperationSupport
+      {
+         get => _addBulkOperationSupport || AddTempTableSupport; // temp tables require bulk operations
+         set => _addBulkOperationSupport = value;
+      }
+
       /// <summary>
       /// Changes the implementation of <see cref="IMigrationsSqlGenerator"/> to <see cref="ThinktectureSqlServerMigrationsSqlGenerator"/>.
       /// </summary>
@@ -45,9 +56,13 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
 
          if (AddTempTableSupport)
          {
-            services.TryAddSingleton<IEntityDataReaderFactory, EntityDataReaderFactory>();
-            services.TryAddSingleton<IPropertiesAccessorGenerator, PropertiesAccessorGenerator>();
             services.TryAddSingleton<ITempTableCreator, SqlServerTempTableCreator>();
+         }
+
+         if (AddBulkOperationSupport)
+         {
+            services.TryAddSingleton<IPropertiesAccessorGenerator, PropertiesAccessorGenerator>();
+            services.TryAddSingleton<IEntityDataReaderFactory, EntityDataReaderFactory>();
             services.TryAddSingleton<ISqlServerBulkOperationExecutor, SqlServerBulkOperationExecutor>();
          }
 
