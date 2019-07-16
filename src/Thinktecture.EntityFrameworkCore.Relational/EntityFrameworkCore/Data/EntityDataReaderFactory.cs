@@ -64,7 +64,7 @@ namespace Thinktecture.EntityFrameworkCore.Data
       }
 
       // use wrapper around the type so the cached items do not collide with items of other components
-      private readonly struct EntityDataReaderFactoryCacheKey : IEquatable<EntityDataReaderFactoryCacheKey>
+      private class EntityDataReaderFactoryCacheKey : IEquatable<EntityDataReaderFactoryCacheKey>
       {
          private readonly Type _type;
 
@@ -76,19 +76,19 @@ namespace Thinktecture.EntityFrameworkCore.Data
          /// <inheritdoc />
          public bool Equals(EntityDataReaderFactoryCacheKey other)
          {
-            return _type == other._type;
+            return _type == other?._type;
          }
 
          /// <inheritdoc />
          public override bool Equals(object obj)
          {
-            return obj is EntityDataReaderFactoryCacheKey other && Equals(other);
+            return Equals(obj as EntityDataReaderFactoryCacheKey);
          }
 
          /// <inheritdoc />
          public override int GetHashCode()
          {
-            return _type != null ? _type.GetHashCode() : 0;
+            return _type.GetHashCode();
          }
       }
 

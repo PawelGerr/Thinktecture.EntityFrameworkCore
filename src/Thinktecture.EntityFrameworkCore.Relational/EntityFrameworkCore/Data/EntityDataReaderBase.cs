@@ -64,6 +64,7 @@ namespace Thinktecture.EntityFrameworkCore.Data
       /// <inheritdoc />
       public bool IsDBNull(int i)
       {
+         // we are reading entities, there must be no properties of type "DBNull".
          return false;
       }
 
