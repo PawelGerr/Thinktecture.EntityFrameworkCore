@@ -32,14 +32,19 @@ namespace Thinktecture
             var orderId = await ctx.EnsureOrderAsync(new Guid("EC1CBF87-F53F-4EF4-B286-8F5EB0AE810D"), customerId);
             await ctx.EnsureOrderItemAsync(orderId, productId, 42);
 
+            // Bulk insert into "real" tables
             await DoBulkInsertIntoRealTableAsync(ctx);
             await DoBulkInsertSpecifiedColumnsIntoRealTableAsync(ctx);
 
+            // Bulk insert into temp tables
             await DoBulkInsertEntitiesIntoTempTableAsync(ctx);
             await DoBulkInsertIntoTempTableAsync(ctx, new List<Guid> { customerId });
             await DoBulkInsertIntoTempTableAsync(ctx, new List<(Guid, Guid)> { (customerId, productId) });
+
+            // LEFT JOIN
             await DoLeftJoinAsync(ctx);
 
+            // ROWNUMBER
             await DoRowNumberAsync(ctx);
          }
 
