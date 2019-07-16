@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 using FluentAssertions;
 using JetBrains.Annotations;
@@ -40,6 +41,8 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
                              Name = "Name",
                              Count = 42
                           };
+         testEntity.SetPrivateField(3);
+
          var testEntities = new[] { testEntity };
 
          await _sut.BulkInsertAsync(DbContext, testEntities, new SqlBulkInsertOptions());
@@ -53,6 +56,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
                                                  Name = "Name",
                                                  Count = 42
                                               });
+         loadedEntity.GetPrivateField().Should().Be(3);
       }
 
       [Fact]
@@ -62,15 +66,25 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
                           {
                              Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
                              Name = "Name",
-                             Count = 42
+                             Count = 42,
+                             PropertyWithBackingField = 7
                           };
+         testEntity.SetPrivateField(3);
          var testEntities = new[] { testEntity };
          var idProperty = typeof(TestEntity).GetProperty(nameof(TestEntity.Id));
          var countProperty = typeof(TestEntity).GetProperty(nameof(TestEntity.Count));
+         var propertyWithBackingField = typeof(TestEntity).GetProperty(nameof(TestEntity.PropertyWithBackingField));
+         var privateField = typeof(TestEntity).GetField("_privateField", BindingFlags.Instance | BindingFlags.NonPublic);
 
          await _sut.BulkInsertAsync(DbContext, testEntities, new SqlBulkInsertOptions
                                                              {
-                                                                PropertiesProvider = new PropertiesProvider(new[] { idProperty, countProperty })
+                                                                EntityMembersProvider = new EntityMembersProvider(new MemberInfo[]
+                                                                                                            {
+                                                                                                               idProperty,
+                                                                                                               countProperty,
+                                                                                                               propertyWithBackingField,
+                                                                                                               privateField
+                                                                                                            })
                                                              });
 
          var loadedEntities = await DbContext.TestEntities.ToListAsync();
@@ -79,8 +93,10 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
          loadedEntity.Should().BeEquivalentTo(new TestEntity
                                               {
                                                  Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
-                                                 Count = 42
+                                                 Count = 42,
+                                                 PropertyWithBackingField = 7
                                               });
+         loadedEntity.GetPrivateField().Should().Be(3);
       }
    }
 }

@@ -1,36 +1,38 @@
 using System;
 using System.Collections.Generic;
-using System.Reflection;
 using FluentAssertions;
 using JetBrains.Annotations;
-using Moq;
+using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Thinktecture.TestDatabaseContext;
 using Xunit;
 
 namespace Thinktecture.EntityFrameworkCore.Data.EntityDataReaderTests
 {
-   public class GetPropertyIndex : IDisposable
+   public class GetPropertyIndex : TestBase
    {
-      public delegate object GetValue<in T>(T entity, int index);
-
-      private readonly List<PropertyInfo> _propertiesToRead = new List<PropertyInfo>();
-      private readonly List<PropertyInfo> _getValueProperties = new List<PropertyInfo>();
-      private readonly Mock<GetValue<CustomTempTable>> _getValueMock = new Mock<GetValue<CustomTempTable>>();
-      private readonly PropertyInfo _column1 = typeof(CustomTempTable).GetProperty(nameof(CustomTempTable.Column1));
-      private readonly PropertyInfo _column2 = typeof(CustomTempTable).GetProperty(nameof(CustomTempTable.Column2));
+      private readonly List<IProperty> _propertiesToRead = new List<IProperty>();
+      private readonly IProperty _column1;
+      private readonly IProperty _column2;
 
       private EntityDataReader<CustomTempTable> _sut;
 
+      public GetPropertyIndex()
+      {
+         DbContextWithSchema.ConfigureModel = builder => builder.ConfigureCustomTempTable<CustomTempTable>();
+
+         _column1 = DbContextWithSchema.GetEntityType<CustomTempTable>().GetProperty(nameof(CustomTempTable.Column1));
+         _column2 = DbContextWithSchema.GetEntityType<CustomTempTable>().GetProperty(nameof(CustomTempTable.Column2));
+      }
+
       [NotNull]
       // ReSharper disable once InconsistentNaming
-      private EntityDataReader<CustomTempTable> SUT => _sut ?? (_sut = new EntityDataReader<CustomTempTable>(Array.Empty<CustomTempTable>(), _propertiesToRead, _getValueProperties, (e, i) => _getValueMock.Object(e, i)));
+      private EntityDataReader<CustomTempTable> SUT => _sut ?? (_sut = new EntityDataReader<CustomTempTable>(Array.Empty<CustomTempTable>(), _propertiesToRead));
 
       [Fact]
       public void Should_throw_if_property_is_in_propertiesToRead()
       {
          _propertiesToRead.Add(_column1);
-         _getValueProperties.Add(_column1);
-         _getValueProperties.Add(_column2);
 
          SUT.Invoking(sut => sut.GetPropertyIndex(_column2))
             .Should().Throw<ArgumentException>();
@@ -39,15 +41,16 @@ namespace Thinktecture.EntityFrameworkCore.Data.EntityDataReaderTests
       [Fact]
       public void Should_return_index_of_the_property()
       {
+         _propertiesToRead.Add(_column1);
          _propertiesToRead.Add(_column2);
-         _getValueProperties.Add(_column1);
-         _getValueProperties.Add(_column2);
 
          SUT.GetPropertyIndex(_column2).Should().Be(1);
       }
 
-      public void Dispose()
+      public override void Dispose()
       {
+         base.Dispose();
+
          _sut?.Dispose();
       }
    }

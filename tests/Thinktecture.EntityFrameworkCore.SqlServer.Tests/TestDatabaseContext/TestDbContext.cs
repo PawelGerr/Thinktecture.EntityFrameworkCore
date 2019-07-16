@@ -26,6 +26,9 @@ namespace Thinktecture.TestDatabaseContext
       {
          base.OnModelCreating(modelBuilder);
 
+         modelBuilder.Entity<TestEntity>().Property("_privateField");
+         modelBuilder.Entity<TestEntity>().Property<string>("ShadowProperty").HasMaxLength(50);
+
          ConfigureModel?.Invoke(modelBuilder);
 
          modelBuilder.Query<InformationSchemaColumn>();

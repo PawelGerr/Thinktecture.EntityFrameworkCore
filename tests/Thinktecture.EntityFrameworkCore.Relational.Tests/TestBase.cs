@@ -61,7 +61,7 @@ namespace Thinktecture
          return new DbContextWithoutSchema(options);
       }
 
-      public void Dispose()
+      public virtual void Dispose()
       {
          _ctx?.Dispose();
       }

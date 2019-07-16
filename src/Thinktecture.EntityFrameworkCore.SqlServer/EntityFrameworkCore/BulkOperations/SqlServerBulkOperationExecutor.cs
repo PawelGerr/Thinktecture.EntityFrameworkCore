@@ -2,10 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage;
 using Thinktecture.EntityFrameworkCore.Data;
 
@@ -50,11 +53,11 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
 
          var factory = ctx.GetService<IEntityDataReaderFactory>();
          var entityType = ctx.GetEntityType<T>();
-         var entityPropertyInfos = options.PropertiesProvider?.GetProperties() ?? entityType.GetProperties().Select(p => p.PropertyInfo).ToList();
+         var properties = GetProperties(options, entityType);
          var sqlCon = (SqlConnection)ctx.Database.GetDbConnection();
          var sqlTx = (SqlTransaction)ctx.Database.CurrentTransaction?.GetDbTransaction();
 
-         using (var reader = factory.Create(entities, entityPropertyInfos))
+         using (var reader = factory.Create(entities, properties))
          using (var bulkCopy = new SqlBulkCopy(sqlCon, options.SqlBulkCopyOptions, sqlTx))
          {
             bulkCopy.DestinationTableName = $"[{tableName}]";
@@ -72,15 +75,46 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
 
             foreach (var property in reader.Properties)
             {
-               var relational = entityType.FindProperty(property)?.Relational() ?? throw new ArgumentException($"The property '{property.Name}' does not belong to entity '{entityType.Name}'.");
                var index = reader.GetPropertyIndex(property);
-               bulkCopy.ColumnMappings.Add(new SqlBulkCopyColumnMapping(index, relational.ColumnName));
+               bulkCopy.ColumnMappings.Add(new SqlBulkCopyColumnMapping(index, property.Relational().ColumnName));
             }
 
             await ctx.Database.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
 
             await bulkCopy.WriteToServerAsync(reader, cancellationToken).ConfigureAwait(false);
          }
+      }
+
+      [NotNull]
+      private static IReadOnlyList<IProperty> GetProperties([NotNull] SqlBulkInsertOptions options, [NotNull] IEntityType entityType)
+      {
+         if (options.EntityMembersProvider == null)
+            return entityType.GetProperties().Where(p => !p.IsShadowProperty).ToList();
+
+         var memberInfos = options.EntityMembersProvider.GetMembers();
+         var properties = new IProperty[memberInfos.Count];
+
+         for (var i = 0; i < memberInfos.Count; i++)
+         {
+            var memberInfo = memberInfos[i];
+            var property = FindProperty(entityType, memberInfo);
+
+            properties[i] = property ?? throw new ArgumentException($"The member '{memberInfo.Name}' not found on entity '{entityType.Name}'.", nameof(options));
+         }
+
+         return properties;
+      }
+
+      [CanBeNull]
+      private static IProperty FindProperty([NotNull] IEntityType entityType, [NotNull] MemberInfo memberInfo)
+      {
+         foreach (var property in entityType.GetProperties())
+         {
+            if (property.PropertyInfo == memberInfo || property.FieldInfo == memberInfo)
+               return property;
+         }
+
+         return null;
       }
    }
 }

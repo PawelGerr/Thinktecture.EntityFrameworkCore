@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
-using System.Reflection;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore.Internal;
+using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 
 namespace Thinktecture.EntityFrameworkCore.Data
 {
@@ -11,57 +13,127 @@ namespace Thinktecture.EntityFrameworkCore.Data
    /// Data reader for Entity Framework Core entities.
    /// </summary>
    /// <typeparam name="T">Type of the entity.</typeparam>
-   public class EntityDataReader<T> : EntityDataReaderBase<T>
+   public sealed class EntityDataReader<T> : IEntityDataReader
       where T : class
    {
-      private readonly IReadOnlyList<PropertyInfo> _getValuePropertyInfos;
-      private readonly Func<T, int, object> _getValue;
+      private readonly IEnumerator<T> _enumerator;
+      private readonly Dictionary<int, Func<T, object>> _propertyGetterLookup;
+
+      /// <inheritdoc />
+      public IReadOnlyList<IProperty> Properties { get; }
+
+      /// <inheritdoc />
+      public int FieldCount => Properties.Count;
 
       /// <summary>
-      /// Initializes new instance of <see cref="EntityDataReader{T}"/>.
+      /// Initializes <see cref="EntityDataReader{T}"/>
       /// </summary>
-      /// <param name="entities">Entities to iterate over.</param>
-      /// <param name="propertiesToRead">Properties to read.</param>
-      /// <param name="getValuePropertyInfos">Properties of the entity used to generated the delegate <paramref name="getValue"/>.</param>
-      /// <param name="getValue">
-      /// Callback for getting a value of the property with a specific index.
-      /// The index must match with the provided <paramref name="getValuePropertyInfos"/>.
-      /// </param>
-      public EntityDataReader([NotNull] IEnumerable<T> entities,
-                              [NotNull] IReadOnlyList<PropertyInfo> propertiesToRead,
-                              [NotNull] IReadOnlyList<PropertyInfo> getValuePropertyInfos,
-                              [NotNull] Func<T, int, object> getValue)
-         : base(entities, propertiesToRead)
+      /// <param name="entities">Entities to read.</param>
+      /// <param name="properties">Properties to read.</param>
+      public EntityDataReader([NotNull] IEnumerable<T> entities, [NotNull] IReadOnlyList<IProperty> properties)
       {
-         if (getValuePropertyInfos == null)
-            throw new ArgumentNullException(nameof(getValuePropertyInfos));
-         if (getValuePropertyInfos.Count == 0)
-            throw new ArgumentException("The 'getValuePropertyInfos' collection cannot be null.", nameof(getValuePropertyInfos));
+         if (entities == null)
+            throw new ArgumentNullException(nameof(entities));
+         if (properties == null)
+            throw new ArgumentNullException(nameof(properties));
+         if (properties.Count == 0)
+            throw new ArgumentException("The properties collection cannot be empty.", nameof(properties));
 
-         _getValuePropertyInfos = getValuePropertyInfos;
-         _getValue = getValue ?? throw new ArgumentNullException(nameof(getValue));
+         Properties = properties;
+         _propertyGetterLookup = BuildPropertyGetterLookup(properties);
+         _enumerator = entities.GetEnumerator();
+      }
+
+      [NotNull]
+      private static Dictionary<int, Func<T, object>> BuildPropertyGetterLookup([NotNull] IReadOnlyList<IProperty> properties)
+      {
+         var lookup = new Dictionary<int, Func<T, object>>();
+
+         for (var i = 0; i < properties.Count; i++)
+         {
+            var property = properties[i];
+            var getter = property.GetGetter();
+
+            if (getter == null)
+               throw new ArgumentException($"The property '{property.Name}' of entity '{property.DeclaringEntityType.Name}' has no property getter.");
+
+            lookup.Add(i, getter.GetClrValue);
+         }
+
+         return lookup;
       }
 
       /// <inheritdoc />
-      public override int GetPropertyIndex([NotNull] PropertyInfo propertyInfo)
+      public int GetPropertyIndex(IProperty property)
       {
-         if (propertyInfo == null)
-            throw new ArgumentNullException(nameof(propertyInfo));
-         if (!Properties.Contains(propertyInfo))
-            throw new ArgumentException($"The provided property '{propertyInfo.Name}' cannot be read using current data reader.", nameof(propertyInfo));
+         if (property == null)
+            throw new ArgumentNullException(nameof(property));
 
-         var index = _getValuePropertyInfos.IndexOf(propertyInfo);
+         var index = Properties.IndexOf(property);
 
          if (index >= 0)
             return index;
 
-         throw new ArgumentException($"The property '{propertyInfo.Name}' of type '{propertyInfo.PropertyType.DisplayName()}' is not a member of type '{typeof(T).DisplayName()}'.");
+         throw new ArgumentException($"The property '{property.Name}' of type '{property.ClrType.DisplayName()}' cannot be read by current reader.");
       }
 
       /// <inheritdoc />
-      public override object GetValue(int i)
+      public object GetValue(int i)
       {
-         return _getValue(Current, i);
+         return _propertyGetterLookup[i](_enumerator.Current);
       }
+
+      /// <inheritdoc />
+      public bool Read()
+      {
+         return _enumerator.MoveNext();
+      }
+
+      /// <inheritdoc />
+      public bool IsDBNull(int i)
+      {
+         // we are reading entities (.NET objects), there must be no properties of type "DBNull".
+         return false;
+      }
+
+      /// <inheritdoc />
+      public void Dispose()
+      {
+         _enumerator.Dispose();
+      }
+
+      // The following methods are not needed for bulk insert.
+      // ReSharper disable ArrangeMethodOrOperatorBody
+#pragma warning disable 1591
+      object IDataRecord.this[int i] => throw new NotSupportedException();
+      object IDataRecord.this[string name] => throw new NotSupportedException();
+      int IDataReader.Depth => throw new NotSupportedException();
+      int IDataReader.RecordsAffected => throw new NotSupportedException();
+      bool IDataReader.IsClosed => throw new NotSupportedException();
+      void IDataReader.Close() => throw new NotSupportedException();
+      string IDataRecord.GetName(int i) => throw new NotSupportedException();
+      string IDataRecord.GetDataTypeName(int i) => throw new NotSupportedException();
+      Type IDataRecord.GetFieldType(int i) => throw new NotSupportedException();
+      int IDataRecord.GetValues(object[] values) => throw new NotSupportedException();
+      int IDataRecord.GetOrdinal(string name) => throw new NotSupportedException();
+      bool IDataRecord.GetBoolean(int i) => throw new NotSupportedException();
+      byte IDataRecord.GetByte(int i) => throw new NotSupportedException();
+      long IDataRecord.GetBytes(int i, long fieldOffset, byte[] buffer, int bufferOffset, int length) => throw new NotSupportedException();
+      char IDataRecord.GetChar(int i) => throw new NotSupportedException();
+      long IDataRecord.GetChars(int i, long fieldOffset, char[] buffer, int bufferOffset, int length) => throw new NotSupportedException();
+      Guid IDataRecord.GetGuid(int i) => throw new NotSupportedException();
+      short IDataRecord.GetInt16(int i) => throw new NotSupportedException();
+      int IDataRecord.GetInt32(int i) => throw new NotSupportedException();
+      long IDataRecord.GetInt64(int i) => throw new NotSupportedException();
+      float IDataRecord.GetFloat(int i) => throw new NotSupportedException();
+      double IDataRecord.GetDouble(int i) => throw new NotSupportedException();
+      string IDataRecord.GetString(int i) => throw new NotSupportedException();
+      decimal IDataRecord.GetDecimal(int i) => throw new NotSupportedException();
+      DateTime IDataRecord.GetDateTime(int i) => throw new NotSupportedException();
+      IDataReader IDataRecord.GetData(int i) => throw new NotSupportedException();
+      DataTable IDataReader.GetSchemaTable() => throw new NotSupportedException();
+      bool IDataReader.NextResult() => throw new NotSupportedException();
+#pragma warning restore 1591
+      // ReSharper restore ArrangeMethodOrOperatorBody
    }
 }

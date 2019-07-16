@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Reflection;
+using JetBrains.Annotations;
+using Microsoft.EntityFrameworkCore.Metadata;
 
 namespace Thinktecture.EntityFrameworkCore.Data
 {
@@ -13,13 +15,16 @@ namespace Thinktecture.EntityFrameworkCore.Data
       /// Gets the properties the reader is created for.
       /// </summary>
       /// <returns>A collection of <see cref="PropertyInfo"/>.</returns>
-      IReadOnlyList<PropertyInfo> Properties { get; }
+      [NotNull]
+      IReadOnlyList<IProperty> Properties { get; }
 
       /// <summary>
-      /// Gets the index of the provided <paramref name="propertyInfo"/> used by <see cref="IDataRecord.GetValue"/>.
+      /// Gets the index of the provided <paramref name="property"/> that matches with the one of <see cref="IDataRecord.GetValue"/>.
       /// </summary>
-      /// <param name="propertyInfo">Property info to get index for.</param>
+      /// <param name="property">Property info to get the index for.</param>
       /// <returns>Index of the property.</returns>
-      int GetPropertyIndex(PropertyInfo propertyInfo);
+#pragma warning disable CA1716
+      int GetPropertyIndex([NotNull] IProperty property);
+#pragma warning restore CA1716
    }
 }

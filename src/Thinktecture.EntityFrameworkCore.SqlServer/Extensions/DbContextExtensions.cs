@@ -64,7 +64,7 @@ namespace Thinktecture
                                             CancellationToken cancellationToken = default)
          where T : class
       {
-         var options = new SqlBulkInsertOptions { PropertiesProvider = PropertiesProvider.From(propertiesToInsert) };
+         var options = new SqlBulkInsertOptions { EntityMembersProvider = EntityMembersProvider.From(propertiesToInsert) };
          return BulkInsertAsync(ctx, entities, options, cancellationToken);
       }
 

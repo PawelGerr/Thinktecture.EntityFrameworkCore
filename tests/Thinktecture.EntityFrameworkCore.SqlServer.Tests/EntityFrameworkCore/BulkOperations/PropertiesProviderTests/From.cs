@@ -11,30 +11,30 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.PropertiesProviderTest
       public void Should_throw_if_expression_is_null()
       {
          // ReSharper disable once AssignNullToNotNullAttribute
-         Action action = () => PropertiesProvider.From<TestEntity>(null);
+         Action action = () => EntityMembersProvider.From<TestEntity>(null);
          action.Should().Throw<ArgumentNullException>();
       }
 
       [Fact]
       public void Should_throw_if_no_properties_provided()
       {
-         Action action = () => PropertiesProvider.From<TestEntity>(entity => new { });
+         Action action = () => EntityMembersProvider.From<TestEntity>(entity => new { });
          action.Should().Throw<ArgumentException>();
       }
 
       [Fact]
       public void Should_throw_if_expression_return_constant()
       {
-         Action action = () => PropertiesProvider.From<TestEntity>(entity => null);
+         Action action = () => EntityMembersProvider.From<TestEntity>(entity => null);
          action.Should().Throw<NotSupportedException>();
       }
 
       [Fact]
       public void Should_extract_property_accessor()
       {
-         var propertiesProvider = PropertiesProvider.From<TestEntity>(entity => entity.Id);
+         var propertiesProvider = EntityMembersProvider.From<TestEntity>(entity => entity.Id);
 
-         var properties = propertiesProvider.GetProperties();
+         var properties = propertiesProvider.GetMembers();
          properties.Should().HaveCount(1);
          properties.Should().Contain(typeof(TestEntity).GetProperty(nameof(TestEntity.Id)));
       }
@@ -42,9 +42,9 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.PropertiesProviderTest
       [Fact]
       public void Should_extract_properties()
       {
-         var propertiesProvider = PropertiesProvider.From<TestEntity>(entity => new { entity.Id, entity.Count });
+         var propertiesProvider = EntityMembersProvider.From<TestEntity>(entity => new { entity.Id, entity.Count });
 
-         var properties = propertiesProvider.GetProperties();
+         var properties = propertiesProvider.GetMembers();
          properties.Should().HaveCount(2);
          properties.Should().Contain(typeof(TestEntity).GetProperty(nameof(TestEntity.Id)));
          properties.Should().Contain(typeof(TestEntity).GetProperty(nameof(TestEntity.Count)));

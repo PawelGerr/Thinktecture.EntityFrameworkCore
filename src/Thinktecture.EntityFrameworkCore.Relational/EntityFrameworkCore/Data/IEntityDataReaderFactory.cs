@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using JetBrains.Annotations;
+using Microsoft.EntityFrameworkCore.Metadata;
 
 namespace Thinktecture.EntityFrameworkCore.Data
 {
@@ -13,17 +13,6 @@ namespace Thinktecture.EntityFrameworkCore.Data
    {
       /// <summary>
       /// Creates an <see cref="IEntityDataReader"/> for entities of type <typeparamref name="T"/>.
-      /// The data reader reads all properties of the type <typeparamref name="T"/>.
-      /// </summary>
-      /// <param name="entities">Entities to use by the data reader.</param>
-      /// <typeparam name="T">Type of the entity.</typeparam>
-      /// <returns>An instance of <see cref="IEntityDataReader"/>.</returns>
-      [NotNull]
-      IEntityDataReader Create<T>([NotNull] IEnumerable<T> entities)
-         where T : class;
-
-      /// <summary>
-      /// Creates an <see cref="IEntityDataReader"/> for entities of type <typeparamref name="T"/>.
       /// The data reader reads the provided <paramref name="properties"/> only.
       /// </summary>
       /// <param name="entities">Entities to use by the data reader.</param>
@@ -31,7 +20,7 @@ namespace Thinktecture.EntityFrameworkCore.Data
       /// <typeparam name="T">Type of the entity.</typeparam>
       /// <returns>An instance of <see cref="IEntityDataReader"/>.</returns>
       [NotNull]
-      IEntityDataReader Create<T>([NotNull] IEnumerable<T> entities, [NotNull] IReadOnlyList<PropertyInfo> properties)
+      IEntityDataReader Create<T>([NotNull] IEnumerable<T> entities, [NotNull] IReadOnlyList<IProperty> properties)
          where T : class;
    }
 }

@@ -61,7 +61,6 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
 
          if (AddBulkOperationSupport)
          {
-            services.TryAddSingleton<IPropertiesAccessorGenerator, PropertiesAccessorGenerator>();
             services.TryAddSingleton<IEntityDataReaderFactory, EntityDataReaderFactory>();
             services.TryAddSingleton<ISqlServerBulkOperationExecutor, SqlServerBulkOperationExecutor>();
          }

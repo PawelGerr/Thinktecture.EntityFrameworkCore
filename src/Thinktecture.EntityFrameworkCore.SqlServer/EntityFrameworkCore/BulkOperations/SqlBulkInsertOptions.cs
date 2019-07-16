@@ -36,6 +36,6 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       /// Properties to insert.
       /// </summary>
       [CanBeNull]
-      public IPropertiesProvider PropertiesProvider { get; set; }
+      public IEntityMembersProvider EntityMembersProvider { get; set; }
    }
 }
