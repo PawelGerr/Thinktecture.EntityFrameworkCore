@@ -96,9 +96,19 @@ namespace Thinktecture.EntityFrameworkCore
          RunMigrations(ctx);
 
          if (_useSharedTables)
-            _tx = ctx.Database.BeginTransaction(IsolationLevel.ReadCommitted);
+            _tx = BeginTransaction(ctx);
 
          return ctx;
+      }
+
+      /// <summary>
+      /// Starts a new transaction.
+      /// </summary>
+      /// <param name="ctx">Database context.</param>
+      /// <returns>An instance of <see cref="IDbContextTransaction"/>.</returns>
+      protected virtual IDbContextTransaction BeginTransaction([NotNull] T ctx)
+      {
+         return ctx.Database.BeginTransaction(IsolationLevel.ReadCommitted);
       }
 
       /// <summary>
