@@ -23,7 +23,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
       [Fact]
       public async Task Should_create_temp_table_for_queryType()
       {
-         ConfigureModel = builder => builder.ConfigureCustomTempTable<CustomTempTable>();
+         ConfigureModel = builder => builder.ConfigureTempTableEntity<CustomTempTable>();
 
          // ReSharper disable once RedundantArgumentDefaultValue
          await _sut.CreateTempTableAsync(DbContext, DbContext.GetEntityType<CustomTempTable>(), new TempTableCreationOptions()).ConfigureAwait(false);

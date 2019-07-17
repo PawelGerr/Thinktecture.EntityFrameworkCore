@@ -28,7 +28,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
       {
          ConfigureModel = builder => builder.ConfigureTempTable<int>();
 
-         _sut.Awaiting(sut => sut.BulkInsertAsync(DbContext, new List<TempTable<int>>(), new SqlBulkInsertOptions()))
+         _sut.Awaiting(sut => sut.BulkInsertAsync(DbContext, DbContext.GetEntityType<TempTable<int>>(), new List<TempTable<int>>(), new SqlBulkInsertOptions()))
              .Should().Throw<InvalidOperationException>();
       }
 
@@ -45,7 +45,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
 
          var testEntities = new[] { testEntity };
 
-         await _sut.BulkInsertAsync(DbContext, testEntities, new SqlBulkInsertOptions());
+         await _sut.BulkInsertAsync(DbContext, DbContext.GetEntityType<TestEntity>(), testEntities, new SqlBulkInsertOptions());
 
          var loadedEntities = await DbContext.TestEntities.ToListAsync();
          loadedEntities.Should().HaveCount(1);
@@ -76,16 +76,19 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
          var propertyWithBackingField = typeof(TestEntity).GetProperty(nameof(TestEntity.PropertyWithBackingField));
          var privateField = typeof(TestEntity).GetField("_privateField", BindingFlags.Instance | BindingFlags.NonPublic);
 
-         await _sut.BulkInsertAsync(DbContext, testEntities, new SqlBulkInsertOptions
-                                                             {
-                                                                EntityMembersProvider = new EntityMembersProvider(new MemberInfo[]
-                                                                                                            {
-                                                                                                               idProperty,
-                                                                                                               countProperty,
-                                                                                                               propertyWithBackingField,
-                                                                                                               privateField
-                                                                                                            })
-                                                             });
+         await _sut.BulkInsertAsync(DbContext,
+                                    DbContext.GetEntityType<TestEntity>(),
+                                    testEntities,
+                                    new SqlBulkInsertOptions
+                                    {
+                                       EntityMembersProvider = new EntityMembersProvider(new MemberInfo[]
+                                                                                         {
+                                                                                            idProperty,
+                                                                                            countProperty,
+                                                                                            propertyWithBackingField,
+                                                                                            privateField
+                                                                                         })
+                                    });
 
          var loadedEntities = await DbContext.TestEntities.ToListAsync();
          loadedEntities.Should().HaveCount(1);

@@ -19,7 +19,7 @@ namespace Thinktecture.EntityFrameworkCore.Data.EntityDataReaderTests
 
       public Properties()
       {
-         DbContextWithSchema.ConfigureModel = builder => builder.ConfigureCustomTempTable<CustomTempTable>();
+         DbContextWithSchema.ConfigureModel = builder => builder.ConfigureTempTableEntity<CustomTempTable>();
 
          _column1 = DbContextWithSchema.GetEntityType<CustomTempTable>().GetProperty(nameof(CustomTempTable.Column1));
          _column2 = DbContextWithSchema.GetEntityType<CustomTempTable>().GetProperty(nameof(CustomTempTable.Column2));

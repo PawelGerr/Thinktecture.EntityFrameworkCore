@@ -14,11 +14,13 @@ namespace Thinktecture
       /// <summary>
       /// Annotation key for "IfNotExists".
       /// </summary>
+      // ReSharper disable once ConvertToConstant.Global
       public static readonly string IfNotExistsKey = "Thinktecture:OperationBuilderExtensions:IfNotExists";
 
       /// <summary>
       /// Annotation key for "IfExists".
       /// </summary>
+      // ReSharper disable once ConvertToConstant.Global
       public static readonly string IfExistsKey = "Thinktecture:OperationBuilderExtensions:IfExists";
 
       /// <summary>

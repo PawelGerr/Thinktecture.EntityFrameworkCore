@@ -49,13 +49,13 @@ namespace Thinktecture
       /// <returns>An entity type builder for further configuration.</returns>
       /// <exception cref="ArgumentNullException"><paramref name="modelBuilder"/> is <c>null</c>.</exception>
       [NotNull]
-      public static QueryTypeBuilder<T> ConfigureCustomTempTable<T>([NotNull] this ModelBuilder modelBuilder)
+      public static QueryTypeBuilder<T> ConfigureTempTableEntity<T>([NotNull] this ModelBuilder modelBuilder)
          where T : class
       {
          if (modelBuilder == null)
             throw new ArgumentNullException(nameof(modelBuilder));
 
-         return modelBuilder.Query<T>().SetTableName();
+         return modelBuilder.Query<T>().SetTempTableName();
       }
 
       /// <summary>
@@ -71,7 +71,7 @@ namespace Thinktecture
          if (modelBuilder == null)
             throw new ArgumentNullException(nameof(modelBuilder));
 
-         return modelBuilder.Query<TempTable<TColumn1>>().SetTableName();
+         return modelBuilder.Query<TempTable<TColumn1>>().SetTempTableName();
       }
 
       /// <summary>
@@ -88,10 +88,10 @@ namespace Thinktecture
          if (modelBuilder == null)
             throw new ArgumentNullException(nameof(modelBuilder));
 
-         return modelBuilder.Query<TempTable<TColumn1, TColumn2>>().SetTableName();
+         return modelBuilder.Query<TempTable<TColumn1, TColumn2>>().SetTempTableName();
       }
 
-      private static QueryTypeBuilder<T> SetTableName<T>([NotNull] this QueryTypeBuilder<T> builder)
+      private static QueryTypeBuilder<T> SetTempTableName<T>([NotNull] this QueryTypeBuilder<T> builder)
          where T : class
       {
          var tableName = "#" + typeof(T).DisplayName(false);

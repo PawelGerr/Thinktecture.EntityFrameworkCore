@@ -20,7 +20,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
    {
       /// <inheritdoc />
       [NotNull]
-      public string LogFragment => $"{{ 'RowNumberSupport'={AddRowNumberSupport}, 'TempTableSupport'={AddTempTableSupport}, 'UseThinktectureSqlServerMigrationsSqlGenerator'={UseThinktectureSqlServerMigrationsSqlGenerator} }}";
+      public string LogFragment => $"{{ 'RowNumberSupport'={AddRowNumberSupport}, 'BulkOperationSupport'={AddBulkOperationSupport}, 'TempTableSupport'={AddTempTableSupport}, 'UseThinktectureSqlServerMigrationsSqlGenerator'={UseThinktectureSqlServerMigrationsSqlGenerator} }}";
 
       /// <summary>
       /// Enables and disables support for "RowNumber".
@@ -72,7 +72,9 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       }
 
       /// <inheritdoc />
+#pragma warning disable CA1024
       public long GetServiceProviderHashCode()
+#pragma warning restore CA1024
       {
          return 0;
       }

@@ -23,7 +23,7 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
       [Fact]
       public async Task Should_insert_queryType()
       {
-         ConfigureModel = builder => builder.ConfigureCustomTempTable<CustomTempTable>().Property(t => t.Column2).HasMaxLength(100).IsRequired();
+         ConfigureModel = builder => builder.ConfigureTempTableEntity<CustomTempTable>().Property(t => t.Column2).HasMaxLength(100).IsRequired();
 
          var entities = new List<CustomTempTable> { new CustomTempTable(1, "value") };
          var query = await DbContext.BulkInsertIntoTempTableAsync(entities);

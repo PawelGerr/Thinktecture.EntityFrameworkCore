@@ -20,21 +20,26 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
    public class SqlServerBulkOperationExecutor : ISqlServerBulkOperationExecutor
    {
       /// <inheritdoc />
-      public Task BulkInsertAsync<T>(DbContext ctx, IEnumerable<T> entities, SqlBulkInsertOptions options, CancellationToken cancellationToken = default)
+      public Task BulkInsertAsync<T>(DbContext ctx,
+                                     IEntityType entityType,
+                                     IEnumerable<T> entities,
+                                     SqlBulkInsertOptions options,
+                                     CancellationToken cancellationToken = default)
          where T : class
       {
-         var entityType = ctx.Model.GetEntityType(typeof(T));
-
+         if (entityType == null)
+            throw new ArgumentNullException(nameof(entityType));
          if (entityType.IsQueryType)
             throw new InvalidOperationException("The provided 'entities' are of 'Query Type' that do not have a table to insert into. Use the other overload that takes the 'tableName' as a parameter.");
 
          var relational = entityType.Relational();
 
-         return BulkInsertAsync(ctx, entities, relational.Schema, relational.TableName, options, cancellationToken);
+         return BulkInsertAsync(ctx, entityType, entities, relational.Schema, relational.TableName, options, cancellationToken);
       }
 
       /// <inheritdoc />
       public async Task BulkInsertAsync<T>(DbContext ctx,
+                                           IEntityType entityType,
                                            IEnumerable<T> entities,
                                            string schema,
                                            string tableName,
@@ -52,7 +57,6 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
             throw new ArgumentNullException(nameof(options));
 
          var factory = ctx.GetService<IEntityDataReaderFactory>();
-         var entityType = ctx.Model.GetEntityType(typeof(T));
          var properties = GetPropertiesForInsert(options.EntityMembersProvider, entityType);
          var sqlCon = (SqlConnection)ctx.Database.GetDbConnection();
          var sqlTx = (SqlTransaction)ctx.Database.CurrentTransaction?.GetDbTransaction();

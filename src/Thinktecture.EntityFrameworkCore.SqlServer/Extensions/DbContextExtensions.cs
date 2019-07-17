@@ -91,8 +91,9 @@ namespace Thinktecture
             throw new ArgumentNullException(nameof(entities));
 
          options = options ?? new SqlBulkInsertOptions();
+         var entityType = ctx.Model.GetEntityType(typeof(T));
 
-         await ctx.GetService<ISqlServerBulkOperationExecutor>().BulkInsertAsync(ctx, entities, options, cancellationToken).ConfigureAwait(false);
+         await ctx.GetService<ISqlServerBulkOperationExecutor>().BulkInsertAsync(ctx, entityType, entities, options, cancellationToken).ConfigureAwait(false);
       }
 
       /// <summary>
@@ -179,7 +180,7 @@ namespace Thinktecture
          if (options.PrimaryKeyCreation == PrimaryKeyCreation.BeforeBulkInsert)
             await tempTableCreator.CreatePrimaryKeyAsync(ctx, entityType, tableName, !options.TempTableCreationOptions.MakeTableNameUnique, cancellationToken).ConfigureAwait(false);
 
-         await bulkInsertExecutor.BulkInsertAsync(ctx, entities, null, tableName, options.BulkInsertOptions, cancellationToken).ConfigureAwait(false);
+         await bulkInsertExecutor.BulkInsertAsync(ctx, entityType, entities, null, tableName, options.BulkInsertOptions, cancellationToken).ConfigureAwait(false);
 
          if (options.PrimaryKeyCreation == PrimaryKeyCreation.AfterBulkInsert)
             await tempTableCreator.CreatePrimaryKeyAsync(ctx, entityType, tableName, !options.TempTableCreationOptions.MakeTableNameUnique, cancellationToken).ConfigureAwait(false);

@@ -22,7 +22,7 @@ namespace Thinktecture.EntityFrameworkCore.Data.EntityDataReaderFactoryTests
 
       public Create()
       {
-         DbContextWithSchema.ConfigureModel = builder => builder.ConfigureCustomTempTable<CustomTempTable>();
+         DbContextWithSchema.ConfigureModel = builder => builder.ConfigureTempTableEntity<CustomTempTable>();
          column2Property = DbContextWithSchema.GetEntityType<CustomTempTable>().GetProperty(nameof(CustomTempTable.Column2));
       }
 

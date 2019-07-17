@@ -16,7 +16,10 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
    public class SqlServerTempTableCreator : ITempTableCreator
    {
       /// <inheritdoc />
-      public async Task<string> CreateTempTableAsync(DbContext ctx, IEntityType entityType, TempTableCreationOptions options, CancellationToken cancellationToken = default)
+      public async Task<string> CreateTempTableAsync(DbContext ctx,
+                                                     IEntityType entityType,
+                                                     TempTableCreationOptions options,
+                                                     CancellationToken cancellationToken = default)
       {
          if (ctx == null)
             throw new ArgumentNullException(nameof(ctx));
@@ -46,7 +49,11 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
       }
 
       /// <inheritdoc />
-      public async Task CreatePrimaryKeyAsync(DbContext ctx, IEntityType entityType, string tableName, bool checkForExistence = false, CancellationToken cancellationToken = default)
+      public async Task CreatePrimaryKeyAsync(DbContext ctx,
+                                              IEntityType entityType,
+                                              string tableName,
+                                              bool checkForExistence = false,
+                                              CancellationToken cancellationToken = default)
       {
          if (ctx == null)
             throw new ArgumentNullException(nameof(ctx));

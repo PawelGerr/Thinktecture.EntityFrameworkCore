@@ -7,12 +7,12 @@ using Xunit;
 namespace Thinktecture.ExtensionsTests.ModelBuilderExtensionsTests
 {
    // ReSharper disable once InconsistentNaming
-   public class ConfigureTempTable_CustomType : TestBase
+   public class ConfigureTempTableEntity : TestBase
    {
       [Fact]
       public void Should_introduce_temp_table_with_custom_type()
       {
-         DbContextWithSchema.ConfigureModel = builder => builder.ConfigureCustomTempTable<CustomTempTable>();
+         DbContextWithSchema.ConfigureModel = builder => builder.ConfigureTempTableEntity<CustomTempTable>();
 
          var entityType = DbContextWithSchema.Model.FindEntityType(typeof(CustomTempTable));
          entityType.Name.Should().Be("Thinktecture.TestDatabaseContext.CustomTempTable");
@@ -34,7 +34,7 @@ namespace Thinktecture.ExtensionsTests.ModelBuilderExtensionsTests
       [Fact]
       public void Should_generate_table_name_for_string()
       {
-         DbContextWithSchema.ConfigureModel = builder => builder.ConfigureCustomTempTable<CustomTempTable>();
+         DbContextWithSchema.ConfigureModel = builder => builder.ConfigureTempTableEntity<CustomTempTable>();
 
          var entityType = DbContextWithSchema.Model.FindEntityType(typeof(CustomTempTable));
          entityType.Relational().TableName.Should().Be("#CustomTempTable");
