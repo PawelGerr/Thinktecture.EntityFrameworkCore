@@ -53,7 +53,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
 
          var factory = ctx.GetService<IEntityDataReaderFactory>();
          var entityType = ctx.GetEntityType<T>();
-         var properties = GetProperties(options, entityType);
+         var properties = GetPropertiesForInsert(options, entityType);
          var sqlCon = (SqlConnection)ctx.Database.GetDbConnection();
          var sqlTx = (SqlTransaction)ctx.Database.CurrentTransaction?.GetDbTransaction();
 
@@ -86,10 +86,10 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       }
 
       [NotNull]
-      private static IReadOnlyList<IProperty> GetProperties([NotNull] SqlBulkInsertOptions options, [NotNull] IEntityType entityType)
+      private static IReadOnlyList<IProperty> GetPropertiesForInsert([NotNull] SqlBulkInsertOptions options, [NotNull] IEntityType entityType)
       {
          if (options.EntityMembersProvider == null)
-            return entityType.GetProperties().Where(p => !p.IsShadowProperty).ToList();
+            return entityType.GetProperties().Where(p => !p.IsShadowProperty && p.BeforeSaveBehavior != PropertySaveBehavior.Ignore).ToList();
 
          var memberInfos = options.EntityMembersProvider.GetMembers();
          var properties = new IProperty[memberInfos.Count];
