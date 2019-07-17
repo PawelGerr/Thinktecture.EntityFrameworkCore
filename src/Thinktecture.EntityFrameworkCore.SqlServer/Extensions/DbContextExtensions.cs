@@ -11,7 +11,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage;
-using Thinktecture.EntityFrameworkCore;
 using Thinktecture.EntityFrameworkCore.BulkOperations;
 using Thinktecture.EntityFrameworkCore.TempTables;
 using Thinktecture.EntityFrameworkCore.ValueConversion;
@@ -171,7 +170,7 @@ namespace Thinktecture
             throw new ArgumentNullException(nameof(entities));
 
          options = options ?? new SqlTempTableBulkInsertOptions();
-         var entityType = ctx.GetEntityType<T>();
+         var entityType = ctx.Model.GetEntityType(typeof(T));
          var tempTableCreator = ctx.GetService<ITempTableCreator>();
          var bulkInsertExecutor = ctx.GetService<ISqlServerBulkOperationExecutor>();
 

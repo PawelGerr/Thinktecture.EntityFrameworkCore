@@ -33,7 +33,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
       /// Creates a primary key in a temp table with provided <paramref name="tableName"/>.
       /// 
       /// <remarks>
-      /// If the type <typeparamref name="T"/> is a query type then all columns are part of the primary key
+      /// If the type <paramref name="entityType"/> is a query type then all columns are part of the primary key
       /// because a query type has no "Primary Key" by definition.
       /// </remarks>
       /// </summary>
@@ -42,7 +42,6 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
       /// <param name="tableName">Table name to create the primary key in.</param>
       /// <param name="checkForExistence">If <c>true</c> then the primary key is not going to be created if it exists already.</param>
       /// <param name="cancellationToken">Cancellation token.</param>
-      /// <typeparam name="T">Entity/query type.</typeparam>
       [NotNull]
       Task CreatePrimaryKeyAsync([NotNull] DbContext ctx, [NotNull] IEntityType entityType, [NotNull] string tableName, bool checkForExistence = false, CancellationToken cancellationToken = default);
    }

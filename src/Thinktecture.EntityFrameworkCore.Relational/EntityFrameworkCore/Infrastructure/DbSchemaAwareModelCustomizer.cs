@@ -7,6 +7,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
    /// <summary>
    /// Set database schema on entities without schema.
    /// </summary>
+   // ReSharper disable once ClassNeverInstantiated.Global
    public class DbSchemaAwareModelCustomizer : RelationalModelCustomizer
    {
       /// <inheritdoc />

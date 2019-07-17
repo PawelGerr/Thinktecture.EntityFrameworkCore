@@ -23,14 +23,14 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       public Task BulkInsertAsync<T>(DbContext ctx, IEnumerable<T> entities, SqlBulkInsertOptions options, CancellationToken cancellationToken = default)
          where T : class
       {
-         var entityType = ctx.GetEntityType<T>();
+         var entityType = ctx.Model.GetEntityType(typeof(T));
 
          if (entityType.IsQueryType)
             throw new InvalidOperationException("The provided 'entities' are of 'Query Type' that do not have a table to insert into. Use the other overload that takes the 'tableName' as a parameter.");
 
-         var tableId = entityType.GetTableIdentifier();
+         var relational = entityType.Relational();
 
-         return BulkInsertAsync(ctx, entities, tableId.Schema, tableId.TableName, options, cancellationToken);
+         return BulkInsertAsync(ctx, entities, relational.Schema, relational.TableName, options, cancellationToken);
       }
 
       /// <inheritdoc />
@@ -52,7 +52,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
             throw new ArgumentNullException(nameof(options));
 
          var factory = ctx.GetService<IEntityDataReaderFactory>();
-         var entityType = ctx.GetEntityType<T>();
+         var entityType = ctx.Model.GetEntityType(typeof(T));
          var properties = GetPropertiesForInsert(options.EntityMembersProvider, entityType);
          var sqlCon = (SqlConnection)ctx.Database.GetDbConnection();
          var sqlTx = (SqlTransaction)ctx.Database.CurrentTransaction?.GetDbTransaction();

@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
-using Thinktecture.EntityFrameworkCore.BulkOperations;
 using Thinktecture.TestDatabaseContext;
 using Xunit;
 using Xunit.Abstractions;
@@ -48,7 +47,7 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
          await DbContext.SaveChangesAsync();
 
          var entities = new List<TestEntity> { entity };
-         var query = await DbContext.BulkInsertIntoTempTableAsync(entities, new SqlTempTableBulkInsertOptions { TempTableCreationOptions = { MakeTableNameUnique = false } });
+         var query = await DbContext.BulkInsertIntoTempTableAsync(entities);
 
          var tempTable = await query.ToListAsync();
          tempTable.Should()

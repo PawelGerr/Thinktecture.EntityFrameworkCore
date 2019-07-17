@@ -25,7 +25,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
          if (options == null)
             throw new ArgumentNullException(nameof(options));
 
-         var (_, tableName) = entityType.GetTableIdentifier();
+         var tableName = entityType.Relational().TableName;
 
          if (!tableName.StartsWith("#", StringComparison.Ordinal))
             tableName = $"#{tableName}";

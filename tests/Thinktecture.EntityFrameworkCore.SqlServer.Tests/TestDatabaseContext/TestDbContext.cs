@@ -55,7 +55,7 @@ namespace Thinktecture.TestDatabaseContext
          if (type == null)
             throw new ArgumentNullException(nameof(type));
 
-         var tableName = this.GetEntityType(type).GetTableIdentifier().TableName;
+         var tableName = Model.GetEntityType(type).Relational().TableName;
 
          if (!tableName.StartsWith("#", StringComparison.Ordinal))
             tableName = $"#{tableName}";
@@ -72,7 +72,7 @@ WHERE
       [NotNull]
       public IQueryable<InformationSchemaTableConstraint> GetTempTableConstraints<T>()
       {
-         var tableName = this.GetEntityType<T>().GetTableIdentifier().TableName;
+         var tableName = this.GetEntityType<T>().Relational().TableName;
 
          if (!tableName.StartsWith("#", StringComparison.Ordinal))
             tableName = $"#{tableName}";
@@ -89,7 +89,7 @@ WHERE
       [NotNull]
       public IQueryable<InformationSchemaConstraintColumn> GetTempTableConstraintsColumns<T>()
       {
-         var tableName = this.GetEntityType<T>().GetTableIdentifier().TableName;
+         var tableName = this.GetEntityType<T>().Relational().TableName;
 
          if (!tableName.StartsWith("#", StringComparison.Ordinal))
             tableName = $"#{tableName}";
@@ -106,7 +106,7 @@ WHERE
       [NotNull]
       public IQueryable<InformationSchemaKeyColumn> GetTempTableKeyColumns<T>()
       {
-         var tableName = this.GetEntityType<T>().GetTableIdentifier().TableName;
+         var tableName = this.GetEntityType<T>().Relational().TableName;
 
          return GetTempTableKeyColumns(tableName);
       }
@@ -114,7 +114,7 @@ WHERE
       [NotNull]
       public IQueryable<InformationSchemaKeyColumn> GetTempTableKeyColumns<TColumn1, TColumn2>()
       {
-         var tableName = this.GetEntityType<TempTable<TColumn1, TColumn2>>().GetTableIdentifier().TableName;
+         var tableName = this.GetEntityType<TempTable<TColumn1, TColumn2>>().Relational().TableName;
 
          return GetTempTableKeyColumns(tableName);
       }

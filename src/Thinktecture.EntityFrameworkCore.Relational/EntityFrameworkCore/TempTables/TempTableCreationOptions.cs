@@ -7,8 +7,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
    {
       /// <summary>
       /// Indication whether the table name should be unique.
-      /// Default value is <c>true</c>.
       /// </summary>
-      public bool MakeTableNameUnique { get; set; } = true;
+      public bool MakeTableNameUnique { get; set; }
    }
 }
