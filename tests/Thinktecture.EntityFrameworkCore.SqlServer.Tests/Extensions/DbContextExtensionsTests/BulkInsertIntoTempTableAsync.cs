@@ -48,7 +48,7 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
          await DbContext.SaveChangesAsync();
 
          var entities = new List<TestEntity> { entity };
-         var query = await DbContext.BulkInsertIntoTempTableAsync(entities, new SqlTempTableBulkInsertOptions { MakeTableNameUnique = false });
+         var query = await DbContext.BulkInsertIntoTempTableAsync(entities, new SqlTempTableBulkInsertOptions { TempTableCreationOptions = { MakeTableNameUnique = false } });
 
          var tempTable = await query.ToListAsync();
          tempTable.Should()

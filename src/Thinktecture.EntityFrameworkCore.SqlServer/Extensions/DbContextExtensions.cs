@@ -9,7 +9,9 @@ using System.Threading.Tasks;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage;
+using Thinktecture.EntityFrameworkCore;
 using Thinktecture.EntityFrameworkCore.BulkOperations;
 using Thinktecture.EntityFrameworkCore.TempTables;
 using Thinktecture.EntityFrameworkCore.ValueConversion;
@@ -107,9 +109,9 @@ namespace Thinktecture
       /// <exception cref="ArgumentNullException"> <paramref name="ctx"/> or <paramref name="values"/> is <c>null</c>.</exception>
       [NotNull]
       public static Task<IQueryable<TempTable<TColumn1>>> BulkInsertValuesIntoTempTableAsync<TColumn1>([NotNull] this DbContext ctx,
-                                                                                             [NotNull] IEnumerable<TColumn1> values,
-                                                                                             [CanBeNull] SqlTempTableBulkInsertOptions options = null,
-                                                                                             CancellationToken cancellationToken = default)
+                                                                                                       [NotNull] IEnumerable<TColumn1> values,
+                                                                                                       [CanBeNull] SqlTempTableBulkInsertOptions options = null,
+                                                                                                       CancellationToken cancellationToken = default)
       {
          if (values == null)
             throw new ArgumentNullException(nameof(values));
@@ -133,9 +135,9 @@ namespace Thinktecture
       /// <exception cref="ArgumentNullException"> <paramref name="ctx"/> or <paramref name="values"/> is <c>null</c>.</exception>
       [NotNull]
       public static Task<IQueryable<TempTable<TColumn1, TColumn2>>> BulkInsertValuesIntoTempTableAsync<TColumn1, TColumn2>([NotNull] this DbContext ctx,
-                                                                                                                 [NotNull] IEnumerable<(TColumn1 column1, TColumn2 column2)> values,
-                                                                                                                 [CanBeNull] SqlTempTableBulkInsertOptions options = null,
-                                                                                                                 CancellationToken cancellationToken = default)
+                                                                                                                           [NotNull] IEnumerable<(TColumn1 column1, TColumn2 column2)> values,
+                                                                                                                           [CanBeNull] SqlTempTableBulkInsertOptions options = null,
+                                                                                                                           CancellationToken cancellationToken = default)
       {
          if (values == null)
             throw new ArgumentNullException(nameof(values));
@@ -169,28 +171,26 @@ namespace Thinktecture
             throw new ArgumentNullException(nameof(entities));
 
          options = options ?? new SqlTempTableBulkInsertOptions();
-         var tableName = await ctx.CreateTempTableAsync<T>(options.MakeTableNameUnique, cancellationToken).ConfigureAwait(false);
+         var entityType = ctx.GetEntityType<T>();
+         var tempTableCreator = ctx.GetService<ITempTableCreator>();
+         var bulkInsertExecutor = ctx.GetService<ISqlServerBulkOperationExecutor>();
+
+         var tableName = await tempTableCreator.CreateTempTableAsync(ctx, entityType, options.TempTableCreationOptions, cancellationToken).ConfigureAwait(false);
 
          if (options.PrimaryKeyCreation == PrimaryKeyCreation.BeforeBulkInsert)
-            await ctx.GetService<ITempTableCreator>().CreatePrimaryKeyAsync<T>(ctx, tableName, !options.MakeTableNameUnique, cancellationToken).ConfigureAwait(false);
+            await tempTableCreator.CreatePrimaryKeyAsync(ctx, entityType, tableName, !options.TempTableCreationOptions.MakeTableNameUnique, cancellationToken).ConfigureAwait(false);
 
-         await ctx.GetService<ISqlServerBulkOperationExecutor>().BulkInsertAsync(ctx, entities, null, tableName, options.BulkInsertOptions , cancellationToken).ConfigureAwait(false);
+         await bulkInsertExecutor.BulkInsertAsync(ctx, entities, null, tableName, options.BulkInsertOptions, cancellationToken).ConfigureAwait(false);
 
          if (options.PrimaryKeyCreation == PrimaryKeyCreation.AfterBulkInsert)
-            await ctx.GetService<ITempTableCreator>().CreatePrimaryKeyAsync<T>(ctx, tableName, !options.MakeTableNameUnique, cancellationToken).ConfigureAwait(false);
+            await tempTableCreator.CreatePrimaryKeyAsync(ctx, entityType, tableName, !options.TempTableCreationOptions.MakeTableNameUnique, cancellationToken).ConfigureAwait(false);
 
-         return ctx.GetTempTableQuery<T>(tableName);
+         return ctx.GetTempTableQuery<T>(entityType, tableName);
       }
 
-      private static IQueryable<T> GetTempTableQuery<T>([NotNull] this DbContext ctx, [NotNull] string tableName)
+      private static IQueryable<T> GetTempTableQuery<T>([NotNull] this DbContext ctx, [NotNull] IEntityType entityType, [NotNull] string tableName)
          where T : class
       {
-         if (ctx == null)
-            throw new ArgumentNullException(nameof(ctx));
-         if (tableName == null)
-            throw new ArgumentNullException(nameof(tableName));
-
-         var entityType = ctx.GetEntityType<T>();
          var sql = $"SELECT * FROM [{tableName}]";
 
 #pragma warning disable EF1000

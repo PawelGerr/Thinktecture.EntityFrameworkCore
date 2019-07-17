@@ -88,7 +88,7 @@ namespace Thinktecture
       public static Task<string> CreateTempTableAsync<T>([NotNull] this DbContext ctx, bool makeTableNameUnique = false, CancellationToken cancellationToken = default)
          where T : class
       {
-         return ctx.CreateTempTableAsync(typeof(T), makeTableNameUnique, cancellationToken);
+         return ctx.CreateTempTableAsync(typeof(T), new TempTableCreationOptions { MakeTableNameUnique = makeTableNameUnique }, cancellationToken);
       }
 
       /// <summary>
@@ -96,7 +96,7 @@ namespace Thinktecture
       /// </summary>
       /// <param name="ctx">Database context to use.</param>
       /// <param name="type">Type of the entity.</param>
-      /// <param name="makeTableNameUnique">Indication whether the table name should be unique.</param>
+      /// <param name="options">Options.</param>
       /// <param name="cancellationToken">Cancellation token.</param>
       /// <returns>Table name</returns>
       /// <exception cref="ArgumentNullException">
@@ -106,10 +106,10 @@ namespace Thinktecture
       /// </exception>
       /// <exception cref="ArgumentException">The provided type <paramref name="type"/> is not known by provided <paramref name="ctx"/>.</exception>
       [NotNull, ItemNotNull]
-      public static Task<string> CreateTempTableAsync([NotNull] this DbContext ctx, [NotNull] Type type, bool makeTableNameUnique, CancellationToken cancellationToken)
+      public static Task<string> CreateTempTableAsync([NotNull] this DbContext ctx, [NotNull] Type type, [NotNull] TempTableCreationOptions options, CancellationToken cancellationToken)
       {
          var entityType = ctx.GetEntityType(type);
-         return ctx.GetService<ITempTableCreator>().CreateTempTableAsync(ctx, entityType, makeTableNameUnique, cancellationToken);
+         return ctx.GetService<ITempTableCreator>().CreateTempTableAsync(ctx, entityType, options, cancellationToken);
       }
    }
 }

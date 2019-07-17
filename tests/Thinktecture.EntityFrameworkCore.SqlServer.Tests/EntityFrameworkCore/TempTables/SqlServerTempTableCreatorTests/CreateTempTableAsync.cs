@@ -26,7 +26,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
          ConfigureModel = builder => builder.ConfigureCustomTempTable<CustomTempTable>();
 
          // ReSharper disable once RedundantArgumentDefaultValue
-         await _sut.CreateTempTableAsync(DbContext, DbContext.GetEntityType<CustomTempTable>(), false).ConfigureAwait(false);
+         await _sut.CreateTempTableAsync(DbContext, DbContext.GetEntityType<CustomTempTable>(), new TempTableCreationOptions { MakeTableNameUnique = false }).ConfigureAwait(false);
 
          var columns = DbContext.GetCustomTempTableColumns<CustomTempTable>().ToList();
          columns.Should().HaveCount(2);
@@ -39,7 +39,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
       public async Task Should_create_temp_table_for_entityType()
       {
          // ReSharper disable once RedundantArgumentDefaultValue
-         await _sut.CreateTempTableAsync(DbContext, DbContext.GetEntityType<TestEntity>(), false).ConfigureAwait(false);
+         await _sut.CreateTempTableAsync(DbContext, DbContext.GetEntityType<TestEntity>(), new TempTableCreationOptions { MakeTableNameUnique = false }).ConfigureAwait(false);
 
          var columns = DbContext.GetCustomTempTableColumns<TestEntity>().OrderBy(c => c.COLUMN_NAME).ToList();
          columns.Should().HaveCount(6);
@@ -55,7 +55,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
       [Fact]
       public void Should_throw_if_temp_table_is_not_introduced()
       {
-         _sut.Awaiting(async c => await c.CreateTempTableAsync(DbContext, DbContext.GetEntityType<TempTable<int>>()).ConfigureAwait(false))
+         _sut.Awaiting(async c => await c.CreateTempTableAsync(DbContext, DbContext.GetEntityType<TempTable<int>>(), new TempTableCreationOptions { MakeTableNameUnique = false }).ConfigureAwait(false))
              .Should().Throw<ArgumentException>();
       }
 
@@ -64,7 +64,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
       {
          ConfigureModel = builder => builder.ConfigureTempTable<int>();
 
-         await _sut.CreateTempTableAsync(DbContext, DbContext.GetEntityType<TempTable<int>>()).ConfigureAwait(false);
+         await _sut.CreateTempTableAsync(DbContext, DbContext.GetEntityType<TempTable<int>>(), new TempTableCreationOptions { MakeTableNameUnique = false }).ConfigureAwait(false);
 
          DbContext.GetTempTableColumns<TempTable<int>>().ToList().Should().HaveCount(1);
       }
@@ -74,7 +74,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
       {
          ConfigureModel = builder => builder.ConfigureTempTable<int>();
 
-         await _sut.CreateTempTableAsync(DbContext, DbContext.GetEntityType<TempTable<int>>()).ConfigureAwait(false);
+         await _sut.CreateTempTableAsync(DbContext, DbContext.GetEntityType<TempTable<int>>(), new TempTableCreationOptions { MakeTableNameUnique = false }).ConfigureAwait(false);
 
          var constraints = await DbContext.GetTempTableConstraints<TempTable<int>>().ToListAsync().ConfigureAwait(false);
          constraints.Should().HaveCount(0);
@@ -85,7 +85,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
       {
          ConfigureModel = builder => builder.ConfigureTempTable<int>();
 
-         await _sut.CreateTempTableAsync(DbContext, DbContext.GetEntityType<TempTable<int>>()).ConfigureAwait(false);
+         await _sut.CreateTempTableAsync(DbContext, DbContext.GetEntityType<TempTable<int>>(), new TempTableCreationOptions { MakeTableNameUnique = false }).ConfigureAwait(false);
 
          var columns = DbContext.GetTempTableColumns<TempTable<int>>().ToList();
          ValidateColumn(columns[0], nameof(TempTable<int>.Column1), "int", false);
@@ -96,7 +96,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
       {
          ConfigureModel = builder => builder.ConfigureTempTable<int?>();
 
-         await _sut.CreateTempTableAsync(DbContext, DbContext.GetEntityType<TempTable<int?>>()).ConfigureAwait(false);
+         await _sut.CreateTempTableAsync(DbContext, DbContext.GetEntityType<TempTable<int?>>(), new TempTableCreationOptions { MakeTableNameUnique = false }).ConfigureAwait(false);
 
          var columns = DbContext.GetTempTableColumns<TempTable<int?>>().ToList();
          ValidateColumn(columns[0], nameof(TempTable<int?>.Column1), "int", true);
@@ -107,7 +107,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
       {
          ConfigureModel = builder => builder.ConfigureTempTable<int?>().Property(t => t.Column1).IsRequired();
 
-         await _sut.CreateTempTableAsync(DbContext, DbContext.GetEntityType<TempTable<int?>>()).ConfigureAwait(false);
+         await _sut.CreateTempTableAsync(DbContext, DbContext.GetEntityType<TempTable<int?>>(), new TempTableCreationOptions { MakeTableNameUnique = false }).ConfigureAwait(false);
 
          var columns = DbContext.GetTempTableColumns<TempTable<int?>>().ToList();
          ValidateColumn(columns[0], nameof(TempTable<int?>.Column1), "int", false);
@@ -118,7 +118,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
       {
          ConfigureModel = builder => builder.ConfigureTempTable<double>();
 
-         await _sut.CreateTempTableAsync(DbContext, DbContext.GetEntityType<TempTable<double>>()).ConfigureAwait(false);
+         await _sut.CreateTempTableAsync(DbContext, DbContext.GetEntityType<TempTable<double>>(), new TempTableCreationOptions { MakeTableNameUnique = false }).ConfigureAwait(false);
 
          var columns = DbContext.GetTempTableColumns<TempTable<double>>().ToList();
          ValidateColumn(columns[0], nameof(TempTable<double>.Column1), "float", false);
@@ -129,7 +129,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
       {
          ConfigureModel = builder => builder.ConfigureTempTable<decimal>();
 
-         await _sut.CreateTempTableAsync(DbContext, DbContext.GetEntityType<TempTable<decimal>>()).ConfigureAwait(false);
+         await _sut.CreateTempTableAsync(DbContext, DbContext.GetEntityType<TempTable<decimal>>(), new TempTableCreationOptions { MakeTableNameUnique = false }).ConfigureAwait(false);
 
          var columns = DbContext.GetTempTableColumns<TempTable<decimal>>().ToList();
          ValidateColumn(columns[0], nameof(TempTable<decimal>.Column1), "decimal", false);
@@ -140,7 +140,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
       {
          ConfigureModel = builder => builder.ConfigureTempTable<decimal>().Property(t => t.Column1).HasColumnType("decimal(20,5)");
 
-         await _sut.CreateTempTableAsync(DbContext, DbContext.GetEntityType<TempTable<decimal>>()).ConfigureAwait(false);
+         await _sut.CreateTempTableAsync(DbContext, DbContext.GetEntityType<TempTable<decimal>>(), new TempTableCreationOptions { MakeTableNameUnique = false }).ConfigureAwait(false);
 
          var columns = DbContext.GetTempTableColumns<TempTable<decimal>>().ToList();
          ValidateColumn(columns[0], nameof(TempTable<decimal>.Column1), "decimal", false, 20, 5);
@@ -151,7 +151,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
       {
          ConfigureModel = builder => builder.ConfigureTempTable<bool>();
 
-         await _sut.CreateTempTableAsync(DbContext, DbContext.GetEntityType<TempTable<bool>>()).ConfigureAwait(false);
+         await _sut.CreateTempTableAsync(DbContext, DbContext.GetEntityType<TempTable<bool>>(), new TempTableCreationOptions { MakeTableNameUnique = false }).ConfigureAwait(false);
 
          var columns = DbContext.GetTempTableColumns<TempTable<bool>>().ToList();
          ValidateColumn(columns[0], nameof(TempTable<bool>.Column1), "bit", false);
@@ -162,7 +162,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
       {
          ConfigureModel = builder => builder.ConfigureTempTable<string>();
 
-         await _sut.CreateTempTableAsync(DbContext, DbContext.GetEntityType<TempTable<string>>()).ConfigureAwait(false);
+         await _sut.CreateTempTableAsync(DbContext, DbContext.GetEntityType<TempTable<string>>(), new TempTableCreationOptions { MakeTableNameUnique = false }).ConfigureAwait(false);
 
          var columns = DbContext.GetTempTableColumns<TempTable<string>>().ToList();
          ValidateColumn(columns[0], nameof(TempTable<string>.Column1), "nvarchar", true);
@@ -173,7 +173,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
       {
          ConfigureModel = builder => builder.ConfigureTempTable<string>().Property(t => t.Column1).HasMaxLength(50);
 
-         await _sut.CreateTempTableAsync(DbContext, DbContext.GetEntityType<TempTable<string>>()).ConfigureAwait(false);
+         await _sut.CreateTempTableAsync(DbContext, DbContext.GetEntityType<TempTable<string>>(), new TempTableCreationOptions { MakeTableNameUnique = false }).ConfigureAwait(false);
 
          var columns = DbContext.GetTempTableColumns<TempTable<string>>().ToList();
          ValidateColumn(columns[0], nameof(TempTable<string>.Column1), "nvarchar", true, charMaxLength: 50);
@@ -184,7 +184,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
       {
          ConfigureModel = builder => builder.ConfigureTempTable<int, string>();
 
-         await _sut.CreateTempTableAsync(DbContext, DbContext.GetEntityType<TempTable<int, string>>()).ConfigureAwait(false);
+         await _sut.CreateTempTableAsync(DbContext, DbContext.GetEntityType<TempTable<int, string>>(), new TempTableCreationOptions { MakeTableNameUnique = false }).ConfigureAwait(false);
 
          var columns = DbContext.GetTempTableColumns<TempTable<int, string>>().ToList();
          columns.Should().HaveCount(2);

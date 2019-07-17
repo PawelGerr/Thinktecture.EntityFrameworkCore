@@ -17,7 +17,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
       /// </summary>
       /// <param name="ctx">Database context to use.</param>
       /// <param name="entityType">Entity/query type.</param>
-      /// <param name="makeTableNameUnique">Indication whether the table name should be unique.</param>
+      /// <param name="options">Options.</param>
       /// <param name="cancellationToken">Cancellation token.</param>
       /// <returns>Table name.</returns>
       /// <exception cref="ArgumentNullException">
@@ -27,7 +27,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
       /// </exception>
       /// <exception cref="ArgumentException">The provided type <paramref name="entityType"/> is not known by the <paramref name="ctx"/>.</exception>
       [NotNull, ItemNotNull]
-      Task<string> CreateTempTableAsync([NotNull] DbContext ctx, [NotNull] IEntityType entityType, bool makeTableNameUnique = false, CancellationToken cancellationToken = default);
+      Task<string> CreateTempTableAsync([NotNull] DbContext ctx, [NotNull] IEntityType entityType, [NotNull] TempTableCreationOptions options, CancellationToken cancellationToken = default);
 
       /// <summary>
       /// Creates a primary key in a temp table with provided <paramref name="tableName"/>.
@@ -38,11 +38,12 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
       /// </remarks>
       /// </summary>
       /// <param name="ctx">Database context to use.</param>
+      /// <param name="entityType">Entity type.</param>
       /// <param name="tableName">Table name to create the primary key in.</param>
       /// <param name="checkForExistence">If <c>true</c> then the primary key is not going to be created if it exists already.</param>
       /// <param name="cancellationToken">Cancellation token.</param>
       /// <typeparam name="T">Entity/query type.</typeparam>
       [NotNull]
-      Task CreatePrimaryKeyAsync<T>([NotNull] DbContext ctx, [NotNull] string tableName, bool checkForExistence = false, CancellationToken cancellationToken = default);
+      Task CreatePrimaryKeyAsync([NotNull] DbContext ctx, [NotNull] IEntityType entityType, [NotNull] string tableName, bool checkForExistence = false, CancellationToken cancellationToken = default);
    }
 }

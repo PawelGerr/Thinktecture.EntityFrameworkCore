@@ -53,7 +53,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
 
          var factory = ctx.GetService<IEntityDataReaderFactory>();
          var entityType = ctx.GetEntityType<T>();
-         var properties = GetPropertiesForInsert(options, entityType);
+         var properties = GetPropertiesForInsert(options.EntityMembersProvider, entityType);
          var sqlCon = (SqlConnection)ctx.Database.GetDbConnection();
          var sqlTx = (SqlTransaction)ctx.Database.CurrentTransaction?.GetDbTransaction();
 
@@ -86,12 +86,17 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       }
 
       [NotNull]
-      private static IReadOnlyList<IProperty> GetPropertiesForInsert([NotNull] SqlBulkInsertOptions options, [NotNull] IEntityType entityType)
+      private static IReadOnlyList<IProperty> GetPropertiesForInsert([CanBeNull] IEntityMembersProvider entityMembersProvider, [NotNull] IEntityType entityType)
       {
-         if (options.EntityMembersProvider == null)
+         if (entityMembersProvider == null)
             return entityType.GetProperties().Where(p => !p.IsShadowProperty && p.BeforeSaveBehavior != PropertySaveBehavior.Ignore).ToList();
 
-         var memberInfos = options.EntityMembersProvider.GetMembers();
+         return ConvertToEntityProperties(entityMembersProvider.GetMembers(), entityType);
+      }
+
+      [NotNull]
+      private static IReadOnlyList<IProperty> ConvertToEntityProperties([NotNull] IReadOnlyList<MemberInfo> memberInfos, [NotNull] IEntityType entityType)
+      {
          var properties = new IProperty[memberInfos.Count];
 
          for (var i = 0; i < memberInfos.Count; i++)
@@ -99,7 +104,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
             var memberInfo = memberInfos[i];
             var property = FindProperty(entityType, memberInfo);
 
-            properties[i] = property ?? throw new ArgumentException($"The member '{memberInfo.Name}' not found on entity '{entityType.Name}'.", nameof(options));
+            properties[i] = property ?? throw new ArgumentException($"The member '{memberInfo.Name}' has not found on entity '{entityType.Name}'.", nameof(memberInfos));
          }
 
          return properties;

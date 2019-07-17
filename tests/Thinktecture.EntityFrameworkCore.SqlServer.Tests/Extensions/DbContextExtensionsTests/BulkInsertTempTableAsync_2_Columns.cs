@@ -53,7 +53,7 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
       {
          ConfigureModel = builder => builder.ConfigureTempTable<int, int>();
 
-         await DbContext.BulkInsertValuesIntoTempTableAsync(new List<(int, int)> { (1, 2) }, new SqlTempTableBulkInsertOptions { MakeTableNameUnique = false }).ConfigureAwait(false);
+         await DbContext.BulkInsertValuesIntoTempTableAsync(new List<(int, int)> { (1, 2) }, new SqlTempTableBulkInsertOptions { TempTableCreationOptions = { MakeTableNameUnique = false } }).ConfigureAwait(false);
 
          var keys = DbContext.GetTempTableKeyColumns<int, int>().ToList();
          keys.Should().HaveCount(2);

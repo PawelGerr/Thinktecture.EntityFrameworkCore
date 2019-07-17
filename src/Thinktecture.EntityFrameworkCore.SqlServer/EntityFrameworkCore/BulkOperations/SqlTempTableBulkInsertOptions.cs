@@ -1,4 +1,5 @@
 using JetBrains.Annotations;
+using Thinktecture.EntityFrameworkCore.TempTables;
 
 namespace Thinktecture.EntityFrameworkCore.BulkOperations
 {
@@ -19,11 +20,18 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
          set => _bulkInsertOptions = value;
       }
 
+      private TempTableCreationOptions _tempTableCreationOptions;
+
       /// <summary>
-      /// Indication whether the name of the temp table should be unique.
+      /// Options for creation of the temp table.
       /// Default is set to <c>true</c>.
       /// </summary>
-      public bool MakeTableNameUnique { get; set; } = true;
+      [NotNull]
+      public TempTableCreationOptions TempTableCreationOptions
+      {
+         get => _tempTableCreationOptions ?? (_tempTableCreationOptions = new TempTableCreationOptions());
+         set => _tempTableCreationOptions = value;
+      }
 
       /// <summary>
       /// Creates a clustered primary key spanning all columns of the temp table after the bulk insert.
