@@ -28,7 +28,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
          if (entityType.IsQueryType)
             throw new InvalidOperationException("The provided 'entities' are of 'Query Type' that do not have a table to insert into. Use the other overload that takes the 'tableName' as a parameter.");
 
-         var tableId = ctx.GetTableIdentifier(typeof(T));
+         var tableId = entityType.GetTableIdentifier();
 
          return BulkInsertAsync(ctx, entities, tableId.Schema, tableId.TableName, options, cancellationToken);
       }

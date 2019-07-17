@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Thinktecture.TestDatabaseContext;
 using Xunit;
 
@@ -10,30 +11,16 @@ namespace Thinktecture.ExtensionsTests.DbContextExtensionsTests
    public class GetTableIdentifier : TestBase
    {
       [Fact]
-      public void Should_throw_if_context_is_null()
-      {
-         ((DbContext)null).Invoking(ctx => ctx.GetTableIdentifier(typeof(TestEntity))).Should().Throw<ArgumentNullException>();
-      }
-
-      [Fact]
       public void Should_throw_if_type_is_null()
       {
-         // ReSharper disable once AssignNullToNotNullAttribute
-         DbContextWithSchema.Invoking(ctx => ctx.GetTableIdentifier(null)).Should().Throw<ArgumentNullException>();
-      }
-
-      [Fact]
-      public void Should_throw_if_type_is_unknown_to_ctx()
-      {
-         // ReSharper disable once AssignNullToNotNullAttribute
-         DbContextWithSchema.Invoking(ctx => ctx.GetTableIdentifier(typeof(string))).Should().Throw<ArgumentException>();
+         ((IEntityType)null).Invoking(t => t.GetTableIdentifier()).Should().Throw<ArgumentNullException>();
       }
 
       [Fact]
       public void Should_return_table_id_of_implicitly_specified_entity_set()
       {
          Schema = null;
-         var (schema, table) = DbContextWithSchema.GetTableIdentifier(typeof(TestEntity));
+         var (schema, table) = DbContextWithSchema.GetEntityType<TestEntity>().GetTableIdentifier();
 
          schema.Should().BeNullOrEmpty();
          table.Should().Be("TestEntity");
@@ -45,7 +32,7 @@ namespace Thinktecture.ExtensionsTests.DbContextExtensionsTests
          Schema = "DBC0AE92-5E63-4F0A-83E8-DDBDBD8F51C5";
          DbContextWithSchema.ConfigureModel = builder => builder.Entity<TestEntity>().ToTable("TableName", Schema);
 
-         var (schema, table) = DbContextWithSchema.GetTableIdentifier(typeof(TestEntity));
+         var (schema, table) = DbContextWithSchema.GetEntityType<TestEntity>().GetTableIdentifier();
 
          schema.Should().Be(Schema);
          table.Should().Be("TableName");

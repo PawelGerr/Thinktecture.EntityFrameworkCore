@@ -59,20 +59,17 @@ namespace Thinktecture
       }
 
       /// <summary>
-      /// Get the table schema and name of the provided <paramref name="type"/>.
+      /// Get the table schema and name of the provided <paramref name="entityType"/>.
       /// </summary>
-      /// <param name="ctx">An instance of <see cref="DbContext"/> the provided entity type belongs to.</param>
-      /// <param name="type">Entity type to fetch the table schema and name for.</param>
+      /// <param name="entityType">Entity type to fetch the table schema and name for.</param>
       /// <returns>Table schema and table name for provided entity type.</returns>
-      /// <exception cref="ArgumentNullException">
-      /// <paramref name="ctx"/> is <c>null</c>
-      /// - or
-      /// <paramref name="type"/> is <c>null</c>.
-      /// </exception>
-      /// <exception cref="ArgumentException">The provided type <paramref name="type"/> is not known by provided <paramref name="ctx"/>.</exception>
-      public static (string Schema, string TableName) GetTableIdentifier([NotNull] this DbContext ctx, [NotNull] Type type)
+      /// <exception cref="ArgumentNullException"><paramref name="entityType"/> is <c>null</c>.</exception>
+      public static (string Schema, string TableName) GetTableIdentifier([NotNull] this IEntityType entityType)
       {
-         var relational = ctx.GetEntityType(type).Relational();
+         if (entityType == null)
+            throw new ArgumentNullException(nameof(entityType));
+
+         var relational = entityType.Relational();
 
          return (relational.Schema, relational.TableName);
       }
@@ -91,7 +88,7 @@ namespace Thinktecture
       public static Task<string> CreateTempTableAsync<T>([NotNull] this DbContext ctx, bool makeTableNameUnique = false, CancellationToken cancellationToken = default)
          where T : class
       {
-         return ctx.GetService<ITempTableCreator>().CreateTempTableAsync<T>(ctx, makeTableNameUnique, cancellationToken);
+         return ctx.CreateTempTableAsync(typeof(T), makeTableNameUnique, cancellationToken);
       }
 
       /// <summary>
@@ -109,9 +106,10 @@ namespace Thinktecture
       /// </exception>
       /// <exception cref="ArgumentException">The provided type <paramref name="type"/> is not known by provided <paramref name="ctx"/>.</exception>
       [NotNull, ItemNotNull]
-      public static Task<string> CreateTempTableAsync([NotNull] DbContext ctx, [NotNull] Type type, bool makeTableNameUnique, CancellationToken cancellationToken)
+      public static Task<string> CreateTempTableAsync([NotNull] this DbContext ctx, [NotNull] Type type, bool makeTableNameUnique, CancellationToken cancellationToken)
       {
-         return ctx.GetService<ITempTableCreator>().CreateTempTableAsync(ctx, type, makeTableNameUnique, cancellationToken);
+         var entityType = ctx.GetEntityType(type);
+         return ctx.GetService<ITempTableCreator>().CreateTempTableAsync(ctx, entityType, makeTableNameUnique, cancellationToken);
       }
    }
 }

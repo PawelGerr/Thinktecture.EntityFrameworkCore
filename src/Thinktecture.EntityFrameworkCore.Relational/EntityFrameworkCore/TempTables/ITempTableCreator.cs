@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
 
 namespace Thinktecture.EntityFrameworkCore.TempTables
 {
@@ -12,35 +13,21 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
    public interface ITempTableCreator
    {
       /// <summary>
-      /// Creates a temp table using entity/query type '<typeparamref name="T"/>'.
-      /// </summary>
-      /// <param name="ctx">Database context to use.</param>
-      /// <param name="makeTableNameUnique">Indication whether the table name should be unique.</param>
-      /// <param name="cancellationToken">Cancellation token.</param>
-      /// <typeparam name="T">Type of the entity/query type.</typeparam>
-      /// <returns>Table name.</returns>
-      /// <exception cref="ArgumentNullException"><paramref name="ctx"/> is <c>null</c>.</exception>
-      /// <exception cref="ArgumentException">The provided type <typeparamref name="T"/> is not known by provided <paramref name="ctx"/>.</exception>
-      [NotNull, ItemNotNull]
-      Task<string> CreateTempTableAsync<T>([NotNull] DbContext ctx, bool makeTableNameUnique = false, CancellationToken cancellationToken = default)
-         where T : class;
-
-      /// <summary>
       /// Creates a temp table.
       /// </summary>
       /// <param name="ctx">Database context to use.</param>
-      /// <param name="type">Entity/query type.</param>
+      /// <param name="entityType">Entity/query type.</param>
       /// <param name="makeTableNameUnique">Indication whether the table name should be unique.</param>
       /// <param name="cancellationToken">Cancellation token.</param>
       /// <returns>Table name.</returns>
       /// <exception cref="ArgumentNullException">
       /// <paramref name="ctx"/> is <c>null</c>
       /// - or
-      /// <paramref name="type"/> is <c>null</c>.
+      /// <paramref name="entityType"/> is <c>null</c>.
       /// </exception>
-      /// <exception cref="ArgumentException">The provided type <paramref name="type"/> is not known by the <paramref name="ctx"/>.</exception>
+      /// <exception cref="ArgumentException">The provided type <paramref name="entityType"/> is not known by the <paramref name="ctx"/>.</exception>
       [NotNull, ItemNotNull]
-      Task<string> CreateTempTableAsync([NotNull] DbContext ctx, [NotNull] Type type, bool makeTableNameUnique = false, CancellationToken cancellationToken = default);
+      Task<string> CreateTempTableAsync([NotNull] DbContext ctx, [NotNull] IEntityType entityType, bool makeTableNameUnique = false, CancellationToken cancellationToken = default);
 
       /// <summary>
       /// Creates a primary key in a temp table with provided <paramref name="tableName"/>.

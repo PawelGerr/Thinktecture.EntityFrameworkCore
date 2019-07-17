@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
 
 namespace Thinktecture.EntityFrameworkCore.TempTables
 {
@@ -15,21 +16,14 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
    public class SqlServerTempTableCreator : ITempTableCreator
    {
       /// <inheritdoc />
-      public Task<string> CreateTempTableAsync<T>(DbContext ctx, bool makeTableNameUnique = false, CancellationToken cancellationToken = default)
-         where T : class
-      {
-         return CreateTempTableAsync(ctx, typeof(T), makeTableNameUnique, cancellationToken);
-      }
-
-      /// <inheritdoc />
-      public async Task<string> CreateTempTableAsync(DbContext ctx, Type type, bool makeTableNameUnique = false, CancellationToken cancellationToken = default)
+      public async Task<string> CreateTempTableAsync(DbContext ctx, IEntityType entityType, bool makeTableNameUnique = false, CancellationToken cancellationToken = default)
       {
          if (ctx == null)
             throw new ArgumentNullException(nameof(ctx));
-         if (type == null)
-            throw new ArgumentNullException(nameof(type));
+         if (entityType == null)
+            throw new ArgumentNullException(nameof(entityType));
 
-         var (_, tableName) = ctx.GetTableIdentifier(type);
+         var (_, tableName) = entityType.GetTableIdentifier();
 
          if (!tableName.StartsWith("#", StringComparison.Ordinal))
             tableName = $"#{tableName}";
@@ -37,7 +31,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
          if (makeTableNameUnique)
             tableName = $"{tableName}_{Guid.NewGuid():N}";
 
-         var sql = GetTempTableCreationSql(ctx, type, tableName, makeTableNameUnique);
+         var sql = GetTempTableCreationSql(ctx, entityType, tableName, makeTableNameUnique);
 
          await ctx.Database.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
 
@@ -87,19 +81,19 @@ END
       }
 
       [NotNull]
-      private static string GetTempTableCreationSql([NotNull] DbContext ctx, [NotNull] Type type, [NotNull] string tableName, bool isUnique)
+      private static string GetTempTableCreationSql([NotNull] DbContext ctx, [NotNull] IEntityType entityType, [NotNull] string tableName, bool isUnique)
       {
          if (ctx == null)
             throw new ArgumentNullException(nameof(ctx));
-         if (type == null)
-            throw new ArgumentNullException(nameof(type));
+         if (entityType == null)
+            throw new ArgumentNullException(nameof(entityType));
          if (tableName == null)
             throw new ArgumentNullException(nameof(tableName));
 
          var sql = $@"
       CREATE TABLE [{tableName}]
       (
-{GetColumnsDefinitions(ctx, type)}
+{GetColumnsDefinitions(ctx, entityType)}
       );";
 
          if (isUnique)
@@ -116,14 +110,13 @@ END
       }
 
       [NotNull]
-      private static string GetColumnsDefinitions([NotNull] DbContext ctx, [NotNull] Type type)
+      private static string GetColumnsDefinitions([NotNull] DbContext ctx, [NotNull] IEntityType entityType)
       {
          if (ctx == null)
             throw new ArgumentNullException(nameof(ctx));
-         if (type == null)
-            throw new ArgumentNullException(nameof(type));
+         if (entityType == null)
+            throw new ArgumentNullException(nameof(entityType));
 
-         var entityType = ctx.GetEntityType(type);
          var sb = new StringBuilder();
          var isFirst = true;
 
