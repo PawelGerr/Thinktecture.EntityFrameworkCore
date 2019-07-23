@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Data;
+using System.Data.SqlClient;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
@@ -215,7 +216,7 @@ namespace Thinktecture.EntityFrameworkCore
          if (schema == null)
             throw new ArgumentNullException(nameof(schema));
 
-         ctx.Database.ExecuteSqlCommand(GetSqlForCleanup(schema));
+         ctx.Database.ExecuteSqlCommand(GetSqlForCleanup(), new SqlParameter("@schema", schema));
          ctx.Database.ExecuteSqlCommand(GetDropSchemaSql(schema));
       }
 
@@ -226,11 +227,10 @@ namespace Thinktecture.EntityFrameworkCore
       }
 
       [NotNull]
-      private static string GetSqlForCleanup(string schema)
+      private static string GetSqlForCleanup()
       {
-         return $@"
+         return @"
 DECLARE @crlf NVARCHAR(MAX) = CHAR(13) + CHAR(10);
-DECLARE @schema NVARCHAR(MAX) = '{schema}';
 DECLARE @sql NVARCHAR(MAX);
 DECLARE @cursor CURSOR
 

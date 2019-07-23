@@ -19,7 +19,7 @@ namespace Thinktecture
       /// </summary>
       /// <param name="builder">Options builder.</param>
       /// <returns>The provided <paramref name="builder"/>.</returns>
-      /// <exception cref="ArgumentNullException"></exception>
+      /// <exception cref="ArgumentNullException"><paramref name="builder"/> is <c>null</c>.</exception>
       [NotNull]
       public static DbContextOptionsBuilder<T> AddSchemaAwareComponents<T>([NotNull] this DbContextOptionsBuilder<T> builder)
          where T : DbContext
@@ -33,7 +33,7 @@ namespace Thinktecture
       /// </summary>
       /// <param name="builder">Options builder.</param>
       /// <returns>The provided <paramref name="builder"/>.</returns>
-      /// <exception cref="ArgumentNullException"></exception>
+      /// <exception cref="ArgumentNullException"><paramref name="builder"/> is <c>null</c>.</exception>
       [NotNull]
       public static DbContextOptionsBuilder AddSchemaAwareComponents([NotNull] this DbContextOptionsBuilder builder)
       {

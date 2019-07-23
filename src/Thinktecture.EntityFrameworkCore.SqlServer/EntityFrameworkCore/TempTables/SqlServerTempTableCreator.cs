@@ -112,7 +112,7 @@ END
 
          return $@"
 IF(OBJECT_ID('tempdb..{tableName}') IS NOT NULL)
-      TRUNCATE TABLE [{tableName}];
+   TRUNCATE TABLE [{tableName}];
 ELSE
 BEGIN
 {sql}
