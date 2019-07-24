@@ -27,15 +27,15 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
       {
          ConfigureModel = builder => builder.ConfigureTempTable<int>();
 
-         var tableName = await DbContext.CreateTempTableAsync<TempTable<int>>();
+         var tableName = await ArrangeDbContext.CreateTempTableAsync<TempTable<int>>();
 
-         await _sut.CreatePrimaryKeyAsync(DbContext, DbContext.GetEntityType<TempTable<int>>(), tableName);
+         await _sut.CreatePrimaryKeyAsync(ActDbContext, ActDbContext.GetEntityType<TempTable<int>>(), tableName);
 
-         var constraints = await DbContext.GetTempTableConstraints<TempTable<int>>().ToListAsync();
+         var constraints = await AssertDbContext.GetTempTableConstraints<TempTable<int>>().ToListAsync();
          constraints.Should().HaveCount(1)
                     .And.Subject.First().CONSTRAINT_TYPE.Should().Be("PRIMARY KEY");
 
-         var keyColumns = await DbContext.GetTempTableKeyColumns<TempTable<int>>().ToListAsync();
+         var keyColumns = await AssertDbContext.GetTempTableKeyColumns<TempTable<int>>().ToListAsync();
          keyColumns.Should().HaveCount(1)
                    .And.Subject.First().COLUMN_NAME.Should().Be(nameof(TempTable<int>.Column1));
       }
@@ -43,15 +43,15 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
       [Fact]
       public async Task Should_create_primary_key_for_entityType()
       {
-         var tableName = await DbContext.CreateTempTableAsync<TestEntity>();
+         var tableName = await ArrangeDbContext.CreateTempTableAsync<TestEntity>();
 
-         await _sut.CreatePrimaryKeyAsync(DbContext, DbContext.GetEntityType<TestEntity>(), tableName);
+         await _sut.CreatePrimaryKeyAsync(ActDbContext, ActDbContext.GetEntityType<TestEntity>(), tableName);
 
-         var constraints = await DbContext.GetTempTableConstraints<TestEntity>().ToListAsync();
+         var constraints = await AssertDbContext.GetTempTableConstraints<TestEntity>().ToListAsync();
          constraints.Should().HaveCount(1)
                     .And.Subject.First().CONSTRAINT_TYPE.Should().Be("PRIMARY KEY");
 
-         var keyColumns = await DbContext.GetTempTableKeyColumns<TestEntity>().ToListAsync();
+         var keyColumns = await AssertDbContext.GetTempTableKeyColumns<TestEntity>().ToListAsync();
          keyColumns.Should().HaveCount(1)
                    .And.Subject.First().COLUMN_NAME.Should().Be(nameof(TestEntity.Id));
       }
@@ -59,23 +59,23 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
       [Fact]
       public async Task Should_not_create_primary_key_if_key_exists_and_checkForExistence_is_true()
       {
-         var tableName = await DbContext.CreateTempTableAsync<TestEntity>();
-         var entityType = DbContext.GetEntityType<TestEntity>();
-         await _sut.CreatePrimaryKeyAsync(DbContext, entityType, tableName);
+         var tableName = await ArrangeDbContext.CreateTempTableAsync<TestEntity>();
+         var entityType = ArrangeDbContext.GetEntityType<TestEntity>();
+         await _sut.CreatePrimaryKeyAsync(ArrangeDbContext, entityType, tableName);
 
-         _sut.Awaiting(async sut => await sut.CreatePrimaryKeyAsync(DbContext, entityType, tableName, true))
+         _sut.Awaiting(async sut => await sut.CreatePrimaryKeyAsync(ActDbContext, entityType, tableName, true))
              .Should().NotThrow();
       }
 
       [Fact]
       public async Task Should_throw_if_key_exists_and_checkForExistence_is_false()
       {
-         var tableName = await DbContext.CreateTempTableAsync<TestEntity>();
-         var entityType = DbContext.GetEntityType<TestEntity>();
-         await _sut.CreatePrimaryKeyAsync(DbContext, entityType, tableName);
+         var tableName = await ArrangeDbContext.CreateTempTableAsync<TestEntity>();
+         var entityType = ArrangeDbContext.GetEntityType<TestEntity>();
+         await _sut.CreatePrimaryKeyAsync(ArrangeDbContext, entityType, tableName);
 
          // ReSharper disable once RedundantArgumentDefaultValue
-         _sut.Awaiting(async sut => await sut.CreatePrimaryKeyAsync(DbContext, entityType, tableName, false))
+         _sut.Awaiting(async sut => await sut.CreatePrimaryKeyAsync(ActDbContext, entityType, tableName, false))
              .Should()
              .Throw<SqlException>();
       }

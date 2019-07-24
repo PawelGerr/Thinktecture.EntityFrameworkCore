@@ -26,7 +26,7 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
          ConfigureModel = builder => builder.ConfigureTempTableEntity<CustomTempTable>().Property(t => t.Column2).HasMaxLength(100).IsRequired();
 
          var entities = new List<CustomTempTable> { new CustomTempTable(1, "value") };
-         var query = await DbContext.BulkInsertIntoTempTableAsync(entities);
+         var query = await ActDbContext.BulkInsertIntoTempTableAsync(entities);
 
          var tempTable = await query.ToListAsync();
          tempTable.Should()
@@ -43,11 +43,11 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
                          Name = "Name",
                          Count = 42
                       };
-         DbContext.TestEntities.Add(entity);
-         await DbContext.SaveChangesAsync();
+         ArrangeDbContext.TestEntities.Add(entity);
+         await ArrangeDbContext.SaveChangesAsync();
 
          var entities = new List<TestEntity> { entity };
-         var query = await DbContext.BulkInsertIntoTempTableAsync(entities);
+         var query = await ActDbContext.BulkInsertIntoTempTableAsync(entities);
 
          var tempTable = await query.ToListAsync();
          tempTable.Should()

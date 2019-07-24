@@ -28,7 +28,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
       {
          ConfigureModel = builder => builder.ConfigureTempTable<int>();
 
-         _sut.Awaiting(sut => sut.BulkInsertAsync(DbContext, DbContext.GetEntityType<TempTable<int>>(), new List<TempTable<int>>(), new SqlBulkInsertOptions()))
+         _sut.Awaiting(sut => sut.BulkInsertAsync(ActDbContext, ActDbContext.GetEntityType<TempTable<int>>(), new List<TempTable<int>>(), new SqlBulkInsertOptions()))
              .Should().Throw<InvalidOperationException>();
       }
 
@@ -45,9 +45,9 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
 
          var testEntities = new[] { testEntity };
 
-         await _sut.BulkInsertAsync(DbContext, DbContext.GetEntityType<TestEntity>(), testEntities, new SqlBulkInsertOptions());
+         await _sut.BulkInsertAsync(ActDbContext, ActDbContext.GetEntityType<TestEntity>(), testEntities, new SqlBulkInsertOptions());
 
-         var loadedEntities = await DbContext.TestEntities.ToListAsync();
+         var loadedEntities = await AssertDbContext.TestEntities.ToListAsync();
          loadedEntities.Should().HaveCount(1);
          var loadedEntity = loadedEntities[0];
          loadedEntity.Should().BeEquivalentTo(new TestEntity
@@ -76,8 +76,8 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
          var propertyWithBackingField = typeof(TestEntity).GetProperty(nameof(TestEntity.PropertyWithBackingField));
          var privateField = typeof(TestEntity).GetField("_privateField", BindingFlags.Instance | BindingFlags.NonPublic);
 
-         await _sut.BulkInsertAsync(DbContext,
-                                    DbContext.GetEntityType<TestEntity>(),
+         await _sut.BulkInsertAsync(ActDbContext,
+                                    ActDbContext.GetEntityType<TestEntity>(),
                                     testEntities,
                                     new SqlBulkInsertOptions
                                     {
@@ -90,7 +90,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
                                                                                          })
                                     });
 
-         var loadedEntities = await DbContext.TestEntities.ToListAsync();
+         var loadedEntities = await AssertDbContext.TestEntities.ToListAsync();
          loadedEntities.Should().HaveCount(1);
          var loadedEntity = loadedEntities[0];
          loadedEntity.Should().BeEquivalentTo(new TestEntity

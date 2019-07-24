@@ -26,7 +26,7 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
          ConfigureModel = builder => builder.ConfigureTempTable<int, int?>();
 
          var values = new List<(int, int?)> { (1, null) };
-         var query = await DbContext.BulkInsertValuesIntoTempTableAsync(values, new SqlTempTableBulkInsertOptions { PrimaryKeyCreation = PrimaryKeyCreation.None }).ConfigureAwait(false);
+         var query = await ActDbContext.BulkInsertValuesIntoTempTableAsync(values, new SqlTempTableBulkInsertOptions { PrimaryKeyCreation = PrimaryKeyCreation.None }).ConfigureAwait(false);
 
          var tempTable = await query.ToListAsync().ConfigureAwait(false);
          tempTable.Should()
@@ -40,7 +40,7 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
          ConfigureModel = builder => builder.ConfigureTempTable<string, string>();
 
          var values = new List<(string, string)> { ("value1", null) };
-         var query = await DbContext.BulkInsertValuesIntoTempTableAsync(values, new SqlTempTableBulkInsertOptions { PrimaryKeyCreation = PrimaryKeyCreation.None }).ConfigureAwait(false);
+         var query = await ActDbContext.BulkInsertValuesIntoTempTableAsync(values, new SqlTempTableBulkInsertOptions { PrimaryKeyCreation = PrimaryKeyCreation.None }).ConfigureAwait(false);
 
          var tempTable = await query.ToListAsync().ConfigureAwait(false);
          tempTable.Should()
@@ -53,9 +53,9 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
       {
          ConfigureModel = builder => builder.ConfigureTempTable<int, int>();
 
-         await DbContext.BulkInsertValuesIntoTempTableAsync(new List<(int, int)> { (1, 2) }).ConfigureAwait(false);
+         await ActDbContext.BulkInsertValuesIntoTempTableAsync(new List<(int, int)> { (1, 2) }).ConfigureAwait(false);
 
-         var keys = DbContext.GetTempTableKeyColumns<int, int>().ToList();
+         var keys = AssertDbContext.GetTempTableKeyColumns<int, int>().ToList();
          keys.Should().HaveCount(2);
          keys[0].COLUMN_NAME.Should().Be(nameof(TempTable<int, int>.Column1));
          keys[1].COLUMN_NAME.Should().Be(nameof(TempTable<int, int>.Column2));

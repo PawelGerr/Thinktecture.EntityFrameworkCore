@@ -18,7 +18,7 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
       [Fact]
       public async Task Should_fetch_min_action_rowversion()
       {
-         var rowVersion = await DbContext.GetMinActiveRowVersionAsync(CancellationToken.None).ConfigureAwait(false);
+         var rowVersion = await ActDbContext.GetMinActiveRowVersionAsync(CancellationToken.None).ConfigureAwait(false);
          rowVersion.Should().NotBe(0);
       }
    }

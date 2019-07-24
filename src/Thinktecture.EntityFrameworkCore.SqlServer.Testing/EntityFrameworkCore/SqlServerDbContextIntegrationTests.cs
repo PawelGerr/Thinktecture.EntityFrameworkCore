@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Concurrent;
-using System.Data;
+using System.Data.Common;
 using System.Data.SqlClient;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
+using IsolationLevel = System.Data.IsolationLevel;
 
 namespace Thinktecture.EntityFrameworkCore
 {
@@ -28,7 +29,10 @@ namespace Thinktecture.EntityFrameworkCore
       private readonly bool _useSharedTables;
 
       private string _schema;
-      private T _dbContext;
+      private T _arrangeDbContext;
+      private T _actDbContext;
+      private T _assertDbContext;
+      private DbConnection _dbConnection;
       private IDbContextTransaction _tx;
       private ILoggerFactory _loggerFactory;
 
@@ -40,11 +44,22 @@ namespace Thinktecture.EntityFrameworkCore
       protected string Schema => _schema ?? (_schema = DetermineSchema(_useSharedTables));
 
       /// <summary>
-      /// Database context being used for the tests.
+      /// Database context for setting up the test data.
       /// </summary>
       [NotNull]
-      // ReSharper disable once UnusedMember.Global
-      protected T DbContext => _dbContext ?? (_dbContext = CreateContext());
+      protected T ArrangeDbContext => _arrangeDbContext ?? (_arrangeDbContext = CreateContext());
+
+      /// <summary>
+      /// Database context for the actual test.
+      /// </summary>
+      [NotNull]
+      protected T ActDbContext => _actDbContext ?? (_actDbContext = CreateContext());
+
+      /// <summary>
+      /// Database context for making assertions.
+      /// </summary>
+      [NotNull]
+      protected T AssertDbContext => _assertDbContext ?? (_assertDbContext = CreateContext());
 
       /// <summary>
       /// Initializes a new instance of <see cref="SqlServerDbContextIntegrationTests{T}"/>
@@ -92,12 +107,24 @@ namespace Thinktecture.EntityFrameworkCore
       [NotNull]
       private T CreateContext()
       {
-         var optionsBuilder = CreateOptionsBuilder(_connectionString);
-         var ctx = CreateContext(optionsBuilder.Options, new DbContextSchema(Schema));
-         RunMigrations(ctx);
+         var isFirstCtx = _dbConnection == null;
+         var optionsBuilder = CreateOptionsBuilder(_connectionString, _dbConnection);
 
-         if (_useSharedTables)
-            _tx = BeginTransaction(ctx);
+         var ctx = CreateContext(optionsBuilder.Options, new DbContextSchema(Schema));
+
+         if (isFirstCtx)
+         {
+            _dbConnection = ctx.Database.GetDbConnection();
+
+            RunMigrations(ctx);
+
+            if (_useSharedTables)
+               _tx = BeginTransaction(ctx);
+         }
+         else if (_tx != null)
+         {
+            ctx.Database.UseTransaction(_tx.GetDbTransaction());
+         }
 
          return ctx;
       }
@@ -133,17 +160,27 @@ namespace Thinktecture.EntityFrameworkCore
       /// Creates and configures the <see cref="DbContextOptionsBuilder{TContext}"/>
       /// </summary>
       /// <param name="connString">Database connection string</param>
+      /// <param name="connection">After first creation of a <see cref="DbContext"/> a database connection is provided that should be used instead of the <paramref name="connString"/>.</param>
       /// <returns>An instance of <see cref="DbContextOptionsBuilder{TContext}"/></returns>
       /// <exception cref="ArgumentNullException"><paramref name="connString"/> is null.</exception>
       [NotNull]
-      protected virtual DbContextOptionsBuilder<T> CreateOptionsBuilder([NotNull] string connString)
+      protected virtual DbContextOptionsBuilder<T> CreateOptionsBuilder([NotNull] string connString, [CanBeNull] DbConnection connection)
       {
          if (connString == null)
             throw new ArgumentNullException(nameof(connString));
 
-         var builder = new DbContextOptionsBuilder<T>()
-                       .UseSqlServer(connString, ConfigureSqlServer)
-                       .AddSchemaAwareComponents();
+         var builder = new DbContextOptionsBuilder<T>();
+
+         if (connection != null)
+         {
+            builder.UseSqlServer(connection, ConfigureSqlServer);
+         }
+         else
+         {
+            builder.UseSqlServer(connString, ConfigureSqlServer);
+         }
+
+         builder.AddSchemaAwareComponents();
 
          if (_loggerFactory != null)
             builder.UseLoggerFactory(_loggerFactory);
@@ -184,7 +221,7 @@ namespace Thinktecture.EntityFrameworkCore
          if (!disposing)
             return;
 
-         if (_dbContext == null)
+         if (_dbConnection == null)
             return;
 
          if (_useSharedTables)
@@ -194,11 +231,14 @@ namespace Thinktecture.EntityFrameworkCore
          }
          else
          {
-            RollbackMigrations(_dbContext);
-            CleanUpDatabase(_dbContext, Schema);
+            var ctx = _actDbContext ?? _arrangeDbContext ?? _assertDbContext;
+            RollbackMigrations(ctx);
+            CleanUpDatabase(ctx, Schema);
          }
 
-         _dbContext.Dispose();
+         _arrangeDbContext?.Dispose();
+         _actDbContext?.Dispose();
+         _assertDbContext?.Dispose();
       }
 
       private static void RollbackMigrations([NotNull] T ctx)

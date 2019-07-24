@@ -31,9 +31,9 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
                           };
          var testEntities = new[] { testEntity };
 
-         await DbContext.BulkInsertAsync(testEntities);
+         await ActDbContext.BulkInsertAsync(testEntities);
 
-         var loadedEntities = await DbContext.TestEntities.ToListAsync();
+         var loadedEntities = await AssertDbContext.TestEntities.ToListAsync();
          loadedEntities.Should().HaveCount(1);
          var loadedEntity = loadedEntities[0];
          loadedEntity.Should().BeEquivalentTo(new TestEntity
@@ -60,9 +60,9 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
          var propertyWithBackingField = typeof(TestEntity).GetProperty(nameof(TestEntity.PropertyWithBackingField));
          var privateField = typeof(TestEntity).GetField("_privateField", BindingFlags.Instance | BindingFlags.NonPublic);
 
-         await DbContext.BulkInsertAsync(testEntities, new SqlBulkInsertOptions { EntityMembersProvider = new EntityMembersProvider(new MemberInfo[] { idProperty, countProperty, propertyWithBackingField, privateField }) });
+         await ActDbContext.BulkInsertAsync(testEntities, new SqlBulkInsertOptions { EntityMembersProvider = new EntityMembersProvider(new MemberInfo[] { idProperty, countProperty, propertyWithBackingField, privateField }) });
 
-         var loadedEntities = await DbContext.TestEntities.ToListAsync();
+         var loadedEntities = await AssertDbContext.TestEntities.ToListAsync();
          loadedEntities.Should().HaveCount(1);
          var loadedEntity = loadedEntities[0];
          loadedEntity.Should().BeEquivalentTo(new TestEntity

@@ -20,11 +20,11 @@ namespace Thinktecture.Extensions.DbFunctionsExtensionsTests
       [Fact]
       public void Generates_RowNumber_with_orderby_and_one_column()
       {
-         DbContext.TestEntities.Add(new TestEntity { Id = new Guid("4883F7E0-FC8C-45FF-A579-DF351A3E79BF"), Name = "1" });
-         DbContext.TestEntities.Add(new TestEntity { Id = new Guid("18C13F68-0981-4853-92FC-FB7B2551F70A"), Name = "2" });
-         DbContext.SaveChanges();
+         ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("4883F7E0-FC8C-45FF-A579-DF351A3E79BF"), Name = "1" });
+         ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("18C13F68-0981-4853-92FC-FB7B2551F70A"), Name = "2" });
+         ArrangeDbContext.SaveChanges();
 
-         var result = DbContext.TestEntities
+         var result = ActDbContext.TestEntities
                                .Select(e => new
                                             {
                                                e.Name,
@@ -39,11 +39,11 @@ namespace Thinktecture.Extensions.DbFunctionsExtensionsTests
       [Fact]
       public void Generates_RowNumber_with_orderby_and_one_struct_column()
       {
-         DbContext.TestEntities.Add(new TestEntity { Id = new Guid("18CF65B3-F53D-4F45-8DF5-DD62DCC8B2EB") });
-         DbContext.TestEntities.Add(new TestEntity { Id = new Guid("28CF65B3-F53D-4F45-8DF5-DD62DCC8B2EB") });
-         DbContext.SaveChanges();
+         ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("18CF65B3-F53D-4F45-8DF5-DD62DCC8B2EB") });
+         ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("28CF65B3-F53D-4F45-8DF5-DD62DCC8B2EB") });
+         ArrangeDbContext.SaveChanges();
 
-         var result = DbContext.TestEntities
+         var result = ActDbContext.TestEntities
                                .Select(e => new
                                             {
                                                e.Id,
@@ -58,11 +58,11 @@ namespace Thinktecture.Extensions.DbFunctionsExtensionsTests
       [Fact]
       public void Generates_RowNumber_with_orderby_desc_and_one_column()
       {
-         DbContext.TestEntities.Add(new TestEntity { Id = new Guid("4883F7E0-FC8C-45FF-A579-DF351A3E79BF"), Name = "1" });
-         DbContext.TestEntities.Add(new TestEntity { Id = new Guid("18C13F68-0981-4853-92FC-FB7B2551F70A"), Name = "2" });
-         DbContext.SaveChanges();
+         ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("4883F7E0-FC8C-45FF-A579-DF351A3E79BF"), Name = "1" });
+         ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("18C13F68-0981-4853-92FC-FB7B2551F70A"), Name = "2" });
+         ArrangeDbContext.SaveChanges();
 
-         var result = DbContext.TestEntities
+         var result = ActDbContext.TestEntities
                                .Select(e => new
                                             {
                                                e.Name,
@@ -77,11 +77,11 @@ namespace Thinktecture.Extensions.DbFunctionsExtensionsTests
       [Fact]
       public void Generates_RowNumber_with_orderby_and_two_columns()
       {
-         DbContext.TestEntities.Add(new TestEntity { Id = new Guid("4883F7E0-FC8C-45FF-A579-DF351A3E79BF"), Name = "1", Count = 1 });
-         DbContext.TestEntities.Add(new TestEntity { Id = new Guid("18C13F68-0981-4853-92FC-FB7B2551F70A"), Name = "1", Count = 2 });
-         DbContext.SaveChanges();
+         ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("4883F7E0-FC8C-45FF-A579-DF351A3E79BF"), Name = "1", Count = 1 });
+         ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("18C13F68-0981-4853-92FC-FB7B2551F70A"), Name = "1", Count = 2 });
+         ArrangeDbContext.SaveChanges();
 
-         var result = DbContext.TestEntities
+         var result = ActDbContext.TestEntities
                                .Select(e => new
                                             {
                                                e.Count,
@@ -100,11 +100,11 @@ namespace Thinktecture.Extensions.DbFunctionsExtensionsTests
       [Fact]
       public void Generates_RowNumber_with_orderby_desc_and_two_columns()
       {
-         DbContext.TestEntities.Add(new TestEntity { Id = new Guid("4883F7E0-FC8C-45FF-A579-DF351A3E79BF"), Name = "1", Count = 1 });
-         DbContext.TestEntities.Add(new TestEntity { Id = new Guid("18C13F68-0981-4853-92FC-FB7B2551F70A"), Name = "1", Count = 2 });
-         DbContext.SaveChanges();
+         ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("4883F7E0-FC8C-45FF-A579-DF351A3E79BF"), Name = "1", Count = 1 });
+         ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("18C13F68-0981-4853-92FC-FB7B2551F70A"), Name = "1", Count = 2 });
+         ArrangeDbContext.SaveChanges();
 
-         var result = DbContext.TestEntities
+         var result = ActDbContext.TestEntities
                                .Select(e => new
                                             {
                                                e.Count,
@@ -123,11 +123,11 @@ namespace Thinktecture.Extensions.DbFunctionsExtensionsTests
       [Fact]
       public void Generates_RowNumber_with_partitionby_and_orderby_and_one_column()
       {
-         DbContext.TestEntities.Add(new TestEntity { Id = new Guid("4883F7E0-FC8C-45FF-A579-DF351A3E79BF"), Name = "1" });
-         DbContext.TestEntities.Add(new TestEntity { Id = new Guid("18C13F68-0981-4853-92FC-FB7B2551F70A"), Name = "2" });
-         DbContext.SaveChanges();
+         ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("4883F7E0-FC8C-45FF-A579-DF351A3E79BF"), Name = "1" });
+         ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("18C13F68-0981-4853-92FC-FB7B2551F70A"), Name = "2" });
+         ArrangeDbContext.SaveChanges();
 
-         var result = DbContext.TestEntities
+         var result = ActDbContext.TestEntities
                                .Select(e => new
                                             {
                                                e.Name,
@@ -142,11 +142,11 @@ namespace Thinktecture.Extensions.DbFunctionsExtensionsTests
       [Fact]
       public void Generates_RowNumber_with_partitionby_and_orderby_and_two_columns()
       {
-         DbContext.TestEntities.Add(new TestEntity { Id = new Guid("4883F7E0-FC8C-45FF-A579-DF351A3E79BF"), Name = "1", Count = 1 });
-         DbContext.TestEntities.Add(new TestEntity { Id = new Guid("18C13F68-0981-4853-92FC-FB7B2551F70A"), Name = "1", Count = 2 });
-         DbContext.SaveChanges();
+         ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("4883F7E0-FC8C-45FF-A579-DF351A3E79BF"), Name = "1", Count = 1 });
+         ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("18C13F68-0981-4853-92FC-FB7B2551F70A"), Name = "1", Count = 2 });
+         ArrangeDbContext.SaveChanges();
 
-         var result = DbContext.TestEntities
+         var result = ActDbContext.TestEntities
                                .Select(e => new
                                             {
                                                e.Count,
