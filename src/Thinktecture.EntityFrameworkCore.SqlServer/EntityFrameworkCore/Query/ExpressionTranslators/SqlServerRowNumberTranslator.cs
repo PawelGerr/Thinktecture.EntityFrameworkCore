@@ -28,7 +28,7 @@ namespace Thinktecture.EntityFrameworkCore.Query.ExpressionTranslators
       {
          if (methodCallExpression.Method == _rowNumberMethod)
          {
-            var orderByParams = ExtractParam(methodCallExpression.Arguments[1]);
+            var orderByParams = ExtractParams(methodCallExpression.Arguments[1]);
             var orderBy = ConvertOrderBy(orderByParams);
 
             return new RowNumberExpression(Array.Empty<Expression>(), orderBy);
@@ -36,8 +36,8 @@ namespace Thinktecture.EntityFrameworkCore.Query.ExpressionTranslators
 
          if (methodCallExpression.Method == _rowNumberWithPartitionByMethod)
          {
-            var partitionBy = ExtractParam(methodCallExpression.Arguments[1]);
-            var orderByParams = ExtractParam(methodCallExpression.Arguments[2]);
+            var partitionBy = ExtractParams(methodCallExpression.Arguments[1]);
+            var orderByParams = ExtractParams(methodCallExpression.Arguments[2]);
             var orderBy = ConvertOrderBy(orderByParams);
 
             return new RowNumberExpression(partitionBy, orderBy);
@@ -53,7 +53,7 @@ namespace Thinktecture.EntityFrameworkCore.Query.ExpressionTranslators
       }
 
       [NotNull]
-      private static ReadOnlyCollection<Expression> ExtractParam([NotNull] Expression parameter)
+      private static ReadOnlyCollection<Expression> ExtractParams([NotNull] Expression parameter)
       {
          if (typeof(IEnumerable<Expression>).IsAssignableFrom(parameter.Type) && parameter is ConstantExpression constant)
             return ((IEnumerable<Expression>)constant.Value).ToList().AsReadOnly();
