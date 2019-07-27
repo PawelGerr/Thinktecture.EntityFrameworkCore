@@ -55,8 +55,17 @@ namespace Thinktecture.EntityFrameworkCore.Query.ExpressionTranslators
       [NotNull]
       private static ReadOnlyCollection<Expression> ExtractParams([NotNull] Expression parameter)
       {
-         if (typeof(IEnumerable<Expression>).IsAssignableFrom(parameter.Type) && parameter is ConstantExpression constant)
-            return ((IEnumerable<Expression>)constant.Value).ToList().AsReadOnly();
+         if (parameter is ConstantExpression constant)
+         {
+            if (constant.Value == null)
+               throw new NotSupportedException("The value 'null' is not supported.");
+
+            if (constant.Value is IEnumerable<Expression> enumerable)
+               return enumerable.ToList().AsReadOnly();
+         }
+
+         if (parameter is NewArrayExpression array)
+            return array.Expressions;
 
          return new List<Expression> { parameter }.AsReadOnly();
       }
