@@ -239,6 +239,7 @@ namespace Thinktecture.EntityFrameworkCore
          _arrangeDbContext?.Dispose();
          _actDbContext?.Dispose();
          _assertDbContext?.Dispose();
+         _dbConnection?.Dispose();
       }
 
       private static void RollbackMigrations([NotNull] T ctx)

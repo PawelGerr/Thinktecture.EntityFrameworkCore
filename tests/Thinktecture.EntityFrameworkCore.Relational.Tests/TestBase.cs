@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using JetBrains.Annotations;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Thinktecture.EntityFrameworkCore.Infrastructure;
@@ -14,6 +15,8 @@ namespace Thinktecture
 {
    public class TestBase : IDisposable
    {
+      private readonly SqliteConnection _connection;
+
       protected DbContextOptionsBuilder<DbContextWithSchema> OptionBuilder { get; }
       private DbContextWithSchema _ctx;
 
@@ -42,8 +45,11 @@ namespace Thinktecture
 
       protected TestBase()
       {
+         _connection = new SqliteConnection("DataSource=:memory:");
+         _connection.Open();
+
          OptionBuilder = new DbContextOptionsBuilder<DbContextWithSchema>()
-                         .UseInMemoryDatabase("TestDatabase")
+                         .UseSqlite(_connection)
                          .ReplaceService<IModelCacheKeyFactory, DbSchemaAwareModelCacheKeyFactory>();
       }
 
@@ -64,6 +70,7 @@ namespace Thinktecture
       public virtual void Dispose()
       {
          _ctx?.Dispose();
+         _connection.Dispose();
       }
    }
 }

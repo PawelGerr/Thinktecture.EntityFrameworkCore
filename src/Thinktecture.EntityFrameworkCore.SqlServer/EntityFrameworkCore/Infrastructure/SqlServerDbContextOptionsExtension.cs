@@ -14,7 +14,7 @@ using Thinktecture.EntityFrameworkCore.TempTables;
 namespace Thinktecture.EntityFrameworkCore.Infrastructure
 {
    /// <summary>
-   /// Extensions
+   /// Extensions for DbContextOptions.
    /// </summary>
    public class SqlServerDbContextOptionsExtension : IDbContextOptionsExtension
    {
