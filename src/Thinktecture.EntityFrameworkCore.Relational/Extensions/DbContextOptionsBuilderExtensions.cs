@@ -44,5 +44,33 @@ namespace Thinktecture
                        .ReplaceService<IModelCustomizer, DbSchemaAwareModelCustomizer>()
                        .ReplaceService<IMigrationsAssembly, DbSchemaAwareMigrationAssembly>();
       }
+
+      /// <summary>
+      /// Adds or updates an extension of type <typeparam name="TExtension"/>.
+      /// </summary>
+      /// <param name="optionsBuilder">Options builder.</param>
+      /// <param name="callback">Callback that updates the extension.</param>
+      /// <typeparam name="TExtension">Type of the extension.</typeparam>
+      /// <exception cref="ArgumentNullException">
+      /// <paramref name="optionsBuilder"/> is null
+      /// - or
+      /// <paramref name="callback"/> is null.
+      /// </exception>
+      public static void AddOrUpdateExtension<TExtension>([NotNull] this DbContextOptionsBuilder optionsBuilder,
+                                                          [NotNull] Action<TExtension> callback)
+         where TExtension : class, IDbContextOptionsExtension, new()
+      {
+         if (optionsBuilder == null)
+            throw new ArgumentNullException(nameof(optionsBuilder));
+         if (callback == null)
+            throw new ArgumentNullException(nameof(callback));
+
+         var extension = optionsBuilder.Options.FindExtension<TExtension>() ?? new TExtension();
+
+         callback(extension);
+
+         var builder = (IDbContextOptionsBuilderInfrastructure)optionsBuilder;
+         builder.AddOrUpdateExtension(extension);
+      }
    }
 }

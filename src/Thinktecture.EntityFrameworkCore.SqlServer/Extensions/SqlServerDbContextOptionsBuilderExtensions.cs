@@ -61,18 +61,8 @@ namespace Thinktecture
       private static SqlServerDbContextOptionsBuilder AddOrUpdateExtensions([NotNull] this SqlServerDbContextOptionsBuilder sqlServerOptionsBuilder,
                                                                             [NotNull] Action<SqlServerDbContextOptionsExtension> callback)
       {
-         if (sqlServerOptionsBuilder == null)
-            throw new ArgumentNullException(nameof(sqlServerOptionsBuilder));
-         if (callback == null)
-            throw new ArgumentNullException(nameof(callback));
-
          var infrastructure = (IRelationalDbContextOptionsBuilderInfrastructure)sqlServerOptionsBuilder;
-         var extension = infrastructure.OptionsBuilder.Options.FindExtension<SqlServerDbContextOptionsExtension>() ?? new SqlServerDbContextOptionsExtension();
-
-         callback(extension);
-
-         var builder = (IDbContextOptionsBuilderInfrastructure)infrastructure.OptionsBuilder;
-         builder.AddOrUpdateExtension(extension);
+         infrastructure.OptionsBuilder.AddOrUpdateExtension(callback);
 
          return sqlServerOptionsBuilder;
       }
