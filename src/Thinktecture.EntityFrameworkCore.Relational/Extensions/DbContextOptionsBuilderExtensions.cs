@@ -3,8 +3,10 @@ using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Query.ExpressionTranslators;
 using Thinktecture.EntityFrameworkCore.Infrastructure;
 using Thinktecture.EntityFrameworkCore.Migrations;
+using Thinktecture.EntityFrameworkCore.Query.ExpressionTranslators;
 
 // ReSharper disable once CheckNamespace
 namespace Thinktecture
@@ -14,6 +16,48 @@ namespace Thinktecture
    /// </summary>
    public static class DbContextOptionsBuilderExtensions
    {
+      /// <summary>
+      /// Adds custom implementation of <see cref="IExpressionFragmentTranslator"/>.
+      /// </summary>
+      /// <param name="builder">Options builder.</param>
+      /// <param name="translator">Translator to add.</param>
+      /// <typeparam name="TContext">Type of the context.</typeparam>
+      /// <returns>Options builder for chaining.</returns>
+      [NotNull]
+      public static DbContextOptionsBuilder<TContext> AddExpressionFragmentTranslator<TContext>([NotNull] this DbContextOptionsBuilder<TContext> builder,
+                                                                                                [NotNull] IExpressionFragmentTranslator translator)
+         where TContext : DbContext
+      {
+         // ReSharper disable once RedundantCast
+         ((DbContextOptionsBuilder)builder).AddExpressionFragmentTranslator(translator);
+         return builder;
+      }
+
+      /// <summary>
+      /// Adds custom implementation of <see cref="IExpressionFragmentTranslator"/>.
+      /// </summary>
+      /// <param name="builder">Options builder.</param>
+      /// <param name="translator">Translator to add.</param>
+      /// <returns>Options builder for chaining.</returns>
+      [NotNull]
+      public static DbContextOptionsBuilder AddExpressionFragmentTranslator([NotNull] this DbContextOptionsBuilder builder, [NotNull] IExpressionFragmentTranslator translator)
+      {
+         builder.AddOrUpdateExtension<RelationalDbContextOptionsExtension>(extension => extension.AddExpressionFragmentTranslator(translator));
+         return builder;
+      }
+
+      /// <summary>
+      /// Enables the support for <see cref="IExpressionFragmentTranslatorPlugin"/>.
+      /// </summary>
+      /// <param name="builder">Options builder.</param>
+      /// <returns>Options builder for chaining.</returns>
+      [NotNull]
+      public static DbContextOptionsBuilder AddExpressionFragmentTranslatorPluginSupport([NotNull] this DbContextOptionsBuilder builder)
+      {
+         builder.AddOrUpdateExtension<RelationalDbContextOptionsExtension>(extension => extension.ExpressionFragmentTranslatorPluginSupport = true);
+         return builder;
+      }
+
       /// <summary>
       /// Adds/replaces components that handle with database schema changes at runtime.
       /// </summary>
@@ -46,7 +90,7 @@ namespace Thinktecture
       }
 
       /// <summary>
-      /// Adds or updates an extension of type <typeparam name="TExtension"/>.
+      /// Adds or updates an extension of type <typeparamref name="TExtension"/>.
       /// </summary>
       /// <param name="optionsBuilder">Options builder.</param>
       /// <param name="callback">Callback that updates the extension.</param>
