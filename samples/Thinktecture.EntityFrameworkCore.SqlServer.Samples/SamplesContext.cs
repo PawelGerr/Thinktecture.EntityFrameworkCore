@@ -3,6 +3,7 @@ using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Thinktecture.Database;
 using Thinktecture.EntityFrameworkCore;
 
@@ -10,6 +11,7 @@ namespace Thinktecture
 {
    public class SamplesContext
    {
+      private readonly ILoggerFactory _loggerFactory;
       private static readonly Lazy<SamplesContext> _lazy = new Lazy<SamplesContext>(CreateTestConfiguration);
 
       public static SamplesContext Instance => _lazy.Value;
@@ -22,11 +24,14 @@ namespace Thinktecture
       private static SamplesContext CreateTestConfiguration()
       {
          var config = GetConfiguration();
-         return new SamplesContext(config);
+         var loggerFactory = new LoggerFactory().AddConsole();
+
+         return new SamplesContext(config, loggerFactory);
       }
 
-      public SamplesContext([NotNull] IConfiguration config)
+      public SamplesContext([NotNull] IConfiguration config, [NotNull] ILoggerFactory loggerFactory)
       {
+         _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
          Configuration = config ?? throw new ArgumentNullException(nameof(config));
       }
 
@@ -50,6 +55,7 @@ namespace Thinktecture
                                                                                                  .AddTempTableSupport()
                                                                                                  .UseThinktectureSqlServerMigrationsSqlGenerator();
                                                                                     })
+                                                    .UseLoggerFactory(_loggerFactory)
                                                     .AddSchemaAwareComponents());
 
          if (schema != null)
