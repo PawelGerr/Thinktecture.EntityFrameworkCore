@@ -1,14 +1,17 @@
 using FluentAssertions;
+using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Thinktecture.TestDatabaseContext;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Thinktecture.EntityFrameworkCore.Infrastructure.DbSchemaAwareModelCustomizerTests
 {
    public class Customize : TestBase
    {
-      public Customize()
+      public Customize([NotNull] ITestOutputHelper testOutputHelper)
+         : base(testOutputHelper)
       {
          OptionBuilder.ReplaceService<IModelCustomizer, DbSchemaAwareModelCustomizer>();
       }

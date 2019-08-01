@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
 using FluentAssertions;
+using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Migrations.Operations;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Thinktecture.EntityFrameworkCore.Migrations.DbSchemaAwareMigrationTests
 {
@@ -11,6 +13,11 @@ namespace Thinktecture.EntityFrameworkCore.Migrations.DbSchemaAwareMigrationTest
    {
       protected abstract IReadOnlyList<MigrationOperation> Operations { get; }
       protected abstract Action<MigrationBuilder> Configure { get; set; }
+
+      protected OperationsBase([NotNull] ITestOutputHelper testOutputHelper)
+         : base(testOutputHelper)
+      {
+      }
 
       [Fact]
       public void Should_return_up_migrations_unchanged_if_no_schema_set()

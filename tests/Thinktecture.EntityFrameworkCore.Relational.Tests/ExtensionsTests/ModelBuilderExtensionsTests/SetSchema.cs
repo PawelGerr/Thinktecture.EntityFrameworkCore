@@ -1,13 +1,20 @@
 using System;
 using FluentAssertions;
+using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Thinktecture.TestDatabaseContext;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Thinktecture.ExtensionsTests.ModelBuilderExtensionsTests
 {
    public class SetSchema : TestBase
    {
+      public SetSchema([NotNull] ITestOutputHelper testOutputHelper)
+         : base(testOutputHelper)
+      {
+      }
+
       [Fact]
       public void Should_throw_if_builder_is_null()
       {

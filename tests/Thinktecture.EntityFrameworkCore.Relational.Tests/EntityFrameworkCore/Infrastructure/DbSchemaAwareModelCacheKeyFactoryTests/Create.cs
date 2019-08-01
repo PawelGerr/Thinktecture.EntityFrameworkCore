@@ -2,6 +2,7 @@ using System;
 using FluentAssertions;
 using JetBrains.Annotations;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Thinktecture.EntityFrameworkCore.Infrastructure.DbSchemaAwareModelCacheKeyFactoryTests
 {
@@ -12,6 +13,11 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure.DbSchemaAwareModelCach
       [NotNull]
       // ReSharper disable once InconsistentNaming
       private DbSchemaAwareModelCacheKeyFactory SUT => _sut ?? (_sut = new DbSchemaAwareModelCacheKeyFactory());
+
+      public Create([NotNull] ITestOutputHelper testOutputHelper)
+         : base(testOutputHelper)
+      {
+      }
 
       [Fact]
       public void Should_throw_if_ctx_is_null()

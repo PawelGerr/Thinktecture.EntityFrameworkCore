@@ -2,14 +2,21 @@ using System;
 using System.Linq;
 using System.Linq.Expressions;
 using FluentAssertions;
+using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore.Query.ExpressionTranslators;
 using Moq;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Thinktecture.ExtensionsTests.DbContextOptionsBuilderExtensionsTests
 {
    public class AddExpressionFragmentTranslator : TestBase
    {
+      public AddExpressionFragmentTranslator([NotNull] ITestOutputHelper testOutputHelper)
+         : base(testOutputHelper)
+      {
+      }
+
       [Fact]
       public void Should_throw_if_translator_is_null()
       {

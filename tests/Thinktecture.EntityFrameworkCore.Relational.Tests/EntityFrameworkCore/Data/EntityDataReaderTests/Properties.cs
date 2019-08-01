@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Thinktecture.TestDatabaseContext;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Thinktecture.EntityFrameworkCore.Data.EntityDataReaderTests
 {
@@ -17,7 +18,8 @@ namespace Thinktecture.EntityFrameworkCore.Data.EntityDataReaderTests
 
       private EntityDataReader<TestEntity> _sut;
 
-      public Properties()
+      public Properties([NotNull] ITestOutputHelper testOutputHelper)
+         : base(testOutputHelper)
       {
          _column1 = DbContextWithSchema.GetEntityType<TestEntity>().GetProperty(nameof(TestEntity.Column1));
          _column2 = DbContextWithSchema.GetEntityType<TestEntity>().GetProperty(nameof(TestEntity.Column2));

@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Thinktecture.TestDatabaseContext;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Thinktecture.EntityFrameworkCore.Data.EntityDataReaderFactoryTests
 {
@@ -14,15 +15,16 @@ namespace Thinktecture.EntityFrameworkCore.Data.EntityDataReaderFactoryTests
    {
       private EntityDataReaderFactory _sut;
 
-      private IProperty column2Property;
+      private readonly IProperty _column2Property;
 
       [NotNull]
       // ReSharper disable once InconsistentNaming
       private EntityDataReaderFactory SUT => _sut ?? (_sut = new EntityDataReaderFactory());
 
-      public Create()
+      public Create([NotNull] ITestOutputHelper testOutputHelper)
+         : base(testOutputHelper)
       {
-         column2Property = DbContextWithSchema.GetEntityType<TestEntity>().GetProperty(nameof(TestEntity.Column2));
+         _column2Property = DbContextWithSchema.GetEntityType<TestEntity>().GetProperty(nameof(TestEntity.Column2));
       }
 
       [Fact]
@@ -44,7 +46,7 @@ namespace Thinktecture.EntityFrameworkCore.Data.EntityDataReaderFactoryTests
       [Fact]
       public void Should_generate_factory_if_entities_are_empty()
       {
-         var factory = SUT.Create(Array.Empty<TestEntity>(), new[] { column2Property });
+         var factory = SUT.Create(Array.Empty<TestEntity>(), new[] { _column2Property });
 
          factory.Should().NotBeNull();
          factory.Read().Should().BeFalse();
@@ -54,7 +56,7 @@ namespace Thinktecture.EntityFrameworkCore.Data.EntityDataReaderFactoryTests
       public void Should_generate_factory_for_provided_properties()
       {
          var entity = new TestEntity { Column2 = "value" };
-         var factory = SUT.Create(new[] { entity }, new[] { column2Property });
+         var factory = SUT.Create(new[] { entity }, new[] { _column2Property });
 
          factory.FieldCount.Should().Be(1);
          factory.Read().Should().BeTrue();

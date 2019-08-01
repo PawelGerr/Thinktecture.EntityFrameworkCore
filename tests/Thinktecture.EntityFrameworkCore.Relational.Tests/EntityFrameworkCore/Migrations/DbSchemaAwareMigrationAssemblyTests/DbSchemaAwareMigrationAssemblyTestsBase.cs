@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Moq;
+using Xunit.Abstractions;
 
 namespace Thinktecture.EntityFrameworkCore.Migrations.DbSchemaAwareMigrationAssemblyTests
 {
@@ -21,7 +22,8 @@ namespace Thinktecture.EntityFrameworkCore.Migrations.DbSchemaAwareMigrationAsse
       [NotNull]
       protected DbSchemaAwareMigrationAssembly SUT => _sut ?? (_sut = new DbSchemaAwareMigrationAssembly(CurrentCtxMock.Object, OptionsMock.Object, IdGeneratorMock.Object, LoggerMock.Object));
 
-      protected DbSchemaAwareMigrationAssemblyTestsBase()
+      protected DbSchemaAwareMigrationAssemblyTestsBase([NotNull] ITestOutputHelper testOutputHelper)
+         : base(testOutputHelper)
       {
          CurrentCtxMock = new Mock<ICurrentDbContext>(MockBehavior.Strict);
          OptionsMock = new Mock<IDbContextOptions>(MockBehavior.Strict);

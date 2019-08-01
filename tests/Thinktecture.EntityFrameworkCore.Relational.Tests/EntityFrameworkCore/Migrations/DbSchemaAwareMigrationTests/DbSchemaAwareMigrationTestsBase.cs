@@ -1,5 +1,6 @@
 using JetBrains.Annotations;
 using Thinktecture.TestDatabaseContext;
+using Xunit.Abstractions;
 
 namespace Thinktecture.EntityFrameworkCore.Migrations.DbSchemaAwareMigrationTests
 {
@@ -11,5 +12,10 @@ namespace Thinktecture.EntityFrameworkCore.Migrations.DbSchemaAwareMigrationTest
 
       [NotNull]
       protected TestDbSchemaAwareMigration SUT => _sut ?? (_sut = new TestDbSchemaAwareMigration(Schema));
+
+      public DbSchemaAwareMigrationTestsBase([NotNull] ITestOutputHelper testOutputHelper)
+         : base(testOutputHelper)
+      {
+      }
    }
 }

@@ -3,13 +3,20 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using FluentAssertions;
+using JetBrains.Annotations;
 using Thinktecture.TestDatabaseContext;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Thinktecture.EntityFrameworkCore.Migrations.DbSchemaAwareMigrationAssemblyTests
 {
    public class CreateMigration : DbSchemaAwareMigrationAssemblyTestsBase
    {
+      public CreateMigration([NotNull] ITestOutputHelper testOutputHelper)
+         : base(testOutputHelper)
+      {
+      }
+
       [Fact]
       public void Should_throw_when_schema_type_is_null()
       {
