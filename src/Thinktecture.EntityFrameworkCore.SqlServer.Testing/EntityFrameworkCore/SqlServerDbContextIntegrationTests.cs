@@ -33,6 +33,7 @@ namespace Thinktecture.EntityFrameworkCore
       private T _actDbContext;
       private T _assertDbContext;
       private DbConnection _dbConnection;
+      private DbContextOptionsBuilder<T> _optionsBuilder;
       private IDbContextTransaction _tx;
       private ILoggerFactory _loggerFactory;
 
@@ -108,14 +109,17 @@ namespace Thinktecture.EntityFrameworkCore
       private T CreateContext()
       {
          var isFirstCtx = _dbConnection == null;
-         var optionsBuilder = CreateOptionsBuilder(_connectionString, _dbConnection);
-
-         var ctx = CreateContext(optionsBuilder.Options, new DbContextSchema(Schema));
 
          if (isFirstCtx)
          {
-            _dbConnection = ctx.Database.GetDbConnection();
+            _dbConnection = CreateConnection(_connectionString);
+            _optionsBuilder = CreateOptionsBuilder(_dbConnection);
+         }
 
+         var ctx = CreateContext(_optionsBuilder.Options, new DbContextSchema(Schema));
+
+         if (isFirstCtx)
+         {
             RunMigrations(ctx);
 
             if (_useSharedTables)
@@ -127,6 +131,17 @@ namespace Thinktecture.EntityFrameworkCore
          }
 
          return ctx;
+      }
+
+      /// <summary>
+      /// Creates a new <see cref="DbConnection"/>.
+      /// </summary>
+      /// <param name="connectionString">Connection string.</param>
+      /// <returns>A database connection.</returns>
+      [NotNull]
+      protected virtual DbConnection CreateConnection([NotNull] string connectionString)
+      {
+         return new SqlConnection(connectionString);
       }
 
       /// <summary>
@@ -159,28 +174,18 @@ namespace Thinktecture.EntityFrameworkCore
       /// <summary>
       /// Creates and configures the <see cref="DbContextOptionsBuilder{TContext}"/>
       /// </summary>
-      /// <param name="connString">Database connection string</param>
-      /// <param name="connection">After first creation of a <see cref="DbContext"/> a database connection is provided that should be used instead of the <paramref name="connString"/>.</param>
+      /// <param name="connection">Database connection to use.</param>
       /// <returns>An instance of <see cref="DbContextOptionsBuilder{TContext}"/></returns>
-      /// <exception cref="ArgumentNullException"><paramref name="connString"/> is null.</exception>
+      /// <exception cref="ArgumentNullException"><paramref name="connection"/> is null.</exception>
       [NotNull]
-      protected virtual DbContextOptionsBuilder<T> CreateOptionsBuilder([NotNull] string connString, [CanBeNull] DbConnection connection)
+      protected virtual DbContextOptionsBuilder<T> CreateOptionsBuilder([NotNull] DbConnection connection)
       {
-         if (connString == null)
-            throw new ArgumentNullException(nameof(connString));
+         if (connection == null)
+            throw new ArgumentNullException(nameof(connection));
 
-         var builder = new DbContextOptionsBuilder<T>();
-
-         if (connection != null)
-         {
-            builder.UseSqlServer(connection, ConfigureSqlServer);
-         }
-         else
-         {
-            builder.UseSqlServer(connString, ConfigureSqlServer);
-         }
-
-         builder.AddSchemaAwareComponents();
+         var builder = new DbContextOptionsBuilder<T>()
+                       .UseSqlServer(connection, ConfigureSqlServer)
+                       .AddSchemaAwareComponents();
 
          if (_loggerFactory != null)
             builder.UseLoggerFactory(_loggerFactory);
