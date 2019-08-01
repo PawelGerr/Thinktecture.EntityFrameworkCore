@@ -3,6 +3,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using FluentAssertions;
 using JetBrains.Annotations;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query.ExpressionTranslators;
 using Moq;
 using Xunit;
@@ -30,6 +31,7 @@ namespace Thinktecture.ExtensionsTests.DbContextOptionsBuilderExtensionsTests
       {
          var translatorMock = new Mock<IExpressionFragmentTranslator>();
          OptionBuilder.AddExpressionFragmentTranslator(translatorMock.Object);
+         DbContextWithSchema.Database.OpenConnection();
          DbContextWithSchema.Database.EnsureCreated();
 
          // ReSharper disable once ReturnValueOfPureMethodIsNotUsed

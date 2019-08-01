@@ -52,7 +52,6 @@ namespace Thinktecture
       protected TestBase([NotNull] ITestOutputHelper testOutputHelper)
       {
          _connection = new SqliteConnection("DataSource=:memory:");
-         _connection.Open();
 
          LogLevelSwitch = new LoggingLevelSwitch();
          var loggerFactory = CreateLoggerFactory(testOutputHelper, LogLevelSwitch);

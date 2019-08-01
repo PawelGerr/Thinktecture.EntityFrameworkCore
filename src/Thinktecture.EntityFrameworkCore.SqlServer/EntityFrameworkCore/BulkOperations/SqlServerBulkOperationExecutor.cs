@@ -85,7 +85,14 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
 
             await ctx.Database.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
 
-            await bulkCopy.WriteToServerAsync(reader, cancellationToken).ConfigureAwait(false);
+            try
+            {
+               await bulkCopy.WriteToServerAsync(reader, cancellationToken).ConfigureAwait(false);
+            }
+            finally
+            {
+               ctx.Database.CloseConnection();
+            }
          }
       }
 

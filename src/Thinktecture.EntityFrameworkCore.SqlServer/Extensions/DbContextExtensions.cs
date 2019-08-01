@@ -40,12 +40,20 @@ namespace Thinktecture
          using (var command = ctx.Database.GetDbConnection().CreateCommand())
          {
             command.Transaction = ctx.Database.CurrentTransaction?.GetDbTransaction();
+            command.CommandText = "SELECT MIN_ACTIVE_ROWVERSION();";
 
             await ctx.Database.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
-            command.CommandText = "SELECT MIN_ACTIVE_ROWVERSION();";
-            var bytes = (byte[])await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
 
-            return (long)_rowVersionConverter.ConvertFromProvider(bytes);
+            try
+            {
+               var bytes = (byte[])await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
+
+               return (long)_rowVersionConverter.ConvertFromProvider(bytes);
+            }
+            finally
+            {
+               ctx.Database.CloseConnection();
+            }
          }
       }
 
