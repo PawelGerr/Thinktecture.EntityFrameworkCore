@@ -1,21 +1,28 @@
 using System;
 using System.Linq;
 using FluentAssertions;
+using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Thinktecture.EntityFrameworkCore.TempTables;
 using Xunit;
+using Xunit.Abstractions;
 
-namespace Thinktecture.ExtensionsTests.ModelBuilderExtensionsTests
+namespace Thinktecture.Extensions.ModelBuilderExtensionsTests
 {
    // ReSharper disable once InconsistentNaming
-   public class ConfigureTempTable_2_Columns : TestBase
+   public class ConfigureTempTable_2_Columns : IntegrationTestsBase
    {
+      public ConfigureTempTable_2_Columns([NotNull] ITestOutputHelper testOutputHelper)
+         : base(testOutputHelper, true)
+      {
+      }
+
       [Fact]
       public void Should_introduce_query_type()
       {
-         DbContextWithSchema.ConfigureModel = builder => builder.ConfigureTempTable<int, int?>();
+         ConfigureModel = builder => builder.ConfigureTempTable<int, int?>();
 
-         var entityType = DbContextWithSchema.Model.FindEntityType(typeof(TempTable<int, int?>));
+         var entityType = ActDbContext.Model.FindEntityType(typeof(TempTable<int, int?>));
          entityType.Should().NotBeNull();
          entityType.IsQueryType.Should().BeTrue();
       }
@@ -23,9 +30,9 @@ namespace Thinktecture.ExtensionsTests.ModelBuilderExtensionsTests
       [Fact]
       public void Should_introduce_temp_table_with_int_nullable_int()
       {
-         DbContextWithSchema.ConfigureModel = builder => builder.ConfigureTempTable<int, int?>();
+         ConfigureModel = builder => builder.ConfigureTempTable<int, int?>();
 
-         var entityType = DbContextWithSchema.Model.FindEntityType(typeof(TempTable<int, int?>));
+         var entityType = ActDbContext.Model.FindEntityType(typeof(TempTable<int, int?>));
          entityType.Name.Should().Be("Thinktecture.EntityFrameworkCore.TempTables.TempTable<int, System.Nullable<int>>");
 
          var properties = entityType.GetProperties();
@@ -39,9 +46,9 @@ namespace Thinktecture.ExtensionsTests.ModelBuilderExtensionsTests
       [Fact]
       public void Should_introduce_temp_table_with_string_string()
       {
-         DbContextWithSchema.ConfigureModel = builder => builder.ConfigureTempTable<string, string>();
+         ConfigureModel = builder => builder.ConfigureTempTable<string, string>();
 
-         var entityType = DbContextWithSchema.Model.FindEntityType(typeof(TempTable<string, string>));
+         var entityType = ActDbContext.Model.FindEntityType(typeof(TempTable<string, string>));
          entityType.Name.Should().Be("Thinktecture.EntityFrameworkCore.TempTables.TempTable<string, string>");
 
          var properties = entityType.GetProperties();
@@ -55,9 +62,9 @@ namespace Thinktecture.ExtensionsTests.ModelBuilderExtensionsTests
       [Fact]
       public void Should_flag_col2_as_not_nullable_if_set_via_modelbuilder()
       {
-         DbContextWithSchema.ConfigureModel = builder => builder.ConfigureTempTable<string, string>().Property(t => t.Column2).IsRequired();
+         ConfigureModel = builder => builder.ConfigureTempTable<string, string>().Property(t => t.Column2).IsRequired();
 
-         var entityType = DbContextWithSchema.Model.FindEntityType(typeof(TempTable<string, string>));
+         var entityType = ActDbContext.Model.FindEntityType(typeof(TempTable<string, string>));
          var properties = entityType.GetProperties();
          properties.Select(p => p.IsNullable).Should().BeEquivalentTo(new[] { true, false });
       }
@@ -65,18 +72,18 @@ namespace Thinktecture.ExtensionsTests.ModelBuilderExtensionsTests
       [Fact]
       public void Should_generate_table_name_for_int_nullable_int()
       {
-         DbContextWithSchema.ConfigureModel = builder => builder.ConfigureTempTable<int, int?>();
+         ConfigureModel = builder => builder.ConfigureTempTable<int, int?>();
 
-         var entityType = DbContextWithSchema.Model.FindEntityType(typeof(TempTable<int, int?>));
+         var entityType = ActDbContext.Model.FindEntityType(typeof(TempTable<int, int?>));
          entityType.Relational().TableName.Should().Be("#TempTable<int, Nullable<int>>");
       }
 
       [Fact]
       public void Should_generate_table_name_for_string_string()
       {
-         DbContextWithSchema.ConfigureModel = builder => builder.ConfigureTempTable<string, string>();
+         ConfigureModel = builder => builder.ConfigureTempTable<string, string>();
 
-         var entityType = DbContextWithSchema.Model.FindEntityType(typeof(TempTable<string, string>));
+         var entityType = ActDbContext.Model.FindEntityType(typeof(TempTable<string, string>));
          entityType.Relational().TableName.Should().Be("#TempTable<string, string>");
       }
    }

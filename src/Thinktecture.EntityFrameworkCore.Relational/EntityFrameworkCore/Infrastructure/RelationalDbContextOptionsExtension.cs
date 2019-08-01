@@ -53,7 +53,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
          return false;
       }
 
-      private void RegisterCompositeExpressionFragmentTranslator([NotNull] IServiceCollection services)
+      private static void RegisterCompositeExpressionFragmentTranslator([NotNull] IServiceCollection services)
       {
          var index = GetIndexOfExpressionFragmentTranslator(services);
          var newDescriptor = ServiceDescriptor.Singleton(typeof(IExpressionFragmentTranslator), typeof(CompositeExpressionFragmentTranslator));

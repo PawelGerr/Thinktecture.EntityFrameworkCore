@@ -15,19 +15,17 @@ namespace Thinktecture.EntityFrameworkCore.Data.EntityDataReaderTests
       private readonly IProperty _column1;
       private readonly IProperty _column2;
 
-      private EntityDataReader<CustomTempTable> _sut;
+      private EntityDataReader<TestEntity> _sut;
 
       public Properties()
       {
-         DbContextWithSchema.ConfigureModel = builder => builder.ConfigureTempTableEntity<CustomTempTable>();
-
-         _column1 = DbContextWithSchema.GetEntityType<CustomTempTable>().GetProperty(nameof(CustomTempTable.Column1));
-         _column2 = DbContextWithSchema.GetEntityType<CustomTempTable>().GetProperty(nameof(CustomTempTable.Column2));
+         _column1 = DbContextWithSchema.GetEntityType<TestEntity>().GetProperty(nameof(TestEntity.Column1));
+         _column2 = DbContextWithSchema.GetEntityType<TestEntity>().GetProperty(nameof(TestEntity.Column2));
       }
 
       [NotNull]
       // ReSharper disable once InconsistentNaming
-      private EntityDataReader<CustomTempTable> SUT => _sut ?? (_sut = new EntityDataReader<CustomTempTable>(Array.Empty<CustomTempTable>(), _propertiesToRead));
+      private EntityDataReader<TestEntity> SUT => _sut ?? (_sut = new EntityDataReader<TestEntity>(Array.Empty<TestEntity>(), _propertiesToRead));
 
       [Fact]
       public void Should_return_propertiesToRead()

@@ -1,20 +1,27 @@
 using System.Linq;
 using FluentAssertions;
+using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Thinktecture.TestDatabaseContext;
 using Xunit;
+using Xunit.Abstractions;
 
-namespace Thinktecture.ExtensionsTests.ModelBuilderExtensionsTests
+namespace Thinktecture.Extensions.ModelBuilderExtensionsTests
 {
    // ReSharper disable once InconsistentNaming
-   public class ConfigureTempTableEntity : TestBase
+   public class ConfigureTempTableEntity : IntegrationTestsBase
    {
+      public ConfigureTempTableEntity([NotNull] ITestOutputHelper testOutputHelper)
+         : base(testOutputHelper, true)
+      {
+      }
+
       [Fact]
       public void Should_introduce_temp_table_with_custom_type()
       {
-         DbContextWithSchema.ConfigureModel = builder => builder.ConfigureTempTableEntity<CustomTempTable>();
+         ConfigureModel = builder => builder.ConfigureTempTableEntity<CustomTempTable>();
 
-         var entityType = DbContextWithSchema.Model.FindEntityType(typeof(CustomTempTable));
+         var entityType = ActDbContext.Model.FindEntityType(typeof(CustomTempTable));
          entityType.Name.Should().Be("Thinktecture.TestDatabaseContext.CustomTempTable");
 
          var properties = entityType.GetProperties().ToList();
@@ -34,9 +41,9 @@ namespace Thinktecture.ExtensionsTests.ModelBuilderExtensionsTests
       [Fact]
       public void Should_generate_table_name_for_string()
       {
-         DbContextWithSchema.ConfigureModel = builder => builder.ConfigureTempTableEntity<CustomTempTable>();
+         ConfigureModel = builder => builder.ConfigureTempTableEntity<CustomTempTable>();
 
-         var entityType = DbContextWithSchema.Model.FindEntityType(typeof(CustomTempTable));
+         var entityType = ActDbContext.Model.FindEntityType(typeof(CustomTempTable));
          entityType.Relational().TableName.Should().Be("#CustomTempTable");
       }
    }

@@ -24,7 +24,9 @@ namespace Thinktecture
       private static SamplesContext CreateTestConfiguration()
       {
          var config = GetConfiguration();
+#pragma warning disable 618, CA2000
          var loggerFactory = new LoggerFactory().AddConsole();
+#pragma warning restore 618, CA2000
 
          return new SamplesContext(config, loggerFactory);
       }

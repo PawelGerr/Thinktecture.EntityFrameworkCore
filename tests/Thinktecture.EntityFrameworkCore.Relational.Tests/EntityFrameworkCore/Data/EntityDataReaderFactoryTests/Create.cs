@@ -22,8 +22,7 @@ namespace Thinktecture.EntityFrameworkCore.Data.EntityDataReaderFactoryTests
 
       public Create()
       {
-         DbContextWithSchema.ConfigureModel = builder => builder.ConfigureTempTableEntity<CustomTempTable>();
-         column2Property = DbContextWithSchema.GetEntityType<CustomTempTable>().GetProperty(nameof(CustomTempTable.Column2));
+         column2Property = DbContextWithSchema.GetEntityType<TestEntity>().GetProperty(nameof(TestEntity.Column2));
       }
 
       [Fact]
@@ -54,7 +53,7 @@ namespace Thinktecture.EntityFrameworkCore.Data.EntityDataReaderFactoryTests
       [Fact]
       public void Should_generate_factory_for_provided_properties()
       {
-         var entity = new CustomTempTable { Column2 = "value" };
+         var entity = new TestEntity { Column2 = "value" };
          var factory = SUT.Create(new[] { entity }, new[] { column2Property });
 
          factory.FieldCount.Should().Be(1);
