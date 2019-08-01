@@ -29,7 +29,10 @@ namespace Thinktecture
       /// <inheritdoc />
       protected override TestDbContext CreateContext(DbContextOptions<TestDbContext> options, IDbContextSchema schema)
       {
-         return new TestDbContext(options, schema) { ConfigureModel = ConfigureModel };
+         var ctx = base.CreateContext(options, schema);
+         ctx.ConfigureModel = ConfigureModel;
+
+         return ctx;
       }
 
       private ILoggerFactory CreateLoggerFactory([NotNull] ITestOutputHelper testOutputHelper, LoggingLevelSwitch loggingLevelSwitch)

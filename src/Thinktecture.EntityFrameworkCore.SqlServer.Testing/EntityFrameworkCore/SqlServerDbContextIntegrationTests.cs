@@ -80,7 +80,10 @@ namespace Thinktecture.EntityFrameworkCore
       /// <param name="schema">Database schema to use.</param>
       /// <returns>A new instance of the database context.</returns>
       [NotNull]
-      protected abstract T CreateContext([NotNull] DbContextOptions<T> options, [NotNull] IDbContextSchema schema);
+      protected virtual T CreateContext([NotNull] DbContextOptions<T> options, [NotNull] IDbContextSchema schema)
+      {
+         return (T)Activator.CreateInstance(typeof(T), options, schema);
+      }
 
       /// <summary>
       /// Gets/generates schema to be used.
