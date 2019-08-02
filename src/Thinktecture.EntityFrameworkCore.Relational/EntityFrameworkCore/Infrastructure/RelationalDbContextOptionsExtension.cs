@@ -63,38 +63,32 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
 
       private static void RegisterCompositeExpressionFragmentTranslator([NotNull] IServiceCollection services)
       {
-         var index = GetIndexOfExpressionFragmentTranslator(services);
-         var newDescriptor = ServiceDescriptor.Singleton(typeof(IExpressionFragmentTranslator), typeof(CompositeExpressionFragmentTranslator));
+         var (implementationType, index) = GetLatestRegistration<IExpressionFragmentTranslator>(services);
 
-         if (index < 0)
-         {
-            services.Add(newDescriptor);
-         }
-         else
-         {
-            services[index] = newDescriptor;
-         }
+         services.AddSingleton(implementationType); // type to decorate
+
+         var decoratorType = typeof(CompositeExpressionFragmentTranslator<>).MakeGenericType(implementationType);
+         var decoratorDescriptor = ServiceDescriptor.Singleton(typeof(IExpressionFragmentTranslator), decoratorType);
+
+         services[index] = decoratorDescriptor;
       }
 
-      private static int GetIndexOfExpressionFragmentTranslator([NotNull] IServiceCollection services)
+      private static (Type implementationType, int index) GetLatestRegistration<TService>([NotNull] IServiceCollection services)
       {
          for (var i = services.Count - 1; i >= 0; i--)
          {
             var service = services[i];
 
-            if (service.ServiceType == typeof(IExpressionFragmentTranslator))
+            if (service.ServiceType == typeof(TService))
             {
-               if (service.ImplementationType == null || service.ImplementationType != typeof(RelationalCompositeExpressionFragmentTranslator))
-               {
-                  throw new NotSupportedException($@"Other implementations of '{nameof(IExpressionFragmentTranslator)}' than '{nameof(RelationalCompositeExpressionFragmentTranslator)}' have been found in the DI.
-There may be another library that is trying to register a custom implementation of '{nameof(IExpressionFragmentTranslator)}'. Stopping replacement of the the service to prevent unexpected behavior. Found implementation type: {service.ImplementationType?.GetType().DisplayName()}");
-               }
+               if (service.ImplementationType == null)
+                  throw new NotSupportedException($@"The registration of the Entity Framework Core service '{typeof(TService).FullName}' found but the service is not registered 'by type'.");
 
-               return i;
+               return (service.ImplementationType, i);
             }
          }
 
-         return -1;
+         throw new NotSupportedException($@"No registration of the Entity Framework Core service '{typeof(TService).FullName}' found. Please make sure the database provider is registered (via 'UseSqlServer' or 'UseSqlite') before calling extensions methods like '{nameof(DbContextOptionsBuilderExtensions.AddExpressionFragmentTranslator)}'.");
       }
 
       /// <inheritdoc />

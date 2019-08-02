@@ -9,7 +9,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
-using Microsoft.Extensions.Logging;
 
 namespace Thinktecture.EntityFrameworkCore.TempTables
 {
