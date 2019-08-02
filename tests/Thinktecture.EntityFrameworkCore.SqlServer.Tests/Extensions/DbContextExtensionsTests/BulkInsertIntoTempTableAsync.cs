@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Data.SqlClient;
 using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -28,7 +29,7 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
          var entities = new List<CustomTempTable> { new CustomTempTable(1, "value") };
          var query = await ActDbContext.BulkInsertIntoTempTableAsync(entities);
 
-         var tempTable = await query.ToListAsync();
+         var tempTable = await query.Query.ToListAsync();
          tempTable.Should()
                   .HaveCount(1).And
                   .BeEquivalentTo(new CustomTempTable(1, "value"));
@@ -49,7 +50,7 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
          var entities = new List<TestEntity> { entity };
          var query = await ActDbContext.BulkInsertIntoTempTableAsync(entities);
 
-         var tempTable = await query.ToListAsync();
+         var tempTable = await query.Query.ToListAsync();
          tempTable.Should()
                   .HaveCount(1).And
                   .BeEquivalentTo(new TestEntity
@@ -58,6 +59,16 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
                                      Name = "Name",
                                      Count = 42
                                   });
+      }
+
+      [Fact]
+      public async Task Should_return_disposable_query()
+      {
+         var tempTableQuery = await ActDbContext.BulkInsertIntoTempTableAsync(Array.Empty<TestEntity>());
+         tempTableQuery.Dispose();
+
+         tempTableQuery.Awaiting(t => t.Query.ToListAsync())
+                       .Should().Throw<SqlException>().WithMessage("Invalid object name '#TestEntities'.");
       }
    }
 }

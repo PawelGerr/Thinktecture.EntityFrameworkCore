@@ -19,7 +19,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
       /// <param name="entityType">Entity/query type.</param>
       /// <param name="options">Options.</param>
       /// <param name="cancellationToken">Cancellation token.</param>
-      /// <returns>Table name.</returns>
+      /// <returns>A reference to a temp table.</returns>
       /// <exception cref="ArgumentNullException">
       /// <paramref name="ctx"/> is <c>null</c>
       /// - or
@@ -27,7 +27,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
       /// </exception>
       /// <exception cref="ArgumentException">The provided type <paramref name="entityType"/> is not known by the <paramref name="ctx"/>.</exception>
       [NotNull, ItemNotNull]
-      Task<string> CreateTempTableAsync([NotNull] DbContext ctx, [NotNull] IEntityType entityType, [NotNull] TempTableCreationOptions options, CancellationToken cancellationToken = default);
+      Task<ITempTableReference> CreateTempTableAsync([NotNull] DbContext ctx, [NotNull] IEntityType entityType, [NotNull] TempTableCreationOptions options, CancellationToken cancellationToken = default);
 
       /// <summary>
       /// Creates a primary key in a temp table with provided <paramref name="tableName"/>.

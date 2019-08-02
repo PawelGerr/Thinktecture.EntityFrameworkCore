@@ -30,7 +30,7 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
          var values = new List<int> { 1, 2 };
          var query = await ActDbContext.BulkInsertValuesIntoTempTableAsync(values).ConfigureAwait(false);
 
-         var tempTable = await query.ToListAsync().ConfigureAwait(false);
+         var tempTable = await query.Query.ToListAsync().ConfigureAwait(false);
          tempTable.Should()
                   .HaveCount(2).And
                   .BeEquivalentTo(new TempTable<int>(1), new TempTable<int>(2));
@@ -45,7 +45,7 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
          var values = new List<int> { 1, 2 };
          var query = await ActDbContext.BulkInsertValuesIntoTempTableAsync(values, options).ConfigureAwait(false);
 
-         var tempTable = await query.ToListAsync().ConfigureAwait(false);
+         var tempTable = await query.Query.ToListAsync().ConfigureAwait(false);
          tempTable.Should()
                   .HaveCount(2).And
                   .BeEquivalentTo(new TempTable<int>(1), new TempTable<int>(2));
@@ -59,7 +59,7 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
          var values = new List<int?> { 1, null };
          var query = await ActDbContext.BulkInsertValuesIntoTempTableAsync(values, new SqlTempTableBulkInsertOptions { PrimaryKeyCreation = PrimaryKeyCreation.None }).ConfigureAwait(false);
 
-         var tempTable = await query.ToListAsync().ConfigureAwait(false);
+         var tempTable = await query.Query.ToListAsync().ConfigureAwait(false);
          tempTable.Should()
                   .HaveCount(2).And
                   .BeEquivalentTo(new TempTable<int?>(1), new TempTable<int?>(null));
@@ -73,7 +73,7 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
          var values = new List<string> { "value1", null };
          var query = await ActDbContext.BulkInsertValuesIntoTempTableAsync(values, new SqlTempTableBulkInsertOptions { PrimaryKeyCreation = PrimaryKeyCreation.None }).ConfigureAwait(false);
 
-         var tempTable = await query.ToListAsync().ConfigureAwait(false);
+         var tempTable = await query.Query.ToListAsync().ConfigureAwait(false);
          tempTable.Should()
                   .HaveCount(2).And
                   .BeEquivalentTo(new TempTable<string>("value1"), new TempTable<string>(null));

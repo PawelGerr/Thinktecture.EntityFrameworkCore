@@ -1,4 +1,5 @@
 using System;
+using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -33,6 +34,122 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
 
          ValidateColumn(columns[0], nameof(CustomTempTable.Column1), "int", false);
          ValidateColumn(columns[1], nameof(CustomTempTable.Column2), "nvarchar", true);
+      }
+
+      [Fact]
+      public async Task Should_open_connection()
+      {
+         using (var con = CreateConnection(TestContext.Instance.ConnectionString))
+         {
+            var builder = CreateOptionsBuilder(con);
+
+            using (var ctx = new TestDbContext(builder.Options, new DbContextSchema(Schema)))
+            {
+               ctx.Database.GetDbConnection().State.Should().Be(ConnectionState.Closed);
+
+               // ReSharper disable once RedundantArgumentDefaultValue
+               await _sut.CreateTempTableAsync(ctx, ctx.GetEntityType<TestEntity>(), new TempTableCreationOptions()).ConfigureAwait(false);
+
+               ctx.Database.GetDbConnection().State.Should().Be(ConnectionState.Open);
+            }
+         }
+      }
+
+      [Fact]
+      public async Task Should_return_reference_to_be_able_to_close_connection()
+      {
+         using (var con = CreateConnection(TestContext.Instance.ConnectionString))
+         {
+            var builder = CreateOptionsBuilder(con);
+
+            using (var ctx = new TestDbContext(builder.Options, new DbContextSchema(Schema)))
+            {
+               ctx.Database.GetDbConnection().State.Should().Be(ConnectionState.Closed);
+
+               // ReSharper disable once RedundantArgumentDefaultValue
+               var tempTableReference = await _sut.CreateTempTableAsync(ctx, ctx.GetEntityType<TestEntity>(), new TempTableCreationOptions()).ConfigureAwait(false);
+               tempTableReference.Dispose();
+
+               ctx.Database.GetDbConnection().State.Should().Be(ConnectionState.Closed);
+            }
+         }
+      }
+
+      [Fact]
+      public async Task Should_return_table_ref_that_is_unusable_after_ctx_is_disposed()
+      {
+         using (var con = CreateConnection(TestContext.Instance.ConnectionString))
+         {
+            var builder = CreateOptionsBuilder(con);
+
+            ITempTableReference tempTableReference;
+
+            using (var ctx = new TestDbContext(builder.Options, new DbContextSchema(Schema)))
+            {
+               ctx.Database.GetDbConnection().State.Should().Be(ConnectionState.Closed);
+
+               // ReSharper disable once RedundantArgumentDefaultValue
+               tempTableReference = await _sut.CreateTempTableAsync(ctx, ctx.GetEntityType<TestEntity>(), new TempTableCreationOptions()).ConfigureAwait(false);
+            }
+
+            tempTableReference.Dispose();
+            con.State.Should().Be(ConnectionState.Open);
+         }
+      }
+
+      [Fact]
+      public async Task Should_return_table_ref_that_does_nothing_after_connection_is_disposed()
+      {
+         using (var con = CreateConnection(TestContext.Instance.ConnectionString))
+         {
+            var builder = CreateOptionsBuilder(con);
+
+            using (var ctx = new TestDbContext(builder.Options, new DbContextSchema(Schema)))
+            {
+               ctx.Database.GetDbConnection().State.Should().Be(ConnectionState.Closed);
+
+               // ReSharper disable once RedundantArgumentDefaultValue
+               var tempTableReference = await _sut.CreateTempTableAsync(ctx, ctx.GetEntityType<TestEntity>(), new TempTableCreationOptions()).ConfigureAwait(false);
+               con.Dispose();
+
+               tempTableReference.Dispose();
+               con.State.Should().Be(ConnectionState.Closed);
+            }
+         }
+      }
+
+      [Fact]
+      public async Task Should_return_table_ref_that_does_nothing_after_connection_is_closed()
+      {
+         using (var con = CreateConnection(TestContext.Instance.ConnectionString))
+         {
+            var builder = CreateOptionsBuilder(con);
+
+            using (var ctx = new TestDbContext(builder.Options, new DbContextSchema(Schema)))
+            {
+               ctx.Database.GetDbConnection().State.Should().Be(ConnectionState.Closed);
+
+               // ReSharper disable once RedundantArgumentDefaultValue
+               var tempTableReference = await _sut.CreateTempTableAsync(ctx, ctx.GetEntityType<TestEntity>(), new TempTableCreationOptions()).ConfigureAwait(false);
+               con.Close();
+
+               tempTableReference.Dispose();
+               con.State.Should().Be(ConnectionState.Closed);
+            }
+         }
+      }
+
+      [Fact]
+      public async Task Should_return_reference_to_remove_temp_table()
+      {
+         ConfigureModel = builder => builder.ConfigureTempTableEntity<CustomTempTable>();
+
+         // ReSharper disable once RedundantArgumentDefaultValue
+         var tempTableReference = await _sut.CreateTempTableAsync(ActDbContext, ActDbContext.GetEntityType<CustomTempTable>(), new TempTableCreationOptions()).ConfigureAwait(false);
+         tempTableReference.Dispose();
+
+         var columns = AssertDbContext.GetCustomTempTableColumns<CustomTempTable>().ToList();
+         columns.Should().BeEmpty();
       }
 
       [Fact]

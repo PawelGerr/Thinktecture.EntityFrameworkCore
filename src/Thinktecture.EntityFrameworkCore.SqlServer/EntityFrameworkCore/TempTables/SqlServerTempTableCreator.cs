@@ -6,7 +6,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.Extensions.Logging;
 
 namespace Thinktecture.EntityFrameworkCore.TempTables
 {
@@ -16,10 +19,10 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
    public class SqlServerTempTableCreator : ITempTableCreator
    {
       /// <inheritdoc />
-      public async Task<string> CreateTempTableAsync(DbContext ctx,
-                                                     IEntityType entityType,
-                                                     TempTableCreationOptions options,
-                                                     CancellationToken cancellationToken = default)
+      public async Task<ITempTableReference> CreateTempTableAsync(DbContext ctx,
+                                                                  IEntityType entityType,
+                                                                  TempTableCreationOptions options,
+                                                                  CancellationToken cancellationToken = default)
       {
          if (ctx == null)
             throw new ArgumentNullException(nameof(ctx));
@@ -41,11 +44,21 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
 
          await ctx.Database.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
 
+         try
+         {
 #pragma warning disable EF1000
-         await ctx.Database.ExecuteSqlCommandAsync(sql, cancellationToken).ConfigureAwait(false);
+            await ctx.Database.ExecuteSqlCommandAsync(sql, cancellationToken).ConfigureAwait(false);
 #pragma warning restore EF1000
+         }
+         catch (Exception)
+         {
+            ctx.Database.CloseConnection();
+            throw;
+         }
 
-         return tableName;
+         var logger = ctx.GetService<IDiagnosticsLogger<DbLoggerCategory.Query>>();
+
+         return new SqlServerTempTableReference(logger, tableName, ctx.Database);
       }
 
       /// <inheritdoc />

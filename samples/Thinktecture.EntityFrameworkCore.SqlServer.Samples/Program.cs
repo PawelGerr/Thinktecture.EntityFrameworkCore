@@ -104,32 +104,37 @@ namespace Thinktecture
 
       private static async Task DoBulkInsertIntoTempTableAsync([NotNull] DemoDbContext ctx, [NotNull] List<Guid> customerIds)
       {
-         var tempTableQuery = await ctx.BulkInsertValuesIntoTempTableAsync(customerIds);
-         var customers = await ctx.Customers.Join(tempTableQuery, c => c.Id, t => t.Column1, (c, t) => c).ToListAsync();
-
-         Console.WriteLine($"Found customers: {String.Join(", ", customers.Select(c => c.Id))}");
+         using (var tempTableQuery = await ctx.BulkInsertValuesIntoTempTableAsync(customerIds))
+         {
+            var customers = await ctx.Customers.Join(tempTableQuery.Query, c => c.Id, t => t.Column1, (c, t) => c).ToListAsync();
+            Console.WriteLine($"Found customers: {String.Join(", ", customers.Select(c => c.Id))}");
+         }
       }
 
       private static async Task DoBulkInsertIntoTempTableAsync([NotNull] DemoDbContext ctx, [NotNull] List<(Guid customerId, Guid productId)> tuples)
       {
-         var tempTableQuery = await ctx.BulkInsertValuesIntoTempTableAsync(tuples);
-         var orderItems = await ctx.OrderItems.Join(tempTableQuery,
-                                                    i => new { i.Order.CustomerId, i.ProductId },
-                                                    t => new { CustomerId = t.Column1, ProductId = t.Column2 },
-                                                    (i, t) => i)
-                                   .ToListAsync();
+         using (var tempTableQuery = await ctx.BulkInsertValuesIntoTempTableAsync(tuples))
+         {
+            var orderItems = await ctx.OrderItems.Join(tempTableQuery.Query,
+                                                       i => new { i.Order.CustomerId, i.ProductId },
+                                                       t => new { CustomerId = t.Column1, ProductId = t.Column2 },
+                                                       (i, t) => i)
+                                      .ToListAsync();
 
-         Console.WriteLine($"Found order items: {String.Join(", ", orderItems.Select(i => $"{{ OrderId={i.OrderId}, ProductId={i.ProductId}, Count={i.Count} }}"))}");
+            Console.WriteLine($"Found order items: {String.Join(", ", orderItems.Select(i => $"{{ OrderId={i.OrderId}, ProductId={i.ProductId}, Count={i.Count} }}"))}");
+         }
       }
 
       private static async Task DoBulkInsertEntitiesIntoTempTableAsync([NotNull] DemoDbContext ctx)
       {
          var customersToInsert = new[] { new Customer { Id = Guid.NewGuid() } };
 
-         var tempTableQuery = await ctx.BulkInsertIntoTempTableAsync(customersToInsert);
-         var tempCustomers = await tempTableQuery.ToListAsync();
+         using (var tempTableQuery = await ctx.BulkInsertIntoTempTableAsync(customersToInsert))
+         {
+            var tempCustomers = await tempTableQuery.Query.ToListAsync();
 
-         Console.WriteLine($"Customers in temp table: {String.Join(", ", tempCustomers.Select(c => c.Id))}");
+            Console.WriteLine($"Customers in temp table: {String.Join(", ", tempCustomers.Select(c => c.Id))}");
+         }
       }
    }
 }
