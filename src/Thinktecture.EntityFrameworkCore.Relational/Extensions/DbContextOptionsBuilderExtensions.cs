@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Query.ExpressionTranslators;
+using Microsoft.EntityFrameworkCore.Storage;
 using Thinktecture.EntityFrameworkCore.Infrastructure;
 using Thinktecture.EntityFrameworkCore.Migrations;
 using Thinktecture.EntityFrameworkCore.Query.ExpressionTranslators;
@@ -43,6 +44,37 @@ namespace Thinktecture
       public static DbContextOptionsBuilder AddExpressionFragmentTranslator([NotNull] this DbContextOptionsBuilder builder, [NotNull] IExpressionFragmentTranslator translator)
       {
          builder.AddOrUpdateExtension<RelationalDbContextOptionsExtension>(extension => extension.AddExpressionFragmentTranslator(translator));
+         return builder;
+      }
+
+      /// <summary>
+      /// Add an <see cref="IRelationalTypeMappingSourcePlugin"/> to dependency injection.
+      /// </summary>
+      /// <param name="builder">Options builder.</param>
+      /// <typeparam name="TContext">Type of the context.</typeparam>
+      /// <typeparam name="TPlugin">Type of the plugin implementing <see cref="IRelationalTypeMappingSourcePlugin"/>.</typeparam>
+      /// <returns>Options builder for chaining.</returns>
+      [NotNull]
+      public static DbContextOptionsBuilder<TContext> AddRelationalTypeMappingSourcePlugin<TContext, TPlugin>([NotNull] this DbContextOptionsBuilder<TContext> builder)
+         where TContext : DbContext
+         where TPlugin : IRelationalTypeMappingSourcePlugin
+      {
+         // ReSharper disable once RedundantCast
+         ((DbContextOptionsBuilder)builder).AddRelationalTypeMappingSourcePlugin<TPlugin>();
+         return builder;
+      }
+
+      /// <summary>
+      /// Add an <see cref="IRelationalTypeMappingSourcePlugin"/> to dependency injection.
+      /// </summary>
+      /// <param name="builder">Options builder.</param>
+      /// <typeparam name="TPlugin">Type of the plugin implementing <see cref="IRelationalTypeMappingSourcePlugin"/>.</typeparam>
+      /// <returns>Options builder for chaining.</returns>
+      [NotNull]
+      public static DbContextOptionsBuilder AddRelationalTypeMappingSourcePlugin<TPlugin>([NotNull] this DbContextOptionsBuilder builder)
+         where TPlugin : IRelationalTypeMappingSourcePlugin
+      {
+         builder.AddOrUpdateExtension<RelationalDbContextOptionsExtension>(extension => extension.AddRelationalTypeMappingSourcePlugin(typeof(TPlugin)));
          return builder;
       }
 

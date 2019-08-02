@@ -5,6 +5,7 @@ using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.Query.ExpressionTranslators;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using Thinktecture.EntityFrameworkCore.Query.ExpressionTranslators;
 
@@ -16,6 +17,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
    public class RelationalDbContextOptionsExtension : IDbContextOptionsExtension
    {
       private readonly List<IExpressionFragmentTranslator> _expressionFragmentTranslators;
+      private readonly List<Type> _typeMappingSourcePluginsTypes;
 
       /// <inheritdoc />
       [NotNull]
@@ -39,6 +41,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       public RelationalDbContextOptionsExtension()
       {
          _expressionFragmentTranslators = new List<IExpressionFragmentTranslator>();
+         _typeMappingSourcePluginsTypes = new List<Type>();
       }
 
       /// <inheritdoc />
@@ -49,6 +52,11 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
 
          if (_expressionFragmentTranslators.Count > 0)
             services.AddSingleton<IExpressionFragmentTranslatorPlugin>(new ExpressionFragmentTranslatorPlugin(_expressionFragmentTranslators));
+
+         foreach (var sourcePluginsType in _typeMappingSourcePluginsTypes)
+         {
+            services.AddSingleton(typeof(IRelationalTypeMappingSourcePlugin), sourcePluginsType);
+         }
 
          return false;
       }
@@ -111,6 +119,22 @@ There may be another library that is trying to register a custom implementation 
             throw new ArgumentNullException(nameof(translator));
 
          _expressionFragmentTranslators.Add(translator);
+      }
+
+      /// <summary>
+      /// Adds provided <paramref name="type"/> to dependency injection.
+      /// </summary>
+      /// <param name="type">An implementation of <see cref="IRelationalTypeMappingSourcePlugin"/>.</param>
+      /// <exception cref="ArgumentNullException"><paramref name="type"/> is <c>null</c>.</exception>
+      public void AddRelationalTypeMappingSourcePlugin([NotNull] Type type)
+      {
+         if (type == null)
+            throw new ArgumentNullException(nameof(type));
+
+         if (!typeof(IRelationalTypeMappingSourcePlugin).IsAssignableFrom(type))
+            throw new ArgumentException($"The provided type '{type.DisplayName()}' must implement '{nameof(IRelationalTypeMappingSourcePlugin)}'.", nameof(type));
+
+         _typeMappingSourcePluginsTypes.Add(type);
       }
    }
 }
