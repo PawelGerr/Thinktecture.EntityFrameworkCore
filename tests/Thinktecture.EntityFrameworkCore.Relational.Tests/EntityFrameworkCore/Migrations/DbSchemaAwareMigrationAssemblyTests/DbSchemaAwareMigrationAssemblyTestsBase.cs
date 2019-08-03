@@ -10,17 +10,19 @@ namespace Thinktecture.EntityFrameworkCore.Migrations.DbSchemaAwareMigrationAsse
    {
       protected TestMigrationsAssembly InnerMigrationsAssembly { get; }
       protected Mock<ICurrentDbContext> CurrentCtxMock { get; }
+      protected Mock<IMigrationOperationSchemaSetter> SchemaSetterMock { get; }
 
       private DbSchemaAwareMigrationAssembly<TestMigrationsAssembly> _sut;
 
       [NotNull]
-      protected DbSchemaAwareMigrationAssembly<TestMigrationsAssembly> SUT => _sut ?? (_sut = new DbSchemaAwareMigrationAssembly<TestMigrationsAssembly>(InnerMigrationsAssembly, CurrentCtxMock.Object));
+      protected DbSchemaAwareMigrationAssembly<TestMigrationsAssembly> SUT => _sut ?? (_sut = new DbSchemaAwareMigrationAssembly<TestMigrationsAssembly>(InnerMigrationsAssembly, SchemaSetterMock.Object, CurrentCtxMock.Object));
 
       protected DbSchemaAwareMigrationAssemblyTestsBase([NotNull] ITestOutputHelper testOutputHelper)
          : base(testOutputHelper)
       {
          InnerMigrationsAssembly = new TestMigrationsAssembly();
          CurrentCtxMock = new Mock<ICurrentDbContext>(MockBehavior.Strict);
+         SchemaSetterMock = new Mock<IMigrationOperationSchemaSetter>();
       }
    }
 }

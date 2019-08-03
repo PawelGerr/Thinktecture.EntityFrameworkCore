@@ -1,21 +1,12 @@
 ﻿using System;
-using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore.Migrations;
-using Thinktecture.EntityFrameworkCore;
-using Thinktecture.EntityFrameworkCore.Migrations;
 
 namespace Thinktecture.Migrations
 {
    // ReSharper disable once UnusedMember.Global
    // ReSharper disable once InconsistentNaming
-   public partial class Initial_Migration : DbSchemaAwareMigration
+   public partial class Initial_Migration : Migration
    {
-      /// <inheritdoc />
-      public Initial_Migration([CanBeNull] IDbContextSchema schema)
-         : base(schema)
-      {
-      }
-
       protected override void Up(MigrationBuilder migrationBuilder)
       {
          migrationBuilder.CreateTable("TestEntities",

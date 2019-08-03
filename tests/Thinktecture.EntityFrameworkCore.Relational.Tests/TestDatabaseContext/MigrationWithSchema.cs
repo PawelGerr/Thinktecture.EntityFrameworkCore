@@ -1,3 +1,4 @@
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Thinktecture.EntityFrameworkCore;
 
@@ -13,9 +14,14 @@ namespace Thinktecture.TestDatabaseContext
          Schema = schema?.Schema;
       }
 
-      /// <inheritdoc />
       protected override void Up(MigrationBuilder migrationBuilder)
       {
+         migrationBuilder.AddColumn<string>("Table1", "Col1");
+      }
+
+      protected override void Down(MigrationBuilder migrationBuilder)
+      {
+         migrationBuilder.DropColumn("Table1", "Col1");
       }
    }
 }

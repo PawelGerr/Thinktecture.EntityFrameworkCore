@@ -55,6 +55,8 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
 
       private static void RegisterSchemaAwareComponents([NotNull] IServiceCollection services)
       {
+         services.AddSingleton<IMigrationOperationSchemaSetter, MigrationOperationSchemaSetter>();
+
          RegisterDecorator<IModelCacheKeyFactory>(services, typeof(DbSchemaAwareModelCacheKeyFactory<>));
          RegisterDecorator<IModelCustomizer>(services, typeof(DbSchemaAwareModelCustomizer<>));
          RegisterDecorator<IMigrationsAssembly>(services, typeof(DbSchemaAwareMigrationAssembly<>));

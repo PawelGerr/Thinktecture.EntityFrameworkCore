@@ -1,20 +1,11 @@
-﻿using JetBrains.Annotations;
-using Microsoft.EntityFrameworkCore.Migrations;
-using Thinktecture.EntityFrameworkCore;
-using Thinktecture.EntityFrameworkCore.Migrations;
+﻿using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace Thinktecture.Migrations
 {
    // ReSharper disable once UnusedMember.Global
    // ReSharper disable once InconsistentNaming
-   public partial class Add_shadow_and_private_properties : DbSchemaAwareMigration
+   public partial class Add_shadow_and_private_properties : Migration
    {
-      /// <inheritdoc />
-      public Add_shadow_and_private_properties([CanBeNull] IDbContextSchema schema)
-         : base(schema)
-      {
-      }
-
       protected override void Up(MigrationBuilder migrationBuilder)
       {
          migrationBuilder.AddColumn<int>("PropertyWithBackingField", "TestEntities");

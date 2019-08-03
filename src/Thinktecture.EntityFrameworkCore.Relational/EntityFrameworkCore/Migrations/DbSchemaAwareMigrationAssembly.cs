@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Migrations.Operations;
 
 namespace Thinktecture.EntityFrameworkCore.Migrations
 {
@@ -16,6 +17,7 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
       where TMigrationsAssembly : class, IMigrationsAssembly
    {
       private readonly TMigrationsAssembly _innerMigrationsAssembly;
+      private readonly IMigrationOperationSchemaSetter _schemaSetter;
       private readonly DbContext _context;
 
       /// <inheritdoc />
@@ -28,9 +30,12 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
       public Assembly Assembly => _innerMigrationsAssembly.Assembly;
 
       /// <inheritdoc />
-      public DbSchemaAwareMigrationAssembly([NotNull] TMigrationsAssembly migrationsAssembly, [NotNull] ICurrentDbContext currentContext)
+      public DbSchemaAwareMigrationAssembly([NotNull] TMigrationsAssembly migrationsAssembly,
+                                            [NotNull] IMigrationOperationSchemaSetter schemaSetter,
+                                            [NotNull] ICurrentDbContext currentContext)
       {
          _innerMigrationsAssembly = migrationsAssembly ?? throw new ArgumentNullException(nameof(migrationsAssembly));
+         _schemaSetter = schemaSetter ?? throw new ArgumentNullException(nameof(schemaSetter));
          // ReSharper disable once ConstantConditionalAccessQualifier
          _context = currentContext?.Context ?? throw new ArgumentNullException(nameof(currentContext));
       }
@@ -49,19 +54,40 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
          if (activeProvider == null)
             throw new ArgumentNullException(nameof(activeProvider));
 
-         var hasCtorWithSchema = migrationClass.GetConstructor(new[] { typeof(IDbContextSchema) }) != null;
+         var isSchemaAwareMigration = migrationClass.GetConstructor(new[] { typeof(IDbContextSchema) }) != null;
 
-         // ReSharper disable once SuspiciousTypeConversion.Global
-         if (!hasCtorWithSchema)
+         // is schema-aware context
+         if (_context is IDbContextSchema schema)
+         {
+            var migration = isSchemaAwareMigration
+                               ? CreateSchemaAwareMigration(migrationClass, activeProvider, schema)
+                               : _innerMigrationsAssembly.CreateMigration(migrationClass, activeProvider);
+
+            SetSchema(migration.UpOperations, schema);
+            SetSchema(migration.DownOperations, schema);
+
+            return migration;
+         }
+
+         if (!isSchemaAwareMigration)
             return _innerMigrationsAssembly.CreateMigration(migrationClass, activeProvider);
 
-         if (!(_context is IDbContextSchema schema))
-            throw new ArgumentException($"For instantiation of schema-aware migration of type '{migrationClass.Name}' the database context of type '{_context.GetType().DisplayName()}' has to implement the interface '{nameof(IDbContextSchema)}'.", nameof(migrationClass));
+         throw new ArgumentException($"For instantiation of schema-aware migration of type '{migrationClass.Name}' the database context of type '{_context.GetType().DisplayName()}' has to implement the interface '{nameof(IDbContextSchema)}'.", nameof(migrationClass));
+      }
 
-         var instance = (Migration)Activator.CreateInstance(migrationClass.AsType(), schema);
-         instance.ActiveProvider = activeProvider;
+      private void SetSchema([NotNull] IReadOnlyList<MigrationOperation> operations, [CanBeNull] IDbContextSchema schema)
+      {
+         if (schema?.Schema != null)
+            _schemaSetter.SetSchema(operations, schema.Schema);
+      }
 
-         return instance;
+      [NotNull]
+      private static Migration CreateSchemaAwareMigration([NotNull] TypeInfo migrationClass, [NotNull] string activeProvider, [NotNull] IDbContextSchema schema)
+      {
+         var migration = (Migration)Activator.CreateInstance(migrationClass.AsType(), schema);
+         migration.ActiveProvider = activeProvider;
+
+         return migration;
       }
    }
 }

@@ -6,17 +6,17 @@ using Thinktecture.EntityFrameworkCore.Migrations;
 
 namespace Thinktecture.TestDatabaseContext
 {
-   public class TestDbSchemaAwareMigration : DbSchemaAwareMigration
+   public class TestDbSchemaAwareMigration : Migration
    {
-      public new string Schema => base.Schema;
+      public string Schema { get; }
 
       public Action<MigrationBuilder> ConfigureUp { get; set; }
       public Action<MigrationBuilder> ConfigureDown { get; set; }
 
       /// <inheritdoc />
       public TestDbSchemaAwareMigration([CanBeNull] IDbContextSchema schema)
-         : base(schema)
       {
+         Schema = schema?.Schema;
       }
 
       /// <inheritdoc />
