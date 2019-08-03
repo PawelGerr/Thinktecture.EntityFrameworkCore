@@ -5,13 +5,18 @@ using Microsoft.EntityFrameworkCore.Query.ExpressionTranslators;
 
 namespace Thinktecture.EntityFrameworkCore.Query.ExpressionTranslators
 {
-   internal class ExpressionFragmentTranslatorPlugin : IExpressionFragmentTranslatorPlugin
+   // ReSharper disable once ClassNeverInstantiated.Global
+   internal sealed class ExpressionFragmentTranslatorPlugin<TTranslator> : IExpressionFragmentTranslatorPlugin
+      where TTranslator : class, IExpressionFragmentTranslator
    {
       public IEnumerable<IExpressionFragmentTranslator> Translators { get; }
 
-      public ExpressionFragmentTranslatorPlugin([NotNull] IEnumerable<IExpressionFragmentTranslator> translators)
+      public ExpressionFragmentTranslatorPlugin([NotNull] TTranslator translator)
       {
-         Translators = translators ?? throw new ArgumentNullException(nameof(translators));
+         if (translator == null)
+            throw new ArgumentNullException(nameof(translator));
+
+         Translators = new[] { translator };
       }
    }
 }

@@ -16,46 +16,30 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
    /// </summary>
    public class RelationalDbContextOptionsExtension : IDbContextOptionsExtension
    {
-      private readonly List<IExpressionFragmentTranslator> _expressionFragmentTranslators;
-      private readonly List<Type> _typeMappingSourcePluginsTypes;
+      private readonly List<ServiceDescriptor> _serviceDescriptors;
+      private bool _activateExpressionFragmentTranslatorPluginSupport;
 
       /// <inheritdoc />
       [NotNull]
-      public string LogFragment => $@"{{ 'ExpressionFragmentTranslatorPluginSupport'={ExpressionFragmentTranslatorPluginSupport}, 
-'Custom ExpressionFragmentTranslators'=[{String.Join(",", _expressionFragmentTranslators.Select(t => t.GetType().DisplayName()))}] }}";
-
-      private bool _expressionFragmentTranslatorPluginSupport;
-
-      /// <summary>
-      /// Enables and disables support for <see cref="IExpressionFragmentTranslatorPlugin"/>.
-      /// </summary>
-      public bool ExpressionFragmentTranslatorPluginSupport
-      {
-         get => _expressionFragmentTranslatorPluginSupport || _expressionFragmentTranslators.Count > 0;
-         set => _expressionFragmentTranslatorPluginSupport = value;
-      }
+      public string LogFragment => $@"{{ 'ExpressionFragmentTranslatorPluginSupport'={_activateExpressionFragmentTranslatorPluginSupport}, 'Number of custom services': {_serviceDescriptors.Count} }}";
 
       /// <summary>
       /// Initializes new instance of <see cref="RelationalDbContextOptionsExtension"/>.
       /// </summary>
       public RelationalDbContextOptionsExtension()
       {
-         _expressionFragmentTranslators = new List<IExpressionFragmentTranslator>();
-         _typeMappingSourcePluginsTypes = new List<Type>();
+         _serviceDescriptors = new List<ServiceDescriptor>();
       }
 
       /// <inheritdoc />
       public bool ApplyServices(IServiceCollection services)
       {
-         if (ExpressionFragmentTranslatorPluginSupport)
+         if (_activateExpressionFragmentTranslatorPluginSupport)
             RegisterCompositeExpressionFragmentTranslator(services);
 
-         if (_expressionFragmentTranslators.Count > 0)
-            services.AddSingleton<IExpressionFragmentTranslatorPlugin>(new ExpressionFragmentTranslatorPlugin(_expressionFragmentTranslators));
-
-         foreach (var sourcePluginsType in _typeMappingSourcePluginsTypes)
+         foreach (var descriptor in _serviceDescriptors)
          {
-            services.AddSingleton(typeof(IRelationalTypeMappingSourcePlugin), sourcePluginsType);
+            services.Add(descriptor);
          }
 
          return false;
@@ -63,12 +47,20 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
 
       private static void RegisterCompositeExpressionFragmentTranslator([NotNull] IServiceCollection services)
       {
-         var (implementationType, index) = GetLatestRegistration<IExpressionFragmentTranslator>(services);
+         RegisterDecorator<IExpressionFragmentTranslator>(services, typeof(CompositeExpressionFragmentTranslator<>));
+      }
+
+      private static void RegisterDecorator<TService>([NotNull] IServiceCollection services, [NotNull] Type genericDecoratorTypeDefinition)
+      {
+         if (genericDecoratorTypeDefinition == null)
+            throw new ArgumentNullException(nameof(genericDecoratorTypeDefinition));
+
+         var (implementationType, index) = GetLatestRegistration<TService>(services);
 
          services.AddSingleton(implementationType); // type to decorate
 
-         var decoratorType = typeof(CompositeExpressionFragmentTranslator<>).MakeGenericType(implementationType);
-         var decoratorDescriptor = ServiceDescriptor.Singleton(typeof(IExpressionFragmentTranslator), decoratorType);
+         var decoratorType = genericDecoratorTypeDefinition.MakeGenericType(implementationType);
+         var decoratorDescriptor = ServiceDescriptor.Singleton(typeof(TService), decoratorType);
 
          services[index] = decoratorDescriptor;
       }
@@ -83,6 +75,9 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
             {
                if (service.ImplementationType == null)
                   throw new NotSupportedException($@"The registration of the Entity Framework Core service '{typeof(TService).FullName}' found but the service is not registered 'by type'.");
+
+               if (service.ImplementationType == typeof(TService))
+                  throw new NotSupportedException($@"The implementation type '{service.ImplementationType.DisplayName()}' cannot be the same as the service type '{typeof(TService).DisplayName()}'.");
 
                return (service.ImplementationType, i);
             }
@@ -103,16 +98,20 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       }
 
       /// <summary>
-      /// Adds a custom <see cref="IExpressionFragmentTranslator"/>.
+      /// Adds a custom <see cref="IExpressionFragmentTranslatorPlugin"/> to dependency injection.
       /// </summary>
-      /// <param name="translator">Translator to add.</param>
-      /// <exception cref="ArgumentNullException"><paramref name="translator"/> is <c>null</c>.</exception>
-      public void AddExpressionFragmentTranslator([NotNull] IExpressionFragmentTranslator translator)
+      /// <param name="type">Translator plugin to add.</param>
+      /// <exception cref="ArgumentNullException"><paramref name="type"/> is <c>null</c>.</exception>
+      public void AddExpressionFragmentTranslatorPlugin([NotNull] Type type)
       {
-         if (translator == null)
-            throw new ArgumentNullException(nameof(translator));
+         if (type == null)
+            throw new ArgumentNullException(nameof(type));
 
-         _expressionFragmentTranslators.Add(translator);
+         if (!typeof(IExpressionFragmentTranslatorPlugin).IsAssignableFrom(type))
+            throw new ArgumentException($"The provided type '{type.DisplayName()}' must implement '{nameof(IExpressionFragmentTranslatorPlugin)}'.", nameof(type));
+
+         Add(ServiceDescriptor.Singleton(typeof(IExpressionFragmentTranslatorPlugin), type));
+         _activateExpressionFragmentTranslatorPluginSupport = true;
       }
 
       /// <summary>
@@ -128,7 +127,20 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
          if (!typeof(IRelationalTypeMappingSourcePlugin).IsAssignableFrom(type))
             throw new ArgumentException($"The provided type '{type.DisplayName()}' must implement '{nameof(IRelationalTypeMappingSourcePlugin)}'.", nameof(type));
 
-         _typeMappingSourcePluginsTypes.Add(type);
+         Add(ServiceDescriptor.Singleton(typeof(IRelationalTypeMappingSourcePlugin), type));
+      }
+
+      /// <summary>
+      /// Adds a service descriptor for registration of custom services with internal dependency injection container of Entity Framework Core.
+      /// </summary>
+      /// <param name="serviceDescriptor">Service descriptor to add.</param>
+      /// <exception cref="ArgumentNullException"><paramref name="serviceDescriptor"/> is <c>null</c>.</exception>
+      public void Add([NotNull] ServiceDescriptor serviceDescriptor)
+      {
+         if (serviceDescriptor == null)
+            throw new ArgumentNullException(nameof(serviceDescriptor));
+
+         _serviceDescriptors.Add(serviceDescriptor);
       }
    }
 }
