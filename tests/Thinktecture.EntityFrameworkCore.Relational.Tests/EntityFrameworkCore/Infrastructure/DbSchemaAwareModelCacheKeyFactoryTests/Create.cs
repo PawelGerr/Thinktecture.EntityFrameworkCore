@@ -8,11 +8,11 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure.DbSchemaAwareModelCach
 {
    public class Create : TestBase
    {
-      private DbSchemaAwareModelCacheKeyFactory _sut;
+      private DbSchemaAwareModelCacheKeyFactory<TestModelCacheKeyFactory> _sut;
 
       [NotNull]
       // ReSharper disable once InconsistentNaming
-      private DbSchemaAwareModelCacheKeyFactory SUT => _sut ?? (_sut = new DbSchemaAwareModelCacheKeyFactory());
+      private DbSchemaAwareModelCacheKeyFactory<TestModelCacheKeyFactory> SUT => _sut ?? (_sut = new DbSchemaAwareModelCacheKeyFactory<TestModelCacheKeyFactory>(new TestModelCacheKeyFactory()));
 
       public Create([NotNull] ITestOutputHelper testOutputHelper)
          : base(testOutputHelper)

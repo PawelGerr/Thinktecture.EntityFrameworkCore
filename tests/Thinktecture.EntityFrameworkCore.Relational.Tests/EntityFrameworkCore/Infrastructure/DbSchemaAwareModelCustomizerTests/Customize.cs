@@ -2,6 +2,7 @@ using FluentAssertions;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.Extensions.DependencyInjection;
 using Thinktecture.TestDatabaseContext;
 using Xunit;
 using Xunit.Abstractions;
@@ -13,7 +14,8 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure.DbSchemaAwareModelCust
       public Customize([NotNull] ITestOutputHelper testOutputHelper)
          : base(testOutputHelper)
       {
-         OptionBuilder.ReplaceService<IModelCustomizer, DbSchemaAwareModelCustomizer>();
+         OptionBuilder.AddOrUpdateExtension<RelationalDbContextOptionsExtension>(extension => extension.Add(ServiceDescriptor.Singleton(typeof(ModelCustomizer), typeof(ModelCustomizer))));
+         OptionBuilder.ReplaceService<IModelCustomizer, DbSchemaAwareModelCustomizer<ModelCustomizer>>();
       }
 
       [Fact]

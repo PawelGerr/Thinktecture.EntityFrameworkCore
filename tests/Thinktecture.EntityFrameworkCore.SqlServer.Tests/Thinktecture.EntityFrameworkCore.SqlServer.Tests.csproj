@@ -7,7 +7,7 @@
 
     <ItemGroup>
         <PackageReference Include="FluentAssertions" Version="5.7.0" />
-        <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="2.2.4" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="2.2.6" />
         <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="2.2.4" />
         <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="2.2.0" />
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.2.0" />

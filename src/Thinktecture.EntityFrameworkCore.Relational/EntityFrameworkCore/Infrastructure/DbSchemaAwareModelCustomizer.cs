@@ -1,3 +1,4 @@
+using System;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
@@ -8,18 +9,24 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
    /// Set database schema on entities without schema.
    /// </summary>
    // ReSharper disable once ClassNeverInstantiated.Global
-   public class DbSchemaAwareModelCustomizer : RelationalModelCustomizer
+   public class DbSchemaAwareModelCustomizer<TModelCustomizer> : IModelCustomizer
+      where TModelCustomizer : class, IModelCustomizer
    {
-      /// <inheritdoc />
-      public DbSchemaAwareModelCustomizer([NotNull] ModelCustomizerDependencies dependencies)
-         : base(dependencies)
+      private readonly TModelCustomizer _modelCustomizer;
+
+      /// <summary>
+      /// Initializes new instance <see cref="DbSchemaAwareModelCustomizer{TIModelCustomizer}"/>.
+      /// </summary>
+      /// <param name="modelCustomizer">Inner model customizer.</param>
+      public DbSchemaAwareModelCustomizer([NotNull] TModelCustomizer modelCustomizer)
       {
+         _modelCustomizer = modelCustomizer ?? throw new ArgumentNullException(nameof(modelCustomizer));
       }
 
       /// <inheritdoc />
-      public override void Customize(ModelBuilder modelBuilder, DbContext context)
+      public void Customize(ModelBuilder modelBuilder, DbContext context)
       {
-         base.Customize(modelBuilder, context);
+         _modelCustomizer.Customize(modelBuilder, context);
 
          if (context is IDbContextSchema schema && schema.Schema != null)
             modelBuilder.SetSchema(schema.Schema, entityType => entityType.Schema == null);

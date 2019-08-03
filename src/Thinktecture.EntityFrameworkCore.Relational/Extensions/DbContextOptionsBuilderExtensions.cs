@@ -2,12 +2,10 @@ using System;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Query.ExpressionTranslators;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using Thinktecture.EntityFrameworkCore.Infrastructure;
-using Thinktecture.EntityFrameworkCore.Migrations;
 using Thinktecture.EntityFrameworkCore.Query.ExpressionTranslators;
 
 // ReSharper disable once CheckNamespace
@@ -139,9 +137,8 @@ namespace Thinktecture
          if (builder == null)
             throw new ArgumentNullException(nameof(builder));
 
-         return builder.ReplaceService<IModelCacheKeyFactory, DbSchemaAwareModelCacheKeyFactory>()
-                       .ReplaceService<IModelCustomizer, DbSchemaAwareModelCustomizer>()
-                       .ReplaceService<IMigrationsAssembly, DbSchemaAwareMigrationAssembly>();
+         builder.AddOrUpdateExtension<RelationalDbContextOptionsExtension>(extension => extension.AddSchemaAwareComponents());
+         return builder;
       }
 
       /// <summary>

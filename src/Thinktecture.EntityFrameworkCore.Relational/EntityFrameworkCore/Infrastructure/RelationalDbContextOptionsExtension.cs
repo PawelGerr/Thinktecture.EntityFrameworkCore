@@ -4,9 +4,11 @@ using System.Linq;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Internal;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Query.ExpressionTranslators;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
+using Thinktecture.EntityFrameworkCore.Migrations;
 using Thinktecture.EntityFrameworkCore.Query.ExpressionTranslators;
 
 namespace Thinktecture.EntityFrameworkCore.Infrastructure
@@ -18,10 +20,13 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
    {
       private readonly List<ServiceDescriptor> _serviceDescriptors;
       private bool _activateExpressionFragmentTranslatorPluginSupport;
+      private bool _addSchemaAwareComponents;
 
       /// <inheritdoc />
       [NotNull]
-      public string LogFragment => $@"{{ 'ExpressionFragmentTranslatorPluginSupport'={_activateExpressionFragmentTranslatorPluginSupport}, 'Number of custom services': {_serviceDescriptors.Count} }}";
+      public string LogFragment => $@"{{ 'ExpressionFragmentTranslatorPluginSupport'={_activateExpressionFragmentTranslatorPluginSupport},
+'Number of custom services'={_serviceDescriptors.Count},
+'SchemaAwareComponents added'={_addSchemaAwareComponents} }}";
 
       /// <summary>
       /// Initializes new instance of <see cref="RelationalDbContextOptionsExtension"/>.
@@ -37,12 +42,22 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
          if (_activateExpressionFragmentTranslatorPluginSupport)
             RegisterCompositeExpressionFragmentTranslator(services);
 
+         if (_addSchemaAwareComponents)
+            RegisterSchemaAwareComponents(services);
+
          foreach (var descriptor in _serviceDescriptors)
          {
             services.Add(descriptor);
          }
 
          return false;
+      }
+
+      private static void RegisterSchemaAwareComponents([NotNull] IServiceCollection services)
+      {
+         RegisterDecorator<IModelCacheKeyFactory>(services, typeof(DbSchemaAwareModelCacheKeyFactory<>));
+         RegisterDecorator<IModelCustomizer>(services, typeof(DbSchemaAwareModelCustomizer<>));
+         RegisterDecorator<IMigrationsAssembly>(services, typeof(DbSchemaAwareMigrationAssembly<>));
       }
 
       private static void RegisterCompositeExpressionFragmentTranslator([NotNull] IServiceCollection services)
@@ -55,17 +70,15 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
          if (genericDecoratorTypeDefinition == null)
             throw new ArgumentNullException(nameof(genericDecoratorTypeDefinition));
 
-         var (implementationType, index) = GetLatestRegistration<TService>(services);
+         var (implementationType, lifetime, index) = GetLatestRegistration<TService>(services);
 
-         services.AddSingleton(implementationType); // type to decorate
+         services.Add(ServiceDescriptor.Describe(implementationType, implementationType, lifetime)); // type to decorate
 
          var decoratorType = genericDecoratorTypeDefinition.MakeGenericType(implementationType);
-         var decoratorDescriptor = ServiceDescriptor.Singleton(typeof(TService), decoratorType);
-
-         services[index] = decoratorDescriptor;
+         services[index] = ServiceDescriptor.Describe(typeof(TService), decoratorType, lifetime);
       }
 
-      private static (Type implementationType, int index) GetLatestRegistration<TService>([NotNull] IServiceCollection services)
+      private static (Type implementationType, ServiceLifetime lifetime, int index) GetLatestRegistration<TService>([NotNull] IServiceCollection services)
       {
          for (var i = services.Count - 1; i >= 0; i--)
          {
@@ -79,7 +92,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
                if (service.ImplementationType == typeof(TService))
                   throw new NotSupportedException($@"The implementation type '{service.ImplementationType.DisplayName()}' cannot be the same as the service type '{typeof(TService).DisplayName()}'.");
 
-               return (service.ImplementationType, i);
+               return (service.ImplementationType, service.Lifetime, i);
             }
          }
 
@@ -141,6 +154,14 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
             throw new ArgumentNullException(nameof(serviceDescriptor));
 
          _serviceDescriptors.Add(serviceDescriptor);
+      }
+
+      /// <summary>
+      /// Adds components so Entity Framework Core can handle changes of the database schema at runtime.
+      /// </summary>
+      public void AddSchemaAwareComponents()
+      {
+         _addSchemaAwareComponents = true;
       }
    }
 }

@@ -7,7 +7,6 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Logging;
 using Serilog;
 using Serilog.Core;
-using Thinktecture.EntityFrameworkCore.Infrastructure;
 using Thinktecture.TestDatabaseContext;
 using Xunit.Abstractions;
 
@@ -24,6 +23,7 @@ namespace Thinktecture
       protected DbContextOptionsBuilder<DbContextWithSchema> OptionBuilder { get; }
       private DbContextWithSchema _ctx;
 
+      protected Action<ModelBuilder> ConfigureModel { get; set; }
       protected LoggingLevelSwitch LogLevelSwitch { get; }
 
       // use different schemas because EF Core uses static cache
@@ -47,7 +47,7 @@ namespace Thinktecture
       }
 
       [NotNull]
-      protected DbContextWithSchema DbContextWithSchema => _ctx ?? (_ctx = new DbContextWithSchema(OptionBuilder.Options, Schema));
+      protected DbContextWithSchema DbContextWithSchema => _ctx ?? (_ctx = new DbContextWithSchema(OptionBuilder.Options, Schema) { ConfigureModel = ConfigureModel });
 
       protected TestBase([NotNull] ITestOutputHelper testOutputHelper)
       {
@@ -59,7 +59,7 @@ namespace Thinktecture
          OptionBuilder = new DbContextOptionsBuilder<DbContextWithSchema>()
                          .UseSqlite(_connection)
                          .UseLoggerFactory(loggerFactory)
-                         .ReplaceService<IModelCacheKeyFactory, DbSchemaAwareModelCacheKeyFactory>();
+                         .ReplaceService<IModelCacheKeyFactory, CachePerContextModelCacheKeyFactory>();
       }
 
       private ILoggerFactory CreateLoggerFactory([NotNull] ITestOutputHelper testOutputHelper, LoggingLevelSwitch loggingLevelSwitch)
@@ -76,17 +76,17 @@ namespace Thinktecture
       }
 
       [NotNull]
-      protected static DbContextWithSchema CreateContextWithSchema(string schema)
+      protected DbContextWithSchema CreateContextWithSchema(string schema)
       {
          var options = new DbContextOptionsBuilder<DbContextWithSchema>().Options;
-         return new DbContextWithSchema(options, schema);
+         return new DbContextWithSchema(options, schema) { ConfigureModel = ConfigureModel };
       }
 
       [NotNull]
       protected DbContextWithoutSchema CreateContextWithoutSchema()
       {
          var options = new DbContextOptionsBuilder<DbContextWithoutSchema>().Options;
-         return new DbContextWithoutSchema(options);
+         return new DbContextWithoutSchema(options) { ConfigureModel = ConfigureModel };
       }
 
       public virtual void Dispose()

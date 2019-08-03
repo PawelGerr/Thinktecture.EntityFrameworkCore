@@ -8,8 +8,20 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
    /// <summary>
    /// Cache key factory that takes the schema into account.
    /// </summary>
-   public class DbSchemaAwareModelCacheKeyFactory : IModelCacheKeyFactory
+   public class DbSchemaAwareModelCacheKeyFactory<TFactory> : IModelCacheKeyFactory
+      where TFactory : class, IModelCacheKeyFactory
    {
+      private readonly TFactory _factory;
+
+      /// <summary>
+      /// Initializes new instance of <see cref="DbSchemaAwareModelCacheKeyFactory{TFactory}"/>.
+      /// </summary>
+      /// <param name="factory">Inner factory.</param>
+      public DbSchemaAwareModelCacheKeyFactory([NotNull] TFactory factory)
+      {
+         _factory = factory ?? throw new ArgumentNullException(nameof(factory));
+      }
+
       /// <inheritdoc />
       [NotNull]
       public object Create(DbContext context)
@@ -17,12 +29,11 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
          if (context == null)
             throw new ArgumentNullException(nameof(context));
 
-         return new
-                {
-                   Type = context.GetType(),
-                   // ReSharper disable once SuspiciousTypeConversion.Global
-                   Schema = context is IDbContextSchema schema ? schema.Schema : null
-                };
+         var key = _factory.Create(context);
+         var schema = context is IDbContextSchema dbSchema ? dbSchema.Schema : null;
+
+         // compiler implements Equals and GetHashCode they way we need
+         return new { key, schema };
       }
    }
 }

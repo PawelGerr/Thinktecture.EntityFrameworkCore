@@ -1,32 +1,48 @@
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.Migrations;
-using Microsoft.EntityFrameworkCore.Migrations.Internal;
 
 namespace Thinktecture.EntityFrameworkCore.Migrations
 {
    /// <summary>
    /// An implementation of <see cref="IMigrationsAssembly"/> that is able to instantiate migrations requiring an <see cref="IDbContextSchema"/>.
    /// </summary>
-   public class DbSchemaAwareMigrationAssembly : MigrationsAssembly
+   public class DbSchemaAwareMigrationAssembly<TMigrationsAssembly> : IMigrationsAssembly
+      where TMigrationsAssembly : class, IMigrationsAssembly
    {
+      private readonly TMigrationsAssembly _innerMigrationsAssembly;
       private readonly DbContext _context;
 
       /// <inheritdoc />
-      public DbSchemaAwareMigrationAssembly([NotNull] ICurrentDbContext currentContext, [NotNull] IDbContextOptions options,
-                                            [NotNull] IMigrationsIdGenerator idGenerator, [NotNull] IDiagnosticsLogger<DbLoggerCategory.Migrations> logger)
-         : base(currentContext, options, idGenerator, logger)
+      public IReadOnlyDictionary<string, TypeInfo> Migrations => _innerMigrationsAssembly.Migrations;
+
+      /// <inheritdoc />
+      public ModelSnapshot ModelSnapshot => _innerMigrationsAssembly.ModelSnapshot;
+
+      /// <inheritdoc />
+      public Assembly Assembly => _innerMigrationsAssembly.Assembly;
+
+      /// <inheritdoc />
+      public DbSchemaAwareMigrationAssembly([NotNull] TMigrationsAssembly migrationsAssembly, [NotNull] ICurrentDbContext currentContext)
       {
-         _context = currentContext.Context;
+         _innerMigrationsAssembly = migrationsAssembly ?? throw new ArgumentNullException(nameof(migrationsAssembly));
+         // ReSharper disable once ConstantConditionalAccessQualifier
+         _context = currentContext?.Context ?? throw new ArgumentNullException(nameof(currentContext));
       }
 
       /// <inheritdoc />
-      public override Migration CreateMigration(TypeInfo migrationClass, string activeProvider)
+      public string FindMigrationId(string nameOrId)
+      {
+         return _innerMigrationsAssembly.FindMigrationId(nameOrId);
+      }
+
+      /// <inheritdoc />
+      public Migration CreateMigration(TypeInfo migrationClass, string activeProvider)
       {
          if (migrationClass == null)
             throw new ArgumentNullException(nameof(migrationClass));
@@ -37,10 +53,10 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
 
          // ReSharper disable once SuspiciousTypeConversion.Global
          if (!hasCtorWithSchema)
-            return base.CreateMigration(migrationClass, activeProvider);
+            return _innerMigrationsAssembly.CreateMigration(migrationClass, activeProvider);
 
          if (!(_context is IDbContextSchema schema))
-            throw new ArgumentException($"For instantiation of database schema aware migration of type '{migrationClass.Name}' the database context of type '{_context.GetType().Name}' has to implement the interface {nameof(IDbContextSchema)}.", nameof(migrationClass));
+            throw new ArgumentException($"For instantiation of schema-aware migration of type '{migrationClass.Name}' the database context of type '{_context.GetType().DisplayName()}' has to implement the interface '{nameof(IDbContextSchema)}'.", nameof(migrationClass));
 
          var instance = (Migration)Activator.CreateInstance(migrationClass.AsType(), schema);
          instance.ActiveProvider = activeProvider;

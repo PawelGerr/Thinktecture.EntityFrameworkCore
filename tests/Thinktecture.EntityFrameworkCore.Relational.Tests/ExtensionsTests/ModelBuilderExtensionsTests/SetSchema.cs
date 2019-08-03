@@ -24,7 +24,7 @@ namespace Thinktecture.ExtensionsTests.ModelBuilderExtensionsTests
       [Fact]
       public void Should_set_schema()
       {
-         DbContextWithSchema.ConfigureModel = builder => builder.SetSchema("schema");
+         ConfigureModel = builder => builder.SetSchema("schema");
 
          DbContextWithSchema.Model.FindEntityType(typeof(TestEntity)).Relational().Schema.Should().Be("schema");
          DbContextWithSchema.Model.FindEntityType(typeof(TestQuery)).Relational().Schema.Should().Be("schema");
@@ -33,12 +33,12 @@ namespace Thinktecture.ExtensionsTests.ModelBuilderExtensionsTests
       [Fact]
       public void Should_reset_schema()
       {
-         DbContextWithSchema.ConfigureModel = builder =>
-                                                    {
-                                                       builder.Entity<TestEntity>().ToTable("table", "schema");
-                                                       builder.Query<TestQuery>().ToView("view", "schema");
-                                                       builder.SetSchema(null);
-                                                    };
+         ConfigureModel = builder =>
+                          {
+                             builder.Entity<TestEntity>().ToTable("table", "schema");
+                             builder.Query<TestQuery>().ToView("view", "schema");
+                             builder.SetSchema(null);
+                          };
 
          DbContextWithSchema.Model.FindEntityType(typeof(TestEntity)).Relational().Schema.Should().BeNull();
          DbContextWithSchema.Model.FindEntityType(typeof(TestQuery)).Relational().Schema.Should().BeNull();
