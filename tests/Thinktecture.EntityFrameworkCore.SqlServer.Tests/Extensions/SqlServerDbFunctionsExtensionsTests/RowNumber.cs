@@ -7,7 +7,7 @@ using Thinktecture.TestDatabaseContext;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Thinktecture.Extensions.DbFunctionsExtensionsTests
+namespace Thinktecture.Extensions.SqlServerDbFunctionsExtensionsTests
 {
    // ReSharper disable once InconsistentNaming
    public class RowNumber : IntegrationTestsBase
@@ -25,12 +25,12 @@ namespace Thinktecture.Extensions.DbFunctionsExtensionsTests
          ArrangeDbContext.SaveChanges();
 
          var result = ActDbContext.TestEntities
-                               .Select(e => new
-                                            {
-                                               e.Name,
-                                               RowNumber = EF.Functions.RowNumber(e.Name)
-                                            })
-                               .ToList();
+                                  .Select(e => new
+                                               {
+                                                  e.Name,
+                                                  RowNumber = EF.Functions.RowNumber(e.Name)
+                                               })
+                                  .ToList();
 
          result.First(t => t.Name == "1").RowNumber.Should().Be(1);
          result.First(t => t.Name == "2").RowNumber.Should().Be(2);
@@ -44,12 +44,12 @@ namespace Thinktecture.Extensions.DbFunctionsExtensionsTests
          ArrangeDbContext.SaveChanges();
 
          var result = ActDbContext.TestEntities
-                               .Select(e => new
-                                            {
-                                               e.Id,
-                                               RowNumber = EF.Functions.RowNumber(e.Id)
-                                            })
-                               .ToList();
+                                  .Select(e => new
+                                               {
+                                                  e.Id,
+                                                  RowNumber = EF.Functions.RowNumber(e.Id)
+                                               })
+                                  .ToList();
 
          result.First(t => t.Id == new Guid("18CF65B3-F53D-4F45-8DF5-DD62DCC8B2EB")).RowNumber.Should().Be(1);
          result.First(t => t.Id == new Guid("28CF65B3-F53D-4F45-8DF5-DD62DCC8B2EB")).RowNumber.Should().Be(2);
@@ -63,12 +63,12 @@ namespace Thinktecture.Extensions.DbFunctionsExtensionsTests
          ArrangeDbContext.SaveChanges();
 
          var result = ActDbContext.TestEntities
-                               .Select(e => new
-                                            {
-                                               e.Name,
-                                               RowNumber = EF.Functions.RowNumber(EF.Functions.Descending(e.Name))
-                                            })
-                               .ToList();
+                                  .Select(e => new
+                                               {
+                                                  e.Name,
+                                                  RowNumber = EF.Functions.RowNumber(EF.Functions.Descending(e.Name))
+                                               })
+                                  .ToList();
 
          result.First(t => t.Name == "1").RowNumber.Should().Be(2);
          result.First(t => t.Name == "2").RowNumber.Should().Be(1);
@@ -82,16 +82,16 @@ namespace Thinktecture.Extensions.DbFunctionsExtensionsTests
          ArrangeDbContext.SaveChanges();
 
          var result = ActDbContext.TestEntities
-                               .Select(e => new
-                                            {
-                                               e.Count,
-                                               RowNumber = EF.Functions.RowNumber(new
-                                                                                  {
-                                                                                     e.Name,
-                                                                                     e.Count
-                                                                                  })
-                                            })
-                               .ToList();
+                                  .Select(e => new
+                                               {
+                                                  e.Count,
+                                                  RowNumber = EF.Functions.RowNumber(new
+                                                                                     {
+                                                                                        e.Name,
+                                                                                        e.Count
+                                                                                     })
+                                               })
+                                  .ToList();
 
          result.First(t => t.Count == 1).RowNumber.Should().Be(1);
          result.First(t => t.Count == 2).RowNumber.Should().Be(2);
@@ -105,16 +105,16 @@ namespace Thinktecture.Extensions.DbFunctionsExtensionsTests
          ArrangeDbContext.SaveChanges();
 
          var result = ActDbContext.TestEntities
-                               .Select(e => new
-                                            {
-                                               e.Count,
-                                               RowNumber = EF.Functions.RowNumber(new
-                                                                                  {
-                                                                                     e.Name,
-                                                                                     Count = EF.Functions.Descending(e.Count)
-                                                                                  })
-                                            })
-                               .ToList();
+                                  .Select(e => new
+                                               {
+                                                  e.Count,
+                                                  RowNumber = EF.Functions.RowNumber(new
+                                                                                     {
+                                                                                        e.Name,
+                                                                                        Count = EF.Functions.Descending(e.Count)
+                                                                                     })
+                                               })
+                                  .ToList();
 
          result.First(t => t.Count == 1).RowNumber.Should().Be(2);
          result.First(t => t.Count == 2).RowNumber.Should().Be(1);
@@ -128,12 +128,12 @@ namespace Thinktecture.Extensions.DbFunctionsExtensionsTests
          ArrangeDbContext.SaveChanges();
 
          var result = ActDbContext.TestEntities
-                               .Select(e => new
-                                            {
-                                               e.Name,
-                                               RowNumber = EF.Functions.RowNumber(e.Name, e.Name)
-                                            })
-                               .ToList();
+                                  .Select(e => new
+                                               {
+                                                  e.Name,
+                                                  RowNumber = EF.Functions.RowNumber(e.Name, e.Name)
+                                               })
+                                  .ToList();
 
          result.First(t => t.Name == "1").RowNumber.Should().Be(1);
          result.First(t => t.Name == "2").RowNumber.Should().Be(1);
@@ -147,21 +147,21 @@ namespace Thinktecture.Extensions.DbFunctionsExtensionsTests
          ArrangeDbContext.SaveChanges();
 
          var result = ActDbContext.TestEntities
-                               .Select(e => new
-                                            {
-                                               e.Count,
-                                               RowNumber = EF.Functions.RowNumber(new
-                                                                                  {
-                                                                                     e.Name,
-                                                                                     e.Count
-                                                                                  },
-                                                                                  new
-                                                                                  {
-                                                                                     e.Name,
-                                                                                     e.Count
-                                                                                  })
-                                            })
-                               .ToList();
+                                  .Select(e => new
+                                               {
+                                                  e.Count,
+                                                  RowNumber = EF.Functions.RowNumber(new
+                                                                                     {
+                                                                                        e.Name,
+                                                                                        e.Count
+                                                                                     },
+                                                                                     new
+                                                                                     {
+                                                                                        e.Name,
+                                                                                        e.Count
+                                                                                     })
+                                               })
+                                  .ToList();
 
          result.First(t => t.Count == 1).RowNumber.Should().Be(1);
          result.First(t => t.Count == 2).RowNumber.Should().Be(1);
