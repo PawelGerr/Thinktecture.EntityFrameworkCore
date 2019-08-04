@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using Serilog;
 using Serilog.Core;
 using Thinktecture.EntityFrameworkCore;
+using Thinktecture.EntityFrameworkCore.Testing;
 using Thinktecture.TestDatabaseContext;
 using Xunit.Abstractions;
 

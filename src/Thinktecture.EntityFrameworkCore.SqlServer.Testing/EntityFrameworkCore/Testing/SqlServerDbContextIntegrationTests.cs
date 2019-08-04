@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
 using IsolationLevel = System.Data.IsolationLevel;
 
-namespace Thinktecture.EntityFrameworkCore
+namespace Thinktecture.EntityFrameworkCore.Testing
 {
    /// <summary>
    /// A base class for integration tests using EF Core along with SQL Server.

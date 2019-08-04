@@ -2,6 +2,7 @@ using System;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore.Migrations.Operations;
 using Microsoft.EntityFrameworkCore.Migrations.Operations.Builders;
+using Thinktecture.EntityFrameworkCore.Migrations;
 
 // ReSharper disable once CheckNamespace
 namespace Thinktecture
@@ -26,6 +27,10 @@ namespace Thinktecture
       /// <summary>
       /// Flags the migration that it should be executed if corresponding entity (table, index, etc.) does not exist yet.
       /// </summary>
+      /// <remarks>
+      /// The <see cref="ThinktectureSqlServerMigrationsSqlGenerator"/> must be used so the annotations have some effect!
+      /// Use the extension method "<see cref="SqlServerDbContextOptionsBuilderExtensions.UseThinktectureSqlServerMigrationsSqlGenerator"/>" to change the Migration SQL generator.
+      /// </remarks>
       /// <param name="builder">An operation builder.</param>
       /// <typeparam name="T">Type of the migration operation.</typeparam>
       /// <exception cref="ArgumentNullException">Operation builder is <c>null</c>.</exception>
@@ -41,6 +46,10 @@ namespace Thinktecture
       /// <summary>
       /// Flags the migration that it should be executed if corresponding entity (table, index, etc.) exists.
       /// </summary>
+      /// <remarks>
+      /// The <see cref="ThinktectureSqlServerMigrationsSqlGenerator"/> must be used so the annotations have some effect!
+      /// Use the extension method "<see cref="SqlServerDbContextOptionsBuilderExtensions.UseThinktectureSqlServerMigrationsSqlGenerator"/>" to change the Migration SQL generator.
+      /// </remarks>
       /// <param name="builder">An operation builder.</param>
       /// <typeparam name="T">Type of the migration operation.</typeparam>
       /// <exception cref="ArgumentNullException">Operation builder is <c>null</c>.</exception>

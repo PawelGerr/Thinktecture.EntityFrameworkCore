@@ -42,14 +42,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
          if (options == null)
             throw new ArgumentNullException(nameof(options));
 
-         var tableName = entityType.Relational().TableName;
-
-         if (!tableName.StartsWith("#", StringComparison.Ordinal))
-            tableName = $"#{tableName}";
-
-         if (options.MakeTableNameUnique)
-            tableName = $"{tableName}_{Guid.NewGuid():N}";
-
+         var tableName = GetTableName(entityType, options.MakeTableNameUnique);
          var properties = entityType.GetProperties();
          var sql = GetTempTableCreationSql(properties, tableName, options.MakeTableNameUnique);
 
@@ -70,6 +63,20 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
          var logger = ctx.GetService<IDiagnosticsLogger<DbLoggerCategory.Query>>();
 
          return new SqlServerTempTableReference(logger, _sqlGenerationHelper, tableName, ctx.Database);
+      }
+
+      [NotNull]
+      private static string GetTableName([NotNull] IEntityType entityType, bool makeTableNameUnique)
+      {
+         var tableName = entityType.Relational().TableName;
+
+         if (!tableName.StartsWith("#", StringComparison.Ordinal))
+            tableName = $"#{tableName}";
+
+         if (makeTableNameUnique)
+            tableName = $"{tableName}_{Guid.NewGuid():N}";
+
+         return tableName;
       }
 
       /// <inheritdoc />

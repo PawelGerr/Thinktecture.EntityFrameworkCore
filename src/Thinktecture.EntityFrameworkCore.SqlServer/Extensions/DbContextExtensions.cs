@@ -91,6 +91,9 @@ namespace Thinktecture
       [NotNull, ItemNotNull]
       public static Task<ITempTableReference> CreateTempTableAsync([NotNull] this DbContext ctx, [NotNull] Type type, [NotNull] TempTableCreationOptions options, CancellationToken cancellationToken)
       {
+         if (ctx == null)
+            throw new ArgumentNullException(nameof(ctx));
+
          var entityType = ctx.Model.GetEntityType(type);
          return ctx.GetService<ITempTableCreator>().CreateTempTableAsync(ctx, entityType, options, cancellationToken);
       }
@@ -133,8 +136,6 @@ namespace Thinktecture
       {
          if (ctx == null)
             throw new ArgumentNullException(nameof(ctx));
-         if (entities == null)
-            throw new ArgumentNullException(nameof(entities));
 
          options = options ?? new SqlBulkInsertOptions();
          var entityType = ctx.Model.GetEntityType(typeof(T));
