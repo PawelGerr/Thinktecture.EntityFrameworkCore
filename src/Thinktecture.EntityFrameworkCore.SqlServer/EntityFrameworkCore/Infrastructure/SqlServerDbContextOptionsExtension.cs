@@ -20,7 +20,8 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
    {
       /// <inheritdoc />
       [NotNull]
-      public string LogFragment => $@"{{
+      public string LogFragment => $@"
+{{
    'RowNumberSupport'={AddRowNumberSupport},
    'BulkOperationSupport'={AddBulkOperationSupport},
    'TempTableSupport'={AddTempTableSupport},

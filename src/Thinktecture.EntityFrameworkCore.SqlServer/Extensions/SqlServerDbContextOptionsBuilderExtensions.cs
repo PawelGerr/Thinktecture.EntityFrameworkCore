@@ -14,13 +14,15 @@ namespace Thinktecture
    public static class SqlServerDbContextOptionsBuilderExtensions
    {
       /// <summary>
-      /// Adds support for "RowNumber".
+      /// Adds support for "RowNumber" and "Descending".
       /// </summary>
       /// <param name="sqlServerOptionsBuilder">SQL Server options builder.</param>
       /// <returns>Provided <paramref name="sqlServerOptionsBuilder"/>.</returns>
       [NotNull]
       public static SqlServerDbContextOptionsBuilder AddRowNumberSupport([NotNull] this SqlServerDbContextOptionsBuilder sqlServerOptionsBuilder)
       {
+         ((IRelationalDbContextOptionsBuilderInfrastructure)sqlServerOptionsBuilder).OptionsBuilder.AddDescendingSupport();
+
          return AddOrUpdateExtensions(sqlServerOptionsBuilder, extension => extension.AddRowNumberSupport = true);
       }
 

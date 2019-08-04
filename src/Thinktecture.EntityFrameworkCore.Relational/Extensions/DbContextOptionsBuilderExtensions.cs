@@ -17,6 +17,34 @@ namespace Thinktecture
    public static class DbContextOptionsBuilderExtensions
    {
       /// <summary>
+      /// Adds support for "Descending".
+      /// </summary>
+      /// <param name="builder">Options builder.</param>
+      /// <typeparam name="TContext">Type of the context.</typeparam>
+      /// <returns>Options builder for chaining.</returns>
+      [NotNull]
+      public static DbContextOptionsBuilder<TContext> AddDescendingSupport<TContext>([NotNull] this DbContextOptionsBuilder<TContext> builder)
+         where TContext : DbContext
+      {
+         // ReSharper disable once RedundantCast
+         ((DbContextOptionsBuilder)builder).AddDescendingSupport();
+         return builder;
+      }
+
+      /// <summary>
+      /// Adds support for "Descending".
+      /// </summary>
+      /// <param name="builder">Options builder.</param>
+      /// <returns>Options builder for chaining.</returns>
+      [NotNull]
+      public static DbContextOptionsBuilder AddDescendingSupport([NotNull] this DbContextOptionsBuilder builder)
+      {
+         // ReSharper disable once RedundantCast
+         builder.AddOrUpdateExtension<RelationalDbContextOptionsExtension>(extension => extension.AddDescendingSupport = true);
+         return builder;
+      }
+
+      /// <summary>
       /// Adds custom implementation of <see cref="IExpressionFragmentTranslator"/>.
       /// </summary>
       /// <param name="builder">Options builder.</param>

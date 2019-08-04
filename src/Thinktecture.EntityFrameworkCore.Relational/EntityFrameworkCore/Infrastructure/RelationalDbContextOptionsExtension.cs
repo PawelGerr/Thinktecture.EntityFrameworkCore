@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Query.ExpressionTranslators;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Thinktecture.EntityFrameworkCore.Migrations;
 using Thinktecture.EntityFrameworkCore.Query.ExpressionTranslators;
 
@@ -24,9 +25,18 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
 
       /// <inheritdoc />
       [NotNull]
-      public string LogFragment => $@"{{ 'ExpressionFragmentTranslatorPluginSupport'={_activateExpressionFragmentTranslatorPluginSupport},
-'Number of custom services'={_serviceDescriptors.Count},
-'SchemaAwareComponents added'={_addSchemaAwareComponents} }}";
+      public string LogFragment => $@"
+{{
+   'ExpressionFragmentTranslatorPluginSupport'={_activateExpressionFragmentTranslatorPluginSupport},
+   'Number of custom services'={_serviceDescriptors.Count},
+   'SchemaAwareComponents added'={_addSchemaAwareComponents},
+   'DescendingSupport'={AddDescendingSupport}
+}}";
+
+      /// <summary>
+      /// Indication whether to add support for "order by desc".
+      /// </summary>
+      public bool AddDescendingSupport { get; set; }
 
       /// <summary>
       /// Initializes new instance of <see cref="RelationalDbContextOptionsExtension"/>.
@@ -39,6 +49,9 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       /// <inheritdoc />
       public bool ApplyServices(IServiceCollection services)
       {
+         services.TryAddSingleton(this);
+         services.AddSingleton<IMethodCallTranslatorPlugin, RelationalMethodCallTranslatorPlugin>();
+
          if (_activateExpressionFragmentTranslatorPluginSupport)
             RegisterCompositeExpressionFragmentTranslator(services);
 

@@ -18,12 +18,11 @@ namespace Thinktecture.EntityFrameworkCore.Query.ExpressionTranslators
    /// </summary>
    public class SqlServerRowNumberTranslator : IMethodCallTranslator
    {
-      private static readonly MethodInfo _rowNumberWithPartitionByMethod = typeof(DbFunctionsExtensions).GetMethod(nameof(DbFunctionsExtensions.RowNumber), new[] { typeof(DbFunctions), typeof(object), typeof(object) });
-      private static readonly MethodInfo _rowNumberMethod = typeof(DbFunctionsExtensions).GetMethod(nameof(DbFunctionsExtensions.RowNumber), new[] { typeof(DbFunctions), typeof(object) });
-      private static readonly MethodInfo _descendingMethodInfo = typeof(DbFunctionsExtensions).GetMethod(nameof(DbFunctionsExtensions.Descending), BindingFlags.Public | BindingFlags.Static);
+      private static readonly MethodInfo _rowNumberWithPartitionByMethod = typeof(SqlServerDbFunctionsExtensions).GetMethod(nameof(SqlServerDbFunctionsExtensions.RowNumber), new[] { typeof(DbFunctions), typeof(object), typeof(object) });
+      private static readonly MethodInfo _rowNumberMethod = typeof(SqlServerDbFunctionsExtensions).GetMethod(nameof(SqlServerDbFunctionsExtensions.RowNumber), new[] { typeof(DbFunctions), typeof(object) });
 
       /// <inheritdoc />
-      [NotNull]
+      [CanBeNull]
       public Expression Translate(MethodCallExpression methodCallExpression)
       {
          if (methodCallExpression.Method == _rowNumberMethod)
@@ -43,13 +42,7 @@ namespace Thinktecture.EntityFrameworkCore.Query.ExpressionTranslators
             return new RowNumberExpression(partitionBy, orderBy);
          }
 
-         if (methodCallExpression.Method == _descendingMethodInfo)
-         {
-            var column = methodCallExpression.Arguments[1];
-            return new DescendingExpression(column);
-         }
-
-         return methodCallExpression;
+         return null;
       }
 
       [NotNull]
@@ -90,16 +83,12 @@ namespace Thinktecture.EntityFrameworkCore.Query.ExpressionTranslators
       {
          while (true)
          {
-            if (expression is ColumnExpression)
+            if (expression is ColumnExpression || expression is DescendingExpression)
                return expression;
 
             if (expression.NodeType == ExpressionType.Convert)
             {
                expression = ((UnaryExpression)expression).Operand;
-            }
-            else if (expression is MethodCallExpression methodCall && methodCall.Method == _descendingMethodInfo)
-            {
-               return new DescendingExpression(methodCall.Arguments[1]);
             }
             else
             {
