@@ -1,13 +1,10 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Internal;
-using Microsoft.EntityFrameworkCore.Query.Expressions;
 using Microsoft.EntityFrameworkCore.Query.ExpressionTranslators;
 using Thinktecture.EntityFrameworkCore.Query.Expressions;
 
@@ -27,8 +24,7 @@ namespace Thinktecture.EntityFrameworkCore.Query.ExpressionTranslators
       {
          if (methodCallExpression.Method == _rowNumberMethod)
          {
-            var orderByParams = ExtractParams(methodCallExpression.Arguments[1]);
-            var orderBy = ConvertOrderBy(orderByParams);
+            var orderBy = ExtractParams(methodCallExpression.Arguments[1]);
 
             return new RowNumberExpression(Array.Empty<Expression>(), orderBy);
          }
@@ -36,8 +32,7 @@ namespace Thinktecture.EntityFrameworkCore.Query.ExpressionTranslators
          if (methodCallExpression.Method == _rowNumberWithPartitionByMethod)
          {
             var partitionBy = ExtractParams(methodCallExpression.Arguments[1]);
-            var orderByParams = ExtractParams(methodCallExpression.Arguments[2]);
-            var orderBy = ConvertOrderBy(orderByParams);
+            var orderBy = ExtractParams(methodCallExpression.Arguments[2]);
 
             return new RowNumberExpression(partitionBy, orderBy);
          }
@@ -46,55 +41,24 @@ namespace Thinktecture.EntityFrameworkCore.Query.ExpressionTranslators
       }
 
       [NotNull]
-      private static ReadOnlyCollection<Expression> ExtractParams([NotNull] Expression parameter)
+      private static IReadOnlyCollection<Expression> ExtractParams([NotNull] Expression parameter)
       {
          if (parameter is ConstantExpression constant)
          {
             if (constant.Value == null)
                throw new NotSupportedException("The value 'null' is not supported.");
 
+            if (constant.Value is IReadOnlyCollection<Expression> collection)
+               return collection;
+
             if (constant.Value is IEnumerable<Expression> enumerable)
-               return enumerable.ToList().AsReadOnly();
+               return enumerable.ToList();
          }
 
          if (parameter is NewArrayExpression array)
             return array.Expressions;
 
-         return new List<Expression> { parameter }.AsReadOnly();
-      }
-
-      [NotNull]
-      private static IReadOnlyCollection<Expression> ConvertOrderBy([NotNull] IEnumerable<Expression> orderByParams)
-      {
-         return orderByParams.Select(ConvertOrderBy).ToList().AsReadOnly();
-      }
-
-      [NotNull]
-      private static Expression ConvertOrderBy([NotNull] Expression expression)
-      {
-         if (expression is DescendingExpression)
-            return expression;
-
-         return ExtractOrderBy(expression);
-      }
-
-      [NotNull]
-      private static Expression ExtractOrderBy([NotNull] Expression expression)
-      {
-         while (true)
-         {
-            if (expression is ColumnExpression || expression is DescendingExpression)
-               return expression;
-
-            if (expression.NodeType == ExpressionType.Convert)
-            {
-               expression = ((UnaryExpression)expression).Operand;
-            }
-            else
-            {
-               throw new ArgumentException($"Unexpected 'order by' expression. Type: {expression.GetType().DisplayName()}.");
-            }
-         }
+         return new[] { parameter };
       }
    }
 }
