@@ -34,6 +34,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
 
       /// <summary>
       /// Properties to insert.
+      /// If the <see cref="EntityMembersProvider"/> is null then all properties of the entity are going to be inserted.
       /// </summary>
       [CanBeNull]
       public IEntityMembersProvider EntityMembersProvider { get; set; }

@@ -53,20 +53,6 @@ namespace Thinktecture
       /// Enables the support for <see cref="IExpressionFragmentTranslatorPlugin"/>.
       /// </summary>
       /// <param name="builder">Options builder.</param>
-      /// <typeparam name="TPlugin">Type of the plugin.</typeparam>
-      /// <returns>Options builder for chaining.</returns>
-      [NotNull]
-      public static DbContextOptionsBuilder AddExpressionFragmentTranslatorPlugin<TPlugin>([NotNull] this DbContextOptionsBuilder builder)
-         where TPlugin : class, IExpressionFragmentTranslatorPlugin
-      {
-         builder.AddOrUpdateExtension<RelationalDbContextOptionsExtension>(extension => extension.AddExpressionFragmentTranslatorPlugin(typeof(TPlugin)));
-         return builder;
-      }
-
-      /// <summary>
-      /// Enables the support for <see cref="IExpressionFragmentTranslatorPlugin"/>.
-      /// </summary>
-      /// <param name="builder">Options builder.</param>
       /// <typeparam name="TContext">Type of the context.</typeparam>
       /// <typeparam name="TPlugin">Type of the plugin.</typeparam>
       /// <returns>Options builder for chaining.</returns>
@@ -77,6 +63,20 @@ namespace Thinktecture
       {
          // ReSharper disable once RedundantCast
          ((DbContextOptionsBuilder)builder).AddExpressionFragmentTranslatorPlugin<TPlugin>();
+         return builder;
+      }
+
+      /// <summary>
+      /// Enables the support for <see cref="IExpressionFragmentTranslatorPlugin"/>.
+      /// </summary>
+      /// <param name="builder">Options builder.</param>
+      /// <typeparam name="TPlugin">Type of the plugin.</typeparam>
+      /// <returns>Options builder for chaining.</returns>
+      [NotNull]
+      public static DbContextOptionsBuilder AddExpressionFragmentTranslatorPlugin<TPlugin>([NotNull] this DbContextOptionsBuilder builder)
+         where TPlugin : class, IExpressionFragmentTranslatorPlugin
+      {
+         builder.AddOrUpdateExtension<RelationalDbContextOptionsExtension>(extension => extension.AddExpressionFragmentTranslatorPlugin(typeof(TPlugin)));
          return builder;
       }
 
@@ -134,9 +134,6 @@ namespace Thinktecture
       [NotNull]
       public static DbContextOptionsBuilder AddSchemaAwareComponents([NotNull] this DbContextOptionsBuilder builder)
       {
-         if (builder == null)
-            throw new ArgumentNullException(nameof(builder));
-
          builder.AddOrUpdateExtension<RelationalDbContextOptionsExtension>(extension => extension.AddSchemaAwareComponents());
          return builder;
       }

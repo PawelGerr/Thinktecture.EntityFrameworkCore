@@ -11,7 +11,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       /// <summary>
       /// Gets members to work with.
       /// </summary>
-      /// <returns>A collection <see cref="MemberInfo"/>.</returns>
+      /// <returns>A collection of <see cref="MemberInfo"/>.</returns>
       IReadOnlyList<MemberInfo> GetMembers();
    }
 }

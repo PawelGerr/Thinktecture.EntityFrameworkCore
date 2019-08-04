@@ -1,4 +1,5 @@
 using System;
+using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Thinktecture.EntityFrameworkCore;
 
@@ -9,7 +10,7 @@ namespace Thinktecture.TestDatabaseContext
       /// <inheritdoc />
       public string Schema { get; }
 
-      public MigrationWithSchema(IDbContextSchema schema)
+      public MigrationWithSchema([CanBeNull] IDbContextSchema schema)
       {
          Schema = schema?.Schema;
       }

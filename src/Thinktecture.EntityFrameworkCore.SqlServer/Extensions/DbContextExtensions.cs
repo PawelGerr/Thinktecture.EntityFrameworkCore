@@ -155,9 +155,9 @@ namespace Thinktecture
       /// <exception cref="ArgumentNullException"> <paramref name="ctx"/> or <paramref name="values"/> is <c>null</c>.</exception>
       [NotNull, ItemNotNull]
       public static Task<ITempTableQuery<TempTable<TColumn1>>> BulkInsertValuesIntoTempTableAsync<TColumn1>([NotNull] this DbContext ctx,
-                                                                                                           [NotNull] IEnumerable<TColumn1> values,
-                                                                                                           [CanBeNull] SqlTempTableBulkInsertOptions options = null,
-                                                                                                           CancellationToken cancellationToken = default)
+                                                                                                            [NotNull] IEnumerable<TColumn1> values,
+                                                                                                            [CanBeNull] SqlTempTableBulkInsertOptions options = null,
+                                                                                                            CancellationToken cancellationToken = default)
       {
          if (values == null)
             throw new ArgumentNullException(nameof(values));
@@ -181,9 +181,9 @@ namespace Thinktecture
       /// <exception cref="ArgumentNullException"> <paramref name="ctx"/> or <paramref name="values"/> is <c>null</c>.</exception>
       [NotNull, ItemNotNull]
       public static Task<ITempTableQuery<TempTable<TColumn1, TColumn2>>> BulkInsertValuesIntoTempTableAsync<TColumn1, TColumn2>([NotNull] this DbContext ctx,
-                                                                                                                               [NotNull] IEnumerable<(TColumn1 column1, TColumn2 column2)> values,
-                                                                                                                               [CanBeNull] SqlTempTableBulkInsertOptions options = null,
-                                                                                                                               CancellationToken cancellationToken = default)
+                                                                                                                                [NotNull] IEnumerable<(TColumn1 column1, TColumn2 column2)> values,
+                                                                                                                                [CanBeNull] SqlTempTableBulkInsertOptions options = null,
+                                                                                                                                CancellationToken cancellationToken = default)
       {
          if (values == null)
             throw new ArgumentNullException(nameof(values));
@@ -206,9 +206,9 @@ namespace Thinktecture
       /// <exception cref="ArgumentNullException"> <paramref name="ctx"/> or <paramref name="entities"/> is <c>null</c>.</exception>
       [NotNull, ItemNotNull]
       public static async Task<ITempTableQuery<T>> BulkInsertIntoTempTableAsync<T>([NotNull] this DbContext ctx,
-                                                                                  [NotNull] IEnumerable<T> entities,
-                                                                                  [CanBeNull] SqlTempTableBulkInsertOptions options = null,
-                                                                                  CancellationToken cancellationToken = default)
+                                                                                   [NotNull] IEnumerable<T> entities,
+                                                                                   [CanBeNull] SqlTempTableBulkInsertOptions options = null,
+                                                                                   CancellationToken cancellationToken = default)
          where T : class
       {
          if (ctx == null)

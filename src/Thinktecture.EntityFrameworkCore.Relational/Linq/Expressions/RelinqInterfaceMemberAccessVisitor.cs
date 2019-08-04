@@ -9,7 +9,7 @@ namespace Thinktecture.Linq.Expressions
 {
    /// <summary>
    /// Searches for conversions from a (derived) type to an interface
-   /// and rewrites member access expressions so the property of the derived type is used instead the one of the base type.
+   /// and rewrites member access expressions so the property of the derived type is used instead the one of the interface.
    /// </summary>
    public class RelinqInterfaceMemberAccessVisitor : ExpressionVisitor
    {

@@ -55,23 +55,23 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
          return new EntityMembersProvider(members);
       }
 
-      private static void ExtractMembers([NotNull] List<MemberInfo> properties, [NotNull] ParameterExpression paramExpression, [NotNull] Expression body)
+      private static void ExtractMembers([NotNull] List<MemberInfo> members, [NotNull] ParameterExpression paramExpression, [NotNull] Expression body)
       {
          switch (body.NodeType)
          {
             case ExpressionType.Convert:
             case ExpressionType.Quote:
-               ExtractMembers(properties, paramExpression, ((UnaryExpression)body).Operand);
+               ExtractMembers(members, paramExpression, ((UnaryExpression)body).Operand);
                break;
 
             // entity => entity.Member;
             case ExpressionType.MemberAccess:
-               properties.Add(ExtractMember(paramExpression, (MemberExpression)body));
+               members.Add(ExtractMember(paramExpression, (MemberExpression)body));
                break;
 
             // entity => new { Prop = entity.Member }
             case ExpressionType.New:
-               ExtractMembers(properties, paramExpression, (NewExpression)body);
+               ExtractMembers(members, paramExpression, (NewExpression)body);
                break;
 
             default:
