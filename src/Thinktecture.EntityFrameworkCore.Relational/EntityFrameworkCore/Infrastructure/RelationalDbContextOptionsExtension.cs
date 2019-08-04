@@ -21,7 +21,6 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
    {
       private readonly List<ServiceDescriptor> _serviceDescriptors;
       private bool _activateExpressionFragmentTranslatorPluginSupport;
-      private bool _addSchemaAwareComponents;
 
       /// <inheritdoc />
       [NotNull]
@@ -29,7 +28,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
 {{
    'ExpressionFragmentTranslatorPluginSupport'={_activateExpressionFragmentTranslatorPluginSupport},
    'Number of custom services'={_serviceDescriptors.Count},
-   'SchemaAwareComponents added'={_addSchemaAwareComponents},
+   'SchemaAwareComponents added'={AddSchemaAwareComponents},
    'DescendingSupport'={AddDescendingSupport}
 }}";
 
@@ -37,6 +36,11 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       /// Indication whether to add support for "order by desc".
       /// </summary>
       public bool AddDescendingSupport { get; set; }
+
+      /// <summary>
+      /// Adds components so Entity Framework Core can handle changes of the database schema at runtime.
+      /// </summary>
+      public bool AddSchemaAwareComponents { get; set; }
 
       /// <summary>
       /// Initializes new instance of <see cref="RelationalDbContextOptionsExtension"/>.
@@ -55,7 +59,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
          if (_activateExpressionFragmentTranslatorPluginSupport)
             RegisterCompositeExpressionFragmentTranslator(services);
 
-         if (_addSchemaAwareComponents)
+         if (AddSchemaAwareComponents)
             RegisterSchemaAwareComponents(services);
 
          foreach (var descriptor in _serviceDescriptors)
@@ -174,14 +178,6 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
             throw new ArgumentNullException(nameof(serviceDescriptor));
 
          _serviceDescriptors.Add(serviceDescriptor);
-      }
-
-      /// <summary>
-      /// Adds components so Entity Framework Core can handle changes of the database schema at runtime.
-      /// </summary>
-      public void AddSchemaAwareComponents()
-      {
-         _addSchemaAwareComponents = true;
       }
    }
 }

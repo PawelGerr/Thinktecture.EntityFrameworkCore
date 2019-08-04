@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
+using Thinktecture.EntityFrameworkCore.Migrations;
 using IsolationLevel = System.Data.IsolationLevel;
 
 namespace Thinktecture.EntityFrameworkCore.Testing
@@ -61,6 +62,11 @@ namespace Thinktecture.EntityFrameworkCore.Testing
       /// </summary>
       [NotNull]
       protected T AssertDbContext => _assertDbContext ?? (_assertDbContext = CreateContext());
+
+      /// <summary>
+      /// Indication whether the <see cref="ThinktectureSqlServerMigrationsSqlGenerator"/> should be used or not.
+      /// </summary>
+      protected bool UseThinktectureSqlServerMigrationsSqlGenerator { get; set; } = true;
 
       /// <summary>
       /// Initializes a new instance of <see cref="SqlServerDbContextIntegrationTests{T}"/>
@@ -206,8 +212,10 @@ namespace Thinktecture.EntityFrameworkCore.Testing
          if (builder == null)
             throw new ArgumentNullException(nameof(builder));
 
-         builder.MigrationsHistoryTable(_HISTORY_TABLE_NAME, Schema)
-                .UseThinktectureSqlServerMigrationsSqlGenerator();
+         builder.MigrationsHistoryTable(_HISTORY_TABLE_NAME, Schema);
+
+         if (UseThinktectureSqlServerMigrationsSqlGenerator)
+            builder.UseThinktectureSqlServerMigrationsSqlGenerator();
       }
 
       /// <summary>

@@ -20,14 +20,16 @@ namespace Thinktecture
       /// Adds support for "Descending".
       /// </summary>
       /// <param name="builder">Options builder.</param>
+      /// <param name="addDescendingSupport">Indication whether to enable or disable the feature.</param>
       /// <typeparam name="TContext">Type of the context.</typeparam>
       /// <returns>Options builder for chaining.</returns>
       [NotNull]
-      public static DbContextOptionsBuilder<TContext> AddDescendingSupport<TContext>([NotNull] this DbContextOptionsBuilder<TContext> builder)
+      public static DbContextOptionsBuilder<TContext> AddDescendingSupport<TContext>([NotNull] this DbContextOptionsBuilder<TContext> builder,
+                                                                                     bool addDescendingSupport = true)
          where TContext : DbContext
       {
          // ReSharper disable once RedundantCast
-         ((DbContextOptionsBuilder)builder).AddDescendingSupport();
+         ((DbContextOptionsBuilder)builder).AddDescendingSupport(addDescendingSupport);
          return builder;
       }
 
@@ -35,12 +37,13 @@ namespace Thinktecture
       /// Adds support for "Descending".
       /// </summary>
       /// <param name="builder">Options builder.</param>
+      /// <param name="addDescendingSupport">Indication whether to enable or disable the feature.</param>
       /// <returns>Options builder for chaining.</returns>
       [NotNull]
-      public static DbContextOptionsBuilder AddDescendingSupport([NotNull] this DbContextOptionsBuilder builder)
+      public static DbContextOptionsBuilder AddDescendingSupport([NotNull] this DbContextOptionsBuilder builder, bool addDescendingSupport = true)
       {
          // ReSharper disable once RedundantCast
-         builder.AddOrUpdateExtension<RelationalDbContextOptionsExtension>(extension => extension.AddDescendingSupport = true);
+         builder.AddOrUpdateExtension<RelationalDbContextOptionsExtension>(extension => extension.AddDescendingSupport = addDescendingSupport);
          return builder;
       }
 
@@ -143,13 +146,15 @@ namespace Thinktecture
       /// Adds/replaces components that handle with database schema changes at runtime.
       /// </summary>
       /// <param name="builder">Options builder.</param>
+      /// <param name="addSchemaAwareComponents">Indication whether to enable or disable the feature.</param>
       /// <returns>The provided <paramref name="builder"/>.</returns>
       /// <exception cref="ArgumentNullException"><paramref name="builder"/> is <c>null</c>.</exception>
       [NotNull]
-      public static DbContextOptionsBuilder<T> AddSchemaAwareComponents<T>([NotNull] this DbContextOptionsBuilder<T> builder)
+      public static DbContextOptionsBuilder<T> AddSchemaAwareComponents<T>([NotNull] this DbContextOptionsBuilder<T> builder,
+                                                                           bool addSchemaAwareComponents = true)
          where T : DbContext
       {
-         ((DbContextOptionsBuilder)builder).AddSchemaAwareComponents();
+         ((DbContextOptionsBuilder)builder).AddSchemaAwareComponents(addSchemaAwareComponents);
          return builder;
       }
 
@@ -157,12 +162,14 @@ namespace Thinktecture
       /// Adds/replaces components that handle with database schema changes at runtime.
       /// </summary>
       /// <param name="builder">Options builder.</param>
+      /// <param name="addSchemaAwareComponents">Indication whether to enable or disable the feature.</param>
       /// <returns>The provided <paramref name="builder"/>.</returns>
       /// <exception cref="ArgumentNullException"><paramref name="builder"/> is <c>null</c>.</exception>
       [NotNull]
-      public static DbContextOptionsBuilder AddSchemaAwareComponents([NotNull] this DbContextOptionsBuilder builder)
+      public static DbContextOptionsBuilder AddSchemaAwareComponents([NotNull] this DbContextOptionsBuilder builder,
+                                                                     bool addSchemaAwareComponents = true)
       {
-         builder.AddOrUpdateExtension<RelationalDbContextOptionsExtension>(extension => extension.AddSchemaAwareComponents());
+         builder.AddOrUpdateExtension<RelationalDbContextOptionsExtension>(extension => extension.AddSchemaAwareComponents = addSchemaAwareComponents);
          return builder;
       }
 
