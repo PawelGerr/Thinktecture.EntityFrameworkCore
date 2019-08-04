@@ -50,7 +50,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       public bool ApplyServices(IServiceCollection services)
       {
          services.TryAddSingleton(this);
-         services.AddSingleton<IMethodCallTranslatorPlugin, RelationalMethodCallTranslatorPlugin>();
+         services.Add<IMethodCallTranslatorPlugin, RelationalMethodCallTranslatorPlugin>(GetLifetime<IMethodCallTranslatorPlugin>());
 
          if (_activateExpressionFragmentTranslatorPluginSupport)
             RegisterCompositeExpressionFragmentTranslator(services);
@@ -64,6 +64,11 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
          }
 
          return false;
+      }
+
+      private static ServiceLifetime GetLifetime<TService>()
+      {
+         return EntityFrameworkRelationalServicesBuilder.RelationalServices[typeof(TService)].Lifetime;
       }
 
       private static void RegisterSchemaAwareComponents([NotNull] IServiceCollection services)

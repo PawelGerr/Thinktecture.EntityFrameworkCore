@@ -3,6 +3,7 @@ using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Query.ExpressionTranslators;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Thinktecture.EntityFrameworkCore.BulkOperations;
@@ -58,23 +59,26 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       public bool ApplyServices(IServiceCollection services)
       {
          services.TryAddSingleton(this);
-         services.AddSingleton<IMethodCallTranslatorPlugin, SqlServerMethodCallTranslatorPlugin>();
+         services.Add<IMethodCallTranslatorPlugin, SqlServerMethodCallTranslatorPlugin>(GetLifetime<IMethodCallTranslatorPlugin>());
 
          if (AddTempTableSupport)
-         {
-            services.TryAddSingleton<ITempTableCreator, SqlServerTempTableCreator>();
-         }
+            services.TryAdd<ITempTableCreator, SqlServerTempTableCreator>(GetLifetime<ISqlGenerationHelper>());
 
          if (AddBulkOperationSupport)
          {
             services.TryAddSingleton<IEntityDataReaderFactory, EntityDataReaderFactory>();
-            services.TryAddSingleton<ISqlServerBulkOperationExecutor, SqlServerBulkOperationExecutor>();
+            services.TryAdd<ISqlServerBulkOperationExecutor, SqlServerBulkOperationExecutor>(GetLifetime<ISqlGenerationHelper>());
          }
 
          if (UseThinktectureSqlServerMigrationsSqlGenerator)
-            services.AddTransient<IMigrationsSqlGenerator, ThinktectureSqlServerMigrationsSqlGenerator>();
+            services.Add<IMigrationsSqlGenerator, ThinktectureSqlServerMigrationsSqlGenerator>(GetLifetime<IMigrationsSqlGenerator>());
 
          return false;
+      }
+
+      private static ServiceLifetime GetLifetime<TService>()
+      {
+         return EntityFrameworkRelationalServicesBuilder.RelationalServices[typeof(TService)].Lifetime;
       }
 
       /// <inheritdoc />
