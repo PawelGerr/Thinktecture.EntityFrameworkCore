@@ -265,14 +265,19 @@ namespace Thinktecture.EntityFrameworkCore
          if (schema == null)
             throw new ArgumentNullException(nameof(schema));
 
+         var sqlHelper = ctx.GetService<ISqlGenerationHelper>();
+
          ctx.Database.ExecuteSqlCommand(GetSqlForCleanup(), new SqlParameter("@schema", schema));
-         ctx.Database.ExecuteSqlCommand(GetDropSchemaSql(schema));
+         ctx.Database.ExecuteSqlCommand(GetDropSchemaSql(sqlHelper, schema));
       }
 
       [NotNull]
-      private static string GetDropSchemaSql(string schema)
+      private static string GetDropSchemaSql([NotNull] ISqlGenerationHelper sqlHelper, [NotNull] string schema)
       {
-         return $"DROP SCHEMA [{schema}]";
+         if (sqlHelper == null)
+            throw new ArgumentNullException(nameof(sqlHelper));
+
+         return $"DROP SCHEMA {sqlHelper.DelimitIdentifier(schema)}";
       }
 
       [NotNull]

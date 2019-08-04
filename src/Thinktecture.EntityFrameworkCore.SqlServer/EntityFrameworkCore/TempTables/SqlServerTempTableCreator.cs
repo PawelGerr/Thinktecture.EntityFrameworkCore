@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace Thinktecture.EntityFrameworkCore.TempTables
 {
@@ -17,6 +18,17 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
    /// </summary>
    public class SqlServerTempTableCreator : ITempTableCreator
    {
+      private readonly ISqlGenerationHelper _sqlGenerationHelper;
+
+      /// <summary>
+      /// Initializes <see cref="SqlServerTempTableCreator"/>.
+      /// </summary>
+      /// <param name="sqlGenerationHelper">SQL generation helper.</param>
+      public SqlServerTempTableCreator([NotNull] ISqlGenerationHelper sqlGenerationHelper)
+      {
+         _sqlGenerationHelper = sqlGenerationHelper ?? throw new ArgumentNullException(nameof(sqlGenerationHelper));
+      }
+
       /// <inheritdoc />
       public async Task<ITempTableReference> CreateTempTableAsync(DbContext ctx,
                                                                   IEntityType entityType,
@@ -57,7 +69,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
 
          var logger = ctx.GetService<IDiagnosticsLogger<DbLoggerCategory.Query>>();
 
-         return new SqlServerTempTableReference(logger, tableName, ctx.Database);
+         return new SqlServerTempTableReference(logger, _sqlGenerationHelper, tableName, ctx.Database);
       }
 
       /// <inheritdoc />
@@ -87,8 +99,8 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
          }
 
          var sql = $@"
-ALTER TABLE [{tableName}]
-ADD CONSTRAINT [PK_{tableName}_{Guid.NewGuid():N}] PRIMARY KEY CLUSTERED ({String.Join(", ", columnNames)});
+ALTER TABLE {_sqlGenerationHelper.DelimitIdentifier(tableName)}
+ADD CONSTRAINT {_sqlGenerationHelper.DelimitIdentifier($"PK_{tableName}_{Guid.NewGuid():N}")} PRIMARY KEY CLUSTERED ({String.Join(", ", columnNames)});
 ";
 
          if (checkForExistence)
@@ -106,7 +118,7 @@ END
       }
 
       [NotNull]
-      private static string GetTempTableCreationSql([NotNull] IEnumerable<IProperty> properties, [NotNull] string tableName, bool isUnique)
+      private string GetTempTableCreationSql([NotNull] IEnumerable<IProperty> properties, [NotNull] string tableName, bool isUnique)
       {
          if (properties == null)
             throw new ArgumentNullException(nameof(properties));
@@ -114,7 +126,7 @@ END
             throw new ArgumentNullException(nameof(tableName));
 
          var sql = $@"
-      CREATE TABLE [{tableName}]
+      CREATE TABLE {_sqlGenerationHelper.DelimitIdentifier(tableName)}
       (
 {GetColumnsDefinitions(properties)}
       );";
@@ -124,7 +136,7 @@ END
 
          return $@"
 IF(OBJECT_ID('tempdb..{tableName}') IS NOT NULL)
-   TRUNCATE TABLE [{tableName}];
+   TRUNCATE TABLE {_sqlGenerationHelper.DelimitIdentifier(tableName)};
 ELSE
 BEGIN
 {sql}
@@ -133,7 +145,7 @@ END
       }
 
       [NotNull]
-      private static string GetColumnsDefinitions([NotNull] IEnumerable<IProperty> properties)
+      private string GetColumnsDefinitions([NotNull] IEnumerable<IProperty> properties)
       {
          if (properties == null)
             throw new ArgumentNullException(nameof(properties));
@@ -149,7 +161,7 @@ END
             var relational = property.Relational();
 
             sb.Append("\t\t")
-              .Append(relational.ColumnName).Append(" ")
+              .Append(_sqlGenerationHelper.DelimitIdentifier(relational.ColumnName)).Append(" ")
               .Append(relational.ColumnType).Append(" ")
               .Append(property.IsNullable ? "NULL" : "NOT NULL");
 

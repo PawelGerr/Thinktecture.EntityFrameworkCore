@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
+using Moq;
 using Thinktecture.EntityFrameworkCore.TempTables;
 using Thinktecture.TestDatabaseContext;
 using Xunit;
@@ -16,11 +18,15 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
    // ReSharper disable once InconsistentNaming
    public class BulkInsertAsync : IntegrationTestsBase
    {
-      private readonly SqlServerBulkOperationExecutor _sut = new SqlServerBulkOperationExecutor();
+      private readonly SqlServerBulkOperationExecutor _sut;
 
       public BulkInsertAsync([NotNull] ITestOutputHelper testOutputHelper)
          : base(testOutputHelper, true)
       {
+         var sqlGenerationHelperMock = new Mock<ISqlGenerationHelper>();
+         sqlGenerationHelperMock.Setup(h => h.DelimitIdentifier(It.IsAny<string>(), It.IsAny<string>()))
+                                 .Returns<string, string>((name, schema) => schema == null ? $"[{name}]" : $"[{schema}].[{name}]");
+         _sut = new SqlServerBulkOperationExecutor(sqlGenerationHelperMock.Object);
       }
 
       [Fact]

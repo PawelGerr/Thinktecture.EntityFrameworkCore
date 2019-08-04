@@ -19,6 +19,17 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
    /// </summary>
    public class SqlServerBulkOperationExecutor : ISqlServerBulkOperationExecutor
    {
+      private readonly ISqlGenerationHelper _sqlGenerationHelper;
+
+      /// <summary>
+      /// Initializes new instance of <see cref="SqlServerBulkOperationExecutor"/>.
+      /// </summary>
+      /// <param name="sqlGenerationHelper">SQL generation helper.</param>
+      public SqlServerBulkOperationExecutor([NotNull] ISqlGenerationHelper sqlGenerationHelper)
+      {
+         _sqlGenerationHelper = sqlGenerationHelper ?? throw new ArgumentNullException(nameof(sqlGenerationHelper));
+      }
+
       /// <inheritdoc />
       public Task BulkInsertAsync<T>(DbContext ctx,
                                      IEntityType entityType,
@@ -64,11 +75,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
          using (var reader = factory.Create(entities, properties))
          using (var bulkCopy = new SqlBulkCopy(sqlCon, options.SqlBulkCopyOptions, sqlTx))
          {
-            bulkCopy.DestinationTableName = $"[{tableName}]";
-
-            if (!String.IsNullOrWhiteSpace(schema))
-               bulkCopy.DestinationTableName = $"[{schema}].{bulkCopy.DestinationTableName}";
-
+            bulkCopy.DestinationTableName = _sqlGenerationHelper.DelimitIdentifier(tableName, schema);
             bulkCopy.EnableStreaming = options.EnableStreaming;
 
             if (options.BulkCopyTimeout.HasValue)

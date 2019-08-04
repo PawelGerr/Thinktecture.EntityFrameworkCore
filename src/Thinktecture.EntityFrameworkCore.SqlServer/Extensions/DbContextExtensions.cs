@@ -247,7 +247,8 @@ namespace Thinktecture
       private static IQueryable<T> GetTempTableQuery<T>([NotNull] this DbContext ctx, [NotNull] IEntityType entityType, [NotNull] string tableName)
          where T : class
       {
-         var sql = $"SELECT * FROM [{tableName}]";
+         var sqlHelper = ctx.GetService<ISqlGenerationHelper>();
+         var sql = $"SELECT * FROM {sqlHelper.DelimitIdentifier(tableName)}";
 
 #pragma warning disable EF1000
          if (entityType.IsQueryType)

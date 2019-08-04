@@ -5,6 +5,8 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
+using Moq;
 using Thinktecture.TestDatabaseContext;
 using Xunit;
 using Xunit.Abstractions;
@@ -15,11 +17,17 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
    // ReSharper disable once InconsistentNaming
    public class CreatePrimaryKeyAsync : IntegrationTestsBase
    {
-      private readonly SqlServerTempTableCreator _sut = new SqlServerTempTableCreator();
+      private readonly SqlServerTempTableCreator _sut;
 
       public CreatePrimaryKeyAsync([NotNull] ITestOutputHelper testOutputHelper)
          : base(testOutputHelper, true)
       {
+         var sqlGenerationHelperMock = new Mock<ISqlGenerationHelper>();
+         sqlGenerationHelperMock.Setup(h => h.DelimitIdentifier(It.IsAny<string>(), It.IsAny<string>()))
+                                 .Returns<string, string>((name, schema) => schema == null ? $"[{name}]" : $"[{schema}].[{name}]");
+         sqlGenerationHelperMock.Setup(h => h.DelimitIdentifier(It.IsAny<string>()))
+                                 .Returns<string>(name => $"[{name}]");
+         _sut = new SqlServerTempTableCreator(sqlGenerationHelperMock.Object);
       }
 
       [Fact]
