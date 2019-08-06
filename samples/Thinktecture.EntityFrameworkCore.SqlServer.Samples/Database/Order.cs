@@ -7,6 +7,8 @@ namespace Thinktecture.Database
    public class Order
    {
       public Guid Id { get; set; }
+      public DateTime Date { get; set; }
+      public string Text { get; set; }
       public Guid CustomerId { get; set; }
 
       public Customer Customer { get; set; }

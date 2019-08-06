@@ -1,4 +1,5 @@
 using System;
+using System.Data.SqlClient;
 using System.Linq;
 using FluentAssertions;
 using JetBrains.Annotations;
@@ -165,6 +166,65 @@ namespace Thinktecture.Extensions.SqlServerDbFunctionsExtensionsTests
 
          result.First(t => t.Count == 1).RowNumber.Should().Be(1);
          result.First(t => t.Count == 2).RowNumber.Should().Be(1);
+      }
+
+      [Fact]
+      public void Should_throw_if_accessing_RowNumber_not_within_subquery()
+      {
+         ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("4883F7E0-FC8C-45FF-A579-DF351A3E79BF"), Name = "1" });
+         ArrangeDbContext.SaveChanges();
+
+         var query = ActDbContext.TestEntities
+                                 .Select(e => new
+                                              {
+                                                 e.Name,
+                                                 RowNumber = EF.Functions.RowNumber(e.Name)
+                                              })
+                                 .Where(i => i.RowNumber == 1);
+
+         query.Invoking(q => q.ToList())
+              .Should()
+              .Throw<SqlException>();
+      }
+
+      [Fact]
+      public void Should_throw_if_fetching_whole_entity()
+      {
+         ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("4883F7E0-FC8C-45FF-A579-DF351A3E79BF"), Name = "1" });
+         ArrangeDbContext.SaveChanges();
+
+         var query = ActDbContext.TestEntities
+                                 .Select(e => new
+                                              {
+                                                 e,
+                                                 RowNumber = EF.Functions.RowNumber(e.Name)
+                                              });
+
+         query.Invoking(q => q.ToList())
+              .Should()
+              .Throw<InvalidOperationException>()
+              .WithMessage("This method is for use with Entity Framework Core only and has no in-memory implementation.");
+      }
+
+      [Fact]
+      public void Should_filter_for_RowNumber_if_accessing_within_subquery()
+      {
+         ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("4883F7E0-FC8C-45FF-A579-DF351A3E79BF"), Name = "1" });
+         ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("18C13F68-0981-4853-92FC-FB7B2551F70A"), Name = "2" });
+         ArrangeDbContext.SaveChanges();
+
+         var result = ActDbContext.TestEntities
+                                  .Select(e => new
+                                               {
+                                                  e.Name,
+                                                  RowNumber = EF.Functions.RowNumber(e.Name)
+                                               })
+                                  .AsSubQuery()
+                                  .Where(i => i.RowNumber == 1)
+                                  .ToList();
+
+         result.Should().HaveCount(1);
+         result[0].Name.Should().Be("1");
       }
    }
 }

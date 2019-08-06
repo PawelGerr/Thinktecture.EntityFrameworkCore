@@ -2,7 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using JetBrains.Annotations;
+using Microsoft.EntityFrameworkCore.Query.Internal;
 using Thinktecture.EntityFrameworkCore;
 
 // ReSharper disable once CheckNamespace
@@ -13,6 +15,9 @@ namespace Thinktecture
    /// </summary>
    public static class QueryableExtensions
    {
+      private static readonly MethodInfo _asQueryableMethodInfo = typeof(Queryable).GetMethods(BindingFlags.Public | BindingFlags.Static)
+                                                                                   .Single(m => m.Name == nameof(Queryable.AsQueryable) && m.IsGenericMethod);
+
       /// <summary>
       /// Performs a LEFT JOIN.
       /// </summary>
@@ -63,6 +68,24 @@ namespace Thinktecture
                                                                         Right = i
                                                                      })
                 .Select(resultSelector);
+      }
+
+      /// <summary>
+      /// Executes provided query as a sub query.
+      /// </summary>
+      /// <param name="source">Query to execute as as sub query.</param>
+      /// <typeparam name="TEntity">Type of the entity.</typeparam>
+      /// <returns>Query that will be executed as a sub query.</returns>
+      /// <exception cref="ArgumentNullException"><paramref name="source"/> is <c>null</c>.</exception>
+      [NotNull]
+      public static IQueryable<TEntity> AsSubQuery<TEntity>([NotNull] this IQueryable<TEntity> source)
+      {
+         if (source == null)
+            throw new ArgumentNullException(nameof(source));
+
+         return source.Provider is EntityQueryProvider
+                   ? source.Provider.CreateQuery<TEntity>(Expression.Call(null, _asQueryableMethodInfo.MakeGenericMethod(typeof(TEntity)), source.Expression))
+                   : source;
       }
    }
 }

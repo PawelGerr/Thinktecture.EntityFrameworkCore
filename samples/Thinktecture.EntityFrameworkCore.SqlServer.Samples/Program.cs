@@ -62,6 +62,19 @@ namespace Thinktecture
                                   .ToListAsync();
 
          Console.WriteLine($"Found customers: {String.Join(", ", customers.Select(c => $"{{ CustomerId={c.Id}, RowNumber={c.RowNumber} }}"))}");
+
+         var latestOrders = await ctx.Orders
+                                     .Select(o => new
+                                                  {
+                                                     o.Id,
+                                                     o.CustomerId,
+                                                     RowNumber = EF.Functions.RowNumber(o.Date)
+                                                  })
+                                     // Previous query must be a sub query to access "RowNumber"
+                                     .AsSubQuery()
+                                     .Where(i => i.RowNumber == 1)
+                                     .ToListAsync();
+         Console.WriteLine($"Latest orders: {String.Join(", ", latestOrders.Select(o => $"{{ CustomerId={o.CustomerId}, OrderId={o.Id} }}"))}");
       }
 
       private static async Task DoLeftJoinAsync([NotNull] DemoDbContext ctx)
