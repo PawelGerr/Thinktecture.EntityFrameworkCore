@@ -1,14 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
-using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using FluentAssertions;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.Storage;
 using Moq;
 using Thinktecture.EntityFrameworkCore.TempTables;
@@ -83,17 +81,19 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
       }
 
       [Fact]
-      public async Task Should_ignore_shadow_property()
+      public async Task Should_insert_shadow_properties()
       {
-         var testEntity = new TestEntity { Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866") };
-         ActDbContext.Entry(testEntity).Property("ShadowProperty").CurrentValue = "value";
+         var testEntity = new TestEntityWithShadowProperties { Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866") };
+         ActDbContext.Entry(testEntity).Property("ShadowStringProperty").CurrentValue = "value";
+         ActDbContext.Entry(testEntity).Property("ShadowIntProperty").CurrentValue = 42;
 
          var testEntities = new[] { testEntity };
 
-         await _sut.BulkInsertAsync(ActDbContext, ActDbContext.GetEntityType<TestEntity>(), testEntities, new SqlBulkInsertOptions());
+         await _sut.BulkInsertAsync(ActDbContext, ActDbContext.GetEntityType<TestEntityWithShadowProperties>(), testEntities, new SqlBulkInsertOptions());
 
-         var loadedEntity = await AssertDbContext.TestEntities.FirstOrDefaultAsync();
-         AssertDbContext.Entry(loadedEntity).Property("ShadowProperty").CurrentValue.Should().BeNull();
+         var loadedEntity = await AssertDbContext.TestEntitiesWithShadowProperties.FirstOrDefaultAsync();
+         AssertDbContext.Entry(loadedEntity).Property("ShadowStringProperty").CurrentValue.Should().Be("value");
+         AssertDbContext.Entry(loadedEntity).Property("ShadowIntProperty").CurrentValue.Should().Be(42);
       }
 
       [Fact]

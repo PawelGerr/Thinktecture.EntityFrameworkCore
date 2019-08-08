@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using JetBrains.Annotations;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
@@ -16,6 +17,7 @@ namespace Thinktecture.EntityFrameworkCore.Data
    public sealed class EntityDataReader<T> : IEntityDataReader
       where T : class
    {
+      private readonly DbContext _ctx;
       private readonly IEnumerator<T> _enumerator;
       private readonly Dictionary<int, Func<T, object>> _propertyGetterLookup;
 
@@ -28,9 +30,12 @@ namespace Thinktecture.EntityFrameworkCore.Data
       /// <summary>
       /// Initializes <see cref="EntityDataReader{T}"/>
       /// </summary>
+      /// <param name="ctx">Database context.</param>
       /// <param name="entities">Entities to read.</param>
       /// <param name="properties">Properties to read.</param>
-      public EntityDataReader([NotNull] IEnumerable<T> entities, [NotNull] IReadOnlyList<IProperty> properties)
+      public EntityDataReader([NotNull] DbContext ctx,
+                              [NotNull] IEnumerable<T> entities,
+                              [NotNull] IReadOnlyList<IProperty> properties)
       {
          if (entities == null)
             throw new ArgumentNullException(nameof(entities));
@@ -39,28 +44,47 @@ namespace Thinktecture.EntityFrameworkCore.Data
          if (properties.Count == 0)
             throw new ArgumentException("The properties collection cannot be empty.", nameof(properties));
 
+         _ctx = ctx ?? throw new ArgumentNullException(nameof(ctx));
          Properties = properties;
          _propertyGetterLookup = BuildPropertyGetterLookup(properties);
          _enumerator = entities.GetEnumerator();
       }
 
       [NotNull]
-      private static Dictionary<int, Func<T, object>> BuildPropertyGetterLookup([NotNull] IReadOnlyList<IProperty> properties)
+      private Dictionary<int, Func<T, object>> BuildPropertyGetterLookup([NotNull] IReadOnlyList<IProperty> properties)
       {
          var lookup = new Dictionary<int, Func<T, object>>();
 
          for (var i = 0; i < properties.Count; i++)
          {
             var property = properties[i];
-            var getter = property.GetGetter();
 
-            if (getter == null)
-               throw new ArgumentException($"The property '{property.Name}' of entity '{property.DeclaringEntityType.Name}' has no property getter.");
+            if (property.IsShadowProperty)
+            {
+               var shadowPropGetter = CreateShadowPropertyGetter(property);
+               lookup.Add(i, shadowPropGetter.GetValue);
+            }
+            else
+            {
+               var getter = property.GetGetter();
 
-            lookup.Add(i, getter.GetClrValue);
+               if (getter == null)
+                  throw new ArgumentException($"The property '{property.Name}' of entity '{property.DeclaringEntityType.Name}' has no property getter.");
+
+               lookup.Add(i, getter.GetClrValue);
+            }
          }
 
          return lookup;
+      }
+
+      [NotNull]
+      private IShadowPropertyGetter CreateShadowPropertyGetter([NotNull] IProperty property)
+      {
+         var currentValueGetter = property.GetPropertyAccessors().CurrentValueGetter;
+         var shadowPropGetterType = typeof(ShadowPropertyGetter<>).MakeGenericType(property.ClrType);
+
+         return (IShadowPropertyGetter)Activator.CreateInstance(shadowPropGetterType, _ctx, currentValueGetter);
       }
 
       /// <inheritdoc />

@@ -16,6 +16,7 @@ namespace Thinktecture.TestDatabaseContext
       public DbSet<TestEntity> TestEntities { get; set; }
       public DbSet<TestEntityWithAutoIncrement> TestEntitiesWithAutoIncrement { get; set; }
       public DbSet<TestEntityWithRowVersion> TestEntitiesWithRowVersion { get; set; }
+      public DbSet<TestEntityWithShadowProperties> TestEntitiesWithShadowProperties { get; set; }
 
       public Action<ModelBuilder> ConfigureModel { get; set; }
 
@@ -30,7 +31,6 @@ namespace Thinktecture.TestDatabaseContext
          base.OnModelCreating(modelBuilder);
 
          modelBuilder.Entity<TestEntity>().Property("_privateField");
-         modelBuilder.Entity<TestEntity>().Property<string>("ShadowProperty").HasMaxLength(50);
 
          modelBuilder.Entity<TestEntityWithAutoIncrement>().Property(e => e.Id).UseSqlServerIdentityColumn();
 
@@ -38,6 +38,9 @@ namespace Thinktecture.TestDatabaseContext
                      .Property(e => e.RowVersion)
                      .IsRowVersion()
                      .HasConversion(RowVersionValueConverter.Instance);
+
+         modelBuilder.Entity<TestEntityWithShadowProperties>().Property<string>("ShadowStringProperty").HasMaxLength(50);
+         modelBuilder.Entity<TestEntityWithShadowProperties>().Property<int?>("ShadowIntProperty");
 
          ConfigureModel?.Invoke(modelBuilder);
 

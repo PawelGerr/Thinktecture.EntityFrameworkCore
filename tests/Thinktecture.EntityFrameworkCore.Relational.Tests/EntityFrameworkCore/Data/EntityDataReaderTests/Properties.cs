@@ -27,7 +27,7 @@ namespace Thinktecture.EntityFrameworkCore.Data.EntityDataReaderTests
 
       [NotNull]
       // ReSharper disable once InconsistentNaming
-      private EntityDataReader<TestEntity> SUT => _sut ?? (_sut = new EntityDataReader<TestEntity>(Array.Empty<TestEntity>(), _propertiesToRead));
+      private EntityDataReader<TestEntity> SUT => _sut ?? (_sut = new EntityDataReader<TestEntity>(DbContextWithSchema, Array.Empty<TestEntity>(), _propertiesToRead));
 
       [Fact]
       public void Should_return_propertiesToRead()

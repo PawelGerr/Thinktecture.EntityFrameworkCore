@@ -28,10 +28,18 @@ namespace Thinktecture.EntityFrameworkCore.Data.EntityDataReaderFactoryTests
       }
 
       [Fact]
+      public void Should_throw_if_context_is_null()
+      {
+         // ReSharper disable once AssignNullToNotNullAttribute
+         SUT.Invoking(sut => sut.Create(null, Array.Empty<TestEntity>(), Array.Empty<IProperty>()))
+            .Should().Throw<ArgumentNullException>();
+      }
+
+      [Fact]
       public void Should_throw_if_entities_is_null()
       {
          // ReSharper disable once AssignNullToNotNullAttribute
-         SUT.Invoking(sut => sut.Create<TestEntity>(null, Array.Empty<IProperty>()))
+         SUT.Invoking(sut => sut.Create<TestEntity>(DbContextWithSchema, null, Array.Empty<IProperty>()))
             .Should().Throw<ArgumentNullException>();
       }
 
@@ -39,14 +47,14 @@ namespace Thinktecture.EntityFrameworkCore.Data.EntityDataReaderFactoryTests
       public void Should_throw_if_properties_is_null()
       {
          // ReSharper disable once AssignNullToNotNullAttribute
-         SUT.Invoking(sut => sut.Create(Array.Empty<TestEntity>(), null))
+         SUT.Invoking(sut => sut.Create(DbContextWithSchema, Array.Empty<TestEntity>(), null))
             .Should().Throw<ArgumentNullException>();
       }
 
       [Fact]
       public void Should_generate_factory_if_entities_are_empty()
       {
-         var factory = SUT.Create(Array.Empty<TestEntity>(), new[] { _column2Property });
+         var factory = SUT.Create(DbContextWithSchema, Array.Empty<TestEntity>(), new[] { _column2Property });
 
          factory.Should().NotBeNull();
          factory.Read().Should().BeFalse();
@@ -56,7 +64,7 @@ namespace Thinktecture.EntityFrameworkCore.Data.EntityDataReaderFactoryTests
       public void Should_generate_factory_for_provided_properties()
       {
          var entity = new TestEntity { Column2 = "value" };
-         var factory = SUT.Create(new[] { entity }, new[] { _column2Property });
+         var factory = SUT.Create(DbContextWithSchema, new[] { entity }, new[] { _column2Property });
 
          factory.FieldCount.Should().Be(1);
          factory.Read().Should().BeTrue();

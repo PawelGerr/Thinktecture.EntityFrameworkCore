@@ -86,7 +86,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
          var sqlCon = (SqlConnection)ctx.Database.GetDbConnection();
          var sqlTx = (SqlTransaction)ctx.Database.CurrentTransaction?.GetDbTransaction();
 
-         using (var reader = factory.Create(entities, properties))
+         using (var reader = factory.Create(ctx, entities, properties))
          using (var bulkCopy = new SqlBulkCopy(sqlCon, options.SqlBulkCopyOptions, sqlTx))
          {
             bulkCopy.DestinationTableName = _sqlGenerationHelper.DelimitIdentifier(tableName, schema);
@@ -149,10 +149,11 @@ INSERT BULK {table} ({columns})", (long)duration.TotalMilliseconds,
       }
 
       [NotNull]
-      private static IReadOnlyList<IProperty> GetPropertiesForInsert([CanBeNull] IEntityMembersProvider entityMembersProvider, [NotNull] IEntityType entityType)
+      private static IReadOnlyList<IProperty> GetPropertiesForInsert([CanBeNull] IEntityMembersProvider entityMembersProvider,
+                                                                     [NotNull] IEntityType entityType)
       {
          if (entityMembersProvider == null)
-            return entityType.GetProperties().Where(p => !p.IsShadowProperty && p.BeforeSaveBehavior != PropertySaveBehavior.Ignore).ToList();
+            return entityType.GetProperties().Where(p => p.BeforeSaveBehavior != PropertySaveBehavior.Ignore).ToList();
 
          return ConvertToEntityProperties(entityMembersProvider.GetMembers(), entityType);
       }
