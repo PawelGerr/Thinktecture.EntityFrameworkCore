@@ -1,11 +1,14 @@
 using System;
+using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.Extensions.Logging;
 using Serilog;
-using Serilog.Core;
 using Thinktecture.EntityFrameworkCore;
 using Thinktecture.EntityFrameworkCore.Testing;
 using Thinktecture.TestDatabaseContext;
@@ -15,16 +18,24 @@ namespace Thinktecture
 {
    public class IntegrationTestsBase : SqlServerDbContextIntegrationTests<TestDbContext>
    {
-      protected LoggingLevelSwitch LogLevelSwitch { get; }
+      private static readonly ConcurrentDictionary<ITestOutputHelper, ILoggerFactory> _loggerFactoryCache = new ConcurrentDictionary<ITestOutputHelper, ILoggerFactory>();
+
+      protected ILoggerFactory LoggerFactory { get; }
 
       public Action<ModelBuilder> ConfigureModel { get; set; }
 
       protected IntegrationTestsBase([NotNull] ITestOutputHelper testOutputHelper, bool useSharedTables)
          : base(TestContext.Instance.ConnectionString, useSharedTables)
       {
-         LogLevelSwitch = new LoggingLevelSwitch();
-         var loggerFactory = CreateLoggerFactory(testOutputHelper, LogLevelSwitch);
-         UseLoggerFactory(loggerFactory);
+         LoggerFactory = CreateLoggerFactory(testOutputHelper);
+         UseLoggerFactory(LoggerFactory);
+      }
+
+      [NotNull]
+      protected IDiagnosticsLogger<TCategory> CreateDiagnosticsLogger<TCategory>([CanBeNull] ILoggingOptions options = null, [CanBeNull] DiagnosticSource diagnosticSource = null)
+         where TCategory : LoggerCategory<TCategory>, new()
+      {
+         return new DiagnosticsLogger<TCategory>(LoggerFactory, options ?? new LoggingOptions(), diagnosticSource ?? new DiagnosticListener(typeof(TCategory).DisplayName()));
       }
 
       /// <inheritdoc />
@@ -36,17 +47,19 @@ namespace Thinktecture
          return ctx;
       }
 
-      private ILoggerFactory CreateLoggerFactory([NotNull] ITestOutputHelper testOutputHelper, LoggingLevelSwitch loggingLevelSwitch)
+      private ILoggerFactory CreateLoggerFactory([NotNull] ITestOutputHelper testOutputHelper)
       {
          if (testOutputHelper == null)
             throw new ArgumentNullException(nameof(testOutputHelper));
 
-         var loggerConfig = new LoggerConfiguration()
-                            .MinimumLevel.ControlledBy(loggingLevelSwitch)
-                            .WriteTo.TestOutput(testOutputHelper, outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}");
+         return _loggerFactoryCache.GetOrAdd(testOutputHelper, helper =>
+                                                               {
+                                                                  var loggerConfig = new LoggerConfiguration()
+                                                                                     .WriteTo.TestOutput(testOutputHelper, outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}");
 
-         return new LoggerFactory()
-            .AddSerilog(loggerConfig.CreateLogger());
+                                                                  return new LoggerFactory()
+                                                                     .AddSerilog(loggerConfig.CreateLogger());
+                                                               });
       }
 
       /// <inheritdoc />

@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using FluentAssertions;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.Storage;
 using Moq;
 using Thinktecture.EntityFrameworkCore.TempTables;
@@ -26,7 +28,9 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
          var sqlGenerationHelperMock = new Mock<ISqlGenerationHelper>();
          sqlGenerationHelperMock.Setup(h => h.DelimitIdentifier(It.IsAny<string>(), It.IsAny<string>()))
                                  .Returns<string, string>((name, schema) => schema == null ? $"[{name}]" : $"[{schema}].[{name}]");
-         _sut = new SqlServerBulkOperationExecutor(sqlGenerationHelperMock.Object);
+
+         var logger = CreateDiagnosticsLogger<SqlServerDbLoggerCategory.BulkOperation>();
+         _sut = new SqlServerBulkOperationExecutor(sqlGenerationHelperMock.Object, logger);
       }
 
       [Fact]
