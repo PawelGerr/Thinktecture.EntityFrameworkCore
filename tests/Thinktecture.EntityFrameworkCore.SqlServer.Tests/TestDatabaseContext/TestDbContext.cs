@@ -4,6 +4,7 @@ using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Thinktecture.EntityFrameworkCore;
 using Thinktecture.EntityFrameworkCore.TempTables;
+using Thinktecture.EntityFrameworkCore.ValueConversion;
 
 namespace Thinktecture.TestDatabaseContext
 {
@@ -13,6 +14,8 @@ namespace Thinktecture.TestDatabaseContext
       public string Schema { get; }
 
       public DbSet<TestEntity> TestEntities { get; set; }
+      public DbSet<TestEntityWithAutoIncrement> TestEntitiesWithAutoIncrement { get; set; }
+      public DbSet<TestEntityWithRowVersion> TestEntitiesWithRowVersion { get; set; }
 
       public Action<ModelBuilder> ConfigureModel { get; set; }
 
@@ -28,6 +31,13 @@ namespace Thinktecture.TestDatabaseContext
 
          modelBuilder.Entity<TestEntity>().Property("_privateField");
          modelBuilder.Entity<TestEntity>().Property<string>("ShadowProperty").HasMaxLength(50);
+
+         modelBuilder.Entity<TestEntityWithAutoIncrement>().Property(e => e.Id).UseSqlServerIdentityColumn();
+
+         modelBuilder.Entity<TestEntityWithRowVersion>()
+                     .Property(e => e.RowVersion)
+                     .IsRowVersion()
+                     .HasConversion(RowVersionValueConverter.Instance);
 
          ConfigureModel?.Invoke(modelBuilder);
 
