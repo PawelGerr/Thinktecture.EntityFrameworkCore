@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
+using Thinktecture.EntityFrameworkCore.Infastructure;
 using Thinktecture.EntityFrameworkCore.Migrations;
 using IsolationLevel = System.Data.IsolationLevel;
 
@@ -67,6 +68,11 @@ namespace Thinktecture.EntityFrameworkCore.Testing
       /// Indication whether the <see cref="ThinktectureSqlServerMigrationsSqlGenerator"/> should be used or not.
       /// </summary>
       protected bool UseThinktectureSqlServerMigrationsSqlGenerator { get; set; } = true;
+
+      /// <summary>
+      /// Indication whether the EF model cache should be disabled or not. 
+      /// </summary>
+      protected bool DisableModelCache { get; set; } = true;
 
       /// <summary>
       /// Initializes a new instance of <see cref="SqlServerDbContextIntegrationTests{T}"/>
@@ -195,6 +201,9 @@ namespace Thinktecture.EntityFrameworkCore.Testing
          var builder = new DbContextOptionsBuilder<T>()
                        .UseSqlServer(connection, ConfigureSqlServer)
                        .AddSchemaAwareComponents();
+
+         if (DisableModelCache)
+            builder.ReplaceService<IModelCacheKeyFactory, DisableCacheModelCacheKeyFactory>();
 
          if (_loggerFactory != null)
             builder.UseLoggerFactory(_loggerFactory);
