@@ -98,7 +98,7 @@ namespace Thinktecture.EntityFrameworkCore.Migrations.DbSchemaAwareMigrationAsse
          CurrentCtxMock.Setup(c => c.Context).Returns(CreateContextWithoutSchema());
 
          SUT.Invoking(sut => sut.CreateMigration(typeof(MigrationWithSchema).GetTypeInfo(), "DummyProvider"))
-            .Should().Throw<ArgumentException>().WithMessage($@"For instantiation of schema-aware migration of type '{nameof(MigrationWithSchema)}' the database context of type '{typeof(DbContextWithoutSchema).FullName}' has to implement the interface '{nameof(IDbContextSchema)}'.
+            .Should().Throw<ArgumentException>().WithMessage($@"For instantiation of schema-aware migration of type '{nameof(MigrationWithSchema)}' the database context of type '{typeof(DbContextWithoutSchema).FullName}' has to implement the interface '{nameof(IDbDefaultSchema)}'.
 Parameter name: migrationClass");
       }
 

@@ -39,7 +39,7 @@ namespace Thinktecture
       }
 
       /// <inheritdoc />
-      protected override TestDbContext CreateContext(DbContextOptions<TestDbContext> options, IDbContextSchema schema)
+      protected override TestDbContext CreateContext(DbContextOptions<TestDbContext> options, IDbDefaultSchema schema)
       {
          var ctx = base.CreateContext(options, schema);
          ctx.ConfigureModel = ConfigureModel;

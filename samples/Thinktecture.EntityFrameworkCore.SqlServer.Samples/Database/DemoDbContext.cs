@@ -7,7 +7,7 @@ using Thinktecture.EntityFrameworkCore.ValueConversion;
 
 namespace Thinktecture.Database
 {
-   public class DemoDbContext : DbContext, IDbContextSchema
+   public class DemoDbContext : DbContext, IDbDefaultSchema
    {
       /// <inheritdoc />
       public string Schema { get; }
@@ -17,7 +17,7 @@ namespace Thinktecture.Database
       public DbSet<Order> Orders { get; set; }
       public DbSet<OrderItem> OrderItems { get; set; }
 
-      public DemoDbContext([NotNull] DbContextOptions<DemoDbContext> options, [CanBeNull] IDbContextSchema schema = null)
+      public DemoDbContext([NotNull] DbContextOptions<DemoDbContext> options, [CanBeNull] IDbDefaultSchema schema = null)
          : base(options)
       {
          Schema = schema?.Schema;

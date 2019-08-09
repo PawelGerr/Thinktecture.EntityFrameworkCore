@@ -5,12 +5,12 @@ using Thinktecture.EntityFrameworkCore;
 
 namespace Thinktecture.TestDatabaseContext
 {
-   public class MigrationWithSchema : Migration, IDbContextSchema
+   public class MigrationWithSchema : Migration, IDbDefaultSchema
    {
       /// <inheritdoc />
       public string Schema { get; }
 
-      public MigrationWithSchema([CanBeNull] IDbContextSchema schema)
+      public MigrationWithSchema([CanBeNull] IDbDefaultSchema schema)
       {
          Schema = schema?.Schema;
       }

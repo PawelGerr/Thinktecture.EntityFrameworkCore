@@ -3,7 +3,7 @@ namespace Thinktecture.EntityFrameworkCore
    /// <summary>
    /// Represents a DB schema-containing component.
    /// </summary>
-   public interface IDbContextSchema
+   public interface IDbDefaultSchema
    {
       /// <summary>
       /// Database schema.

@@ -30,7 +30,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
             throw new ArgumentNullException(nameof(context));
 
          var key = _factory.Create(context);
-         var schema = context is IDbContextSchema dbSchema ? dbSchema.Schema : null;
+         var schema = context is IDbDefaultSchema dbSchema ? dbSchema.Schema : null;
 
          // compiler implements Equals and GetHashCode they way we need
          return new { key, schema };

@@ -5,7 +5,7 @@ using Thinktecture.EntityFrameworkCore;
 
 namespace Thinktecture.TestDatabaseContext
 {
-   public class DbContextWithSchema : DbContext, IDbContextSchema
+   public class DbContextWithSchema : DbContext, IDbDefaultSchema
    {
       /// <inheritdoc />
       public string Schema { get; }
@@ -21,9 +21,16 @@ namespace Thinktecture.TestDatabaseContext
          Schema = schema;
       }
 
+      public static string TestDbFunction()
+      {
+         throw new NotSupportedException();
+      }
+
       protected override void OnModelCreating(ModelBuilder modelBuilder)
       {
          base.OnModelCreating(modelBuilder);
+
+         modelBuilder.HasDbFunction(() => TestDbFunction());
 
          ConfigureModel?.Invoke(modelBuilder);
       }

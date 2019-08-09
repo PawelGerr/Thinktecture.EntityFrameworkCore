@@ -92,7 +92,7 @@ namespace Thinktecture.EntityFrameworkCore.Testing
       /// <param name="schema">Database schema to use.</param>
       /// <returns>A new instance of the database context.</returns>
       [NotNull]
-      protected virtual T CreateContext([NotNull] DbContextOptions<T> options, [NotNull] IDbContextSchema schema)
+      protected virtual T CreateContext([NotNull] DbContextOptions<T> options, [NotNull] IDbDefaultSchema schema)
       {
          return (T)Activator.CreateInstance(typeof(T), options, schema);
       }
@@ -131,7 +131,7 @@ namespace Thinktecture.EntityFrameworkCore.Testing
             _optionsBuilder = CreateOptionsBuilder(_dbConnection);
          }
 
-         var ctx = CreateContext(_optionsBuilder.Options, new DbContextSchema(Schema));
+         var ctx = CreateContext(_optionsBuilder.Options, new DbDefaultSchema(Schema));
 
          if (isFirstCtx)
          {

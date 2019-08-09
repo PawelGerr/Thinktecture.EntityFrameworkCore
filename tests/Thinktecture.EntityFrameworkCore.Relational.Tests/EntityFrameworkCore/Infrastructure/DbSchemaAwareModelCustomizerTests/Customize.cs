@@ -1,3 +1,4 @@
+using System.Linq;
 using FluentAssertions;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
@@ -24,6 +25,24 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure.DbSchemaAwareModelCust
          Schema = "BA3C32B0-D7EC-422C-AE3B-3206E7D67735";
 
          DbContextWithSchema.Model.FindEntityType(typeof(TestEntity)).Relational().Schema.Should().Be(Schema);
+      }
+
+      [Fact]
+      public void Should_set_schema_if_query_type_schema_is_null()
+      {
+         Schema = "E2FBA720-E24C-46C9-B326-46C3C91707F5";
+
+         DbContextWithSchema.Model.FindEntityType(typeof(TestQuery)).Relational().Schema.Should().Be(Schema);
+      }
+
+      [Fact]
+      public void Should_set_schema_if_dbFunction_schema_is_null()
+      {
+         Schema = "E2FBA720-E24C-46C9-B326-46C3C91707F5";
+
+         DbContextWithSchema.Model.Relational().DbFunctions
+                            .Single(f => f.MethodInfo.Name == nameof(DbContextWithSchema.TestDbFunction))
+                            .Schema.Should().Be(Schema);
       }
 
       [Fact]

@@ -28,8 +28,8 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       {
          _modelCustomizer.Customize(modelBuilder, context);
 
-         if (context is IDbContextSchema schema && schema.Schema != null)
-            modelBuilder.SetSchema(schema.Schema, entityType => entityType.Schema == null);
+         if (context is IDbDefaultSchema schema && schema.Schema != null)
+            modelBuilder.HasDefaultSchema(schema.Schema);
       }
    }
 }

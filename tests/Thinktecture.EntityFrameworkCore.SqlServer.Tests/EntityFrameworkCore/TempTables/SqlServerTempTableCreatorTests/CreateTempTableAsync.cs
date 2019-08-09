@@ -51,7 +51,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
          {
             var builder = CreateOptionsBuilder(con);
 
-            using (var ctx = new TestDbContext(builder.Options, new DbContextSchema(Schema)))
+            using (var ctx = new TestDbContext(builder.Options, new DbDefaultSchema(Schema)))
             {
                ctx.Database.GetDbConnection().State.Should().Be(ConnectionState.Closed);
 
@@ -70,7 +70,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
          {
             var builder = CreateOptionsBuilder(con);
 
-            using (var ctx = new TestDbContext(builder.Options, new DbContextSchema(Schema)))
+            using (var ctx = new TestDbContext(builder.Options, new DbDefaultSchema(Schema)))
             {
                ctx.Database.GetDbConnection().State.Should().Be(ConnectionState.Closed);
 
@@ -92,7 +92,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
 
             ITempTableReference tempTableReference;
 
-            using (var ctx = new TestDbContext(builder.Options, new DbContextSchema(Schema)))
+            using (var ctx = new TestDbContext(builder.Options, new DbDefaultSchema(Schema)))
             {
                ctx.Database.GetDbConnection().State.Should().Be(ConnectionState.Closed);
 
@@ -112,7 +112,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
          {
             var builder = CreateOptionsBuilder(con);
 
-            using (var ctx = new TestDbContext(builder.Options, new DbContextSchema(Schema)))
+            using (var ctx = new TestDbContext(builder.Options, new DbDefaultSchema(Schema)))
             {
                ctx.Database.GetDbConnection().State.Should().Be(ConnectionState.Closed);
 
@@ -133,7 +133,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
          {
             var builder = CreateOptionsBuilder(con);
 
-            using (var ctx = new TestDbContext(builder.Options, new DbContextSchema(Schema)))
+            using (var ctx = new TestDbContext(builder.Options, new DbDefaultSchema(Schema)))
             {
                ctx.Database.GetDbConnection().State.Should().Be(ConnectionState.Closed);
 

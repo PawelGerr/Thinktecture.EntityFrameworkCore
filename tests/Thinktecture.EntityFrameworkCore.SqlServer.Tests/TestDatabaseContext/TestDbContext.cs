@@ -8,7 +8,7 @@ using Thinktecture.EntityFrameworkCore.ValueConversion;
 
 namespace Thinktecture.TestDatabaseContext
 {
-   public class TestDbContext : DbContext, IDbContextSchema
+   public class TestDbContext : DbContext, IDbDefaultSchema
    {
       /// <inheritdoc />
       public string Schema { get; }
@@ -20,7 +20,7 @@ namespace Thinktecture.TestDatabaseContext
 
       public Action<ModelBuilder> ConfigureModel { get; set; }
 
-      public TestDbContext([NotNull] DbContextOptions<TestDbContext> options, [CanBeNull] IDbContextSchema schema)
+      public TestDbContext([NotNull] DbContextOptions<TestDbContext> options, [CanBeNull] IDbDefaultSchema schema)
          : base(options)
       {
          Schema = schema?.Schema;

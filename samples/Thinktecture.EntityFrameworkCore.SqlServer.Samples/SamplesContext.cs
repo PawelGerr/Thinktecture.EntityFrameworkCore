@@ -61,7 +61,7 @@ namespace Thinktecture
                                                     .AddSchemaAwareComponents());
 
          if (schema != null)
-            services.AddSingleton<IDbContextSchema>(new DbContextSchema(schema));
+            services.AddSingleton<IDbDefaultSchema>(new DbDefaultSchema(schema));
 
          return services.BuildServiceProvider();
       }

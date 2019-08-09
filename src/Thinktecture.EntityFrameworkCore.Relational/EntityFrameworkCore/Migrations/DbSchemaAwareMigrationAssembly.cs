@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Migrations.Operations;
 namespace Thinktecture.EntityFrameworkCore.Migrations
 {
    /// <summary>
-   /// An implementation of <see cref="IMigrationsAssembly"/> that is able to instantiate migrations requiring an <see cref="IDbContextSchema"/>.
+   /// An implementation of <see cref="IMigrationsAssembly"/> that is able to instantiate migrations requiring an <see cref="IDbDefaultSchema"/>.
    /// </summary>
    public class DbSchemaAwareMigrationAssembly<TMigrationsAssembly> : IMigrationsAssembly
       where TMigrationsAssembly : class, IMigrationsAssembly
@@ -54,10 +54,10 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
          if (activeProvider == null)
             throw new ArgumentNullException(nameof(activeProvider));
 
-         var isSchemaAwareMigration = migrationClass.GetConstructor(new[] { typeof(IDbContextSchema) }) != null;
+         var isSchemaAwareMigration = migrationClass.GetConstructor(new[] { typeof(IDbDefaultSchema) }) != null;
 
          // is schema-aware context
-         if (_context is IDbContextSchema schema)
+         if (_context is IDbDefaultSchema schema)
          {
             var migration = isSchemaAwareMigration
                                ? CreateSchemaAwareMigration(migrationClass, activeProvider, schema)
@@ -72,17 +72,17 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
          if (!isSchemaAwareMigration)
             return _innerMigrationsAssembly.CreateMigration(migrationClass, activeProvider);
 
-         throw new ArgumentException($"For instantiation of schema-aware migration of type '{migrationClass.Name}' the database context of type '{_context.GetType().DisplayName()}' has to implement the interface '{nameof(IDbContextSchema)}'.", nameof(migrationClass));
+         throw new ArgumentException($"For instantiation of schema-aware migration of type '{migrationClass.Name}' the database context of type '{_context.GetType().DisplayName()}' has to implement the interface '{nameof(IDbDefaultSchema)}'.", nameof(migrationClass));
       }
 
-      private void SetSchema([NotNull] IReadOnlyList<MigrationOperation> operations, [CanBeNull] IDbContextSchema schema)
+      private void SetSchema([NotNull] IReadOnlyList<MigrationOperation> operations, [CanBeNull] IDbDefaultSchema schema)
       {
          if (schema?.Schema != null)
             _schemaSetter.SetSchema(operations, schema.Schema);
       }
 
       [NotNull]
-      private static Migration CreateSchemaAwareMigration([NotNull] TypeInfo migrationClass, [NotNull] string activeProvider, [NotNull] IDbContextSchema schema)
+      private static Migration CreateSchemaAwareMigration([NotNull] TypeInfo migrationClass, [NotNull] string activeProvider, [NotNull] IDbDefaultSchema schema)
       {
          var migration = (Migration)Activator.CreateInstance(migrationClass.AsType(), schema);
          migration.ActiveProvider = activeProvider;
