@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Moq;
 
-namespace Thinktecture.EntityFrameworkCore.Infrastructure.DbSchemaAwareModelCacheKeyFactoryTests
+namespace Thinktecture.EntityFrameworkCore.Infrastructure.DefaultSchemaRespectingModelCacheKeyFactoryTests
 {
    public class TestModelCacheKeyFactory : IModelCacheKeyFactory
    {

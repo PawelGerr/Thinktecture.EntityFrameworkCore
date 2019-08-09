@@ -12,7 +12,7 @@ namespace Thinktecture.TestDatabaseContext
       {
          var options = new DbContextOptionsBuilder<TestDbContext>()
                        .UseSqlServer(TestContext.Instance.ConnectionString)
-                       .AddSchemaAwareComponents()
+                       .AddSchemaRespectingComponents()
                        .Options;
 
          return new TestDbContext(options, null);

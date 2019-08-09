@@ -8,7 +8,7 @@ using Thinktecture.TestDatabaseContext;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Thinktecture.EntityFrameworkCore.Infrastructure.DbSchemaAwareModelCustomizerTests
+namespace Thinktecture.EntityFrameworkCore.Infrastructure.DefaultSchemaModelCustomizerTests
 {
    public class Customize : TestBase
    {
@@ -16,7 +16,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure.DbSchemaAwareModelCust
          : base(testOutputHelper)
       {
          OptionBuilder.AddOrUpdateExtension<RelationalDbContextOptionsExtension>(extension => extension.Add(ServiceDescriptor.Singleton(typeof(ModelCustomizer), typeof(ModelCustomizer))));
-         OptionBuilder.ReplaceService<IModelCustomizer, DbSchemaAwareModelCustomizer<ModelCustomizer>>();
+         OptionBuilder.ReplaceService<IModelCustomizer, DefaultSchemaModelCustomizer<ModelCustomizer>>();
       }
 
       [Fact]

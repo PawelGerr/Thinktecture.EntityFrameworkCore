@@ -13,7 +13,7 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
    /// <summary>
    /// An implementation of <see cref="IMigrationsAssembly"/> that is able to instantiate migrations requiring an <see cref="IDbDefaultSchema"/>.
    /// </summary>
-   public class DbSchemaAwareMigrationAssembly<TMigrationsAssembly> : IMigrationsAssembly
+   public class DefaultSchemaRespectingMigrationAssembly<TMigrationsAssembly> : IMigrationsAssembly
       where TMigrationsAssembly : class, IMigrationsAssembly
    {
       private readonly TMigrationsAssembly _innerMigrationsAssembly;
@@ -30,9 +30,9 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
       public Assembly Assembly => _innerMigrationsAssembly.Assembly;
 
       /// <inheritdoc />
-      public DbSchemaAwareMigrationAssembly([NotNull] TMigrationsAssembly migrationsAssembly,
-                                            [NotNull] IMigrationOperationSchemaSetter schemaSetter,
-                                            [NotNull] ICurrentDbContext currentContext)
+      public DefaultSchemaRespectingMigrationAssembly([NotNull] TMigrationsAssembly migrationsAssembly,
+                                                      [NotNull] IMigrationOperationSchemaSetter schemaSetter,
+                                                      [NotNull] ICurrentDbContext currentContext)
       {
          _innerMigrationsAssembly = migrationsAssembly ?? throw new ArgumentNullException(nameof(migrationsAssembly));
          _schemaSetter = schemaSetter ?? throw new ArgumentNullException(nameof(schemaSetter));
@@ -54,13 +54,13 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
          if (activeProvider == null)
             throw new ArgumentNullException(nameof(activeProvider));
 
-         var isSchemaAwareMigration = migrationClass.GetConstructor(new[] { typeof(IDbDefaultSchema) }) != null;
+         var hasDefaultSchema = migrationClass.GetConstructor(new[] { typeof(IDbDefaultSchema) }) != null;
 
          // is schema-aware context
          if (_context is IDbDefaultSchema schema)
          {
-            var migration = isSchemaAwareMigration
-                               ? CreateSchemaAwareMigration(migrationClass, activeProvider, schema)
+            var migration = hasDefaultSchema
+                               ? CreateSchemaRespectingMigration(migrationClass, activeProvider, schema)
                                : _innerMigrationsAssembly.CreateMigration(migrationClass, activeProvider);
 
             SetSchema(migration.UpOperations, schema);
@@ -69,7 +69,7 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
             return migration;
          }
 
-         if (!isSchemaAwareMigration)
+         if (!hasDefaultSchema)
             return _innerMigrationsAssembly.CreateMigration(migrationClass, activeProvider);
 
          throw new ArgumentException($"For instantiation of schema-aware migration of type '{migrationClass.Name}' the database context of type '{_context.GetType().DisplayName()}' has to implement the interface '{nameof(IDbDefaultSchema)}'.", nameof(migrationClass));
@@ -82,7 +82,7 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
       }
 
       [NotNull]
-      private static Migration CreateSchemaAwareMigration([NotNull] TypeInfo migrationClass, [NotNull] string activeProvider, [NotNull] IDbDefaultSchema schema)
+      private static Migration CreateSchemaRespectingMigration([NotNull] TypeInfo migrationClass, [NotNull] string activeProvider, [NotNull] IDbDefaultSchema schema)
       {
          var migration = (Migration)Activator.CreateInstance(migrationClass.AsType(), schema);
          migration.ActiveProvider = activeProvider;

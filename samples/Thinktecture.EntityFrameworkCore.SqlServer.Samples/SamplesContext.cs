@@ -58,7 +58,7 @@ namespace Thinktecture
                                                                                                  .UseThinktectureSqlServerMigrationsSqlGenerator();
                                                                                     })
                                                     .UseLoggerFactory(_loggerFactory)
-                                                    .AddSchemaAwareComponents());
+                                                    .AddSchemaRespectingComponents());
 
          if (schema != null)
             services.AddSingleton<IDbDefaultSchema>(new DbDefaultSchema(schema));

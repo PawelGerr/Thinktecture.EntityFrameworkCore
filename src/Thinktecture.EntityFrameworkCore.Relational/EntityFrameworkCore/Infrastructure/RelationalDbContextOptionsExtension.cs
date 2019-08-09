@@ -28,7 +28,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
 {{
    'ExpressionFragmentTranslatorPluginSupport'={_activateExpressionFragmentTranslatorPluginSupport},
    'Number of custom services'={_serviceDescriptors.Count},
-   'SchemaAwareComponents added'={AddSchemaAwareComponents},
+   'Default schema respecting components added'={AddSchemaRespectingComponents},
    'DescendingSupport'={AddDescendingSupport}
 }}";
 
@@ -40,7 +40,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       /// <summary>
       /// Adds components so Entity Framework Core can handle changes of the database schema at runtime.
       /// </summary>
-      public bool AddSchemaAwareComponents { get; set; }
+      public bool AddSchemaRespectingComponents { get; set; }
 
       /// <summary>
       /// Initializes new instance of <see cref="RelationalDbContextOptionsExtension"/>.
@@ -59,8 +59,8 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
          if (_activateExpressionFragmentTranslatorPluginSupport)
             RegisterCompositeExpressionFragmentTranslator(services);
 
-         if (AddSchemaAwareComponents)
-            RegisterSchemaAwareComponents(services);
+         if (AddSchemaRespectingComponents)
+            RegisterDefaultSchemaRespectingComponents(services);
 
          foreach (var descriptor in _serviceDescriptors)
          {
@@ -75,13 +75,13 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
          return EntityFrameworkRelationalServicesBuilder.RelationalServices[typeof(TService)].Lifetime;
       }
 
-      private static void RegisterSchemaAwareComponents([NotNull] IServiceCollection services)
+      private static void RegisterDefaultSchemaRespectingComponents([NotNull] IServiceCollection services)
       {
          services.AddSingleton<IMigrationOperationSchemaSetter, MigrationOperationSchemaSetter>();
 
-         RegisterDecorator<IModelCacheKeyFactory>(services, typeof(DbSchemaAwareModelCacheKeyFactory<>));
-         RegisterDecorator<IModelCustomizer>(services, typeof(DbSchemaAwareModelCustomizer<>));
-         RegisterDecorator<IMigrationsAssembly>(services, typeof(DbSchemaAwareMigrationAssembly<>));
+         RegisterDecorator<IModelCacheKeyFactory>(services, typeof(DefaultSchemaRespectingModelCacheKeyFactory<>));
+         RegisterDecorator<IModelCustomizer>(services, typeof(DefaultSchemaModelCustomizer<>));
+         RegisterDecorator<IMigrationsAssembly>(services, typeof(DefaultSchemaRespectingMigrationAssembly<>));
       }
 
       private static void RegisterCompositeExpressionFragmentTranslator([NotNull] IServiceCollection services)

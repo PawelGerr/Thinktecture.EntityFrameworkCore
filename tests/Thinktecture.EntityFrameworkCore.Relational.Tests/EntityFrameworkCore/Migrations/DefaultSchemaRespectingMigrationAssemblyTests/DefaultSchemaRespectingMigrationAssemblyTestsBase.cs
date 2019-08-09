@@ -4,20 +4,20 @@ using Microsoft.EntityFrameworkCore.Internal;
 using Moq;
 using Xunit.Abstractions;
 
-namespace Thinktecture.EntityFrameworkCore.Migrations.DbSchemaAwareMigrationAssemblyTests
+namespace Thinktecture.EntityFrameworkCore.Migrations.DefaultSchemaRespectingMigrationAssemblyTests
 {
-   public abstract class DbSchemaAwareMigrationAssemblyTestsBase : TestBase
+   public abstract class DefaultSchemaRespectingMigrationAssemblyTestsBase : TestBase
    {
       protected TestMigrationsAssembly InnerMigrationsAssembly { get; }
       protected Mock<ICurrentDbContext> CurrentCtxMock { get; }
       protected Mock<IMigrationOperationSchemaSetter> SchemaSetterMock { get; }
 
-      private DbSchemaAwareMigrationAssembly<TestMigrationsAssembly> _sut;
+      private DefaultSchemaRespectingMigrationAssembly<TestMigrationsAssembly> _sut;
 
       [NotNull]
-      protected DbSchemaAwareMigrationAssembly<TestMigrationsAssembly> SUT => _sut ?? (_sut = new DbSchemaAwareMigrationAssembly<TestMigrationsAssembly>(InnerMigrationsAssembly, SchemaSetterMock.Object, CurrentCtxMock.Object));
+      protected DefaultSchemaRespectingMigrationAssembly<TestMigrationsAssembly> SUT => _sut ?? (_sut = new DefaultSchemaRespectingMigrationAssembly<TestMigrationsAssembly>(InnerMigrationsAssembly, SchemaSetterMock.Object, CurrentCtxMock.Object));
 
-      protected DbSchemaAwareMigrationAssemblyTestsBase([NotNull] ITestOutputHelper testOutputHelper)
+      protected DefaultSchemaRespectingMigrationAssemblyTestsBase([NotNull] ITestOutputHelper testOutputHelper)
          : base(testOutputHelper)
       {
          InnerMigrationsAssembly = new TestMigrationsAssembly();

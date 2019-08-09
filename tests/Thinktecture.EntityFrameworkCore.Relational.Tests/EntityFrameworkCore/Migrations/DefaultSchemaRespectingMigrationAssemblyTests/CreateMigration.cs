@@ -11,9 +11,9 @@ using Thinktecture.TestDatabaseContext;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Thinktecture.EntityFrameworkCore.Migrations.DbSchemaAwareMigrationAssemblyTests
+namespace Thinktecture.EntityFrameworkCore.Migrations.DefaultSchemaRespectingMigrationAssemblyTests
 {
-   public class CreateMigration : DbSchemaAwareMigrationAssemblyTestsBase
+   public class CreateMigration : DefaultSchemaRespectingMigrationAssemblyTestsBase
    {
       public CreateMigration([NotNull] ITestOutputHelper testOutputHelper)
          : base(testOutputHelper)

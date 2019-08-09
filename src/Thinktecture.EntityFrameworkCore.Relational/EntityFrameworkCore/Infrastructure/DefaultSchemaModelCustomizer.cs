@@ -6,19 +6,19 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 namespace Thinktecture.EntityFrameworkCore.Infrastructure
 {
    /// <summary>
-   /// Set database schema on entities without schema.
+   /// Sets default database schema.
    /// </summary>
    // ReSharper disable once ClassNeverInstantiated.Global
-   public class DbSchemaAwareModelCustomizer<TModelCustomizer> : IModelCustomizer
+   public class DefaultSchemaModelCustomizer<TModelCustomizer> : IModelCustomizer
       where TModelCustomizer : class, IModelCustomizer
    {
       private readonly TModelCustomizer _modelCustomizer;
 
       /// <summary>
-      /// Initializes new instance <see cref="DbSchemaAwareModelCustomizer{TIModelCustomizer}"/>.
+      /// Initializes new instance <see cref="DefaultSchemaModelCustomizer{TModelCustomizer}"/>.
       /// </summary>
       /// <param name="modelCustomizer">Inner model customizer.</param>
-      public DbSchemaAwareModelCustomizer([NotNull] TModelCustomizer modelCustomizer)
+      public DefaultSchemaModelCustomizer([NotNull] TModelCustomizer modelCustomizer)
       {
          _modelCustomizer = modelCustomizer ?? throw new ArgumentNullException(nameof(modelCustomizer));
       }

@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
-using Thinktecture.EntityFrameworkCore.Infastructure;
+using Thinktecture.EntityFrameworkCore.Infrastructure;
 using Thinktecture.EntityFrameworkCore.Migrations;
 using IsolationLevel = System.Data.IsolationLevel;
 
@@ -200,7 +200,7 @@ namespace Thinktecture.EntityFrameworkCore.Testing
 
          var builder = new DbContextOptionsBuilder<T>()
                        .UseSqlServer(connection, ConfigureSqlServer)
-                       .AddSchemaAwareComponents();
+                       .AddSchemaRespectingComponents();
 
          if (DisableModelCache)
             builder.ReplaceService<IModelCacheKeyFactory, DisableCacheModelCacheKeyFactory>();

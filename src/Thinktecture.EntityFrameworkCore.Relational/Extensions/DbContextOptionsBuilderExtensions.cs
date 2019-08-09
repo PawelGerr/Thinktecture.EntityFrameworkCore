@@ -143,33 +143,33 @@ namespace Thinktecture
       }
 
       /// <summary>
-      /// Adds/replaces components that handle with database schema changes at runtime.
+      /// Adds/replaces components that respect with database schema changes at runtime.
       /// </summary>
       /// <param name="builder">Options builder.</param>
-      /// <param name="addSchemaAwareComponents">Indication whether to enable or disable the feature.</param>
+      /// <param name="addDefaultSchemaRespectingComponents">Indication whether to enable or disable the feature.</param>
       /// <returns>The provided <paramref name="builder"/>.</returns>
       /// <exception cref="ArgumentNullException"><paramref name="builder"/> is <c>null</c>.</exception>
       [NotNull]
-      public static DbContextOptionsBuilder<T> AddSchemaAwareComponents<T>([NotNull] this DbContextOptionsBuilder<T> builder,
-                                                                           bool addSchemaAwareComponents = true)
+      public static DbContextOptionsBuilder<T> AddSchemaRespectingComponents<T>([NotNull] this DbContextOptionsBuilder<T> builder,
+                                                                           bool addDefaultSchemaRespectingComponents = true)
          where T : DbContext
       {
-         ((DbContextOptionsBuilder)builder).AddSchemaAwareComponents(addSchemaAwareComponents);
+         ((DbContextOptionsBuilder)builder).AddSchemaRespectingComponents(addDefaultSchemaRespectingComponents);
          return builder;
       }
 
       /// <summary>
-      /// Adds/replaces components that handle with database schema changes at runtime.
+      /// Adds/replaces components that respect database schema changes at runtime.
       /// </summary>
       /// <param name="builder">Options builder.</param>
-      /// <param name="addSchemaAwareComponents">Indication whether to enable or disable the feature.</param>
+      /// <param name="addDefaultSchemaRespectingComponents">Indication whether to enable or disable the feature.</param>
       /// <returns>The provided <paramref name="builder"/>.</returns>
       /// <exception cref="ArgumentNullException"><paramref name="builder"/> is <c>null</c>.</exception>
       [NotNull]
-      public static DbContextOptionsBuilder AddSchemaAwareComponents([NotNull] this DbContextOptionsBuilder builder,
-                                                                     bool addSchemaAwareComponents = true)
+      public static DbContextOptionsBuilder AddSchemaRespectingComponents([NotNull] this DbContextOptionsBuilder builder,
+                                                                     bool addDefaultSchemaRespectingComponents = true)
       {
-         builder.AddOrUpdateExtension<RelationalDbContextOptionsExtension>(extension => extension.AddSchemaAwareComponents = addSchemaAwareComponents);
+         builder.AddOrUpdateExtension<RelationalDbContextOptionsExtension>(extension => extension.AddSchemaRespectingComponents = addDefaultSchemaRespectingComponents);
          return builder;
       }
 

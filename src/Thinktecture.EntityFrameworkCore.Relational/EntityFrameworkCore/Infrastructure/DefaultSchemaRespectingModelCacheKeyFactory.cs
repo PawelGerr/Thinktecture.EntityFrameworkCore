@@ -8,16 +8,16 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
    /// <summary>
    /// Cache key factory that takes the schema into account.
    /// </summary>
-   public class DbSchemaAwareModelCacheKeyFactory<TFactory> : IModelCacheKeyFactory
+   public class DefaultSchemaRespectingModelCacheKeyFactory<TFactory> : IModelCacheKeyFactory
       where TFactory : class, IModelCacheKeyFactory
    {
       private readonly TFactory _factory;
 
       /// <summary>
-      /// Initializes new instance of <see cref="DbSchemaAwareModelCacheKeyFactory{TFactory}"/>.
+      /// Initializes new instance of <see cref="DefaultSchemaRespectingModelCacheKeyFactory{TFactory}"/>.
       /// </summary>
       /// <param name="factory">Inner factory.</param>
-      public DbSchemaAwareModelCacheKeyFactory([NotNull] TFactory factory)
+      public DefaultSchemaRespectingModelCacheKeyFactory([NotNull] TFactory factory)
       {
          _factory = factory ?? throw new ArgumentNullException(nameof(factory));
       }

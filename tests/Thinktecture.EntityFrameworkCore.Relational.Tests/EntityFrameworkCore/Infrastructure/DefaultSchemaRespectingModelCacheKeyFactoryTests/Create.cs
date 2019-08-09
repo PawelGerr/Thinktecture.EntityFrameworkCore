@@ -4,15 +4,15 @@ using JetBrains.Annotations;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Thinktecture.EntityFrameworkCore.Infrastructure.DbSchemaAwareModelCacheKeyFactoryTests
+namespace Thinktecture.EntityFrameworkCore.Infrastructure.DefaultSchemaRespectingModelCacheKeyFactoryTests
 {
    public class Create : TestBase
    {
-      private DbSchemaAwareModelCacheKeyFactory<TestModelCacheKeyFactory> _sut;
+      private DefaultSchemaRespectingModelCacheKeyFactory<TestModelCacheKeyFactory> _sut;
 
       [NotNull]
       // ReSharper disable once InconsistentNaming
-      private DbSchemaAwareModelCacheKeyFactory<TestModelCacheKeyFactory> SUT => _sut ?? (_sut = new DbSchemaAwareModelCacheKeyFactory<TestModelCacheKeyFactory>(new TestModelCacheKeyFactory()));
+      private DefaultSchemaRespectingModelCacheKeyFactory<TestModelCacheKeyFactory> SUT => _sut ?? (_sut = new DefaultSchemaRespectingModelCacheKeyFactory<TestModelCacheKeyFactory>(new TestModelCacheKeyFactory()));
 
       public Create([NotNull] ITestOutputHelper testOutputHelper)
          : base(testOutputHelper)
