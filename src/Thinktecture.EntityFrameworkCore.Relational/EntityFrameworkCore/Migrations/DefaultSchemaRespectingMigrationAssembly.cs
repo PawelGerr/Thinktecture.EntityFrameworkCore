@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
@@ -7,6 +8,7 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Migrations.Operations;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Thinktecture.EntityFrameworkCore.Migrations
 {
@@ -18,6 +20,7 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
    {
       private readonly TMigrationsAssembly _innerMigrationsAssembly;
       private readonly IMigrationOperationSchemaSetter _schemaSetter;
+      private readonly IServiceProvider _serviceProvider;
       private readonly DbContext _context;
 
       /// <inheritdoc />
@@ -32,10 +35,12 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
       /// <inheritdoc />
       public DefaultSchemaRespectingMigrationAssembly([NotNull] TMigrationsAssembly migrationsAssembly,
                                                       [NotNull] IMigrationOperationSchemaSetter schemaSetter,
-                                                      [NotNull] ICurrentDbContext currentContext)
+                                                      [NotNull] ICurrentDbContext currentContext,
+                                                      [NotNull] IServiceProvider serviceProvider)
       {
          _innerMigrationsAssembly = migrationsAssembly ?? throw new ArgumentNullException(nameof(migrationsAssembly));
          _schemaSetter = schemaSetter ?? throw new ArgumentNullException(nameof(schemaSetter));
+         _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
          // ReSharper disable once ConstantConditionalAccessQualifier
          _context = currentContext?.Context ?? throw new ArgumentNullException(nameof(currentContext));
       }
@@ -47,6 +52,7 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
       }
 
       /// <inheritdoc />
+      [NotNull]
       public Migration CreateMigration(TypeInfo migrationClass, string activeProvider)
       {
          if (migrationClass == null)
@@ -54,14 +60,12 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
          if (activeProvider == null)
             throw new ArgumentNullException(nameof(activeProvider));
 
-         var hasDefaultSchema = migrationClass.GetConstructor(new[] { typeof(IDbDefaultSchema) }) != null;
+         var hasCtorWithDefaultSchema = migrationClass.GetConstructors().Any(c => c.GetParameters().Any(p => p.ParameterType == typeof(IDbDefaultSchema)));
 
-         // is schema-aware context
+         // has default schema
          if (_context is IDbDefaultSchema schema)
          {
-            var migration = hasDefaultSchema
-                               ? CreateSchemaRespectingMigration(migrationClass, activeProvider, schema)
-                               : _innerMigrationsAssembly.CreateMigration(migrationClass, activeProvider);
+            var migration = hasCtorWithDefaultSchema ? CreateInstance(migrationClass, schema, activeProvider) : CreateInstance(migrationClass, activeProvider);
 
             SetSchema(migration.UpOperations, schema);
             SetSchema(migration.DownOperations, schema);
@@ -69,25 +73,34 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
             return migration;
          }
 
-         if (!hasDefaultSchema)
-            return _innerMigrationsAssembly.CreateMigration(migrationClass, activeProvider);
+         if (!hasCtorWithDefaultSchema)
+            return CreateInstance(migrationClass, activeProvider);
 
-         throw new ArgumentException($"For instantiation of schema-aware migration of type '{migrationClass.Name}' the database context of type '{_context.GetType().DisplayName()}' has to implement the interface '{nameof(IDbDefaultSchema)}'.", nameof(migrationClass));
+         throw new ArgumentException($"For instantiation of default schema respecting migration of type '{migrationClass.Name}' the database context of type '{_context.GetType().DisplayName()}' has to implement the interface '{nameof(IDbDefaultSchema)}'.", nameof(migrationClass));
+      }
+
+      [NotNull]
+      private Migration CreateInstance([NotNull] TypeInfo migrationClass, IDbDefaultSchema schema, string activeProvider)
+      {
+         var migration = (Migration)ActivatorUtilities.CreateInstance(_serviceProvider, migrationClass.AsType(), schema);
+         migration.ActiveProvider = activeProvider;
+
+         return migration;
+      }
+
+      [NotNull]
+      private Migration CreateInstance([NotNull] TypeInfo migrationClass, string activeProvider)
+      {
+         var migration = (Migration)ActivatorUtilities.CreateInstance(_serviceProvider, migrationClass.AsType());
+         migration.ActiveProvider = activeProvider;
+
+         return migration;
       }
 
       private void SetSchema([NotNull] IReadOnlyList<MigrationOperation> operations, [CanBeNull] IDbDefaultSchema schema)
       {
          if (schema?.Schema != null)
             _schemaSetter.SetSchema(operations, schema.Schema);
-      }
-
-      [NotNull]
-      private static Migration CreateSchemaRespectingMigration([NotNull] TypeInfo migrationClass, [NotNull] string activeProvider, [NotNull] IDbDefaultSchema schema)
-      {
-         var migration = (Migration)Activator.CreateInstance(migrationClass.AsType(), schema);
-         migration.ActiveProvider = activeProvider;
-
-         return migration;
       }
    }
 }

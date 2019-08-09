@@ -67,23 +67,20 @@ namespace Thinktecture.EntityFrameworkCore.Migrations.DefaultSchemaRespectingMig
       public void Should_create_migration_having_schema_aware_ctx()
       {
          CurrentCtxMock.Setup(c => c.Context).Returns(CreateContextWithSchema("Schema1"));
-         var migration = new MigrationWithoutSchema();
-         InnerMigrationsAssembly.Mock.Setup(a => a.CreateMigration(It.IsAny<TypeInfo>(), It.IsAny<string>())).Returns(migration);
+         var migration = new MigrationWithoutSchema { ActiveProvider = "DummyProvider" };
 
          var createMigration = SUT.CreateMigration(typeof(MigrationWithoutSchema).GetTypeInfo(), "DummyProvider");
 
          migration.Should().NotBeNull();
          migration.Should().BeOfType<MigrationWithoutSchema>();
 
-         createMigration.Should().Be(migration);
-         InnerMigrationsAssembly.Mock.VerifyAll();
+         createMigration.Should().BeEquivalentTo(migration);
       }
 
       [Fact]
       public void Should_set_schema_of_migration_having_schema_aware_ctx()
       {
          CurrentCtxMock.Setup(c => c.Context).Returns(CreateContextWithSchema("Schema1"));
-         InnerMigrationsAssembly.Mock.Setup(a => a.CreateMigration(It.IsAny<TypeInfo>(), It.IsAny<string>())).Returns(new MigrationWithoutSchema());
          SchemaSetterMock.Setup(s => s.SetSchema(It.IsAny<IReadOnlyList<MigrationOperation>>(), It.IsAny<string>()))
                          .Callback<IReadOnlyList<MigrationOperation>, string>((ops, schema) => new MigrationOperationSchemaSetter().SetSchema(ops, schema));
 
@@ -98,7 +95,7 @@ namespace Thinktecture.EntityFrameworkCore.Migrations.DefaultSchemaRespectingMig
          CurrentCtxMock.Setup(c => c.Context).Returns(CreateContextWithoutSchema());
 
          SUT.Invoking(sut => sut.CreateMigration(typeof(MigrationWithSchema).GetTypeInfo(), "DummyProvider"))
-            .Should().Throw<ArgumentException>().WithMessage($@"For instantiation of schema-aware migration of type '{nameof(MigrationWithSchema)}' the database context of type '{typeof(DbContextWithoutSchema).FullName}' has to implement the interface '{nameof(IDbDefaultSchema)}'.
+            .Should().Throw<ArgumentException>().WithMessage($@"For instantiation of default schema respecting migration of type '{nameof(MigrationWithSchema)}' the database context of type '{typeof(DbContextWithoutSchema).FullName}' has to implement the interface '{nameof(IDbDefaultSchema)}'.
 Parameter name: migrationClass");
       }
 
@@ -106,20 +103,17 @@ Parameter name: migrationClass");
       public void Should_create_schema_unaware_migration_having_schema_unaware_ctx()
       {
          CurrentCtxMock.Setup(c => c.Context).Returns(CreateContextWithoutSchema());
-         var migration = new MigrationWithoutSchema();
-         InnerMigrationsAssembly.Mock.Setup(a => a.CreateMigration(It.IsAny<TypeInfo>(), It.IsAny<string>())).Returns(migration);
+         var migration = new MigrationWithoutSchema { ActiveProvider = "DummyProvider" };
 
          var createMigration = SUT.CreateMigration(typeof(MigrationWithoutSchema).GetTypeInfo(), "DummyProvider");
 
-         createMigration.Should().Be(migration);
-         InnerMigrationsAssembly.Mock.VerifyAll();
+         createMigration.Should().BeEquivalentTo(migration);
       }
 
       [Fact]
       public void Should_not_set_schema_on_schema_unaware_migration_having_schema_unaware_ctx()
       {
          CurrentCtxMock.Setup(c => c.Context).Returns(CreateContextWithoutSchema());
-         InnerMigrationsAssembly.Mock.Setup(a => a.CreateMigration(It.IsAny<TypeInfo>(), It.IsAny<string>())).Returns(new MigrationWithoutSchema());
 
          var migration = SUT.CreateMigration(typeof(MigrationWithoutSchema).GetTypeInfo(), "DummyProvider");
 
