@@ -19,6 +19,8 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
    /// </summary>
    public class RelationalDbContextOptionsExtension : IDbContextOptionsExtension
    {
+      private static readonly IRelationalDbContextComponentDecorator _defaultDecorator = new RelationalDbContextComponentDecorator();
+
       private readonly List<ServiceDescriptor> _serviceDescriptors;
       private bool _activateExpressionFragmentTranslatorPluginSupport;
 
@@ -41,6 +43,11 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       /// Adds components so Entity Framework Core can handle changes of the database schema at runtime.
       /// </summary>
       public bool AddSchemaRespectingComponents { get; set; }
+
+      /// <summary>
+      /// Decorates components.
+      /// </summary>
+      public IRelationalDbContextComponentDecorator ComponentDecorator { get; set; }
 
       /// <summary>
       /// Initializes new instance of <see cref="RelationalDbContextOptionsExtension"/>.
@@ -75,52 +82,21 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
          return EntityFrameworkRelationalServicesBuilder.RelationalServices[typeof(TService)].Lifetime;
       }
 
-      private static void RegisterDefaultSchemaRespectingComponents([NotNull] IServiceCollection services)
+      private void RegisterDefaultSchemaRespectingComponents([NotNull] IServiceCollection services)
       {
          services.AddSingleton<IMigrationOperationSchemaSetter, MigrationOperationSchemaSetter>();
+         var decorator = ComponentDecorator ?? _defaultDecorator;
 
-         RegisterDecorator<IModelCacheKeyFactory>(services, typeof(DefaultSchemaRespectingModelCacheKeyFactory<>));
-         RegisterDecorator<IModelCustomizer>(services, typeof(DefaultSchemaModelCustomizer<>));
-         RegisterDecorator<IMigrationsAssembly>(services, typeof(DefaultSchemaRespectingMigrationAssembly<>));
+         decorator.RegisterDecorator<IModelCacheKeyFactory>(services, typeof(DefaultSchemaRespectingModelCacheKeyFactory<>));
+         decorator.RegisterDecorator<IModelCustomizer>(services, typeof(DefaultSchemaModelCustomizer<>));
+         decorator.RegisterDecorator<IMigrationsAssembly>(services, typeof(DefaultSchemaRespectingMigrationAssembly<>));
       }
 
-      private static void RegisterCompositeExpressionFragmentTranslator([NotNull] IServiceCollection services)
+      private void RegisterCompositeExpressionFragmentTranslator([NotNull] IServiceCollection services)
       {
-         RegisterDecorator<IExpressionFragmentTranslator>(services, typeof(CompositeExpressionFragmentTranslator<>));
-      }
+         var decorator = ComponentDecorator ?? _defaultDecorator;
 
-      private static void RegisterDecorator<TService>([NotNull] IServiceCollection services, [NotNull] Type genericDecoratorTypeDefinition)
-      {
-         if (genericDecoratorTypeDefinition == null)
-            throw new ArgumentNullException(nameof(genericDecoratorTypeDefinition));
-
-         var (implementationType, lifetime, index) = GetLatestRegistration<TService>(services);
-
-         services.Add(ServiceDescriptor.Describe(implementationType, implementationType, lifetime)); // type to decorate
-
-         var decoratorType = genericDecoratorTypeDefinition.MakeGenericType(implementationType);
-         services[index] = ServiceDescriptor.Describe(typeof(TService), decoratorType, lifetime);
-      }
-
-      private static (Type implementationType, ServiceLifetime lifetime, int index) GetLatestRegistration<TService>([NotNull] IServiceCollection services)
-      {
-         for (var i = services.Count - 1; i >= 0; i--)
-         {
-            var service = services[i];
-
-            if (service.ServiceType == typeof(TService))
-            {
-               if (service.ImplementationType == null)
-                  throw new NotSupportedException($@"The registration of the Entity Framework Core service '{typeof(TService).FullName}' found but the service is not registered 'by type'.");
-
-               if (service.ImplementationType == typeof(TService))
-                  throw new NotSupportedException($@"The implementation type '{service.ImplementationType.DisplayName()}' cannot be the same as the service type '{typeof(TService).DisplayName()}'.");
-
-               return (service.ImplementationType, service.Lifetime, i);
-            }
-         }
-
-         throw new NotSupportedException($@"No registration of the Entity Framework Core service '{typeof(TService).FullName}' found. Please make sure the database provider is registered (via 'UseSqlServer' or 'UseSqlite') before calling extensions methods like '{nameof(DbContextOptionsBuilderExtensions.AddExpressionFragmentTranslator)}'.");
+         decorator.RegisterDecorator<IExpressionFragmentTranslator>(services, typeof(CompositeExpressionFragmentTranslator<>));
       }
 
       /// <inheritdoc />
