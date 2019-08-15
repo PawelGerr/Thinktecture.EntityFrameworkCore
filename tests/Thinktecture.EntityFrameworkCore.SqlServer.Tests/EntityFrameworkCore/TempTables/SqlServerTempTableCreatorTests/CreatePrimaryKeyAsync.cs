@@ -35,7 +35,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
       {
          ConfigureModel = builder => builder.ConfigureTempTable<int>();
 
-         var tempTableReference = await ArrangeDbContext.CreateTempTableAsync<TempTable<int>>();
+         var tempTableReference = await ArrangeDbContext.CreateTempTableAsync<TempTable<int>>(false);
 
          await _sut.CreatePrimaryKeyAsync(ActDbContext, ActDbContext.GetEntityType<TempTable<int>>(), tempTableReference.Name);
 
@@ -51,7 +51,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
       [Fact]
       public async Task Should_create_primary_key_for_entityType()
       {
-         var tempTableReference = await ArrangeDbContext.CreateTempTableAsync<TestEntity>();
+         var tempTableReference = await ArrangeDbContext.CreateTempTableAsync<TestEntity>(false);
 
          await _sut.CreatePrimaryKeyAsync(ActDbContext, ActDbContext.GetEntityType<TestEntity>(), tempTableReference.Name);
 

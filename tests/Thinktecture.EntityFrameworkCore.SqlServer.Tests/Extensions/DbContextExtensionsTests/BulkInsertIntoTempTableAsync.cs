@@ -68,7 +68,7 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
          tempTableQuery.Dispose();
 
          tempTableQuery.Awaiting(t => t.Query.ToListAsync())
-                       .Should().Throw<SqlException>().WithMessage("Invalid object name '#TestEntities'.");
+                       .Should().Throw<SqlException>().Where(ex => ex.Message.StartsWith("Invalid object name '#TestEntities", StringComparison.Ordinal));
       }
    }
 }

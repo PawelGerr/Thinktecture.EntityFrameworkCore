@@ -68,7 +68,7 @@ namespace Thinktecture
       /// <exception cref="ArgumentNullException"><paramref name="ctx"/> is <c>null</c>.</exception>
       /// <exception cref="ArgumentException">The provided type <typeparamref name="T"/> is not known by provided <paramref name="ctx"/>.</exception>
       [NotNull, ItemNotNull]
-      public static Task<ITempTableReference> CreateTempTableAsync<T>([NotNull] this DbContext ctx, bool makeTableNameUnique = false, CancellationToken cancellationToken = default)
+      public static Task<ITempTableReference> CreateTempTableAsync<T>([NotNull] this DbContext ctx, bool makeTableNameUnique = true, CancellationToken cancellationToken = default)
          where T : class
       {
          return ctx.CreateTempTableAsync(typeof(T), new TempTableCreationOptions { MakeTableNameUnique = makeTableNameUnique }, cancellationToken);
