@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>netcoreapp2.2</TargetFramework>
+        <TargetFrameworks>net461;netcoreapp2.2</TargetFrameworks>
         <NoWarn>$(NoWarn);CS1591;CA2000</NoWarn>
     </PropertyGroup>
 

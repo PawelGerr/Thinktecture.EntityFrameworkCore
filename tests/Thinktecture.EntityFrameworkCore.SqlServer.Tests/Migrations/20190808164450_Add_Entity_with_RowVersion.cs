@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace Thinktecture.Migrations
 {
+   // ReSharper disable once InconsistentNaming
    public partial class Add_Entity_with_RowVersion : Migration
    {
       protected override void Up(MigrationBuilder migrationBuilder)
