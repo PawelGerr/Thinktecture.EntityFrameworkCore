@@ -29,6 +29,7 @@ namespace Thinktecture.EntityFrameworkCore.Testing
 
       private readonly string _connectionString;
       private readonly bool _useSharedTables;
+      private readonly IMigrationExecutionStrategy _migrationExecutionStrategy;
 
       private string _schema;
       private T _arrangeDbContext;
@@ -70,19 +71,23 @@ namespace Thinktecture.EntityFrameworkCore.Testing
       protected bool UseThinktectureSqlServerMigrationsSqlGenerator { get; set; } = true;
 
       /// <summary>
-      /// Indication whether the EF model cache should be disabled or not. 
+      /// Indication whether the EF model cache should be disabled or not.
       /// </summary>
-      protected bool DisableModelCache { get; set; } = true;
+      protected bool DisableModelCache { get; set; }
 
       /// <summary>
       /// Initializes a new instance of <see cref="SqlServerDbContextIntegrationTests{T}"/>
       /// </summary>
       /// <param name="connectionString">Connection string to use.</param>
       /// <param name="useSharedTables">Indication whether new tables with a new schema should be created or not.</param>
-      protected SqlServerDbContextIntegrationTests([NotNull] string connectionString, bool useSharedTables)
+      /// <param name="migrationExecutionStrategy">Migrates the database.</param>
+      protected SqlServerDbContextIntegrationTests([NotNull] string connectionString,
+                                                   bool useSharedTables,
+                                                   [CanBeNull] IMigrationExecutionStrategy migrationExecutionStrategy = null)
       {
          _connectionString = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
          _useSharedTables = useSharedTables;
+         _migrationExecutionStrategy = migrationExecutionStrategy ?? MigrationExecutionStrategies.Migration;
       }
 
       /// <summary>
@@ -182,7 +187,7 @@ namespace Thinktecture.EntityFrameworkCore.Testing
          // concurrent execution is not supported by EF migrations
          lock (_locks.GetOrAdd(Schema, s => new object()))
          {
-            ctx.Database.Migrate();
+            _migrationExecutionStrategy.Migrate(ctx);
          }
       }
 
@@ -203,7 +208,7 @@ namespace Thinktecture.EntityFrameworkCore.Testing
                        .AddSchemaRespectingComponents();
 
          if (DisableModelCache)
-            builder.ReplaceService<IModelCacheKeyFactory, DisableCacheModelCacheKeyFactory>();
+            builder.ReplaceService<IModelCacheKeyFactory, CachePerContextModelCacheKeyFactory>();
 
          if (_loggerFactory != null)
             builder.UseLoggerFactory(_loggerFactory);
@@ -311,7 +316,7 @@ SELECT DISTINCT sql = 'ALTER TABLE ' + QUOTENAME(tc.TABLE_SCHEMA) + '.' +  QUOTE
 FROM
 	INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS rc
 	LEFT JOIN
-		INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc 
+		INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc
 		ON tc.CONSTRAINT_NAME = rc.CONSTRAINT_NAME
 WHERE
    tc.TABLE_SCHEMA = @schema
@@ -324,7 +329,7 @@ Exec sp_executesql @sql
 FETCH NEXT FROM @cursor INTO @sql
 END
 
-CLOSE @cursor 
+CLOSE @cursor
 DEALLOCATE @cursor
 
 -- Drop Views

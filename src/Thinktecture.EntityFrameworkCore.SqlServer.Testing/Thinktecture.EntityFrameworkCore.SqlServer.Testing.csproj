@@ -6,6 +6,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\Thinktecture.EntityFrameworkCore.SqlServer\Thinktecture.EntityFrameworkCore.SqlServer.csproj" />
+      <ProjectReference Include="..\Thinktecture.EntityFrameworkCore.Testing\Thinktecture.EntityFrameworkCore.Testing.csproj" />
     </ItemGroup>
 
 </Project>

@@ -27,6 +27,7 @@ namespace Thinktecture
       protected IntegrationTestsBase([NotNull] ITestOutputHelper testOutputHelper, bool useSharedTables)
          : base(TestContext.Instance.ConnectionString, useSharedTables)
       {
+         DisableModelCache = true;
          LoggerFactory = CreateLoggerFactory(testOutputHelper);
          UseLoggerFactory(LoggerFactory);
       }

@@ -18,6 +18,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\..\src\Thinktecture.EntityFrameworkCore.Relational\Thinktecture.EntityFrameworkCore.Relational.csproj" />
+      <ProjectReference Include="..\..\src\Thinktecture.EntityFrameworkCore.Testing\Thinktecture.EntityFrameworkCore.Testing.csproj" />
     </ItemGroup>
 
 </Project>

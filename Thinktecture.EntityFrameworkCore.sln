@@ -34,6 +34,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Thinktecture.EntityFramewor
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Thinktecture.EntityFrameworkCore.Sqlite.Samples", "samples\Thinktecture.EntityFrameworkCore.Sqlite.Samples\Thinktecture.EntityFrameworkCore.Sqlite.Samples.csproj", "{F273CC1E-A91E-4166-9810-2F56106512F8}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Thinktecture.EntityFrameworkCore.Sqlite.Tests", "tests\Thinktecture.EntityFrameworkCore.Sqlite.Tests\Thinktecture.EntityFrameworkCore.Sqlite.Tests.csproj", "{392C12CE-E21E-43C2-9718-964EAE5F2AA0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Thinktecture.EntityFrameworkCore.Testing", "src\Thinktecture.EntityFrameworkCore.Testing\Thinktecture.EntityFrameworkCore.Testing.csproj", "{BEF60B0C-F3D0-4FB3-B975-63AA20A5AC59}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Thinktecture.EntityFrameworkCore.Sqlite.Testing", "src\Thinktecture.EntityFrameworkCore.Sqlite.Testing\Thinktecture.EntityFrameworkCore.Sqlite.Testing.csproj", "{C553EA83-3793-4B28-99BB-66A148564746}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -49,6 +55,9 @@ Global
 		{5734E627-253B-4A5A-9AF9-937C9CFCE3D6} = {564262E5-94E5-4B32-8B0E-444D454DD35F}
 		{441D3FD0-CACF-45E5-A15B-A59FCACB94C5} = {564262E5-94E5-4B32-8B0E-444D454DD35F}
 		{F273CC1E-A91E-4166-9810-2F56106512F8} = {30567A9D-BDC2-49C1-B0B4-91D37FB5CCC1}
+		{392C12CE-E21E-43C2-9718-964EAE5F2AA0} = {FC71B400-ACDA-4BBE-BCC1-D1CFB4EDEFE3}
+		{BEF60B0C-F3D0-4FB3-B975-63AA20A5AC59} = {564262E5-94E5-4B32-8B0E-444D454DD35F}
+		{C553EA83-3793-4B28-99BB-66A148564746} = {564262E5-94E5-4B32-8B0E-444D454DD35F}
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{B43A04CC-FB33-4B06-AC9B-BBDE177EF0E4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
@@ -87,5 +96,17 @@ Global
 		{F273CC1E-A91E-4166-9810-2F56106512F8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F273CC1E-A91E-4166-9810-2F56106512F8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F273CC1E-A91E-4166-9810-2F56106512F8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{392C12CE-E21E-43C2-9718-964EAE5F2AA0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{392C12CE-E21E-43C2-9718-964EAE5F2AA0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{392C12CE-E21E-43C2-9718-964EAE5F2AA0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{392C12CE-E21E-43C2-9718-964EAE5F2AA0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BEF60B0C-F3D0-4FB3-B975-63AA20A5AC59}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BEF60B0C-F3D0-4FB3-B975-63AA20A5AC59}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BEF60B0C-F3D0-4FB3-B975-63AA20A5AC59}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BEF60B0C-F3D0-4FB3-B975-63AA20A5AC59}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C553EA83-3793-4B28-99BB-66A148564746}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C553EA83-3793-4B28-99BB-66A148564746}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C553EA83-3793-4B28-99BB-66A148564746}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C553EA83-3793-4B28-99BB-66A148564746}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
