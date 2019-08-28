@@ -22,6 +22,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
    /// <summary>
    /// Executes bulk operations.
    /// </summary>
+   // ReSharper disable once ClassNeverInstantiated.Global
    public class SqliteBulkOperationExecutor : IBulkOperationExecutor
    {
       private readonly ISqlGenerationHelper _sqlGenerationHelper;
@@ -104,7 +105,9 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
                using (var command = sqlCon.CreateCommand())
                {
                   var tableIdentifier = _sqlGenerationHelper.DelimitIdentifier(tableName, schema);
+#pragma warning disable CA2100
                   command.CommandText = GetInsertStatement(reader, tableIdentifier);
+#pragma warning restore CA2100
                   var parameters = CreateParameters(reader, command);
 
                   command.Prepare();
@@ -134,7 +137,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       }
 
       [NotNull]
-      private SqliteParameter[] CreateParameters(IEntityDataReader reader, SqliteCommand command)
+      private static SqliteParameter[] CreateParameters([NotNull] IEntityDataReader reader, SqliteCommand command)
       {
          var parameters = new SqliteParameter[reader.Properties.Count];
 
@@ -144,7 +147,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
             var index = reader.GetPropertyIndex(property);
 
             var parameter = command.CreateParameter();
-            parameter.ParameterName = $"${index}";
+            parameter.ParameterName = $"$p{index}";
             parameters[i] = parameter;
             command.Parameters.Add(parameter);
          }
@@ -179,7 +182,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
             if (i > 0)
                sb.Append(", ");
 
-            sb.Append("$").Append(index);
+            sb.Append("$p").Append(index);
          }
 
          sb.Append(");");

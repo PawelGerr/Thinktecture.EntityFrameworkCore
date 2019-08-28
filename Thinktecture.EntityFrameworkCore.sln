@@ -1,4 +1,4 @@
-
+﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{564262E5-94E5-4B32-8B0E-444D454DD35F}"
 EndProject
@@ -28,7 +28,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Thinktecture.EntityFramewor
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Thinktecture.EntityFrameworkCore.SqlServer.Samples", "samples\Thinktecture.EntityFrameworkCore.SqlServer.Samples\Thinktecture.EntityFrameworkCore.SqlServer.Samples.csproj", "{D2A55DD1-3642-4355-9E36-599238C80C14}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Thinktecture.EntityFrameworkCore.Sqlite", "src\Thinktecture.EntityFrameworkCore.Sqlite\Thinktecture.EntityFrameworkCore.Sqlite.csproj", "{5734E627-253B-4A5A-9AF9-937C9CFCE3D6}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Thinktecture.EntityFrameworkCore.BulkOperations", "src\Thinktecture.EntityFrameworkCore.BulkOperations\Thinktecture.EntityFrameworkCore.BulkOperations.csproj", "{441D3FD0-CACF-45E5-A15B-A59FCACB94C5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Thinktecture.EntityFrameworkCore.Sqlite.Samples", "samples\Thinktecture.EntityFrameworkCore.Sqlite.Samples\Thinktecture.EntityFrameworkCore.Sqlite.Samples.csproj", "{F273CC1E-A91E-4166-9810-2F56106512F8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -42,7 +46,9 @@ Global
 		{629B6159-5050-4510-A24A-51630CD46854} = {FC71B400-ACDA-4BBE-BCC1-D1CFB4EDEFE3}
 		{B6A31BA8-19A3-4563-BD4E-313C950A012F} = {FC71B400-ACDA-4BBE-BCC1-D1CFB4EDEFE3}
 		{D2A55DD1-3642-4355-9E36-599238C80C14} = {30567A9D-BDC2-49C1-B0B4-91D37FB5CCC1}
+		{5734E627-253B-4A5A-9AF9-937C9CFCE3D6} = {564262E5-94E5-4B32-8B0E-444D454DD35F}
 		{441D3FD0-CACF-45E5-A15B-A59FCACB94C5} = {564262E5-94E5-4B32-8B0E-444D454DD35F}
+		{F273CC1E-A91E-4166-9810-2F56106512F8} = {30567A9D-BDC2-49C1-B0B4-91D37FB5CCC1}
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{B43A04CC-FB33-4B06-AC9B-BBDE177EF0E4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
@@ -69,9 +75,17 @@ Global
 		{D2A55DD1-3642-4355-9E36-599238C80C14}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D2A55DD1-3642-4355-9E36-599238C80C14}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D2A55DD1-3642-4355-9E36-599238C80C14}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5734E627-253B-4A5A-9AF9-937C9CFCE3D6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5734E627-253B-4A5A-9AF9-937C9CFCE3D6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5734E627-253B-4A5A-9AF9-937C9CFCE3D6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5734E627-253B-4A5A-9AF9-937C9CFCE3D6}.Release|Any CPU.Build.0 = Release|Any CPU
 		{441D3FD0-CACF-45E5-A15B-A59FCACB94C5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{441D3FD0-CACF-45E5-A15B-A59FCACB94C5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{441D3FD0-CACF-45E5-A15B-A59FCACB94C5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{441D3FD0-CACF-45E5-A15B-A59FCACB94C5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F273CC1E-A91E-4166-9810-2F56106512F8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F273CC1E-A91E-4166-9810-2F56106512F8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F273CC1E-A91E-4166-9810-2F56106512F8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F273CC1E-A91E-4166-9810-2F56106512F8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
