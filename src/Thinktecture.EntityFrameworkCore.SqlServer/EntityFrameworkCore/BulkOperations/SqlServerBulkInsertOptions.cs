@@ -2,14 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
-using JetBrains.Annotations;
 
 namespace Thinktecture.EntityFrameworkCore.BulkOperations
 {
    /// <summary>
-   /// Options used by <see cref="DbContextExtensions.BulkInsertValuesIntoTempTableAsync{TColumn1}"/> and similar method overloads..
+   /// Options used by <see cref="SqlServerDbContextExtensions.BulkInsertAsync{T}"/>.
    /// </summary>
-   public class SqlBulkInsertOptions
+   public class SqlServerBulkInsertOptions : IBulkInsertOptions
    {
       /// <summary>
       /// Timeout used by <see cref="SqlBulkCopy"/>
@@ -32,11 +31,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       /// </summary>
       public bool EnableStreaming { get; set; } = true;
 
-      /// <summary>
-      /// Properties to insert.
-      /// If the <see cref="EntityMembersProvider"/> is null then all properties of the entity are going to be inserted.
-      /// </summary>
-      [CanBeNull]
+      /// <inheritdoc />
       public IEntityMembersProvider EntityMembersProvider { get; set; }
    }
 }

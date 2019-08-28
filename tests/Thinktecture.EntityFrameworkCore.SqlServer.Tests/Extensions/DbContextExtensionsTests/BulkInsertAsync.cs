@@ -60,7 +60,7 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
          var propertyWithBackingField = typeof(TestEntity).GetProperty(nameof(TestEntity.PropertyWithBackingField));
          var privateField = typeof(TestEntity).GetField("_privateField", BindingFlags.Instance | BindingFlags.NonPublic);
 
-         await ActDbContext.BulkInsertAsync(testEntities, new SqlBulkInsertOptions { EntityMembersProvider = new EntityMembersProvider(new MemberInfo[] { idProperty, countProperty, propertyWithBackingField, privateField }) });
+         await ActDbContext.BulkInsertAsync(testEntities, new SqlServerBulkInsertOptions { EntityMembersProvider = new EntityMembersProvider(new MemberInfo[] { idProperty, countProperty, propertyWithBackingField, privateField }) });
 
          var loadedEntities = await AssertDbContext.TestEntities.ToListAsync();
          loadedEntities.Should().HaveCount(1);

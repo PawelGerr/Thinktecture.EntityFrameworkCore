@@ -41,7 +41,7 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
       {
          ConfigureModel = builder => builder.ConfigureTempTable<int>();
 
-         var options = new SqlTempTableBulkInsertOptions { BulkInsertOptions = { EnableStreaming = false } };
+         var options = new SqlTempTableBulkInsertOptions { ServerBulkInsertOptions = { EnableStreaming = false } };
          var values = new List<int> { 1, 2 };
          var query = await ActDbContext.BulkInsertValuesIntoTempTableAsync(values, options).ConfigureAwait(false);
 

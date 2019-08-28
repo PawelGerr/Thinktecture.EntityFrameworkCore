@@ -37,7 +37,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
       {
          ConfigureModel = builder => builder.ConfigureTempTable<int>();
 
-         _sut.Awaiting(sut => sut.BulkInsertAsync(ActDbContext, ActDbContext.GetEntityType<TempTable<int>>(), new List<TempTable<int>>(), new SqlBulkInsertOptions()))
+         _sut.Awaiting(sut => sut.BulkInsertAsync(ActDbContext, ActDbContext.GetEntityType<TempTable<int>>(), new List<TempTable<int>>(), new SqlServerBulkInsertOptions()))
              .Should().Throw<InvalidOperationException>();
       }
 
@@ -53,7 +53,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
 
          var testEntities = new[] { testEntity };
 
-         await _sut.BulkInsertAsync(ActDbContext, ActDbContext.GetEntityType<TestEntity>(), testEntities, new SqlBulkInsertOptions());
+         await _sut.BulkInsertAsync(ActDbContext, ActDbContext.GetEntityType<TestEntity>(), testEntities, new SqlServerBulkInsertOptions());
 
          var loadedEntities = await AssertDbContext.TestEntities.ToListAsync();
          loadedEntities.Should().HaveCount(1)
@@ -74,7 +74,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
 
          var testEntities = new[] { testEntity };
 
-         await _sut.BulkInsertAsync(ActDbContext, ActDbContext.GetEntityType<TestEntity>(), testEntities, new SqlBulkInsertOptions());
+         await _sut.BulkInsertAsync(ActDbContext, ActDbContext.GetEntityType<TestEntity>(), testEntities, new SqlServerBulkInsertOptions());
 
          var loadedEntity = await AssertDbContext.TestEntities.FirstOrDefaultAsync();
          loadedEntity.GetPrivateField().Should().Be(3);
@@ -89,7 +89,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
 
          var testEntities = new[] { testEntity };
 
-         await _sut.BulkInsertAsync(ActDbContext, ActDbContext.GetEntityType<TestEntityWithShadowProperties>(), testEntities, new SqlBulkInsertOptions());
+         await _sut.BulkInsertAsync(ActDbContext, ActDbContext.GetEntityType<TestEntityWithShadowProperties>(), testEntities, new SqlServerBulkInsertOptions());
 
          var loadedEntity = await AssertDbContext.TestEntitiesWithShadowProperties.FirstOrDefaultAsync();
          AssertDbContext.Entry(loadedEntity).Property("ShadowStringProperty").CurrentValue.Should().Be("value");
@@ -102,7 +102,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
          var testEntity = new TestEntityWithAutoIncrement { Id = 42 };
          var testEntities = new[] { testEntity };
 
-         var options = new SqlBulkInsertOptions { SqlBulkCopyOptions = SqlBulkCopyOptions.KeepIdentity };
+         var options = new SqlServerBulkInsertOptions { SqlBulkCopyOptions = SqlBulkCopyOptions.KeepIdentity };
          await _sut.BulkInsertAsync(ActDbContext, ActDbContext.GetEntityType<TestEntityWithAutoIncrement>(), testEntities, options);
 
          var loadedEntity = await AssertDbContext.TestEntitiesWithAutoIncrement.FirstOrDefaultAsync();
@@ -115,7 +115,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
          var testEntity = new TestEntityWithAutoIncrement { Id = 42, Name = "value" };
          var testEntities = new[] { testEntity };
 
-         await _sut.BulkInsertAsync(ActDbContext, ActDbContext.GetEntityType<TestEntityWithAutoIncrement>(), testEntities, new SqlBulkInsertOptions());
+         await _sut.BulkInsertAsync(ActDbContext, ActDbContext.GetEntityType<TestEntityWithAutoIncrement>(), testEntities, new SqlServerBulkInsertOptions());
 
          var loadedEntity = await AssertDbContext.TestEntitiesWithAutoIncrement.FirstOrDefaultAsync();
          loadedEntity.Id.Should().NotBe(0);
@@ -128,7 +128,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
          var testEntity = new TestEntityWithRowVersion { Id = new Guid("EBC95620-4D80-4318-9B92-AD7528B2965C"), RowVersion = Int32.MaxValue };
          var testEntities = new[] { testEntity };
 
-         await _sut.BulkInsertAsync(ActDbContext, ActDbContext.GetEntityType<TestEntityWithRowVersion>(), testEntities, new SqlBulkInsertOptions());
+         await _sut.BulkInsertAsync(ActDbContext, ActDbContext.GetEntityType<TestEntityWithRowVersion>(), testEntities, new SqlServerBulkInsertOptions());
 
          var loadedEntity = await AssertDbContext.TestEntitiesWithRowVersion.FirstOrDefaultAsync();
          loadedEntity.Id.Should().Be(new Guid("EBC95620-4D80-4318-9B92-AD7528B2965C"));
@@ -155,7 +155,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
          await _sut.BulkInsertAsync(ActDbContext,
                                     ActDbContext.GetEntityType<TestEntity>(),
                                     testEntities,
-                                    new SqlBulkInsertOptions
+                                    new SqlServerBulkInsertOptions
                                     {
                                        EntityMembersProvider = new EntityMembersProvider(new MemberInfo[]
                                                                                          {

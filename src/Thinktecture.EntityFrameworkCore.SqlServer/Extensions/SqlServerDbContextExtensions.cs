@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -21,7 +20,7 @@ namespace Thinktecture
    /// <summary>
    /// Extension methods for <see cref="DbContext"/>.
    /// </summary>
-   public static class DbContextExtensions
+   public static class SqlServerDbContextExtensions
    {
       private static readonly RowVersionValueConverter _rowVersionConverter = new RowVersionValueConverter();
 
@@ -103,44 +102,18 @@ namespace Thinktecture
       /// </summary>
       /// <param name="ctx">Database context.</param>
       /// <param name="entities">Entities to insert.</param>
-      /// <param name="propertiesToInsert">Properties to insert.</param>
-      /// <param name="cancellationToken">Cancellation token.</param>
-      /// <typeparam name="T">Entity type.</typeparam>
-      /// <exception cref="ArgumentNullException"> <paramref name="ctx"/> or <paramref name="entities"/> is <c>null</c>.</exception>
-      [NotNull]
-      public static Task BulkInsertAsync<T>([NotNull] this DbContext ctx,
-                                            [NotNull] IEnumerable<T> entities,
-                                            [NotNull] Expression<Func<T, object>> propertiesToInsert,
-                                            CancellationToken cancellationToken = default)
-         where T : class
-      {
-         var options = new SqlBulkInsertOptions { EntityMembersProvider = EntityMembersProvider.From(propertiesToInsert) };
-         return BulkInsertAsync(ctx, entities, options, cancellationToken);
-      }
-
-      /// <summary>
-      /// Copies <paramref name="entities"/> into a table using <see cref="SqlBulkCopy"/>.
-      /// </summary>
-      /// <param name="ctx">Database context.</param>
-      /// <param name="entities">Entities to insert.</param>
       /// <param name="options">Options.</param>
       /// <param name="cancellationToken">Cancellation token.</param>
       /// <typeparam name="T">Entity type.</typeparam>
       /// <exception cref="ArgumentNullException"> <paramref name="ctx"/> or <paramref name="entities"/> is <c>null</c>.</exception>
       [NotNull]
-      public static async Task BulkInsertAsync<T>([NotNull] this DbContext ctx,
+      public static Task BulkInsertAsync<T>([NotNull] this DbContext ctx,
                                                   [NotNull] IEnumerable<T> entities,
-                                                  [CanBeNull] SqlBulkInsertOptions options = null,
+                                                  [CanBeNull] SqlServerBulkInsertOptions options,
                                                   CancellationToken cancellationToken = default)
          where T : class
       {
-         if (ctx == null)
-            throw new ArgumentNullException(nameof(ctx));
-
-         options = options ?? new SqlBulkInsertOptions();
-         var entityType = ctx.Model.GetEntityType(typeof(T));
-
-         await ctx.GetService<ISqlServerBulkOperationExecutor>().BulkInsertAsync(ctx, entityType, entities, options, cancellationToken).ConfigureAwait(false);
+         return ctx.BulkInsertAsync(entities,(IBulkInsertOptions) options, cancellationToken);
       }
 
       /// <summary>
@@ -220,7 +193,7 @@ namespace Thinktecture
          options = options ?? new SqlTempTableBulkInsertOptions();
          var entityType = ctx.Model.GetEntityType(typeof(T));
          var tempTableCreator = ctx.GetService<ITempTableCreator>();
-         var bulkInsertExecutor = ctx.GetService<ISqlServerBulkOperationExecutor>();
+         var bulkInsertExecutor = ctx.GetService<IBulkOperationExecutor>();
 
          var tempTableReference = await tempTableCreator.CreateTempTableAsync(ctx, entityType, options.TempTableCreationOptions, cancellationToken).ConfigureAwait(false);
 
@@ -229,7 +202,7 @@ namespace Thinktecture
             if (options.PrimaryKeyCreation == PrimaryKeyCreation.BeforeBulkInsert)
                await tempTableCreator.CreatePrimaryKeyAsync(ctx, entityType, tempTableReference.Name, !options.TempTableCreationOptions.MakeTableNameUnique, cancellationToken).ConfigureAwait(false);
 
-            await bulkInsertExecutor.BulkInsertAsync(ctx, entityType, entities, null, tempTableReference.Name, options.BulkInsertOptions, cancellationToken).ConfigureAwait(false);
+            await bulkInsertExecutor.BulkInsertAsync(ctx, entityType, entities, null, tempTableReference.Name, options.ServerBulkInsertOptions, cancellationToken).ConfigureAwait(false);
 
             if (options.PrimaryKeyCreation == PrimaryKeyCreation.AfterBulkInsert)
                await tempTableCreator.CreatePrimaryKeyAsync(ctx, entityType, tempTableReference.Name, !options.TempTableCreationOptions.MakeTableNameUnique, cancellationToken).ConfigureAwait(false);

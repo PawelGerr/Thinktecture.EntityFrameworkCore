@@ -4,20 +4,20 @@ using Thinktecture.EntityFrameworkCore.TempTables;
 namespace Thinktecture.EntityFrameworkCore.BulkOperations
 {
    /// <summary>
-   /// Options used by the <see cref="ISqlServerBulkOperationExecutor"/>.
+   /// Options used by the <see cref="IBulkOperationExecutor"/>.
    /// </summary>
    public class SqlTempTableBulkInsertOptions
    {
-      private SqlBulkInsertOptions _bulkInsertOptions;
+      private SqlServerBulkInsertOptions _serverBulkInsertOptions;
 
       /// <summary>
       /// Options for bulk insert.
       /// </summary>
       [NotNull]
-      public SqlBulkInsertOptions BulkInsertOptions
+      public SqlServerBulkInsertOptions ServerBulkInsertOptions
       {
-         get => _bulkInsertOptions ?? (_bulkInsertOptions = new SqlBulkInsertOptions());
-         set => _bulkInsertOptions = value;
+         get => _serverBulkInsertOptions ?? (_serverBulkInsertOptions = new SqlServerBulkInsertOptions());
+         set => _serverBulkInsertOptions = value;
       }
 
       private TempTableCreationOptions _tempTableCreationOptions;

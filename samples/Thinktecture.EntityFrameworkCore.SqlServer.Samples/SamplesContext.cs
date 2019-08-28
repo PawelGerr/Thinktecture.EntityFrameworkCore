@@ -57,6 +57,7 @@ namespace Thinktecture
                                                                                                  .AddTempTableSupport()
                                                                                                  .UseThinktectureSqlServerMigrationsSqlGenerator();
                                                                                     })
+                                                    .EnableSensitiveDataLogging()
                                                     .UseLoggerFactory(_loggerFactory)
                                                     .AddSchemaRespectingComponents());
 

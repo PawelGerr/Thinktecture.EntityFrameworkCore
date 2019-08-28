@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Data.SqlClient;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
@@ -8,6 +7,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
@@ -22,10 +22,10 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
    /// <summary>
    /// Executes bulk operations.
    /// </summary>
-   public class SqlServerBulkOperationExecutor : IBulkOperationExecutor
+   public class SqliteBulkOperationExecutor : IBulkOperationExecutor
    {
       private readonly ISqlGenerationHelper _sqlGenerationHelper;
-      private readonly IDiagnosticsLogger<SqlServerDbLoggerCategory.BulkOperation> _logger;
+      private readonly IDiagnosticsLogger<SqliteDbLoggerCategory.BulkOperation> _logger;
 
       private static class EventIds
       {
@@ -34,12 +34,12 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       }
 
       /// <summary>
-      /// Initializes new instance of <see cref="SqlServerBulkOperationExecutor"/>.
+      /// Initializes new instance of <see cref="SqliteBulkOperationExecutor"/>.
       /// </summary>
       /// <param name="sqlGenerationHelper">SQL generation helper.</param>
       /// <param name="logger"></param>
-      public SqlServerBulkOperationExecutor([NotNull] ISqlGenerationHelper sqlGenerationHelper,
-                                            [NotNull] IDiagnosticsLogger<SqlServerDbLoggerCategory.BulkOperation> logger)
+      public SqliteBulkOperationExecutor([NotNull] ISqlGenerationHelper sqlGenerationHelper,
+                                         [NotNull] IDiagnosticsLogger<SqliteDbLoggerCategory.BulkOperation> logger)
       {
          _sqlGenerationHelper = sqlGenerationHelper ?? throw new ArgumentNullException(nameof(sqlGenerationHelper));
          _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -48,7 +48,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       /// <inheritdoc />
       public IBulkInsertOptions CreateOptions()
       {
-         return new SqlServerBulkInsertOptions();
+         return new SqliteBulkInsertOptions();
       }
 
       /// <inheritdoc />
@@ -88,53 +88,43 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
          if (options == null)
             throw new ArgumentNullException(nameof(options));
 
-         if (!(options is SqlServerBulkInsertOptions sqlServerOptions))
-            throw new ArgumentException($"'{nameof(SqlServerBulkOperationExecutor)}' expected options of type '{nameof(SqlServerBulkInsertOptions)}' but found '{options.GetType().DisplayName()}'.", nameof(options));
+         if (!(options is SqliteBulkInsertOptions sqliteOptions))
+            throw new ArgumentException($"'{nameof(SqliteBulkOperationExecutor)}' expected options of type '{nameof(SqliteBulkInsertOptions)}' but found '{options.GetType().DisplayName()}'.", nameof(options));
 
          var factory = ctx.GetService<IEntityDataReaderFactory>();
-         var properties = GetPropertiesForInsert(options.EntityMembersProvider, entityType);
-         var sqlCon = (SqlConnection)ctx.Database.GetDbConnection();
-         var sqlTx = (SqlTransaction)ctx.Database.CurrentTransaction?.GetDbTransaction();
+         var properties = GetPropertiesForInsert(sqliteOptions.EntityMembersProvider, entityType);
+         var sqlCon = (SqliteConnection)ctx.Database.GetDbConnection();
 
          using (var reader = factory.Create(ctx, entities, properties))
-         using (var bulkCopy = new SqlBulkCopy(sqlCon, sqlServerOptions.SqlBulkCopyOptions, sqlTx))
          {
-            bulkCopy.DestinationTableName = _sqlGenerationHelper.DelimitIdentifier(tableName, schema);
-            bulkCopy.EnableStreaming = sqlServerOptions.EnableStreaming;
-
-            if (sqlServerOptions.BulkCopyTimeout.HasValue)
-               bulkCopy.BulkCopyTimeout = (int)sqlServerOptions.BulkCopyTimeout.Value.TotalSeconds;
-
-            if (sqlServerOptions.BatchSize.HasValue)
-               bulkCopy.BatchSize = sqlServerOptions.BatchSize.Value;
-
-            var columnsSb = new StringBuilder();
-
-            for (var i = 0; i < reader.Properties.Count; i++)
-            {
-               var property = reader.Properties[i];
-               var column = property.Relational();
-               var index = reader.GetPropertyIndex(property);
-
-               bulkCopy.ColumnMappings.Add(new SqlBulkCopyColumnMapping(index, column.ColumnName));
-
-               if (columnsSb.Length > 0)
-                  columnsSb.Append(", ");
-
-               columnsSb.Append(column.ColumnName).Append(" ").Append(column.ColumnType);
-            }
-
             await ctx.Database.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
 
             try
             {
-               var columns = columnsSb.ToString();
-               LogInserting(sqlServerOptions.SqlBulkCopyOptions, bulkCopy, columns);
-               var stopwatch = Stopwatch.StartNew();
+               using (var command = sqlCon.CreateCommand())
+               {
+                  var tableIdentifier = _sqlGenerationHelper.DelimitIdentifier(tableName, schema);
+                  command.CommandText = GetInsertStatement(reader, tableIdentifier);
+                  var parameters = CreateParameters(reader, command);
 
-               await bulkCopy.WriteToServerAsync(reader, cancellationToken).ConfigureAwait(false);
+                  command.Prepare();
 
-               LogInserted(sqlServerOptions.SqlBulkCopyOptions, stopwatch.Elapsed, bulkCopy, columns);
+                  LogInserting(command.CommandText);
+                  var stopwatch = Stopwatch.StartNew();
+
+                  while (reader.Read())
+                  {
+                     for (var i = 0; i < reader.FieldCount; i++)
+                     {
+                        parameters[i].Value = reader.GetValue(i);
+                     }
+
+                     await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+                  }
+
+                  stopwatch.Stop();
+                  LogInserted(command.CommandText, stopwatch.Elapsed);
+               }
             }
             finally
             {
@@ -143,19 +133,70 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
          }
       }
 
-      private void LogInserting(SqlBulkCopyOptions options, [NotNull] SqlBulkCopy bulkCopy, string columns)
+      [NotNull]
+      private SqliteParameter[] CreateParameters(IEntityDataReader reader, SqliteCommand command)
       {
-         _logger.Logger.LogInformation(EventIds.Inserting, @"Executing DbCommand [SqlBulkCopyOptions={SqlBulkCopyOptions}, BulkCopyTimeout={BulkCopyTimeout}, BatchSize={BatchSize}, EnableStreaming={EnableStreaming}]
-INSERT BULK {table} ({columns})", options, bulkCopy.BulkCopyTimeout, bulkCopy.BatchSize, bulkCopy.EnableStreaming,
-                                       bulkCopy.DestinationTableName, columns);
+         var parameters = new SqliteParameter[reader.Properties.Count];
+
+         for (var i = 0; i < reader.Properties.Count; i++)
+         {
+            var property = reader.Properties[i];
+            var index = reader.GetPropertyIndex(property);
+
+            var parameter = command.CreateParameter();
+            parameter.ParameterName = $"${index}";
+            parameters[i] = parameter;
+            command.Parameters.Add(parameter);
+         }
+
+         return parameters;
       }
 
-      private void LogInserted(SqlBulkCopyOptions options, TimeSpan duration, [NotNull] SqlBulkCopy bulkCopy, string columns)
+      [NotNull]
+      private string GetInsertStatement([NotNull] IEntityDataReader reader,
+                                        [NotNull] string tableIdentifier)
       {
-         _logger.Logger.LogInformation(EventIds.Inserted, @"Executed DbCommand ({duration}ms) [SqlBulkCopyOptions={SqlBulkCopyOptions}, BulkCopyTimeout={BulkCopyTimeout}, BatchSize={BatchSize}, EnableStreaming={EnableStreaming}]
-INSERT BULK {table} ({columns})", (long)duration.TotalMilliseconds,
-                                       options, bulkCopy.BulkCopyTimeout, bulkCopy.BatchSize, bulkCopy.EnableStreaming,
-                                       bulkCopy.DestinationTableName, columns);
+         var sb = new StringBuilder();
+         sb.Append("INSERT INTO ").Append(tableIdentifier).Append("(");
+
+         for (var i = 0; i < reader.Properties.Count; i++)
+         {
+            var column = reader.Properties[i].Relational();
+
+            if (i > 0)
+               sb.Append(", ");
+
+            sb.Append(_sqlGenerationHelper.DelimitIdentifier(column.ColumnName));
+         }
+
+         sb.Append(") VALUES (");
+
+         for (var i = 0; i < reader.Properties.Count; i++)
+         {
+            var property = reader.Properties[i];
+            var index = reader.GetPropertyIndex(property);
+
+            if (i > 0)
+               sb.Append(", ");
+
+            sb.Append("$").Append(index);
+         }
+
+         sb.Append(");");
+
+         return sb.ToString();
+      }
+
+      private void LogInserting(string insertStatement)
+      {
+         _logger.Logger.LogInformation(EventIds.Inserting, @"Executing DbCommand
+{insertStatement}", insertStatement);
+      }
+
+      private void LogInserted(string insertStatement, TimeSpan duration)
+      {
+         _logger.Logger.LogInformation(EventIds.Inserted, @"Executed DbCommand ({duration}ms)
+{insertStatement}", (long)duration.TotalMilliseconds, insertStatement);
       }
 
       [NotNull]

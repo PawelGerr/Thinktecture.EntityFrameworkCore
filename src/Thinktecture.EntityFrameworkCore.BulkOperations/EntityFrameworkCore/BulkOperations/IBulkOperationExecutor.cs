@@ -10,8 +10,15 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
    /// <summary>
    /// Executes bulk operations.
    /// </summary>
-   public interface ISqlServerBulkOperationExecutor
+   public interface IBulkOperationExecutor
    {
+      /// <summary>
+      /// Creates options with default values.
+      /// </summary>
+      /// <returns>Options to use with <see cref="IBulkOperationExecutor"/>.</returns>
+      [NotNull]
+      IBulkInsertOptions CreateOptions();
+
       /// <summary>
       /// Performs bulk insert.
       /// </summary>
@@ -26,7 +33,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       Task BulkInsertAsync<T>([NotNull] DbContext ctx,
                               [NotNull] IEntityType entityType,
                               [NotNull] IEnumerable<T> entities,
-                              [NotNull] SqlBulkInsertOptions options,
+                              [NotNull] IBulkInsertOptions options,
                               CancellationToken cancellationToken = default)
          where T : class;
 
@@ -48,7 +55,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
                               [NotNull] IEnumerable<T> entities,
                               [CanBeNull] string schema,
                               [NotNull] string tableName,
-                              [NotNull] SqlBulkInsertOptions options,
+                              [NotNull] IBulkInsertOptions options,
                               CancellationToken cancellationToken = default)
          where T : class;
    }
