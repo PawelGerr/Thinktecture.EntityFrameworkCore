@@ -24,7 +24,7 @@ namespace Thinktecture.Database
       }
 
       /// <inheritdoc />
-      protected override void OnModelCreating(ModelBuilder modelBuilder)
+      protected override void OnModelCreating([NotNull] ModelBuilder modelBuilder)
       {
          base.OnModelCreating(modelBuilder);
 

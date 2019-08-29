@@ -23,11 +23,12 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
          : base(testOutputHelper, true)
       {
          var sqlGenerationHelperMock = new Mock<ISqlGenerationHelper>();
+         var relationalTypeMappingSourceMock = new Mock<IRelationalTypeMappingSource>();
          sqlGenerationHelperMock.Setup(h => h.DelimitIdentifier(It.IsAny<string>(), It.IsAny<string>()))
-                                 .Returns<string, string>((name, schema) => schema == null ? $"[{name}]" : $"[{schema}].[{name}]");
+                                .Returns<string, string>((name, schema) => schema == null ? $"[{name}]" : $"[{schema}].[{name}]");
          sqlGenerationHelperMock.Setup(h => h.DelimitIdentifier(It.IsAny<string>()))
-                                 .Returns<string>(name => $"[{name}]");
-         _sut = new SqlServerTempTableCreator(sqlGenerationHelperMock.Object);
+                                .Returns<string>(name => $"[{name}]");
+         _sut = new SqlServerTempTableCreator(sqlGenerationHelperMock.Object, relationalTypeMappingSourceMock.Object);
       }
 
       [Fact]

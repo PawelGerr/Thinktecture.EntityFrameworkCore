@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.SqlServer.Metadata.Internal;
 using Microsoft.EntityFrameworkCore.Storage;
 
 namespace Thinktecture.EntityFrameworkCore.TempTables
@@ -19,14 +20,18 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
    public class SqlServerTempTableCreator : ITempTableCreator
    {
       private readonly ISqlGenerationHelper _sqlGenerationHelper;
+      private readonly IRelationalTypeMappingSource _typeMappingSource;
 
       /// <summary>
       /// Initializes <see cref="SqlServerTempTableCreator"/>.
       /// </summary>
       /// <param name="sqlGenerationHelper">SQL generation helper.</param>
-      public SqlServerTempTableCreator([NotNull] ISqlGenerationHelper sqlGenerationHelper)
+      /// <param name="typeMappingSource">Type mappings.</param>
+      public SqlServerTempTableCreator([NotNull] ISqlGenerationHelper sqlGenerationHelper,
+                                       [NotNull] IRelationalTypeMappingSource typeMappingSource)
       {
          _sqlGenerationHelper = sqlGenerationHelper ?? throw new ArgumentNullException(nameof(sqlGenerationHelper));
+         _typeMappingSource = typeMappingSource ?? throw new ArgumentNullException(nameof(typeMappingSource));
       }
 
       /// <inheritdoc />
@@ -169,13 +174,31 @@ END
 
             sb.Append("\t\t")
               .Append(_sqlGenerationHelper.DelimitIdentifier(relational.ColumnName)).Append(" ")
-              .Append(relational.ColumnType).Append(" ")
-              .Append(property.IsNullable ? "NULL" : "NOT NULL");
+              .Append(relational.ColumnType)
+              .Append(property.IsNullable ? " NULL" : " NOT NULL");
+
+            if (IsIdentityColumn(property))
+               sb.Append(" IDENTITY");
+
+            if (!String.IsNullOrWhiteSpace(relational.DefaultValueSql))
+            {
+               sb.Append(" DEFAULT (").Append(relational.DefaultValueSql).Append(")");
+            }
+            else if (relational.DefaultValue != null && relational.DefaultValue != DBNull.Value)
+            {
+               var mappingForValue = _typeMappingSource.GetMappingForValue(relational.DefaultValue);
+               sb.Append(" DEFAULT ").Append(mappingForValue.GenerateSqlLiteral(relational.DefaultValue));
+            }
 
             isFirst = false;
          }
 
          return sb.ToString();
+      }
+
+      private static bool IsIdentityColumn([NotNull] IProperty property)
+      {
+         return SqlServerValueGenerationStrategy.IdentityColumn.Equals(property.FindAnnotation(SqlServerAnnotationNames.ValueGenerationStrategy)?.Value);
       }
    }
 }
