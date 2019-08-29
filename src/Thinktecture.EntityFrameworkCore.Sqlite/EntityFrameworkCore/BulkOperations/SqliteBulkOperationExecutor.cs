@@ -13,6 +13,7 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
 using Thinktecture.EntityFrameworkCore.Data;
@@ -108,7 +109,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
 #pragma warning disable CA2100
                   command.CommandText = GetInsertStatement(reader, tableIdentifier);
 #pragma warning restore CA2100
-                  var parameters = CreateParameters(reader, command);
+                  var parameterInfos = CreateParameters(reader, command);
 
                   command.Prepare();
 
@@ -119,7 +120,13 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
                   {
                      for (var i = 0; i < reader.FieldCount; i++)
                      {
-                        parameters[i].Value = reader.GetValue(i);
+                        var paramInfo = parameterInfos[i];
+                        var value = reader.GetValue(i);
+
+                        if (sqliteOptions.AutoIncrementBehavior == SqliteAutoIncrementBehavior.SetZeroToNull && paramInfo.IsAutoIncrementColumn && value.Equals(0))
+                           value = null;
+
+                        paramInfo.Parameter.Value = value ?? DBNull.Value;
                      }
 
                      await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
@@ -137,9 +144,9 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       }
 
       [NotNull]
-      private static SqliteParameter[] CreateParameters([NotNull] IEntityDataReader reader, SqliteCommand command)
+      private static ParameterInfo[] CreateParameters([NotNull] IEntityDataReader reader, SqliteCommand command)
       {
-         var parameters = new SqliteParameter[reader.Properties.Count];
+         var parameters = new ParameterInfo[reader.Properties.Count];
 
          for (var i = 0; i < reader.Properties.Count; i++)
          {
@@ -148,7 +155,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
 
             var parameter = command.CreateParameter();
             parameter.ParameterName = $"$p{index}";
-            parameters[i] = parameter;
+            parameters[i] = new ParameterInfo(parameter, IsAutoIncrement(property));
             command.Parameters.Add(parameter);
          }
 
@@ -188,6 +195,13 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
          sb.Append(");");
 
          return sb.ToString();
+      }
+
+      private static bool IsAutoIncrement([NotNull] IProperty property)
+      {
+         return property.ValueGenerated == ValueGenerated.OnAdd
+                && (property.ClrType == typeof(int) || property.ClrType == typeof(int?))
+                && property.FindMapping()?.Converter == null;
       }
 
       private void LogInserting(string insertStatement)
@@ -238,6 +252,18 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
          }
 
          return null;
+      }
+
+      private readonly struct ParameterInfo
+      {
+         public readonly SqliteParameter Parameter;
+         public readonly bool IsAutoIncrementColumn;
+
+         public ParameterInfo([NotNull] SqliteParameter parameter, bool isAutoIncrementColumn)
+         {
+            Parameter = parameter;
+            IsAutoIncrementColumn = isAutoIncrementColumn;
+         }
       }
    }
 }

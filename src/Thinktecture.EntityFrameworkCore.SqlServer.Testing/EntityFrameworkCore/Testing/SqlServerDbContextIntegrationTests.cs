@@ -71,6 +71,11 @@ namespace Thinktecture.EntityFrameworkCore.Testing
       protected bool DisableModelCache { get; set; }
 
       /// <summary>
+      /// Enables/disables sensitive data logging.
+      /// </summary>
+      public bool EnableSensitiveDataLogging { get; set; } = true;
+
+      /// <summary>
       /// Indication whether the <see cref="ThinktectureSqlServerMigrationsSqlGenerator"/> should be used or not.
       /// </summary>
       protected bool UseThinktectureSqlServerMigrationsSqlGenerator { get; set; } = true;
@@ -209,6 +214,9 @@ namespace Thinktecture.EntityFrameworkCore.Testing
 
          if (DisableModelCache)
             builder.ReplaceService<IModelCacheKeyFactory, CachePerContextModelCacheKeyFactory>();
+
+         if (EnableSensitiveDataLogging)
+            builder.EnableSensitiveDataLogging();
 
          if (_loggerFactory != null)
             builder.UseLoggerFactory(_loggerFactory);

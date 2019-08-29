@@ -56,6 +56,11 @@ namespace Thinktecture.EntityFrameworkCore.Testing
       protected bool DisableModelCache { get; set; }
 
       /// <summary>
+      /// Enables/disables sensitive data logging.
+      /// </summary>
+      public bool EnableSensitiveDataLogging { get; set; } = true;
+
+      /// <summary>
       /// Initializes a new instance of <see cref="SqliteDbContextIntegrationTests{T}"/>
       /// </summary>
       /// <param name="migrationExecutionStrategy">Migrates the database.</param>
@@ -164,6 +169,9 @@ namespace Thinktecture.EntityFrameworkCore.Testing
 
          if (DisableModelCache)
             builder.ReplaceService<IModelCacheKeyFactory, CachePerContextModelCacheKeyFactory>();
+
+         if (EnableSensitiveDataLogging)
+            builder.EnableSensitiveDataLogging();
 
          if (_loggerFactory != null)
             builder.UseLoggerFactory(_loggerFactory);

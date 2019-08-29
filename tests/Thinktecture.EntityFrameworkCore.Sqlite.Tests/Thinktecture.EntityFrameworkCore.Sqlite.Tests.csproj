@@ -2,7 +2,7 @@
 
     <PropertyGroup>
         <TargetFrameworks>netcoreapp2.2</TargetFrameworks>
-        <NoWarn>$(NoWarn);CS1591;CA2000</NoWarn>
+        <NoWarn>$(NoWarn);CS1591;CA2000;CA2007</NoWarn>
     </PropertyGroup>
 
     <ItemGroup>
@@ -26,6 +26,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\..\src\Thinktecture.EntityFrameworkCore.Sqlite.Testing\Thinktecture.EntityFrameworkCore.Sqlite.Testing.csproj" />
       <ProjectReference Include="..\..\src\Thinktecture.EntityFrameworkCore.Sqlite\Thinktecture.EntityFrameworkCore.Sqlite.csproj" />
     </ItemGroup>
 

@@ -10,5 +10,11 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
    {
       /// <inheritdoc />
       public IEntityMembersProvider EntityMembersProvider { get; set; }
+
+      /// <summary>
+      /// Behavior for auto-increment columns.
+      /// Default is <see cref="SqliteAutoIncrementBehavior.SetZeroToNull"/>
+      /// </summary>
+      public SqliteAutoIncrementBehavior AutoIncrementBehavior { get; set; } = SqliteAutoIncrementBehavior.SetZeroToNull;
    }
 }
