@@ -7,7 +7,7 @@ using Xunit.Abstractions;
 
 namespace Thinktecture.EntityFrameworkCore.Migrations.DefaultSchemaRespectingMigrationAssemblyTests
 {
-   public abstract class DefaultSchemaRespectingMigrationAssemblyTestsBase : TestBase
+   public abstract class DefaultSchemaRespectingMigrationAssemblyTestsBase : IntegrationTestsBase
    {
       private TestMigrationsAssembly InnerMigrationsAssembly { get; }
       protected Mock<ICurrentDbContext> CurrentCtxMock { get; }

@@ -17,6 +17,12 @@ namespace Thinktecture.EntityFrameworkCore.Testing
    public abstract class SqliteDbContextIntegrationTests<T> : IDisposable
       where T : DbContext
    {
+      // ReSharper disable once StaticMemberInGenericType because the lock are all for the same database context.
+      private static readonly object _lock = new object();
+
+      [NotNull]
+      private readonly string _connectionString;
+
       private readonly IMigrationExecutionStrategy _migrationExecutionStrategy;
 
       private T _arrangeDbContext;
@@ -54,7 +60,19 @@ namespace Thinktecture.EntityFrameworkCore.Testing
       /// </summary>
       /// <param name="migrationExecutionStrategy">Migrates the database.</param>
       protected SqliteDbContextIntegrationTests([CanBeNull] IMigrationExecutionStrategy migrationExecutionStrategy = null)
+         : this("DataSource=:memory:", migrationExecutionStrategy)
       {
+      }
+
+      /// <summary>
+      /// Initializes a new instance of <see cref="SqliteDbContextIntegrationTests{T}"/>
+      /// </summary>
+      /// <param name="connectionString">Connection string.</param>
+      /// <param name="migrationExecutionStrategy">Migrates the database.</param>
+      protected SqliteDbContextIntegrationTests([NotNull] string connectionString,
+                                                [CanBeNull] IMigrationExecutionStrategy migrationExecutionStrategy = null)
+      {
+         _connectionString = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
          _migrationExecutionStrategy = migrationExecutionStrategy ?? MigrationExecutionStrategies.Migration;
       }
 
@@ -86,7 +104,7 @@ namespace Thinktecture.EntityFrameworkCore.Testing
 
          if (isFirstCtx)
          {
-            _dbConnection = CreateConnection("DataSource=:memory:");
+            _dbConnection = CreateConnection(_connectionString);
             _optionsBuilder = CreateOptionsBuilder(_dbConnection);
          }
 
@@ -106,7 +124,10 @@ namespace Thinktecture.EntityFrameworkCore.Testing
       [NotNull]
       protected virtual DbConnection CreateConnection([NotNull] string connectionString)
       {
-         return new SqliteConnection(connectionString);
+         var connection = new SqliteConnection(connectionString);
+         connection.Open();
+
+         return connection;
       }
 
       /// <summary>
@@ -119,7 +140,11 @@ namespace Thinktecture.EntityFrameworkCore.Testing
          if (ctx == null)
             throw new ArgumentNullException(nameof(ctx));
 
-         _migrationExecutionStrategy.Migrate(ctx);
+         // concurrent execution is not supported by EF migrations
+         lock (_lock)
+         {
+            _migrationExecutionStrategy.Migrate(ctx);
+         }
       }
 
       /// <summary>
@@ -135,8 +160,7 @@ namespace Thinktecture.EntityFrameworkCore.Testing
             throw new ArgumentNullException(nameof(connection));
 
          var builder = new DbContextOptionsBuilder<T>()
-                       .UseSqlite(connection, ConfigureSqlite)
-                       .AddSchemaRespectingComponents();
+            .UseSqlite(connection, ConfigureSqlite);
 
          if (DisableModelCache)
             builder.ReplaceService<IModelCacheKeyFactory, CachePerContextModelCacheKeyFactory>();

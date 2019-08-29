@@ -66,14 +66,14 @@ namespace Thinktecture.EntityFrameworkCore.Testing
       protected T AssertDbContext => _assertDbContext ?? (_assertDbContext = CreateContext());
 
       /// <summary>
-      /// Indication whether the <see cref="ThinktectureSqlServerMigrationsSqlGenerator"/> should be used or not.
-      /// </summary>
-      protected bool UseThinktectureSqlServerMigrationsSqlGenerator { get; set; } = true;
-
-      /// <summary>
       /// Indication whether the EF model cache should be disabled or not.
       /// </summary>
       protected bool DisableModelCache { get; set; }
+
+      /// <summary>
+      /// Indication whether the <see cref="ThinktectureSqlServerMigrationsSqlGenerator"/> should be used or not.
+      /// </summary>
+      protected bool UseThinktectureSqlServerMigrationsSqlGenerator { get; set; } = true;
 
       /// <summary>
       /// Initializes a new instance of <see cref="SqlServerDbContextIntegrationTests{T}"/>

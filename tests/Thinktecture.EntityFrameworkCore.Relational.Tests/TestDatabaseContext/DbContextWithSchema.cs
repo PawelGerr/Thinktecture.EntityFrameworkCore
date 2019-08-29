@@ -26,7 +26,7 @@ namespace Thinktecture.TestDatabaseContext
          throw new NotSupportedException();
       }
 
-      protected override void OnModelCreating(ModelBuilder modelBuilder)
+      protected override void OnModelCreating([NotNull] ModelBuilder modelBuilder)
       {
          base.OnModelCreating(modelBuilder);
 

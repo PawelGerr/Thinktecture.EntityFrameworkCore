@@ -6,7 +6,7 @@ using Xunit.Abstractions;
 
 namespace Thinktecture.EntityFrameworkCore.Infrastructure.DefaultSchemaRespectingModelCacheKeyFactoryTests
 {
-   public class Create : TestBase
+   public class Create : IntegrationTestsBase
    {
       private DefaultSchemaRespectingModelCacheKeyFactory<TestModelCacheKeyFactory> _sut;
 
