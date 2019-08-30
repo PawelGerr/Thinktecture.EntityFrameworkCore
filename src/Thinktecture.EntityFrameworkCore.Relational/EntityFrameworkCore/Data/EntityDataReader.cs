@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Thinktecture.EntityFrameworkCore.Data
 {
@@ -58,24 +59,49 @@ namespace Thinktecture.EntityFrameworkCore.Data
          for (var i = 0; i < properties.Count; i++)
          {
             var property = properties[i];
+            var getter = BuildGetter(property);
+            var converter = property.GetValueConverter();
 
-            if (property.IsShadowProperty)
-            {
-               var shadowPropGetter = CreateShadowPropertyGetter(property);
-               lookup.Add(i, shadowPropGetter.GetValue);
-            }
-            else
-            {
-               var getter = property.GetGetter();
+            if (converter != null)
+               getter = UseConverter(getter, converter);
 
-               if (getter == null)
-                  throw new ArgumentException($"The property '{property.Name}' of entity '{property.DeclaringEntityType.Name}' has no property getter.");
-
-               lookup.Add(i, getter.GetClrValue);
-            }
+            lookup.Add(i, getter);
          }
 
          return lookup;
+      }
+
+      [NotNull]
+      private Func<T, object> BuildGetter([NotNull] IProperty property)
+      {
+         if (property.IsShadowProperty)
+         {
+            var shadowPropGetter = CreateShadowPropertyGetter(property);
+            return shadowPropGetter.GetValue;
+         }
+
+         var getter = property.GetGetter();
+
+         if (getter == null)
+            throw new ArgumentException($"The property '{property.Name}' of entity '{property.DeclaringEntityType.Name}' has no property getter.");
+
+         return getter.GetClrValue;
+      }
+
+      [NotNull]
+      private static Func<T, object> UseConverter([NotNull] Func<T, object> getter, [NotNull] ValueConverter converter)
+      {
+         var convert = converter.ConvertToProvider;
+
+         return e =>
+                {
+                   var value = getter(e);
+
+                   if (value != null)
+                      value = convert(value);
+
+                   return value;
+                };
       }
 
       [NotNull]

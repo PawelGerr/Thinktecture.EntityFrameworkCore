@@ -42,7 +42,8 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
                       {
                          Id = new Guid("577BFD36-21BC-4F9E-97B4-367B8F29B730"),
                          Name = "Name",
-                         Count = 42
+                         Count = 42,
+                         ConvertibleClass = new ConvertibleClass(43)
                       };
          ArrangeDbContext.TestEntities.Add(entity);
          await ArrangeDbContext.SaveChangesAsync();
@@ -57,7 +58,8 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
                                   {
                                      Id = new Guid("577BFD36-21BC-4F9E-97B4-367B8F29B730"),
                                      Name = "Name",
-                                     Count = 42
+                                     Count = 42,
+                                     ConvertibleClass = new ConvertibleClass(43)
                                   });
       }
 

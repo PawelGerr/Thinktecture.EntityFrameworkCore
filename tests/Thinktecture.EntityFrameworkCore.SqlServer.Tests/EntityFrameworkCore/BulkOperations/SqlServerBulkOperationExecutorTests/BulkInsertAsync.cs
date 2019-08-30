@@ -42,6 +42,19 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
       }
 
       [Fact]
+      public async Task Should_insert_column_with_converter()
+      {
+         var entities = new List<TestEntity> { new TestEntity { ConvertibleClass = new ConvertibleClass(42) } };
+
+         await _sut.BulkInsertAsync(ActDbContext, ActDbContext.GetEntityType<TestEntity>(), entities, new SqlServerBulkInsertOptions());
+
+         var entity = AssertDbContext.TestEntities.Single();
+
+         entity.ConvertibleClass.Should().NotBeNull();
+         entity.ConvertibleClass.Key.Should().Be(42);
+      }
+
+      [Fact]
       public async Task Should_insert_entities()
       {
          var testEntity = new TestEntity

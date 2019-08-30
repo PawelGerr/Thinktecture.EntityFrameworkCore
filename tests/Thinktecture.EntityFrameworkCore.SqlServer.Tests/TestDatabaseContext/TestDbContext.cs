@@ -31,6 +31,7 @@ namespace Thinktecture.TestDatabaseContext
          base.OnModelCreating(modelBuilder);
 
          modelBuilder.Entity<TestEntity>().Property("_privateField");
+         modelBuilder.Entity<TestEntity>().Property(e => e.ConvertibleClass).HasConversion(c => c.Key, k => new ConvertibleClass(k));
 
          modelBuilder.Entity<TestEntityWithAutoIncrement>().Property(e => e.Id).UseSqlServerIdentityColumn();
 
@@ -75,7 +76,7 @@ namespace Thinktecture.TestDatabaseContext
 
          return Query<InformationSchemaColumn>().FromSql($@"
 SELECT
-   * 
+   *
 FROM
    tempdb.INFORMATION_SCHEMA.COLUMNS WITH (NOLOCK)
 WHERE
@@ -92,7 +93,7 @@ WHERE
 
          return Query<InformationSchemaTableConstraint>().FromSql($@"
 SELECT
-   * 
+   *
 FROM
    tempdb.INFORMATION_SCHEMA.TABLE_CONSTRAINTS WITH (NOLOCK)
 WHERE
@@ -109,7 +110,7 @@ WHERE
 
          return Query<InformationSchemaConstraintColumn>().FromSql($@"
 SELECT
-   * 
+   *
 FROM
    tempdb.INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE WITH (NOLOCK)
 WHERE
@@ -139,9 +140,9 @@ WHERE
 
          return Query<InformationSchemaKeyColumn>().FromSql($@"
 SELECT
-   * 
+   *
 FROM
-   tempdb.INFORMATION_SCHEMA.KEY_COLUMN_USAGE WITH (NOLOCK) 
+   tempdb.INFORMATION_SCHEMA.KEY_COLUMN_USAGE WITH (NOLOCK)
 WHERE
    OBJECT_ID(TABLE_CATALOG + '..' + TABLE_NAME) = OBJECT_ID({"tempdb.." + tableName})");
       }
