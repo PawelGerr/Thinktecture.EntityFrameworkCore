@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -11,6 +12,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Thinktecture.EntityFrameworkCore.BulkOperations;
 using Thinktecture.EntityFrameworkCore.Data;
 using Thinktecture.EntityFrameworkCore.Migrations;
+using Thinktecture.EntityFrameworkCore.Query;
 using Thinktecture.EntityFrameworkCore.Query.ExpressionTranslators;
 using Thinktecture.EntityFrameworkCore.TempTables;
 
@@ -49,6 +51,18 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
          set => _addBulkOperationSupport = value;
       }
 
+      private bool _addCustomQueryableMethodTranslatingExpressionVisitorFactory;
+
+      /// <summary>
+      /// A custom factory is registered if <c>true</c>.
+      /// The factory is required to be able to translate custom methods like <see cref="QueryableExtensions.AsSubQuery{TEntity}"/>.
+      /// </summary>
+      public bool AddCustomQueryableMethodTranslatingExpressionVisitorFactory
+      {
+         get => _addCustomQueryableMethodTranslatingExpressionVisitorFactory || AddRowNumberSupport;
+         set => _addCustomQueryableMethodTranslatingExpressionVisitorFactory = value;
+      }
+
       /// <summary>
       /// Changes the implementation of <see cref="IMigrationsSqlGenerator"/> to <see cref="ThinktectureSqlServerMigrationsSqlGenerator"/>.
       /// </summary>
@@ -59,6 +73,9 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       {
          services.TryAddSingleton(this);
          services.Add<IMethodCallTranslatorPlugin, SqlServerMethodCallTranslatorPlugin>(GetLifetime<IMethodCallTranslatorPlugin>());
+
+         if (AddCustomQueryableMethodTranslatingExpressionVisitorFactory)
+            services.AddSingleton<IQueryableMethodTranslatingExpressionVisitorFactory, SqlServerQueryableMethodTranslatingExpressionVisitorFactory>();
 
          if (AddTempTableSupport)
             services.TryAdd<ITempTableCreator, SqlServerTempTableCreator>(GetLifetime<ISqlGenerationHelper>());

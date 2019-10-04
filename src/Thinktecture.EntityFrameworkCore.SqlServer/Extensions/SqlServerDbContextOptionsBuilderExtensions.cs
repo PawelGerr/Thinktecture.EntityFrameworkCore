@@ -14,6 +14,19 @@ namespace Thinktecture
    public static class SqlServerDbContextOptionsBuilderExtensions
    {
       /// <summary>
+      /// Adds custom factory required for translation of custom methods like <see cref="QueryableExtensions.AsSubQuery{TEntity}"/>.
+      /// </summary>
+      /// <param name="sqlServerOptionsBuilder">SQL Server options builder.</param>
+      /// <param name="addCustomQueryableMethodTranslatingExpressionVisitorFactory">Indication whether to add a custom factory.</param>
+      /// <returns>Provided <paramref name="sqlServerOptionsBuilder"/>.</returns>
+      [NotNull]
+      public static SqlServerDbContextOptionsBuilder AddCustomQueryableMethodTranslatingExpressionVisitorFactory([NotNull] this SqlServerDbContextOptionsBuilder sqlServerOptionsBuilder,
+                                                                                                                 bool addCustomQueryableMethodTranslatingExpressionVisitorFactory = true)
+      {
+         return AddOrUpdateExtensions(sqlServerOptionsBuilder, extension => extension.AddCustomQueryableMethodTranslatingExpressionVisitorFactory = addCustomQueryableMethodTranslatingExpressionVisitorFactory);
+      }
+
+      /// <summary>
       /// Adds support for "RowNumber" and "Descending".
       /// </summary>
       /// <param name="sqlServerOptionsBuilder">SQL Server options builder.</param>

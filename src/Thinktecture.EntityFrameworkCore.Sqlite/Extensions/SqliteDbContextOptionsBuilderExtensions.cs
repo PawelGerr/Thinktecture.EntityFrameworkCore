@@ -12,6 +12,19 @@ namespace Thinktecture
    public static class SqliteDbContextOptionsBuilderExtensions
    {
       /// <summary>
+      /// Adds custom factory required for translation of custom methods like <see cref="QueryableExtensions.AsSubQuery{TEntity}"/>.
+      /// </summary>
+      /// <param name="sqliteOptionsBuilder">SQLite options builder.</param>
+      /// <param name="addCustomQueryableMethodTranslatingExpressionVisitorFactory">Indication whether to add a custom factory.</param>
+      /// <returns>Provided <paramref name="sqliteOptionsBuilder"/>.</returns>
+      [NotNull]
+      public static SqliteDbContextOptionsBuilder AddCustomQueryableMethodTranslatingExpressionVisitorFactory([NotNull] this SqliteDbContextOptionsBuilder sqliteOptionsBuilder,
+                                                                                                              bool addCustomQueryableMethodTranslatingExpressionVisitorFactory = true)
+      {
+         return AddOrUpdateExtensions(sqliteOptionsBuilder, extension => extension.AddCustomQueryableMethodTranslatingExpressionVisitorFactory = addCustomQueryableMethodTranslatingExpressionVisitorFactory);
+      }
+
+      /// <summary>
       /// Adds support for bulk operations.
       /// </summary>
       /// <param name="sqliteOptionsBuilder">SQLite options builder.</param>

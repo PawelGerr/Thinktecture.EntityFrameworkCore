@@ -7,7 +7,7 @@ using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
-using RowNumberExpression = Thinktecture.EntityFrameworkCore.Query.Expressions.RowNumberExpression;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace Thinktecture.EntityFrameworkCore.Query.ExpressionTranslators
 {
@@ -36,17 +36,17 @@ namespace Thinktecture.EntityFrameworkCore.Query.ExpressionTranslators
       {
          if (method == _rowNumberMethod)
          {
-            var orderBy = ExtractParams(arguments[1]);
+            var orderBy = ExtractParams(arguments[1]).Select(e => new OrderingExpression(e, true)).ToList();
 
-            return new RowNumberExpression(_expressionFactory, Array.Empty<SqlExpression>(), orderBy);
+            return new RowNumberExpression(Array.Empty<SqlExpression>(), orderBy, RelationalTypeMapping.NullMapping);
          }
 
          if (method == _rowNumberWithPartitionByMethod)
          {
             var partitionBy = ExtractParams(arguments[1]);
-            var orderBy = ExtractParams(arguments[2]);
+            var orderBy = ExtractParams(arguments[2]).Select(e => new OrderingExpression(e, true)).ToList();
 
-            return new RowNumberExpression(_expressionFactory, partitionBy, orderBy);
+            return new RowNumberExpression(partitionBy, orderBy, RelationalTypeMapping.NullMapping);
          }
 
          return null;

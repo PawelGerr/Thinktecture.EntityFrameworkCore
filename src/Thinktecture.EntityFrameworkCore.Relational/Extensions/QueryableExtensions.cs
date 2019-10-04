@@ -15,8 +15,8 @@ namespace Thinktecture
    /// </summary>
    public static class QueryableExtensions
    {
-      private static readonly MethodInfo _asQueryableMethodInfo = typeof(Queryable).GetMethods(BindingFlags.Public | BindingFlags.Static)
-                                                                                   .Single(m => m.Name == nameof(Queryable.AsQueryable) && m.IsGenericMethod);
+      private static readonly MethodInfo _asSubQuery = typeof(QueryableExtensions).GetMethods(BindingFlags.Public | BindingFlags.Static)
+                                                                                  .Single(m => m.Name == nameof(AsSubQuery) && m.IsGenericMethod);
 
       /// <summary>
       /// Performs a LEFT JOIN.
@@ -84,7 +84,7 @@ namespace Thinktecture
             throw new ArgumentNullException(nameof(source));
 
          return source.Provider is EntityQueryProvider
-                   ? source.Provider.CreateQuery<TEntity>(Expression.Call(null, _asQueryableMethodInfo.MakeGenericMethod(typeof(TEntity)), source.Expression))
+                   ? source.Provider.CreateQuery<TEntity>(Expression.Call(null, _asSubQuery.MakeGenericMethod(typeof(TEntity)), source.Expression))
                    : source;
       }
    }

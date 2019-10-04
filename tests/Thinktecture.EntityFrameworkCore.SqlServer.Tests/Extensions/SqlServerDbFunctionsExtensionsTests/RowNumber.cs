@@ -188,7 +188,7 @@ namespace Thinktecture.Extensions.SqlServerDbFunctionsExtensionsTests
       }
 
       [Fact]
-      public void Should_throw_if_fetching_whole_entity()
+      public void Should_be_able_to_fetch_whole_entity()
       {
          ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("4883F7E0-FC8C-45FF-A579-DF351A3E79BF"), Name = "1" });
          ArrangeDbContext.SaveChanges();
@@ -200,10 +200,17 @@ namespace Thinktecture.Extensions.SqlServerDbFunctionsExtensionsTests
                                                  RowNumber = EF.Functions.RowNumber(e.Name)
                                               });
 
-         query.Invoking(q => q.ToList())
-              .Should()
-              .Throw<InvalidOperationException>()
-              .WithMessage("This method is for use with Entity Framework Core only and has no in-memory implementation.");
+         var entities = query.ToList();
+         entities.Should().HaveCount(1);
+         entities[0].Should().BeEquivalentTo(new
+                                             {
+                                                e = new TestEntity
+                                                    {
+                                                       Id = new Guid("4883F7E0-FC8C-45FF-A579-DF351A3E79BF"),
+                                                       Name = "1"
+                                                    },
+                                                RowNumber = 1
+                                             });
       }
 
       [Fact]

@@ -3,11 +3,13 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Thinktecture.EntityFrameworkCore.BulkOperations;
 using Thinktecture.EntityFrameworkCore.Data;
+using Thinktecture.EntityFrameworkCore.Query;
 
 namespace Thinktecture.EntityFrameworkCore.Infrastructure
 {
@@ -28,10 +30,19 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       /// </summary>
       public bool AddBulkOperationSupport { get; set; }
 
+      /// <summary>
+      /// A custom factory is registered if <c>true</c>.
+      /// The factory is required to be able to translate custom methods like <see cref="QueryableExtensions.AsSubQuery{TEntity}"/>.
+      /// </summary>
+      public bool AddCustomQueryableMethodTranslatingExpressionVisitorFactory { get; set; }
+
       /// <inheritdoc />
       public void ApplyServices(IServiceCollection services)
       {
          services.TryAddSingleton(this);
+
+         if (AddCustomQueryableMethodTranslatingExpressionVisitorFactory)
+            services.AddSingleton<IQueryableMethodTranslatingExpressionVisitorFactory, SqliteQueryableMethodTranslatingExpressionVisitorFactory>();
 
          if (AddBulkOperationSupport)
          {
