@@ -1,8 +1,8 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore.Internal;
 
 namespace Thinktecture.Linq.Expressions
@@ -10,6 +10,7 @@ namespace Thinktecture.Linq.Expressions
    /// <summary>
    /// Visitor for searching a <see cref="LambdaExpression"/>.
    /// </summary>
+   [SuppressMessage("ReSharper", "EF1001")]
    public class LambdaExpressionSearchingVisitor : ExpressionVisitor
    {
       /// <summary>
@@ -24,8 +25,8 @@ namespace Thinktecture.Linq.Expressions
       /// <returns>Found instance of <see cref="LambdaExpression"/>.</returns>
       /// <exception cref="ArgumentNullException">Provided <paramref name="expression"/> is null.</exception>
       /// <exception cref="ArgumentException">Provided <paramref name="expression"/> does not contain a lambda.</exception>
-      [NotNull]
-      public LambdaExpression GetLambda([NotNull] Expression expression)
+      [JetBrains.Annotations.NotNull]
+      public LambdaExpression GetLambda([JetBrains.Annotations.NotNull] Expression expression)
       {
          if (expression == null)
             throw new ArgumentNullException(nameof(expression));
@@ -101,8 +102,8 @@ namespace Thinktecture.Linq.Expressions
          return Expression.Constant(value);
       }
 
-      [NotNull]
-      private static object GetMemberValue([NotNull] MemberExpression memberAccess, object instance)
+      [JetBrains.Annotations.NotNull]
+      private static object GetMemberValue([JetBrains.Annotations.NotNull] MemberExpression memberAccess, object instance)
       {
          if (memberAccess == null)
             throw new ArgumentNullException(nameof(memberAccess));
@@ -122,8 +123,8 @@ namespace Thinktecture.Linq.Expressions
          }
       }
 
-      [NotNull]
-      private static Exception NotSupported([NotNull] Expression node)
+      [JetBrains.Annotations.NotNull]
+      private static Exception NotSupported([JetBrains.Annotations.NotNull] Expression node)
       {
          return new NotSupportedException($"Node of type '{node.GetType().DisplayName()}' is not supported.");
       }

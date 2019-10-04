@@ -1,8 +1,9 @@
 using System;
 using System.Collections.Concurrent;
 using System.Data.Common;
-using System.Data.SqlClient;
+using System.Globalization;
 using JetBrains.Annotations;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
@@ -115,9 +116,7 @@ namespace Thinktecture.EntityFrameworkCore.Testing
       [NotNull]
       protected virtual string DetermineSchema(bool useSharedTables)
       {
-#pragma warning disable CA1305
-         return useSharedTables ? "tests" : Guid.NewGuid().ToString("N");
-#pragma warning restore CA1305
+         return useSharedTables ? "tests" : Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture);
       }
 
       /// <summary>
@@ -297,8 +296,8 @@ namespace Thinktecture.EntityFrameworkCore.Testing
 
          var sqlHelper = ctx.GetService<ISqlGenerationHelper>();
 
-         ctx.Database.ExecuteSqlCommand(GetSqlForCleanup(), new SqlParameter("@schema", schema));
-         ctx.Database.ExecuteSqlCommand(GetDropSchemaSql(sqlHelper, schema));
+         ctx.Database.ExecuteSqlRaw(GetSqlForCleanup(), new SqlParameter("@schema", schema));
+         ctx.Database.ExecuteSqlRaw(GetDropSchemaSql(sqlHelper, schema));
       }
 
       [NotNull]

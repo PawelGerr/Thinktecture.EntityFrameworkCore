@@ -11,7 +11,7 @@ namespace Thinktecture.Collections
 {
    internal class AsyncEnumerable<T> : EnumerableQuery<T>, IAsyncEnumerable<T>, IQueryable<T>
    {
-      IQueryProvider IQueryable.Provider => new AsyncQueryProvider<T>(this);
+      IQueryProvider IQueryable.Provider => new AsyncQueryProvider(this);
 
       public AsyncEnumerable([NotNull] IEnumerable<T> enumerable)
          : base(enumerable)
@@ -28,12 +28,12 @@ namespace Thinktecture.Collections
       }
 
       [NotNull]
-      public IAsyncEnumerator<T> GetEnumerator()
+      public IAsyncEnumerator<T> GetAsyncEnumerator(CancellationToken cancellationToken)
       {
-         return new AsyncEnumerator<T>(this.AsEnumerable().GetEnumerator());
+         return new AsyncEnumerator(this.AsEnumerable().GetEnumerator());
       }
 
-      private class AsyncEnumerator<T> : IAsyncEnumerator<T>
+      private class AsyncEnumerator : IAsyncEnumerator<T>
       {
          private readonly IEnumerator<T> _enumerator;
 
@@ -44,20 +44,20 @@ namespace Thinktecture.Collections
             _enumerator = enumerator ?? throw new ArgumentNullException(nameof(enumerator));
          }
 
-         // ReSharper disable once TaskOfTMethodsWithoutAsyncSuffix
-         [NotNull]
-         public Task<bool> MoveNext(CancellationToken cancellationToken)
+         public ValueTask<bool> MoveNextAsync()
          {
-            return Task.FromResult(_enumerator.MoveNext());
+            return new ValueTask<bool>(_enumerator.MoveNext());
          }
 
-         public void Dispose()
+         public ValueTask DisposeAsync()
          {
             _enumerator.Dispose();
+
+            return default;
          }
       }
 
-      private class AsyncQueryProvider<TEntity> : IAsyncQueryProvider
+      private class AsyncQueryProvider : IAsyncQueryProvider
       {
          private readonly IQueryProvider _queryProvider;
 
@@ -69,7 +69,7 @@ namespace Thinktecture.Collections
          [NotNull]
          public IQueryable CreateQuery(Expression expression)
          {
-            return new AsyncEnumerable<TEntity>(expression);
+            return new AsyncEnumerable<T>(expression);
          }
 
          public IQueryable<TElement> CreateQuery<TElement>(Expression expression)
@@ -88,15 +88,9 @@ namespace Thinktecture.Collections
          }
 
          [NotNull]
-         public IAsyncEnumerable<TResult> ExecuteAsync<TResult>(Expression expression)
+         public TResult ExecuteAsync<TResult>(Expression expression, CancellationToken cancellationToken)
          {
-            return new AsyncEnumerable<TResult>(expression);
-         }
-
-         [NotNull]
-         public Task<TResult> ExecuteAsync<TResult>(Expression expression, CancellationToken cancellationToken)
-         {
-            return Task.FromResult(Execute<TResult>(expression));
+            return Execute<TResult>(expression);
          }
       }
    }

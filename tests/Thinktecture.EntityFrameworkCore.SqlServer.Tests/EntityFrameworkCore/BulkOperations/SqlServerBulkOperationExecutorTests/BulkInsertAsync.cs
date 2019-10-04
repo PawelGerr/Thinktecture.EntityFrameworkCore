@@ -1,11 +1,10 @@
 using System;
 using System.Collections.Generic;
-using System.Data.SqlClient;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using FluentAssertions;
-using JetBrains.Annotations;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Moq;
@@ -21,7 +20,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
    {
       private readonly SqlServerBulkOperationExecutor _sut;
 
-      public BulkInsertAsync([NotNull] ITestOutputHelper testOutputHelper)
+      public BulkInsertAsync([JetBrains.Annotations.NotNull] ITestOutputHelper testOutputHelper)
          : base(testOutputHelper, true)
       {
          var sqlGenerationHelperMock = new Mock<ISqlGenerationHelper>();
@@ -33,12 +32,13 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
       }
 
       [Fact]
-      public void Should_throw_when_inserting_queryType_without_providing_tablename()
+      public void Should_throw_when_inserting_temp_table_entities_without_creating_table_first()
       {
          ConfigureModel = builder => builder.ConfigureTempTable<int>();
 
-         _sut.Awaiting(sut => sut.BulkInsertAsync(ActDbContext, ActDbContext.GetEntityType<TempTable<int>>(), new List<TempTable<int>>(), new SqlServerBulkInsertOptions()))
-             .Should().Throw<InvalidOperationException>();
+         _sut.Invoking(sut => sut.BulkInsertAsync(ActDbContext, ActDbContext.GetEntityType<TempTable<int>>(), new List<TempTable<int>> { new TempTable<int>() }, new SqlServerBulkInsertOptions()))
+             .Should().Throw<InvalidOperationException>()
+             .WithMessage("Cannot access destination table '[*].[#TempTable<int>]'.");
       }
 
       [Fact]

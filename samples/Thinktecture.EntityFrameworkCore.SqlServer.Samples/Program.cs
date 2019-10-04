@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading.Tasks;
-using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Thinktecture.Database;
@@ -51,7 +50,7 @@ namespace Thinktecture
          Console.WriteLine("Exiting samples...");
       }
 
-      private static async Task DoRowNumberAsync([NotNull] DemoDbContext ctx)
+      private static async Task DoRowNumberAsync([JetBrains.Annotations.NotNull] DemoDbContext ctx)
       {
          var customers = await ctx.Customers
                                   .Select(c => new
@@ -77,7 +76,7 @@ namespace Thinktecture
          Console.WriteLine($"Latest orders: {String.Join(", ", latestOrders.Select(o => $"{{ CustomerId={o.CustomerId}, OrderId={o.Id} }}"))}");
       }
 
-      private static async Task DoLeftJoinAsync([NotNull] DemoDbContext ctx)
+      private static async Task DoLeftJoinAsync([JetBrains.Annotations.NotNull] DemoDbContext ctx)
       {
          var customerOrder = await ctx.Customers
                                       .LeftJoin(ctx.Orders,
@@ -89,7 +88,7 @@ namespace Thinktecture
          Console.WriteLine($"Found customers: {String.Join(", ", customerOrder.Select(co => $"{{ CustomerId={co.Customer.Id}, OrderId={co.Order?.Id} }}"))}");
       }
 
-      private static async Task DoBulkInsertIntoRealTableAsync([NotNull] DemoDbContext ctx)
+      private static async Task DoBulkInsertIntoRealTableAsync([JetBrains.Annotations.NotNull] DemoDbContext ctx)
       {
          var customersToInsert = new Customer { Id = Guid.NewGuid() };
          await ctx.BulkInsertAsync(new[] { customersToInsert });
@@ -99,7 +98,7 @@ namespace Thinktecture
          Console.WriteLine($"Inserted customers: {insertedCustomer.Id}");
       }
 
-      private static async Task DoBulkInsertSpecifiedColumnsIntoRealTableAsync([NotNull] DemoDbContext ctx)
+      private static async Task DoBulkInsertSpecifiedColumnsIntoRealTableAsync([JetBrains.Annotations.NotNull] DemoDbContext ctx)
       {
          var customersToInsert = new Customer { Id = Guid.NewGuid() };
 
@@ -115,7 +114,7 @@ namespace Thinktecture
          Console.WriteLine($"Inserted customers: {insertedCustomer.Id}");
       }
 
-      private static async Task DoBulkInsertIntoTempTableAsync([NotNull] DemoDbContext ctx, [NotNull] List<Guid> customerIds)
+      private static async Task DoBulkInsertIntoTempTableAsync([JetBrains.Annotations.NotNull] DemoDbContext ctx, [JetBrains.Annotations.NotNull] List<Guid> customerIds)
       {
          using (var tempTableQuery = await ctx.BulkInsertValuesIntoTempTableAsync(customerIds))
          {
@@ -124,7 +123,7 @@ namespace Thinktecture
          }
       }
 
-      private static async Task DoBulkInsertIntoTempTableAsync([NotNull] DemoDbContext ctx, [NotNull] List<(Guid customerId, Guid productId)> tuples)
+      private static async Task DoBulkInsertIntoTempTableAsync([JetBrains.Annotations.NotNull] DemoDbContext ctx, [JetBrains.Annotations.NotNull] List<(Guid customerId, Guid productId)> tuples)
       {
          using (var tempTableQuery = await ctx.BulkInsertValuesIntoTempTableAsync(tuples))
          {
@@ -138,7 +137,7 @@ namespace Thinktecture
          }
       }
 
-      private static async Task DoBulkInsertEntitiesIntoTempTableAsync([NotNull] DemoDbContext ctx)
+      private static async Task DoBulkInsertEntitiesIntoTempTableAsync([JetBrains.Annotations.NotNull] DemoDbContext ctx)
       {
          var customersToInsert = new[] { new Customer { Id = Guid.NewGuid() } };
 

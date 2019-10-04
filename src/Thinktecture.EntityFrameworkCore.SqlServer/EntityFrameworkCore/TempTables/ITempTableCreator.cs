@@ -31,9 +31,9 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
 
       /// <summary>
       /// Creates a primary key in a temp table with provided <paramref name="tableName"/>.
-      /// 
+      ///
       /// <remarks>
-      /// If the type <paramref name="entityType"/> is a query type then all columns are part of the primary key
+      /// If the type <paramref name="entityType"/> is a keyless type then all columns are part of the primary key
       /// because a query type has no "Primary Key" by definition.
       /// </remarks>
       /// </summary>

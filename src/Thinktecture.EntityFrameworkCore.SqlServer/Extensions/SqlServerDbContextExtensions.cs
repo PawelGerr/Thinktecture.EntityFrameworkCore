@@ -1,14 +1,13 @@
 using System;
 using System.Collections.Generic;
-using System.Data.SqlClient;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage;
 using Thinktecture.EntityFrameworkCore.BulkOperations;
 using Thinktecture.EntityFrameworkCore.TempTables;
@@ -207,7 +206,7 @@ namespace Thinktecture
             if (options.PrimaryKeyCreation == PrimaryKeyCreation.AfterBulkInsert)
                await tempTableCreator.CreatePrimaryKeyAsync(ctx, entityType, tempTableReference.Name, !options.TempTableCreationOptions.MakeTableNameUnique, cancellationToken).ConfigureAwait(false);
 
-            var query = ctx.GetTempTableQuery<T>(entityType, tempTableReference.Name);
+            var query = ctx.GetTempTableQuery<T>(tempTableReference.Name);
 
             return new TempTableQuery<T>(query, tempTableReference);
          }
@@ -218,18 +217,12 @@ namespace Thinktecture
          }
       }
 
-      private static IQueryable<T> GetTempTableQuery<T>([NotNull] this DbContext ctx, [NotNull] IEntityType entityType, [NotNull] string tableName)
+      private static IQueryable<T> GetTempTableQuery<T>([NotNull] this DbContext ctx, [NotNull] string tableName)
          where T : class
       {
          var sqlHelper = ctx.GetService<ISqlGenerationHelper>();
-         var sql = $"SELECT * FROM {sqlHelper.DelimitIdentifier(tableName)}";
 
-#pragma warning disable EF1000
-         if (entityType.IsQueryType)
-            return ctx.Query<T>().FromSql(sql);
-
-         return ctx.Set<T>().FromSql(sql);
-#pragma warning restore EF1000
+         return ctx.Set<T>().FromSqlRaw($"SELECT * FROM {sqlHelper.DelimitIdentifier(tableName)}");
       }
    }
 }

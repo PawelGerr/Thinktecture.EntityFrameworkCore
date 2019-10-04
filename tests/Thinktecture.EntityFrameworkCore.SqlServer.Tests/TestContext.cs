@@ -1,6 +1,5 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
-using JetBrains.Annotations;
 using Microsoft.Extensions.Configuration;
 
 [assembly: SuppressMessage("ReSharper", "CA1707")]
@@ -18,14 +17,14 @@ namespace Thinktecture
 
       public string ConnectionString => Configuration.GetConnectionString("default");
 
-      [NotNull]
+      [JetBrains.Annotations.NotNull]
       private static TestContext CreateTestConfiguration()
       {
          var config = GetConfiguration();
          return new TestContext(config);
       }
 
-      public TestContext([NotNull] IConfiguration config)
+      public TestContext([JetBrains.Annotations.NotNull] IConfiguration config)
       {
          Configuration = config ?? throw new ArgumentNullException(nameof(config));
       }

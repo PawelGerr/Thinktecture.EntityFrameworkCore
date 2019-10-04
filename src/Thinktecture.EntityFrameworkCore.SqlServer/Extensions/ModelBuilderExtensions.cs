@@ -1,6 +1,6 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -18,58 +18,77 @@ namespace Thinktecture
       /// Introduces and configures a temp table.
       /// </summary>
       /// <param name="modelBuilder">A model builder.</param>
+      /// <param name="isKeyless">Indication whether the entity has a key or not.</param>
       /// <typeparam name="T">Type of the temp table.</typeparam>
       /// <returns>An entity type builder for further configuration.</returns>
       /// <exception cref="ArgumentNullException"><paramref name="modelBuilder"/> is <c>null</c>.</exception>
-      [NotNull]
-      public static QueryTypeBuilder<T> ConfigureTempTableEntity<T>([NotNull] this ModelBuilder modelBuilder)
+      [JetBrains.Annotations.NotNull]
+      public static EntityTypeBuilder<T> ConfigureTempTableEntity<T>([JetBrains.Annotations.NotNull] this ModelBuilder modelBuilder, bool isKeyless = true)
          where T : class
       {
-         if (modelBuilder == null)
-            throw new ArgumentNullException(nameof(modelBuilder));
-
-         return modelBuilder.Query<T>().SetTempTableName();
+         return modelBuilder.Configure<T>(isKeyless);
       }
 
       /// <summary>
       /// Introduces and configures a temp table.
       /// </summary>
       /// <param name="modelBuilder">A model builder.</param>
+      /// <param name="isKeyless">Indication whether the entity has a key or not.</param>
       /// <typeparam name="TColumn1">Type of the column.</typeparam>
       /// <returns>An entity type builder for further configuration.</returns>
       /// <exception cref="ArgumentNullException"><paramref name="modelBuilder"/> is <c>null</c>.</exception>
-      [NotNull]
-      public static QueryTypeBuilder<TempTable<TColumn1>> ConfigureTempTable<TColumn1>([NotNull] this ModelBuilder modelBuilder)
+      [JetBrains.Annotations.NotNull]
+      public static EntityTypeBuilder<TempTable<TColumn1>> ConfigureTempTable<TColumn1>([JetBrains.Annotations.NotNull] this ModelBuilder modelBuilder, bool isKeyless = true)
       {
-         if (modelBuilder == null)
-            throw new ArgumentNullException(nameof(modelBuilder));
+         var builder = modelBuilder.Configure<TempTable<TColumn1>>(isKeyless);
 
-         return modelBuilder.Query<TempTable<TColumn1>>().SetTempTableName();
+         if (!isKeyless)
+            builder.Property(t => t.Column1).ValueGeneratedNever();
+
+         return builder;
       }
 
       /// <summary>
       /// Introduces and configures a temp table.
       /// </summary>
       /// <param name="modelBuilder">A model builder.</param>
+      /// <param name="isKeyless">Indication whether the entity has a key or not.</param>
       /// <typeparam name="TColumn1">Type of the column 1.</typeparam>
       /// <typeparam name="TColumn2">Type of the column 2.</typeparam>
       /// <returns>An entity type builder for further configuration.</returns>
       /// <exception cref="ArgumentNullException"><paramref name="modelBuilder"/> is <c>null</c>.</exception>
-      [NotNull]
-      public static QueryTypeBuilder<TempTable<TColumn1, TColumn2>> ConfigureTempTable<TColumn1, TColumn2>([NotNull] this ModelBuilder modelBuilder)
+      [JetBrains.Annotations.NotNull]
+      public static EntityTypeBuilder<TempTable<TColumn1, TColumn2>> ConfigureTempTable<TColumn1, TColumn2>([JetBrains.Annotations.NotNull] this ModelBuilder modelBuilder, bool isKeyless = true)
       {
          if (modelBuilder == null)
             throw new ArgumentNullException(nameof(modelBuilder));
 
-         return modelBuilder.Query<TempTable<TColumn1, TColumn2>>().SetTempTableName();
+         var builder = modelBuilder.Configure<TempTable<TColumn1, TColumn2>>(isKeyless);
+
+         if (!isKeyless)
+         {
+            builder.Property(t => t.Column1).ValueGeneratedNever();
+            builder.Property(t => t.Column2).ValueGeneratedNever();
+         }
+
+         return builder;
       }
 
-      private static QueryTypeBuilder<T> SetTempTableName<T>([NotNull] this QueryTypeBuilder<T> builder)
+      [SuppressMessage("ReSharper", "EF1001")]
+      private static EntityTypeBuilder<T> Configure<T>([JetBrains.Annotations.NotNull] this ModelBuilder modelBuilder, bool isKeyless)
          where T : class
       {
+         if (modelBuilder == null)
+            throw new ArgumentNullException(nameof(modelBuilder));
+
          var tableName = "#" + typeof(T).DisplayName(false);
 
-         return builder.ToView(tableName);
+         var builder = modelBuilder.Entity<T>().ToView(tableName);
+
+         if (isKeyless)
+            builder.HasNoKey();
+
+         return builder;
       }
    }
 }

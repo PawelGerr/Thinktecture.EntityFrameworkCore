@@ -26,7 +26,7 @@ namespace Thinktecture
       protected Action<ModelBuilder> ConfigureModel { get; set; }
       protected string Schema { get; set; }
 
-      protected IntegrationTestsBase([NotNull] ITestOutputHelper testOutputHelper,
+      protected IntegrationTestsBase([JetBrains.Annotations.NotNull] ITestOutputHelper testOutputHelper,
                                      [CanBeNull] IMigrationExecutionStrategy migrationExecutionStrategy = null)
          : base(migrationExecutionStrategy ?? MigrationExecutionStrategies.NoMigration)
       {
@@ -49,7 +49,7 @@ namespace Thinktecture
          return new DbContextWithSchema(options, Schema) { ConfigureModel = ConfigureModel };
       }
 
-      private ILoggerFactory CreateLoggerFactory([NotNull] ITestOutputHelper testOutputHelper)
+      private ILoggerFactory CreateLoggerFactory([JetBrains.Annotations.NotNull] ITestOutputHelper testOutputHelper)
       {
          if (testOutputHelper == null)
             throw new ArgumentNullException(nameof(testOutputHelper));
@@ -64,14 +64,14 @@ namespace Thinktecture
                                                                });
       }
 
-      [NotNull]
+      [JetBrains.Annotations.NotNull]
       protected DbContextWithSchema CreateContextWithSchema(string schema)
       {
          var options = new DbContextOptionsBuilder<DbContextWithSchema>().Options;
          return new DbContextWithSchema(options, schema) { ConfigureModel = ConfigureModel };
       }
 
-      [NotNull]
+      [JetBrains.Annotations.NotNull]
       protected DbContextWithoutSchema CreateContextWithoutSchema()
       {
          var options = new DbContextOptionsBuilder<DbContextWithoutSchema>().Options;

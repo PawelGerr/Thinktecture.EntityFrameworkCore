@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -13,7 +14,6 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.Metadata;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
 using Thinktecture.EntityFrameworkCore.Data;
@@ -24,6 +24,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
    /// Executes bulk operations.
    /// </summary>
    // ReSharper disable once ClassNeverInstantiated.Global
+   [SuppressMessage("ReSharper", "EF1001")]
    public class SqliteBulkOperationExecutor : IBulkOperationExecutor
    {
       private readonly ISqlGenerationHelper _sqlGenerationHelper;
@@ -40,8 +41,8 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       /// </summary>
       /// <param name="sqlGenerationHelper">SQL generation helper.</param>
       /// <param name="logger"></param>
-      public SqliteBulkOperationExecutor([NotNull] ISqlGenerationHelper sqlGenerationHelper,
-                                         [NotNull] IDiagnosticsLogger<SqliteDbLoggerCategory.BulkOperation> logger)
+      public SqliteBulkOperationExecutor([JetBrains.Annotations.NotNull] ISqlGenerationHelper sqlGenerationHelper,
+                                         [JetBrains.Annotations.NotNull] IDiagnosticsLogger<SqliteDbLoggerCategory.BulkOperation> logger)
       {
          _sqlGenerationHelper = sqlGenerationHelper ?? throw new ArgumentNullException(nameof(sqlGenerationHelper));
          _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -63,12 +64,8 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       {
          if (entityType == null)
             throw new ArgumentNullException(nameof(entityType));
-         if (entityType.IsQueryType)
-            throw new InvalidOperationException("The provided 'entities' are of 'Query Type' that do not have a table to insert into. Use the other overload that takes the 'tableName' as a parameter.");
 
-         var relational = entityType.Relational();
-
-         return BulkInsertAsync(ctx, entityType, entities, relational.Schema, relational.TableName, options, cancellationToken);
+         return BulkInsertAsync(ctx, entityType, entities, entityType.GetSchema(), entityType.GetTableName(), options, cancellationToken);
       }
 
       /// <inheritdoc />
@@ -111,7 +108,14 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
 #pragma warning restore CA2100
                   var parameterInfos = CreateParameters(reader, command);
 
-                  command.Prepare();
+                  try
+                  {
+                     command.Prepare();
+                  }
+                  catch (SqliteException ex)
+                  {
+                     throw new InvalidOperationException($"Cannot access destination table '{tableIdentifier}'.", ex);
+                  }
 
                   LogInserting(command.CommandText);
                   var stopwatch = Stopwatch.StartNew();
@@ -143,8 +147,8 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
          }
       }
 
-      [NotNull]
-      private static ParameterInfo[] CreateParameters([NotNull] IEntityDataReader reader, SqliteCommand command)
+      [JetBrains.Annotations.NotNull]
+      private static ParameterInfo[] CreateParameters([JetBrains.Annotations.NotNull] IEntityDataReader reader, SqliteCommand command)
       {
          var parameters = new ParameterInfo[reader.Properties.Count];
 
@@ -162,21 +166,21 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
          return parameters;
       }
 
-      [NotNull]
-      private string GetInsertStatement([NotNull] IEntityDataReader reader,
-                                        [NotNull] string tableIdentifier)
+      [JetBrains.Annotations.NotNull]
+      private string GetInsertStatement([JetBrains.Annotations.NotNull] IEntityDataReader reader,
+                                        [JetBrains.Annotations.NotNull] string tableIdentifier)
       {
          var sb = new StringBuilder();
          sb.Append("INSERT INTO ").Append(tableIdentifier).Append("(");
 
          for (var i = 0; i < reader.Properties.Count; i++)
          {
-            var column = reader.Properties[i].Relational();
+            var column = reader.Properties[i];
 
             if (i > 0)
                sb.Append(", ");
 
-            sb.Append(_sqlGenerationHelper.DelimitIdentifier(column.ColumnName));
+            sb.Append(_sqlGenerationHelper.DelimitIdentifier(column.GetColumnName()));
          }
 
          sb.Append(") VALUES (");
@@ -197,11 +201,11 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
          return sb.ToString();
       }
 
-      private static bool IsAutoIncrement([NotNull] IProperty property)
+      private static bool IsAutoIncrement([JetBrains.Annotations.NotNull] IProperty property)
       {
          return property.ValueGenerated == ValueGenerated.OnAdd
                 && (property.ClrType == typeof(int) || property.ClrType == typeof(int?))
-                && property.FindMapping()?.Converter == null;
+                && property.FindTypeMapping()?.Converter == null;
       }
 
       private void LogInserting(string insertStatement)
@@ -216,18 +220,18 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
 {insertStatement}", (long)duration.TotalMilliseconds, insertStatement);
       }
 
-      [NotNull]
+      [JetBrains.Annotations.NotNull]
       private static IReadOnlyList<IProperty> GetPropertiesForInsert([CanBeNull] IEntityMembersProvider entityMembersProvider,
-                                                                     [NotNull] IEntityType entityType)
+                                                                     [JetBrains.Annotations.NotNull] IEntityType entityType)
       {
          if (entityMembersProvider == null)
-            return entityType.GetProperties().Where(p => p.BeforeSaveBehavior != PropertySaveBehavior.Ignore).ToList();
+            return entityType.GetProperties().Where(p => p.GetBeforeSaveBehavior() != PropertySaveBehavior.Ignore).ToList();
 
          return ConvertToEntityProperties(entityMembersProvider.GetMembers(), entityType);
       }
 
-      [NotNull]
-      private static IReadOnlyList<IProperty> ConvertToEntityProperties([NotNull] IReadOnlyList<MemberInfo> memberInfos, [NotNull] IEntityType entityType)
+      [JetBrains.Annotations.NotNull]
+      private static IReadOnlyList<IProperty> ConvertToEntityProperties([JetBrains.Annotations.NotNull] IReadOnlyList<MemberInfo> memberInfos, [JetBrains.Annotations.NotNull] IEntityType entityType)
       {
          var properties = new IProperty[memberInfos.Count];
 
@@ -243,7 +247,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       }
 
       [CanBeNull]
-      private static IProperty FindProperty([NotNull] IEntityType entityType, [NotNull] MemberInfo memberInfo)
+      private static IProperty FindProperty([JetBrains.Annotations.NotNull] IEntityType entityType, [JetBrains.Annotations.NotNull] MemberInfo memberInfo)
       {
          foreach (var property in entityType.GetProperties())
          {
@@ -259,7 +263,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
          public readonly SqliteParameter Parameter;
          public readonly bool IsAutoIncrementColumn;
 
-         public ParameterInfo([NotNull] SqliteParameter parameter, bool isAutoIncrementColumn)
+         public ParameterInfo([JetBrains.Annotations.NotNull] SqliteParameter parameter, bool isAutoIncrementColumn)
          {
             Parameter = parameter;
             IsAutoIncrementColumn = isAutoIncrementColumn;

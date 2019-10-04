@@ -18,13 +18,13 @@ namespace Thinktecture.Extensions.ModelBuilderExtensionsTests
       }
 
       [Fact]
-      public void Should_introduce_query_type()
+      public void Should_introduce_keyless_temp_table()
       {
          ConfigureModel = builder => builder.ConfigureTempTable<int, int?>();
 
          var entityType = ActDbContext.Model.FindEntityType(typeof(TempTable<int, int?>));
          entityType.Should().NotBeNull();
-         entityType.IsQueryType.Should().BeTrue();
+         entityType.GetKeys().Should().BeEmpty();
       }
 
       [Fact]
@@ -75,7 +75,7 @@ namespace Thinktecture.Extensions.ModelBuilderExtensionsTests
          ConfigureModel = builder => builder.ConfigureTempTable<int, int?>();
 
          var entityType = ActDbContext.Model.FindEntityType(typeof(TempTable<int, int?>));
-         entityType.Relational().TableName.Should().Be("#TempTable<int, Nullable<int>>");
+         entityType.GetTableName().Should().Be("#TempTable<int, Nullable<int>>");
       }
 
       [Fact]
@@ -84,7 +84,7 @@ namespace Thinktecture.Extensions.ModelBuilderExtensionsTests
          ConfigureModel = builder => builder.ConfigureTempTable<string, string>();
 
          var entityType = ActDbContext.Model.FindEntityType(typeof(TempTable<string, string>));
-         entityType.Relational().TableName.Should().Be("#TempTable<string, string>");
+         entityType.GetTableName().Should().Be("#TempTable<string, string>");
       }
    }
 }

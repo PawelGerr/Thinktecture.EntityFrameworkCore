@@ -1,6 +1,6 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
-using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.Metadata;
@@ -25,8 +25,9 @@ namespace Thinktecture
       /// <paramref name="type"/> is <c>null</c>.
       /// </exception>
       /// <exception cref="ArgumentException">The provided type <paramref name="type"/> is not known by provided <paramref name="model"/>.</exception>
-      [NotNull]
-      public static IEntityType GetEntityType([NotNull] this IModel model, [NotNull] Type type)
+      [JetBrains.Annotations.NotNull]
+      [SuppressMessage("ReSharper", "EF1001")]
+      public static IEntityType GetEntityType([JetBrains.Annotations.NotNull] this IModel model, [JetBrains.Annotations.NotNull] Type type)
       {
          if (model == null)
             throw new ArgumentNullException(nameof(model));

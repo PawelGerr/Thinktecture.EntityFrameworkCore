@@ -4,7 +4,6 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using FluentAssertions;
-using JetBrains.Annotations;
 using Xunit;
 
 namespace Thinktecture.Linq.Expressions.RelinqBaseTypeMemberAccessVisitorTests
@@ -82,7 +81,7 @@ namespace Thinktecture.Linq.Expressions.RelinqBaseTypeMemberAccessVisitorTests
          memberExpression.Expression.Should().Be(expression.Parameters[0]);
       }
 
-      [NotNull]
+      [JetBrains.Annotations.NotNull]
       private static Expression<Func<T, string>> GetInterfaceImplementingExpression<T>()
          where T : IMyObject
       {

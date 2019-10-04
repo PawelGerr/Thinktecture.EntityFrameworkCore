@@ -1,20 +1,20 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFrameworks>netcoreapp2.2</TargetFrameworks>
-        <NoWarn>$(NoWarn);CS1591;CA2000;CA2007</NoWarn>
+        <TargetFrameworks>netcoreapp3.0</TargetFrameworks>
+        <NoWarn>$(NoWarn);CS1591;CA2000;CA2007;EF1001</NoWarn>
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="FluentAssertions" Version="5.7.0" />
-        <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="2.2.6" />
-        <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="2.2.4" />
-        <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="2.2.0" />
-        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.2.0" />
-        <PackageReference Include="Moq" Version="4.12.0" />
+        <PackageReference Include="FluentAssertions" Version="5.9.0" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="3.0.0" />
+        <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="3.0.0" />
+        <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="3.0.0" />
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.3.0" />
+        <PackageReference Include="Moq" Version="4.13.0" />
         <PackageReference Include="Serilog" Version="2.8.0" />
-        <PackageReference Include="Serilog.Extensions.Logging" Version="2.0.4" />
-        <PackageReference Include="Serilog.Sinks.XUnit" Version="1.0.8" />
+        <PackageReference Include="Serilog.Extensions.Logging" Version="3.0.1" />
+        <PackageReference Include="Serilog.Sinks.XUnit" Version="1.0.21" />
         <PackageReference Include="xunit" Version="2.4.1" />
         <PackageReference Include="xunit.runner.visualstudio" Version="2.4.1" />
     </ItemGroup>

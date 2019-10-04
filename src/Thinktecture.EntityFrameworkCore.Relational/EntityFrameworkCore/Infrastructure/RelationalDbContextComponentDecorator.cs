@@ -1,5 +1,5 @@
 using System;
-using JetBrains.Annotations;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -8,6 +8,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
    /// <summary>
    /// Decorates EF Core components.
    /// </summary>
+   [SuppressMessage("ReSharper", "EF1001")]
    public class RelationalDbContextComponentDecorator : IRelationalDbContextComponentDecorator
    {
       /// <inheritdoc />
@@ -24,7 +25,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
          services[index] = ServiceDescriptor.Describe(typeof(TService), decoratorType, lifetime);
       }
 
-      private static (Type implementationType, ServiceLifetime lifetime, int index) GetLatestRegistration<TService>([NotNull] IServiceCollection services)
+      private static (Type implementationType, ServiceLifetime lifetime, int index) GetLatestRegistration<TService>([JetBrains.Annotations.NotNull] IServiceCollection services)
       {
          for (var i = services.Count - 1; i >= 0; i--)
          {
@@ -42,7 +43,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
             }
          }
 
-         throw new NotSupportedException($@"No registration of the Entity Framework Core service '{typeof(TService).FullName}' found. Please make sure the database provider is registered (via 'UseSqlServer' or 'UseSqlite') before calling extensions methods like '{nameof(DbContextOptionsBuilderExtensions.AddExpressionFragmentTranslator)}'.");
+         throw new NotSupportedException($@"No registration of the Entity Framework Core service '{typeof(TService).FullName}' found. Please make sure the database provider is registered (via 'UseSqlServer' or 'UseSqlite').");
       }
    }
 }

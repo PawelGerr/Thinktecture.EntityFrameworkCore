@@ -21,19 +21,20 @@ namespace Thinktecture
       /// New collection with visited expressions if at least one visited expression has been changed; otherwise the provided <paramref name="expressions"/>.
       /// </returns>
       [NotNull]
-      public static IReadOnlyCollection<Expression> VisitExpressions([NotNull] this ExpressionVisitor visitor, [NotNull] IReadOnlyCollection<Expression> expressions)
+      public static IReadOnlyList<T> VisitExpressions<T>([NotNull] this ExpressionVisitor visitor, [NotNull] IReadOnlyList<T> expressions)
+         where T : Expression
       {
          if (visitor == null)
             throw new ArgumentNullException(nameof(visitor));
          if (expressions == null)
             throw new ArgumentNullException(nameof(expressions));
 
-         var visitedExpressions = new List<Expression>();
+         var visitedExpressions = new List<T>();
          var hasChanges = false;
 
          foreach (var expression in expressions)
          {
-            var visitedExpression = visitor.Visit(expression);
+            var visitedExpression = (T)visitor.Visit(expression);
             visitedExpressions.Add(visitedExpression);
             hasChanges |= !ReferenceEquals(visitedExpression, expression);
          }

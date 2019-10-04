@@ -1,8 +1,10 @@
 using System;
-using JetBrains.Annotations;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
-using Microsoft.EntityFrameworkCore.Query.ExpressionTranslators;
+using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -17,17 +19,14 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
    /// <summary>
    /// Extensions for DbContextOptions.
    /// </summary>
+   [SuppressMessage("ReSharper", "EF1001")]
    public class SqlServerDbContextOptionsExtension : IDbContextOptionsExtension
    {
+      private SqlServerDbContextOptionsExtensionInfo _info;
+
       /// <inheritdoc />
-      [NotNull]
-      public string LogFragment => $@"
-{{
-   'RowNumberSupport'={AddRowNumberSupport},
-   'BulkOperationSupport'={AddBulkOperationSupport},
-   'TempTableSupport'={AddTempTableSupport},
-   'UseThinktectureSqlServerMigrationsSqlGenerator'={UseThinktectureSqlServerMigrationsSqlGenerator}
-}}";
+      [JetBrains.Annotations.NotNull]
+      public DbContextOptionsExtensionInfo Info => _info ??= new SqlServerDbContextOptionsExtensionInfo(this);
 
       /// <summary>
       /// Enables and disables support for "RowNumber".
@@ -56,7 +55,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       public bool UseThinktectureSqlServerMigrationsSqlGenerator { get; set; }
 
       /// <inheritdoc />
-      public bool ApplyServices(IServiceCollection services)
+      public void ApplyServices(IServiceCollection services)
       {
          services.TryAddSingleton(this);
          services.Add<IMethodCallTranslatorPlugin, SqlServerMethodCallTranslatorPlugin>(GetLifetime<IMethodCallTranslatorPlugin>());
@@ -72,8 +71,6 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
 
          if (UseThinktectureSqlServerMigrationsSqlGenerator)
             services.Add<IMigrationsSqlGenerator, ThinktectureSqlServerMigrationsSqlGenerator>(GetLifetime<IMigrationsSqlGenerator>());
-
-         return false;
       }
 
       private static ServiceLifetime GetLifetime<TService>()
@@ -82,16 +79,47 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       }
 
       /// <inheritdoc />
-#pragma warning disable CA1024
-      public long GetServiceProviderHashCode()
-#pragma warning restore CA1024
-      {
-         return 0;
-      }
-
-      /// <inheritdoc />
       public void Validate(IDbContextOptions options)
       {
+      }
+
+      private class SqlServerDbContextOptionsExtensionInfo : DbContextOptionsExtensionInfo
+      {
+         private readonly SqlServerDbContextOptionsExtension _extension;
+         public override bool IsDatabaseProvider => false;
+
+         private string _logFragment;
+
+         [JetBrains.Annotations.NotNull]
+         public override string LogFragment => _logFragment ??= $@"
+{{
+   'RowNumberSupport'={_extension.AddRowNumberSupport},
+   'BulkOperationSupport'={_extension.AddBulkOperationSupport},
+   'TempTableSupport'={_extension.AddTempTableSupport},
+   'UseThinktectureSqlServerMigrationsSqlGenerator'={_extension.UseThinktectureSqlServerMigrationsSqlGenerator}
+}}";
+
+         /// <inheritdoc />
+         public SqlServerDbContextOptionsExtensionInfo([JetBrains.Annotations.NotNull] SqlServerDbContextOptionsExtension extension)
+            : base(extension)
+         {
+            _extension = extension ?? throw new ArgumentNullException(nameof(extension));
+         }
+
+         /// <inheritdoc />
+         public override long GetServiceProviderHashCode()
+         {
+            return 0;
+         }
+
+         /// <inheritdoc />
+         public override void PopulateDebugInfo(IDictionary<string, string> debugInfo)
+         {
+            debugInfo["Thinktecture:AddRowNumberSupport"] = _extension.AddRowNumberSupport.ToString(CultureInfo.InvariantCulture);
+            debugInfo["Thinktecture:AddBulkOperationSupport"] = _extension.AddBulkOperationSupport.ToString(CultureInfo.InvariantCulture);
+            debugInfo["Thinktecture:AddTempTableSupport"] = _extension.AddTempTableSupport.ToString(CultureInfo.InvariantCulture);
+            debugInfo["Thinktecture:UseThinktectureSqlServerMigrationsSqlGenerator"] = _extension.UseThinktectureSqlServerMigrationsSqlGenerator.ToString(CultureInfo.InvariantCulture);
+         }
       }
    }
 }

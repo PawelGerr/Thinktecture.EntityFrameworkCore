@@ -1,12 +1,14 @@
 using System;
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Internal;
+using Microsoft.EntityFrameworkCore.SqlServer.Diagnostics.Internal;
 using Microsoft.Extensions.Logging;
 using Serilog;
 using Thinktecture.EntityFrameworkCore;
@@ -16,6 +18,7 @@ using Xunit.Abstractions;
 
 namespace Thinktecture
 {
+   [SuppressMessage("ReSharper", "EF1001")]
    public class IntegrationTestsBase : SqlServerDbContextIntegrationTests<TestDbContext>
    {
       private static readonly ConcurrentDictionary<ITestOutputHelper, ILoggerFactory> _loggerFactoryCache = new ConcurrentDictionary<ITestOutputHelper, ILoggerFactory>();
@@ -24,7 +27,7 @@ namespace Thinktecture
 
       public Action<ModelBuilder> ConfigureModel { get; set; }
 
-      protected IntegrationTestsBase([NotNull] ITestOutputHelper testOutputHelper, bool useSharedTables)
+      protected IntegrationTestsBase([JetBrains.Annotations.NotNull] ITestOutputHelper testOutputHelper, bool useSharedTables)
          : base(TestContext.Instance.ConnectionString, useSharedTables)
       {
          DisableModelCache = true;
@@ -32,11 +35,11 @@ namespace Thinktecture
          UseLoggerFactory(LoggerFactory);
       }
 
-      [NotNull]
+      [JetBrains.Annotations.NotNull]
       protected IDiagnosticsLogger<TCategory> CreateDiagnosticsLogger<TCategory>([CanBeNull] ILoggingOptions options = null, [CanBeNull] DiagnosticSource diagnosticSource = null)
          where TCategory : LoggerCategory<TCategory>, new()
       {
-         return new DiagnosticsLogger<TCategory>(LoggerFactory, options ?? new LoggingOptions(), diagnosticSource ?? new DiagnosticListener(typeof(TCategory).DisplayName()));
+         return new DiagnosticsLogger<TCategory>(LoggerFactory, options ?? new LoggingOptions(), diagnosticSource ?? new DiagnosticListener(typeof(TCategory).DisplayName()), new SqlServerLoggingDefinitions());
       }
 
       /// <inheritdoc />
@@ -48,7 +51,7 @@ namespace Thinktecture
          return ctx;
       }
 
-      private ILoggerFactory CreateLoggerFactory([NotNull] ITestOutputHelper testOutputHelper)
+      private ILoggerFactory CreateLoggerFactory([JetBrains.Annotations.NotNull] ITestOutputHelper testOutputHelper)
       {
          if (testOutputHelper == null)
             throw new ArgumentNullException(nameof(testOutputHelper));

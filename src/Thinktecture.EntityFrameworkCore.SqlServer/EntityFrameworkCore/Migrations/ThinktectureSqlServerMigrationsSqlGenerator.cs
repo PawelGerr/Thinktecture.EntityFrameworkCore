@@ -23,11 +23,11 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
       }
 
       /// <inheritdoc />
-      protected override void Generate(CreateTableOperation operation, IModel model, MigrationCommandListBuilder builder)
+      protected override void Generate(CreateTableOperation operation, IModel model, MigrationCommandListBuilder builder, bool terminate = true)
       {
          if (!operation.IfNotExistsCheckRequired())
          {
-            base.Generate(operation, model, builder);
+            base.Generate(operation, model, builder, terminate);
             return;
          }
 
@@ -45,11 +45,11 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
       }
 
       /// <inheritdoc />
-      protected override void Generate(AddColumnOperation operation, IModel model, MigrationCommandListBuilder builder)
+      protected override void Generate(AddColumnOperation operation, IModel model, MigrationCommandListBuilder builder, bool terminate)
       {
          if (!operation.IfNotExistsCheckRequired())
          {
-            base.Generate(operation, model, builder);
+            base.Generate(operation, model, builder, terminate);
             return;
          }
 
@@ -62,16 +62,23 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
             builder.AppendLine(Dependencies.SqlGenerationHelper.StatementTerminator);
          }
 
-         builder.AppendLine("END")
-                .EndCommand();
+         builder.AppendLine("END");
+
+         if (!terminate)
+            return;
+
+         if (operation.Comment != null)
+            AddDescription(builder, operation.Comment, operation.Schema, operation.Table, operation.Name);
+
+         builder.EndCommand();
       }
 
       /// <inheritdoc />
-      protected override void Generate(DropColumnOperation operation, IModel model, MigrationCommandListBuilder builder)
+      protected override void Generate(DropColumnOperation operation, IModel model, MigrationCommandListBuilder builder, bool terminate = true)
       {
          if (!operation.IfExistsCheckRequired())
          {
-            base.Generate(operation, model, builder);
+            base.Generate(operation, model, builder, terminate);
             return;
          }
 
@@ -84,16 +91,20 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
             builder.AppendLine(Dependencies.SqlGenerationHelper.StatementTerminator);
          }
 
-         builder.AppendLine("END")
-                .EndCommand();
+         builder.AppendLine("END");
+
+         if (!terminate)
+            return;
+
+         builder.EndCommand();
       }
 
       /// <inheritdoc />
-      protected override void Generate(DropIndexOperation operation, IModel model, MigrationCommandListBuilder builder)
+      protected override void Generate(DropIndexOperation operation, IModel model, MigrationCommandListBuilder builder, bool terminate)
       {
          if (!operation.IfExistsCheckRequired())
          {
-            base.Generate(operation, model, builder);
+            base.Generate(operation, model, builder, terminate);
             return;
          }
 
@@ -106,16 +117,20 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
             builder.AppendLine(Dependencies.SqlGenerationHelper.StatementTerminator);
          }
 
-         builder.AppendLine("END")
-                .EndCommand();
+         builder.AppendLine("END");
+
+         if (!terminate)
+            return;
+
+         builder.EndCommand();
       }
 
       /// <inheritdoc />
-      protected override void Generate(CreateIndexOperation operation, IModel model, MigrationCommandListBuilder builder)
+      protected override void Generate(CreateIndexOperation operation, IModel model, MigrationCommandListBuilder builder, bool terminate = true)
       {
          if (!operation.IfNotExistsCheckRequired())
          {
-            base.Generate(operation, model, builder);
+            base.Generate(operation, model, builder, terminate);
             return;
          }
 
@@ -128,8 +143,12 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
             builder.AppendLine(Dependencies.SqlGenerationHelper.StatementTerminator);
          }
 
-         builder.AppendLine("END")
-                .EndCommand();
+         builder.AppendLine("END");
+
+         if (!terminate)
+            return;
+
+         builder.EndCommand();
       }
 
       private string GenerateSqlLiteral([CanBeNull] string text)

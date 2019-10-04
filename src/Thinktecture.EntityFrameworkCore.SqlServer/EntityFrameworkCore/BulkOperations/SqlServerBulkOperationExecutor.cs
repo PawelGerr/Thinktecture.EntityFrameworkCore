@@ -1,13 +1,14 @@
 using System;
 using System.Collections.Generic;
-using System.Data.SqlClient;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
@@ -22,6 +23,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
    /// <summary>
    /// Executes bulk operations.
    /// </summary>
+   [SuppressMessage("ReSharper", "EF1001")]
    public class SqlServerBulkOperationExecutor : IBulkOperationExecutor
    {
       private readonly ISqlGenerationHelper _sqlGenerationHelper;
@@ -38,8 +40,8 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       /// </summary>
       /// <param name="sqlGenerationHelper">SQL generation helper.</param>
       /// <param name="logger"></param>
-      public SqlServerBulkOperationExecutor([NotNull] ISqlGenerationHelper sqlGenerationHelper,
-                                            [NotNull] IDiagnosticsLogger<SqlServerDbLoggerCategory.BulkOperation> logger)
+      public SqlServerBulkOperationExecutor([JetBrains.Annotations.NotNull] ISqlGenerationHelper sqlGenerationHelper,
+                                            [JetBrains.Annotations.NotNull] IDiagnosticsLogger<SqlServerDbLoggerCategory.BulkOperation> logger)
       {
          _sqlGenerationHelper = sqlGenerationHelper ?? throw new ArgumentNullException(nameof(sqlGenerationHelper));
          _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -61,12 +63,8 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       {
          if (entityType == null)
             throw new ArgumentNullException(nameof(entityType));
-         if (entityType.IsQueryType)
-            throw new InvalidOperationException("The provided 'entities' are of 'Query Type' that do not have a table to insert into. Use the other overload that takes the 'tableName' as a parameter.");
 
-         var relational = entityType.Relational();
-
-         return BulkInsertAsync(ctx, entityType, entities, relational.Schema, relational.TableName, options, cancellationToken);
+         return BulkInsertAsync(ctx, entityType, entities, entityType.GetSchema(), entityType.GetTableName(), options, cancellationToken);
       }
 
       /// <inheritdoc />
@@ -113,15 +111,15 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
             for (var i = 0; i < reader.Properties.Count; i++)
             {
                var property = reader.Properties[i];
-               var column = property.Relational();
                var index = reader.GetPropertyIndex(property);
+               var columnName = property.GetColumnName();
 
-               bulkCopy.ColumnMappings.Add(new SqlBulkCopyColumnMapping(index, column.ColumnName));
+               bulkCopy.ColumnMappings.Add(new SqlBulkCopyColumnMapping(index, columnName));
 
                if (columnsSb.Length > 0)
                   columnsSb.Append(", ");
 
-               columnsSb.Append(column.ColumnName).Append(" ").Append(column.ColumnType);
+               columnsSb.Append(columnName).Append(" ").Append(property.GetColumnType());
             }
 
             await ctx.Database.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
@@ -143,14 +141,14 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
          }
       }
 
-      private void LogInserting(SqlBulkCopyOptions options, [NotNull] SqlBulkCopy bulkCopy, string columns)
+      private void LogInserting(SqlBulkCopyOptions options, [JetBrains.Annotations.NotNull] SqlBulkCopy bulkCopy, string columns)
       {
          _logger.Logger.LogInformation(EventIds.Inserting, @"Executing DbCommand [SqlBulkCopyOptions={SqlBulkCopyOptions}, BulkCopyTimeout={BulkCopyTimeout}, BatchSize={BatchSize}, EnableStreaming={EnableStreaming}]
 INSERT BULK {table} ({columns})", options, bulkCopy.BulkCopyTimeout, bulkCopy.BatchSize, bulkCopy.EnableStreaming,
                                        bulkCopy.DestinationTableName, columns);
       }
 
-      private void LogInserted(SqlBulkCopyOptions options, TimeSpan duration, [NotNull] SqlBulkCopy bulkCopy, string columns)
+      private void LogInserted(SqlBulkCopyOptions options, TimeSpan duration, [JetBrains.Annotations.NotNull] SqlBulkCopy bulkCopy, string columns)
       {
          _logger.Logger.LogInformation(EventIds.Inserted, @"Executed DbCommand ({duration}ms) [SqlBulkCopyOptions={SqlBulkCopyOptions}, BulkCopyTimeout={BulkCopyTimeout}, BatchSize={BatchSize}, EnableStreaming={EnableStreaming}]
 INSERT BULK {table} ({columns})", (long)duration.TotalMilliseconds,
@@ -158,18 +156,18 @@ INSERT BULK {table} ({columns})", (long)duration.TotalMilliseconds,
                                        bulkCopy.DestinationTableName, columns);
       }
 
-      [NotNull]
+      [JetBrains.Annotations.NotNull]
       private static IReadOnlyList<IProperty> GetPropertiesForInsert([CanBeNull] IEntityMembersProvider entityMembersProvider,
-                                                                     [NotNull] IEntityType entityType)
+                                                                     [JetBrains.Annotations.NotNull] IEntityType entityType)
       {
          if (entityMembersProvider == null)
-            return entityType.GetProperties().Where(p => p.BeforeSaveBehavior != PropertySaveBehavior.Ignore).ToList();
+            return entityType.GetProperties().Where(p => p.GetBeforeSaveBehavior() != PropertySaveBehavior.Ignore).ToList();
 
          return ConvertToEntityProperties(entityMembersProvider.GetMembers(), entityType);
       }
 
-      [NotNull]
-      private static IReadOnlyList<IProperty> ConvertToEntityProperties([NotNull] IReadOnlyList<MemberInfo> memberInfos, [NotNull] IEntityType entityType)
+      [JetBrains.Annotations.NotNull]
+      private static IReadOnlyList<IProperty> ConvertToEntityProperties([JetBrains.Annotations.NotNull] IReadOnlyList<MemberInfo> memberInfos, [JetBrains.Annotations.NotNull] IEntityType entityType)
       {
          var properties = new IProperty[memberInfos.Count];
 
@@ -185,7 +183,7 @@ INSERT BULK {table} ({columns})", (long)duration.TotalMilliseconds,
       }
 
       [CanBeNull]
-      private static IProperty FindProperty([NotNull] IEntityType entityType, [NotNull] MemberInfo memberInfo)
+      private static IProperty FindProperty([JetBrains.Annotations.NotNull] IEntityType entityType, [JetBrains.Annotations.NotNull] MemberInfo memberInfo)
       {
          foreach (var property in entityType.GetProperties())
          {

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading.Tasks;
-using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Thinktecture.Database;
@@ -52,7 +51,7 @@ namespace Thinktecture
          Console.WriteLine("Exiting samples...");
       }
 
-      private static async Task DoLeftJoinAsync([NotNull] DemoDbContext ctx)
+      private static async Task DoLeftJoinAsync([JetBrains.Annotations.NotNull] DemoDbContext ctx)
       {
          var customerOrder = await ctx.Customers
                                       .LeftJoin(ctx.Orders,
@@ -64,7 +63,7 @@ namespace Thinktecture
          Console.WriteLine($"Found customers: {String.Join(", ", customerOrder.Select(co => $"{{ CustomerId={co.Customer.Id}, OrderId={co.Order?.Id} }}"))}");
       }
 
-      private static async Task DoBulkInsertIntoRealTableAsync([NotNull] DemoDbContext ctx)
+      private static async Task DoBulkInsertIntoRealTableAsync([JetBrains.Annotations.NotNull] DemoDbContext ctx)
       {
          var customersToInsert = new Customer { Id = Guid.NewGuid() };
          await ctx.BulkInsertAsync(new[] { customersToInsert });
@@ -74,7 +73,7 @@ namespace Thinktecture
          Console.WriteLine($"Inserted customers: {insertedCustomer.Id}");
       }
 
-      private static async Task DoBulkInsertSpecifiedColumnsIntoRealTableAsync([NotNull] DemoDbContext ctx)
+      private static async Task DoBulkInsertSpecifiedColumnsIntoRealTableAsync([JetBrains.Annotations.NotNull] DemoDbContext ctx)
       {
          var customersToInsert = new Customer { Id = Guid.NewGuid() };
 

@@ -624,6 +624,7 @@
 	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=EE4CEFB198186C4E88B8126B60581EBE/Severity/@EntryValue">WARNING</s:String>
 	<s:Boolean x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=EE4CEFB198186C4E88B8126B60581EBE/ShortenReferences/@EntryValue">False</s:Boolean>
 	<s:String x:Key="/Default/PatternsAndTemplates/StructuralSearch/Pattern/=EE4CEFB198186C4E88B8126B60581EBE/SuppressionKey/@EntryValue">TaskMethodsWithoutAsyncSuffix</s:String>
+	<s:Boolean x:Key="/Default/UserDictionary/Words/=Keyless/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=Relinq/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=ROWNUMBER/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=ROWVERSION/@EntryIndexedValue">True</s:Boolean>

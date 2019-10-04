@@ -37,20 +37,20 @@ namespace Thinktecture.TestDatabaseContext
          // modelBuilder.Query<InformationSchemaKeyColumn>();
       }
 
-      //       [NotNull]
+      //       [JetBrains.Annotations.NotNull]
       //       public IQueryable<InformationSchemaColumn> GetCustomTempTableColumns<T>()
       //       {
       //          return GetTempTableColumns(typeof(T));
       //       }
       //
-      //       [NotNull]
+      //       [JetBrains.Annotations.NotNull]
       //       public IQueryable<InformationSchemaColumn> GetTempTableColumns<T>()
       //          where T : class
       //       {
       //          return GetTempTableColumns(typeof(T));
       //       }
       //
-      //       private IQueryable<InformationSchemaColumn> GetTempTableColumns([NotNull] Type type)
+      //       private IQueryable<InformationSchemaColumn> GetTempTableColumns([JetBrains.Annotations.NotNull] Type type)
       //       {
       //          if (type == null)
       //             throw new ArgumentNullException(nameof(type));
@@ -69,7 +69,7 @@ namespace Thinktecture.TestDatabaseContext
       //    OBJECT_ID(TABLE_CATALOG + '..' + TABLE_NAME) = OBJECT_ID({"tempdb.." + tableName})");
       //       }
       //
-      //       [NotNull]
+      //       [JetBrains.Annotations.NotNull]
       //       public IQueryable<InformationSchemaTableConstraint> GetTempTableConstraints<T>()
       //       {
       //          var tableName = this.GetEntityType<T>().Relational().TableName;
@@ -86,7 +86,7 @@ namespace Thinktecture.TestDatabaseContext
       //    OBJECT_ID(TABLE_CATALOG + '..' + TABLE_NAME) = OBJECT_ID({"tempdb.." + tableName})");
       //       }
       //
-      //       [NotNull]
+      //       [JetBrains.Annotations.NotNull]
       //       public IQueryable<InformationSchemaConstraintColumn> GetTempTableConstraintsColumns<T>()
       //       {
       //          var tableName = this.GetEntityType<T>().Relational().TableName;
@@ -103,7 +103,7 @@ namespace Thinktecture.TestDatabaseContext
       //    OBJECT_ID(TABLE_CATALOG + '..' + TABLE_NAME) = OBJECT_ID({"tempdb.." + tableName})");
       //       }
       //
-      //       [NotNull]
+      //       [JetBrains.Annotations.NotNull]
       //       public IQueryable<InformationSchemaKeyColumn> GetTempTableKeyColumns<T>()
       //       {
       //          var tableName = this.GetEntityType<T>().Relational().TableName;
@@ -111,7 +111,7 @@ namespace Thinktecture.TestDatabaseContext
       //          return GetTempTableKeyColumns(tableName);
       //       }
       //
-      //       [NotNull]
+      //       [JetBrains.Annotations.NotNull]
       //       public IQueryable<InformationSchemaKeyColumn> GetTempTableKeyColumns<TColumn1, TColumn2>()
       //       {
       //          var tableName = this.GetEntityType<TempTable<TColumn1, TColumn2>>().Relational().TableName;

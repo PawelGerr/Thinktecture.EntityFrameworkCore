@@ -23,9 +23,7 @@ namespace Thinktecture
       private static SamplesContext CreateTestConfiguration()
       {
          var config = GetConfiguration();
-#pragma warning disable 618, CA2000
-         var loggerFactory = new LoggerFactory().AddConsole();
-#pragma warning restore 618, CA2000
+         var loggerFactory = new LoggerBuilder().AddConsole().Services.BuildServiceProvider().GetRequiredService<ILoggerFactory>();
 
          return new SamplesContext(config, loggerFactory);
       }
@@ -55,6 +53,16 @@ namespace Thinktecture
                                                     .UseLoggerFactory(_loggerFactory));
 
          return services.BuildServiceProvider();
+      }
+
+      private class LoggerBuilder : ILoggingBuilder
+      {
+         public IServiceCollection Services { get; }
+
+         public LoggerBuilder()
+         {
+            Services = new ServiceCollection();
+         }
       }
    }
 }

@@ -1,8 +1,8 @@
 using System;
-using System.Data.SqlClient;
 using System.Linq;
 using FluentAssertions;
 using JetBrains.Annotations;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Thinktecture.TestDatabaseContext;
 using Xunit;

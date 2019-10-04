@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
@@ -17,6 +17,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
    /// <summary>
    /// Creates temp tables.
    /// </summary>
+   [SuppressMessage("ReSharper", "EF1001")]
    public class SqlServerTempTableCreator : ITempTableCreator
    {
       private readonly ISqlGenerationHelper _sqlGenerationHelper;
@@ -27,8 +28,8 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
       /// </summary>
       /// <param name="sqlGenerationHelper">SQL generation helper.</param>
       /// <param name="typeMappingSource">Type mappings.</param>
-      public SqlServerTempTableCreator([NotNull] ISqlGenerationHelper sqlGenerationHelper,
-                                       [NotNull] IRelationalTypeMappingSource typeMappingSource)
+      public SqlServerTempTableCreator([JetBrains.Annotations.NotNull] ISqlGenerationHelper sqlGenerationHelper,
+                                       [JetBrains.Annotations.NotNull] IRelationalTypeMappingSource typeMappingSource)
       {
          _sqlGenerationHelper = sqlGenerationHelper ?? throw new ArgumentNullException(nameof(sqlGenerationHelper));
          _typeMappingSource = typeMappingSource ?? throw new ArgumentNullException(nameof(typeMappingSource));
@@ -55,9 +56,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
 
          try
          {
-#pragma warning disable EF1000
-            await ctx.Database.ExecuteSqlCommandAsync(sql, cancellationToken).ConfigureAwait(false);
-#pragma warning restore EF1000
+            await ctx.Database.ExecuteSqlRawAsync(sql, cancellationToken).ConfigureAwait(false);
          }
          catch (Exception)
          {
@@ -70,10 +69,10 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
          return new SqlServerTempTableReference(logger, _sqlGenerationHelper, tableName, ctx.Database);
       }
 
-      [NotNull]
-      private static string GetTableName([NotNull] IEntityType entityType, bool makeTableNameUnique)
+      [JetBrains.Annotations.NotNull]
+      private static string GetTableName([JetBrains.Annotations.NotNull] IEntityType entityType, bool makeTableNameUnique)
       {
-         var tableName = entityType.Relational().TableName;
+         var tableName = entityType.GetTableName();
 
          if (!tableName.StartsWith("#", StringComparison.Ordinal))
             tableName = $"#{tableName}";
@@ -98,17 +97,8 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
          if (tableName == null)
             throw new ArgumentNullException(nameof(tableName));
 
-         IEnumerable<string> columnNames;
-
-         if (entityType.IsQueryType)
-         {
-            columnNames = entityType.GetProperties().Select(p => p.Relational().ColumnName);
-         }
-         else
-         {
-            var pk = entityType.FindPrimaryKey();
-            columnNames = pk.Properties.Select(p => p.Relational().ColumnName);
-         }
+         var keyProperties = entityType.FindPrimaryKey()?.Properties ?? entityType.GetProperties();
+         var columnNames = keyProperties.Select(p => p.GetColumnName());
 
          var sql = $@"
 ALTER TABLE {_sqlGenerationHelper.DelimitIdentifier(tableName)}
@@ -124,13 +114,11 @@ BEGIN
 END
 ";
          }
-#pragma warning disable EF1000
-         await ctx.Database.ExecuteSqlCommandAsync(sql, cancellationToken).ConfigureAwait(false);
-#pragma warning restore EF1000
+         await ctx.Database.ExecuteSqlRawAsync(sql, cancellationToken).ConfigureAwait(false);
       }
 
-      [NotNull]
-      private string GetTempTableCreationSql([NotNull] IEnumerable<IProperty> properties, [NotNull] string tableName, bool isUnique)
+      [JetBrains.Annotations.NotNull]
+      private string GetTempTableCreationSql([JetBrains.Annotations.NotNull] IEnumerable<IProperty> properties, [JetBrains.Annotations.NotNull] string tableName, bool isUnique)
       {
          if (properties == null)
             throw new ArgumentNullException(nameof(properties));
@@ -156,8 +144,8 @@ END
 ";
       }
 
-      [NotNull]
-      private string GetColumnsDefinitions([NotNull] IEnumerable<IProperty> properties)
+      [JetBrains.Annotations.NotNull]
+      private string GetColumnsDefinitions([JetBrains.Annotations.NotNull] IEnumerable<IProperty> properties)
       {
          if (properties == null)
             throw new ArgumentNullException(nameof(properties));
@@ -170,24 +158,29 @@ END
             if (!isFirst)
                sb.AppendLine(",");
 
-            var relational = property.Relational();
-
             sb.Append("\t\t")
-              .Append(_sqlGenerationHelper.DelimitIdentifier(relational.ColumnName)).Append(" ")
-              .Append(relational.ColumnType)
+              .Append(_sqlGenerationHelper.DelimitIdentifier(property.GetColumnName())).Append(" ")
+              .Append(property.GetColumnType())
               .Append(property.IsNullable ? " NULL" : " NOT NULL");
 
             if (IsIdentityColumn(property))
                sb.Append(" IDENTITY");
 
-            if (!String.IsNullOrWhiteSpace(relational.DefaultValueSql))
+            var defaultValueSql = property.GetDefaultValueSql();
+
+            if (!String.IsNullOrWhiteSpace(defaultValueSql))
             {
-               sb.Append(" DEFAULT (").Append(relational.DefaultValueSql).Append(")");
+               sb.Append(" DEFAULT (").Append(defaultValueSql).Append(")");
             }
-            else if (relational.DefaultValue != null && relational.DefaultValue != DBNull.Value)
+            else
             {
-               var mappingForValue = _typeMappingSource.GetMappingForValue(relational.DefaultValue);
-               sb.Append(" DEFAULT ").Append(mappingForValue.GenerateSqlLiteral(relational.DefaultValue));
+               var defaultValue = property.GetDefaultValue();
+
+               if (defaultValue != null && defaultValue != DBNull.Value)
+               {
+                  var mappingForValue = _typeMappingSource.GetMappingForValue(defaultValue);
+                  sb.Append(" DEFAULT ").Append(mappingForValue.GenerateSqlLiteral(defaultValue));
+               }
             }
 
             isFirst = false;
@@ -196,7 +189,7 @@ END
          return sb.ToString();
       }
 
-      private static bool IsIdentityColumn([NotNull] IProperty property)
+      private static bool IsIdentityColumn([JetBrains.Annotations.NotNull] IProperty property)
       {
          return SqlServerValueGenerationStrategy.IdentityColumn.Equals(property.FindAnnotation(SqlServerAnnotationNames.ValueGenerationStrategy)?.Value);
       }

@@ -16,9 +16,7 @@ namespace Thinktecture.TestDatabaseContext
          set => _propertyWithBackingField = value;
       }
 
-#pragma warning disable 169, CA1823
       private int _privateField;
-#pragma warning restore 169, CA1823
 
       public int GetPrivateField()
       {

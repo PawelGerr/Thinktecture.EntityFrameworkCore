@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using JetBrains.Annotations;
@@ -15,6 +16,7 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
    /// <summary>
    /// An implementation of <see cref="IMigrationsAssembly"/> that is able to instantiate migrations requiring an <see cref="IDbDefaultSchema"/>.
    /// </summary>
+   [SuppressMessage("ReSharper", "EF1001")]
    public class DefaultSchemaRespectingMigrationAssembly<TMigrationsAssembly> : IMigrationsAssembly
       where TMigrationsAssembly : class, IMigrationsAssembly
    {
@@ -33,10 +35,10 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
       public Assembly Assembly => _innerMigrationsAssembly.Assembly;
 
       /// <inheritdoc />
-      public DefaultSchemaRespectingMigrationAssembly([NotNull] TMigrationsAssembly migrationsAssembly,
-                                                      [NotNull] IMigrationOperationSchemaSetter schemaSetter,
-                                                      [NotNull] ICurrentDbContext currentContext,
-                                                      [NotNull] IServiceProvider serviceProvider)
+      public DefaultSchemaRespectingMigrationAssembly([JetBrains.Annotations.NotNull] TMigrationsAssembly migrationsAssembly,
+                                                      [JetBrains.Annotations.NotNull] IMigrationOperationSchemaSetter schemaSetter,
+                                                      [JetBrains.Annotations.NotNull] ICurrentDbContext currentContext,
+                                                      [JetBrains.Annotations.NotNull] IServiceProvider serviceProvider)
       {
          _innerMigrationsAssembly = migrationsAssembly ?? throw new ArgumentNullException(nameof(migrationsAssembly));
          _schemaSetter = schemaSetter ?? throw new ArgumentNullException(nameof(schemaSetter));
@@ -52,7 +54,7 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
       }
 
       /// <inheritdoc />
-      [NotNull]
+      [JetBrains.Annotations.NotNull]
       public Migration CreateMigration(TypeInfo migrationClass, string activeProvider)
       {
          if (migrationClass == null)
@@ -79,8 +81,8 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
          throw new ArgumentException($"For instantiation of default schema respecting migration of type '{migrationClass.Name}' the database context of type '{_context.GetType().DisplayName()}' has to implement the interface '{nameof(IDbDefaultSchema)}'.", nameof(migrationClass));
       }
 
-      [NotNull]
-      private Migration CreateInstance([NotNull] TypeInfo migrationClass, IDbDefaultSchema schema, string activeProvider)
+      [JetBrains.Annotations.NotNull]
+      private Migration CreateInstance([JetBrains.Annotations.NotNull] TypeInfo migrationClass, IDbDefaultSchema schema, string activeProvider)
       {
          var migration = (Migration)ActivatorUtilities.CreateInstance(_serviceProvider, migrationClass.AsType(), schema);
          migration.ActiveProvider = activeProvider;
@@ -88,8 +90,8 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
          return migration;
       }
 
-      [NotNull]
-      private Migration CreateInstance([NotNull] TypeInfo migrationClass, string activeProvider)
+      [JetBrains.Annotations.NotNull]
+      private Migration CreateInstance([JetBrains.Annotations.NotNull] TypeInfo migrationClass, string activeProvider)
       {
          var migration = (Migration)ActivatorUtilities.CreateInstance(_serviceProvider, migrationClass.AsType());
          migration.ActiveProvider = activeProvider;
@@ -97,7 +99,7 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
          return migration;
       }
 
-      private void SetSchema([NotNull] IReadOnlyList<MigrationOperation> operations, [CanBeNull] IDbDefaultSchema schema)
+      private void SetSchema([JetBrains.Annotations.NotNull] IReadOnlyList<MigrationOperation> operations, [CanBeNull] IDbDefaultSchema schema)
       {
          if (schema?.Schema != null)
             _schemaSetter.SetSchema(operations, schema.Schema);

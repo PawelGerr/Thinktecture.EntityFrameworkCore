@@ -24,9 +24,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       }
 
       /// <inheritdoc />
-#pragma warning disable CA1024
       public IReadOnlyList<MemberInfo> GetMembers()
-#pragma warning restore CA1024
       {
          return _members;
       }

@@ -1,5 +1,7 @@
 using System;
-using JetBrains.Annotations;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,14 +14,14 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
    /// <summary>
    /// Extensions for DbContextOptions.
    /// </summary>
+   [SuppressMessage("ReSharper", "EF1001")]
    public class SqliteDbContextOptionsExtension : IDbContextOptionsExtension
    {
+      private SqliteDbContextOptionsExtensionInfo _info;
+
       /// <inheritdoc />
-      [NotNull]
-      public string LogFragment => $@"
-{{
-   'BulkOperationSupport'={AddBulkOperationSupport}
-}}";
+      [JetBrains.Annotations.NotNull]
+      public DbContextOptionsExtensionInfo Info => _info ??= new SqliteDbContextOptionsExtensionInfo(this);
 
       /// <summary>
       /// Enables and disables support for bulk operations.
@@ -27,7 +29,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       public bool AddBulkOperationSupport { get; set; }
 
       /// <inheritdoc />
-      public bool ApplyServices(IServiceCollection services)
+      public void ApplyServices(IServiceCollection services)
       {
          services.TryAddSingleton(this);
 
@@ -36,8 +38,6 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
             services.TryAddSingleton<IEntityDataReaderFactory, EntityDataReaderFactory>();
             services.TryAdd<IBulkOperationExecutor, SqliteBulkOperationExecutor>(GetLifetime<ISqlGenerationHelper>());
          }
-
-         return false;
       }
 
       private static ServiceLifetime GetLifetime<TService>()
@@ -46,16 +46,41 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       }
 
       /// <inheritdoc />
-#pragma warning disable CA1024
-      public long GetServiceProviderHashCode()
-#pragma warning restore CA1024
-      {
-         return 0;
-      }
-
-      /// <inheritdoc />
       public void Validate(IDbContextOptions options)
       {
+      }
+
+      private class SqliteDbContextOptionsExtensionInfo : DbContextOptionsExtensionInfo
+      {
+         private readonly SqliteDbContextOptionsExtension _extension;
+         public override bool IsDatabaseProvider => false;
+
+         private string _logFragment;
+
+         [JetBrains.Annotations.NotNull]
+         public override string LogFragment => _logFragment ??= $@"
+{{
+   'BulkOperationSupport'={_extension.AddBulkOperationSupport}
+}}";
+
+         /// <inheritdoc />
+         public SqliteDbContextOptionsExtensionInfo([JetBrains.Annotations.NotNull] SqliteDbContextOptionsExtension extension)
+            : base(extension)
+         {
+            _extension = extension ?? throw new ArgumentNullException(nameof(extension));
+         }
+
+         /// <inheritdoc />
+         public override long GetServiceProviderHashCode()
+         {
+            return 0;
+         }
+
+         /// <inheritdoc />
+         public override void PopulateDebugInfo(IDictionary<string, string> debugInfo)
+         {
+            debugInfo["Thinktecture:AddBulkOperationSupport"] = _extension.AddBulkOperationSupport.ToString(CultureInfo.InvariantCulture);
+         }
       }
    }
 }

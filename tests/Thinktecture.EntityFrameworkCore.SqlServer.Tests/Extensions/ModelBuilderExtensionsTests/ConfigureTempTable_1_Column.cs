@@ -19,13 +19,13 @@ namespace Thinktecture.Extensions.ModelBuilderExtensionsTests
       }
 
       [Fact]
-      public void Should_introduce_temp_table()
+      public void Should_introduce_keyless_temp_table()
       {
          ConfigureModel = builder => builder.ConfigureTempTable<int>();
 
          var entityType = ActDbContext.Model.FindEntityType(typeof(TempTable<int>));
          entityType.Should().NotBeNull();
-         entityType.IsQueryType.Should().BeTrue();
+         entityType.GetKeys().Should().BeEmpty();
       }
 
       [Fact]
@@ -94,7 +94,7 @@ namespace Thinktecture.Extensions.ModelBuilderExtensionsTests
          ConfigureModel = builder => builder.ConfigureTempTable<int>();
 
          var entityType = ActDbContext.Model.FindEntityType(typeof(TempTable<int>));
-         entityType.Relational().TableName.Should().Be("#TempTable<int>");
+         entityType.GetTableName().Should().Be("#TempTable<int>");
       }
 
       [Fact]
@@ -103,7 +103,7 @@ namespace Thinktecture.Extensions.ModelBuilderExtensionsTests
          ConfigureModel = builder => builder.ConfigureTempTable<int?>();
 
          var entityType = ActDbContext.Model.FindEntityType(typeof(TempTable<int?>));
-         entityType.Relational().TableName.Should().Be("#TempTable<Nullable<int>>");
+         entityType.GetTableName().Should().Be("#TempTable<Nullable<int>>");
       }
 
       [Fact]
@@ -112,7 +112,7 @@ namespace Thinktecture.Extensions.ModelBuilderExtensionsTests
          ConfigureModel = builder => builder.ConfigureTempTable<string>();
 
          var entityType = ActDbContext.Model.FindEntityType(typeof(TempTable<string>));
-         entityType.Relational().TableName.Should().Be("#TempTable<string>");
+         entityType.GetTableName().Should().Be("#TempTable<string>");
       }
    }
 }

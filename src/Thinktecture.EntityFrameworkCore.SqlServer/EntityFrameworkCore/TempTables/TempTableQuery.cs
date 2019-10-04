@@ -9,9 +9,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
    /// Represents a query pointing to a temp table.
    /// </summary>
    /// <typeparam name="T">Type of the query item.</typeparam>
-#pragma warning disable  CA1710
    public sealed class TempTableQuery<T> : ITempTableQuery<T>
-#pragma warning restore CA1710
    {
       /// <summary>
       /// The query itself.

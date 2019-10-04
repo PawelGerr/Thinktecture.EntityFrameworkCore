@@ -1,9 +1,8 @@
 using System;
-using System.Data.SqlClient;
 using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
-using JetBrains.Annotations;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Moq;
@@ -19,7 +18,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
    {
       private readonly SqlServerTempTableCreator _sut;
 
-      public CreatePrimaryKeyAsync([NotNull] ITestOutputHelper testOutputHelper)
+      public CreatePrimaryKeyAsync([JetBrains.Annotations.NotNull] ITestOutputHelper testOutputHelper)
          : base(testOutputHelper, true)
       {
          var sqlGenerationHelperMock = new Mock<ISqlGenerationHelper>();
@@ -32,7 +31,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
       }
 
       [Fact]
-      public async Task Should_create_primary_key_for_queryType()
+      public async Task Should_create_primary_key_for_keylessType()
       {
          ConfigureModel = builder => builder.ConfigureTempTable<int>();
 

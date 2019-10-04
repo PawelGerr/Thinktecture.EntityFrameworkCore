@@ -87,7 +87,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
       }
 
       [Fact]
-      public async Task Should_return_table_ref_that_is_unusable_after_ctx_is_disposed()
+      public async Task Should_return_reference_to_be_able_to_close_connection_event_if_ctx_is_disposed()
       {
          using (var con = CreateConnection(TestContext.Instance.ConnectionString))
          {
@@ -103,8 +103,9 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
                tempTableReference = await _sut.CreateTempTableAsync(ctx, ctx.GetEntityType<TestEntity>(), _optionsWithNonUniqueName).ConfigureAwait(false);
             }
 
-            tempTableReference.Dispose();
             con.State.Should().Be(ConnectionState.Open);
+            tempTableReference.Dispose();
+            con.State.Should().Be(ConnectionState.Closed);
          }
       }
 
@@ -123,6 +124,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
                var tempTableReference = await _sut.CreateTempTableAsync(ctx, ctx.GetEntityType<TestEntity>(), _optionsWithNonUniqueName).ConfigureAwait(false);
                con.Dispose();
 
+               con.State.Should().Be(ConnectionState.Closed);
                tempTableReference.Dispose();
                con.State.Should().Be(ConnectionState.Closed);
             }

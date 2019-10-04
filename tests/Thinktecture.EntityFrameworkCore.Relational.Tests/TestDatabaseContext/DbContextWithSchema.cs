@@ -11,7 +11,7 @@ namespace Thinktecture.TestDatabaseContext
       public string Schema { get; }
 
       public DbSet<TestEntity> TestEntities { get; set; }
-      public DbQuery<TestQuery> TestQuery { get; set; }
+      public DbSet<TestQuery> TestQuery { get; set; }
 
       public Action<ModelBuilder> ConfigureModel { get; set; }
 
@@ -29,6 +29,8 @@ namespace Thinktecture.TestDatabaseContext
       protected override void OnModelCreating([NotNull] ModelBuilder modelBuilder)
       {
          base.OnModelCreating(modelBuilder);
+
+         modelBuilder.Entity<TestQuery>().HasNoKey();
 
          modelBuilder.HasDbFunction(() => TestDbFunction());
 

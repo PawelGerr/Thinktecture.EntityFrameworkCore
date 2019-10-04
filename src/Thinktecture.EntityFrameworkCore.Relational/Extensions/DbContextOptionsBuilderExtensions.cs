@@ -2,11 +2,8 @@ using System;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Query.ExpressionTranslators;
 using Microsoft.EntityFrameworkCore.Storage;
-using Microsoft.Extensions.DependencyInjection;
 using Thinktecture.EntityFrameworkCore.Infrastructure;
-using Thinktecture.EntityFrameworkCore.Query.ExpressionTranslators;
 
 // ReSharper disable once CheckNamespace
 namespace Thinktecture
@@ -44,70 +41,6 @@ namespace Thinktecture
       {
          // ReSharper disable once RedundantCast
          builder.AddOrUpdateExtension<RelationalDbContextOptionsExtension>(extension => extension.AddDescendingSupport = addDescendingSupport);
-         return builder;
-      }
-
-      /// <summary>
-      /// Adds custom implementation of <see cref="IExpressionFragmentTranslator"/>.
-      /// </summary>
-      /// <param name="builder">Options builder.</param>
-      /// <typeparam name="TContext">Type of the context.</typeparam>
-      /// <typeparam name="TTranslator">Type of the translator.</typeparam>
-      /// <returns>Options builder for chaining.</returns>
-      [NotNull]
-      public static DbContextOptionsBuilder<TContext> AddExpressionFragmentTranslator<TContext, TTranslator>([NotNull] this DbContextOptionsBuilder<TContext> builder)
-         where TContext : DbContext
-         where TTranslator : class, IExpressionFragmentTranslator
-      {
-         // ReSharper disable once RedundantCast
-         ((DbContextOptionsBuilder)builder).AddExpressionFragmentTranslator<TTranslator>();
-         return builder;
-      }
-
-      /// <summary>
-      /// Adds custom implementation of <see cref="IExpressionFragmentTranslator"/>.
-      /// </summary>
-      /// <param name="builder">Options builder.</param>
-      /// <typeparam name="TTranslator">Type of the translator.</typeparam>
-      /// <returns>Options builder for chaining.</returns>
-      [NotNull]
-      public static DbContextOptionsBuilder AddExpressionFragmentTranslator<TTranslator>([NotNull] this DbContextOptionsBuilder builder)
-         where TTranslator : class, IExpressionFragmentTranslator
-      {
-         var translatorDescriptor = ServiceDescriptor.Singleton(typeof(TTranslator), typeof(TTranslator));
-         builder.AddOrUpdateExtension<RelationalDbContextOptionsExtension>(extension => extension.Add(translatorDescriptor));
-
-         return builder.AddExpressionFragmentTranslatorPlugin<ExpressionFragmentTranslatorPlugin<TTranslator>>();
-      }
-
-      /// <summary>
-      /// Enables the support for <see cref="IExpressionFragmentTranslatorPlugin"/>.
-      /// </summary>
-      /// <param name="builder">Options builder.</param>
-      /// <typeparam name="TContext">Type of the context.</typeparam>
-      /// <typeparam name="TPlugin">Type of the plugin.</typeparam>
-      /// <returns>Options builder for chaining.</returns>
-      [NotNull]
-      public static DbContextOptionsBuilder<TContext> AddExpressionFragmentTranslatorPlugin<TContext, TPlugin>([NotNull] this DbContextOptionsBuilder<TContext> builder)
-         where TContext : DbContext
-         where TPlugin : class, IExpressionFragmentTranslatorPlugin
-      {
-         // ReSharper disable once RedundantCast
-         ((DbContextOptionsBuilder)builder).AddExpressionFragmentTranslatorPlugin<TPlugin>();
-         return builder;
-      }
-
-      /// <summary>
-      /// Enables the support for <see cref="IExpressionFragmentTranslatorPlugin"/>.
-      /// </summary>
-      /// <param name="builder">Options builder.</param>
-      /// <typeparam name="TPlugin">Type of the plugin.</typeparam>
-      /// <returns>Options builder for chaining.</returns>
-      [NotNull]
-      public static DbContextOptionsBuilder AddExpressionFragmentTranslatorPlugin<TPlugin>([NotNull] this DbContextOptionsBuilder builder)
-         where TPlugin : class, IExpressionFragmentTranslatorPlugin
-      {
-         builder.AddOrUpdateExtension<RelationalDbContextOptionsExtension>(extension => extension.AddExpressionFragmentTranslatorPlugin(typeof(TPlugin)));
          return builder;
       }
 

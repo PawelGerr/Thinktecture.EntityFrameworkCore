@@ -2,35 +2,36 @@ using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using JetBrains.Annotations;
-using Microsoft.EntityFrameworkCore.Query.Expressions;
-using Microsoft.EntityFrameworkCore.Query.Sql;
+using Microsoft.EntityFrameworkCore.Query;
+using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace Thinktecture.EntityFrameworkCore.Query.Expressions
 {
    /// <summary>
    /// Expression rendering "ROW_NUMBER()".
    /// </summary>
-   public class RowNumberExpression : Expression
+   public class RowNumberExpression : SqlExpression
    {
-      private readonly IReadOnlyCollection<Expression> _partitionBy;
-      private readonly IReadOnlyCollection<Expression> _orderBy;
-
-      /// <inheritdoc />
-      public override ExpressionType NodeType => ExpressionType.Extension;
+      private readonly ISqlExpressionFactory _expressionFactory;
+      private readonly IReadOnlyList<SqlExpression> _partitionBy;
+      private readonly IReadOnlyList<SqlExpression> _orderBy;
 
       /// <inheritdoc />
       public override bool CanReduce => false;
 
-      /// <inheritdoc />
-      public override Type Type => typeof(long);
-
       /// <summary>
       /// Initializes new instance of <see cref="RowNumberExpression"/>.
       /// </summary>
+      /// <param name="expressionFactory">Expression factory.</param>
       /// <param name="partitionBy">Columns to partition by.</param>
       /// <param name="orderBy">Columns to order by.</param>
-      public RowNumberExpression([NotNull] IReadOnlyCollection<Expression> partitionBy, [NotNull] IReadOnlyCollection<Expression> orderBy)
+      public RowNumberExpression([NotNull] ISqlExpressionFactory expressionFactory,
+                                 [NotNull] IReadOnlyList<SqlExpression> partitionBy,
+                                 [NotNull] IReadOnlyList<SqlExpression> orderBy)
+         : base(typeof(long), RelationalTypeMapping.NullMapping)
       {
+         _expressionFactory = expressionFactory ?? throw new ArgumentNullException(nameof(expressionFactory));
          _partitionBy = partitionBy ?? throw new ArgumentNullException(nameof(partitionBy));
          _orderBy = orderBy ?? throw new ArgumentNullException(nameof(orderBy));
 
@@ -41,37 +42,54 @@ namespace Thinktecture.EntityFrameworkCore.Query.Expressions
       /// <inheritdoc />
       protected override Expression Accept(ExpressionVisitor visitor)
       {
-         if (!(visitor is IQuerySqlGenerator))
+         if (!(visitor is QuerySqlGenerator))
             return base.Accept(visitor);
 
-         visitor.Visit(new SqlFragmentExpression("ROW_NUMBER() OVER("));
+         visitor.Visit(_expressionFactory.Fragment("ROW_NUMBER() OVER("));
 
          if (_partitionBy.Count > 0)
          {
-            visitor.Visit(new SqlFragmentExpression("PARTITION BY "));
+            visitor.Visit(_expressionFactory.Fragment("PARTITION BY "));
             RenderColumns(visitor, _partitionBy);
          }
 
-         visitor.Visit(new SqlFragmentExpression(" ORDER BY "));
+         visitor.Visit(_expressionFactory.Fragment(" ORDER BY "));
          RenderColumns(visitor, _orderBy);
 
-         visitor.Visit(new SqlFragmentExpression(")"));
+         visitor.Visit(_expressionFactory.Fragment(")"));
 
          return this;
       }
 
-      private static void RenderColumns([NotNull] ExpressionVisitor visitor, [NotNull] IEnumerable<Expression> columns)
+      private void RenderColumns([NotNull] ExpressionVisitor visitor, [NotNull] IEnumerable<Expression> columns)
       {
          var insertComma = false;
 
          foreach (var column in columns)
          {
             if (insertComma)
-               visitor.Visit(new SqlFragmentExpression(", "));
+               visitor.Visit(_expressionFactory.Fragment(", "));
 
             visitor.Visit(column);
             insertComma = true;
          }
+      }
+
+      /// <inheritdoc />
+      public override void Print(ExpressionPrinter expressionPrinter)
+      {
+         expressionPrinter.Append("ROW_NUMBER() OVER(");
+
+         if (_partitionBy.Count > 0)
+         {
+            expressionPrinter.Append("PARTITION BY ");
+            expressionPrinter.VisitList(_partitionBy);
+            expressionPrinter.Append(" ");
+         }
+
+         expressionPrinter.Append("ORDER BY ");
+         expressionPrinter.VisitList(_orderBy);
+         expressionPrinter.Append(")");
       }
 
       /// <inheritdoc />
@@ -84,7 +102,7 @@ namespace Thinktecture.EntityFrameworkCore.Query.Expressions
          if (ReferenceEquals(_orderBy, visitedOrderBy) && ReferenceEquals(visitedPartitionBy, _partitionBy))
             return this;
 
-         return new RowNumberExpression(visitedPartitionBy, visitedOrderBy);
+         return new RowNumberExpression(_expressionFactory, visitedPartitionBy, visitedOrderBy);
       }
    }
 }

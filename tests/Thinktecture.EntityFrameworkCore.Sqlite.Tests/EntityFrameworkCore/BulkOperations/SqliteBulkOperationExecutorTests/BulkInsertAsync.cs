@@ -32,12 +32,12 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqliteBulkOperationExe
       }
 
       [Fact]
-      public void Should_throw_when_inserting_queryType_without_providing_tablename()
+      public void Should_throw_when_inserting_entities_without_creating_table_first()
       {
-         ConfigureModel = builder => builder.Query<CustomTempTable>();
+         ConfigureModel = builder => builder.Entity<CustomTempTable>().HasNoKey();
 
          _sut.Awaiting(sut => sut.BulkInsertAsync(ActDbContext, ActDbContext.GetEntityType<CustomTempTable>(), new List<CustomTempTable>(), new SqliteBulkInsertOptions()))
-             .Should().Throw<InvalidOperationException>();
+             .Should().Throw<InvalidOperationException>().WithMessage("Cannot access destination table '\"CustomTempTable\"'.");
       }
 
       [Fact]

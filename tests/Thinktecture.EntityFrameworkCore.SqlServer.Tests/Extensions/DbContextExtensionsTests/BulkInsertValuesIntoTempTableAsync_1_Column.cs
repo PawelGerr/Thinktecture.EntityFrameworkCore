@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
-using System.Data.SqlClient;
 using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
 using JetBrains.Annotations;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Thinktecture.EntityFrameworkCore.BulkOperations;
 using Thinktecture.EntityFrameworkCore.TempTables;
@@ -52,7 +52,7 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
       }
 
       [Fact]
-      public async Task Should_insert_nullable_int()
+      public async Task Should_insert_nullable_int_of_a_keyless_entity()
       {
          ConfigureModel = builder => builder.ConfigureTempTable<int?>();
 
@@ -62,7 +62,26 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
          var tempTable = await query.Query.ToListAsync().ConfigureAwait(false);
          tempTable.Should()
                   .HaveCount(2).And
-                  .BeEquivalentTo(new TempTable<int?>(1), new TempTable<int?>(null));
+                  .BeEquivalentTo(new TempTable<int?>(1), null);
+      }
+
+      [Fact]
+      public async Task Should_insert_nullable_int_of_entity_with_a_key()
+      {
+         ConfigureModel = builder =>
+                          {
+                             var entityBuilder = builder.ConfigureTempTable<int?>(false);
+                             entityBuilder.HasKey(t => t.Column1);
+                             entityBuilder.Property(t => t.Column1).ValueGeneratedNever();
+                          };
+
+         var values = new List<int?> { 1, 2 };
+         var query = await ActDbContext.BulkInsertValuesIntoTempTableAsync(values, new SqlTempTableBulkInsertOptions { PrimaryKeyCreation = PrimaryKeyCreation.None }).ConfigureAwait(false);
+
+         var tempTable = await query.Query.ToListAsync().ConfigureAwait(false);
+         tempTable.Should()
+                  .HaveCount(2).And
+                  .BeEquivalentTo(new TempTable<int?>(1), new TempTable<int?>(2));
       }
 
       [Fact]
@@ -76,7 +95,7 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
          var tempTable = await query.Query.ToListAsync().ConfigureAwait(false);
          tempTable.Should()
                   .HaveCount(2).And
-                  .BeEquivalentTo(new TempTable<string>("value1"), new TempTable<string>(null));
+                  .BeEquivalentTo(new TempTable<string>("value1"), null);
       }
 
       [Fact]

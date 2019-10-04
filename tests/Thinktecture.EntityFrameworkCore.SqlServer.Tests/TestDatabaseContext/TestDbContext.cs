@@ -33,7 +33,7 @@ namespace Thinktecture.TestDatabaseContext
          modelBuilder.Entity<TestEntity>().Property("_privateField");
          modelBuilder.Entity<TestEntity>().Property(e => e.ConvertibleClass).HasConversion(c => c.Key, k => new ConvertibleClass(k));
 
-         modelBuilder.Entity<TestEntityWithAutoIncrement>().Property(e => e.Id).UseSqlServerIdentityColumn();
+         modelBuilder.Entity<TestEntityWithAutoIncrement>().Property(e => e.Id).UseIdentityColumn();
 
          modelBuilder.Entity<TestEntityWithRowVersion>()
                      .Property(e => e.RowVersion)
@@ -45,10 +45,10 @@ namespace Thinktecture.TestDatabaseContext
 
          ConfigureModel?.Invoke(modelBuilder);
 
-         modelBuilder.Query<InformationSchemaColumn>();
-         modelBuilder.Query<InformationSchemaTableConstraint>();
-         modelBuilder.Query<InformationSchemaConstraintColumn>();
-         modelBuilder.Query<InformationSchemaKeyColumn>();
+         modelBuilder.Entity<InformationSchemaColumn>().HasNoKey();
+         modelBuilder.Entity<InformationSchemaTableConstraint>().HasNoKey();
+         modelBuilder.Entity<InformationSchemaConstraintColumn>().HasNoKey();
+         modelBuilder.Entity<InformationSchemaKeyColumn>().HasNoKey();
       }
 
       [NotNull]
@@ -69,12 +69,12 @@ namespace Thinktecture.TestDatabaseContext
          if (type == null)
             throw new ArgumentNullException(nameof(type));
 
-         var tableName = Model.GetEntityType(type).Relational().TableName;
+         var tableName = Model.GetEntityType(type).GetTableName();
 
          if (!tableName.StartsWith("#", StringComparison.Ordinal))
             tableName = $"#{tableName}";
 
-         return Query<InformationSchemaColumn>().FromSql($@"
+         return Set<InformationSchemaColumn>().FromSqlInterpolated($@"
 SELECT
    *
 FROM
@@ -86,12 +86,12 @@ WHERE
       [NotNull]
       public IQueryable<InformationSchemaTableConstraint> GetTempTableConstraints<T>()
       {
-         var tableName = this.GetEntityType<T>().Relational().TableName;
+         var tableName = this.GetEntityType<T>().GetTableName();
 
          if (!tableName.StartsWith("#", StringComparison.Ordinal))
             tableName = $"#{tableName}";
 
-         return Query<InformationSchemaTableConstraint>().FromSql($@"
+         return Set<InformationSchemaTableConstraint>().FromSqlInterpolated($@"
 SELECT
    *
 FROM
@@ -103,12 +103,12 @@ WHERE
       [NotNull]
       public IQueryable<InformationSchemaConstraintColumn> GetTempTableConstraintsColumns<T>()
       {
-         var tableName = this.GetEntityType<T>().Relational().TableName;
+         var tableName = this.GetEntityType<T>().GetTableName();
 
          if (!tableName.StartsWith("#", StringComparison.Ordinal))
             tableName = $"#{tableName}";
 
-         return Query<InformationSchemaConstraintColumn>().FromSql($@"
+         return Set<InformationSchemaConstraintColumn>().FromSqlInterpolated($@"
 SELECT
    *
 FROM
@@ -120,7 +120,7 @@ WHERE
       [NotNull]
       public IQueryable<InformationSchemaKeyColumn> GetTempTableKeyColumns<T>()
       {
-         var tableName = this.GetEntityType<T>().Relational().TableName;
+         var tableName = this.GetEntityType<T>().GetTableName();
 
          return GetTempTableKeyColumns(tableName);
       }
@@ -128,7 +128,7 @@ WHERE
       [NotNull]
       public IQueryable<InformationSchemaKeyColumn> GetTempTableKeyColumns<TColumn1, TColumn2>()
       {
-         var tableName = this.GetEntityType<TempTable<TColumn1, TColumn2>>().Relational().TableName;
+         var tableName = this.GetEntityType<TempTable<TColumn1, TColumn2>>().GetTableName();
 
          return GetTempTableKeyColumns(tableName);
       }
@@ -138,7 +138,7 @@ WHERE
          if (!tableName.StartsWith("#", StringComparison.Ordinal))
             tableName = $"#{tableName}";
 
-         return Query<InformationSchemaKeyColumn>().FromSql($@"
+         return Set<InformationSchemaKeyColumn>().FromSqlInterpolated($@"
 SELECT
    *
 FROM

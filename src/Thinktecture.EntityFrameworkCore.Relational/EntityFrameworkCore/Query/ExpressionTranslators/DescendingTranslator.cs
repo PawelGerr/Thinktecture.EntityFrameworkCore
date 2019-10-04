@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Reflection;
 using JetBrains.Annotations;
-using Microsoft.EntityFrameworkCore.Query.ExpressionTranslators;
+using Microsoft.EntityFrameworkCore.Query;
+using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 using Thinktecture.EntityFrameworkCore.Query.Expressions;
 
 namespace Thinktecture.EntityFrameworkCore.Query.ExpressionTranslators
@@ -16,14 +16,25 @@ namespace Thinktecture.EntityFrameworkCore.Query.ExpressionTranslators
    {
       private static readonly MethodInfo _descendingMethodInfo = typeof(DbFunctionsExtensions).GetMethod(nameof(DbFunctionsExtensions.Descending), BindingFlags.Public | BindingFlags.Static);
 
+      private readonly ISqlExpressionFactory _expressionFactory;
+
+      /// <summary>
+      /// Initializes new instance of <see cref="DescendingTranslator"/>.
+      /// </summary>
+      /// <param name="expressionFactory">Expression factory.</param>
+      public DescendingTranslator([NotNull] ISqlExpressionFactory expressionFactory)
+      {
+         _expressionFactory = expressionFactory ?? throw new ArgumentNullException(nameof(expressionFactory));
+      }
+
       /// <inheritdoc />
       [CanBeNull]
-      public Expression Translate(MethodCallExpression methodCallExpression)
+      public SqlExpression Translate(SqlExpression instance, MethodInfo method, IReadOnlyList<SqlExpression> arguments)
       {
-         if (methodCallExpression.Method == _descendingMethodInfo)
+         if (method == _descendingMethodInfo)
          {
-            var column = methodCallExpression.Arguments[1];
-            return new DescendingExpression(column);
+            var column = arguments[1];
+            return new DescendingExpression(_expressionFactory, column);
          }
 
          return null;

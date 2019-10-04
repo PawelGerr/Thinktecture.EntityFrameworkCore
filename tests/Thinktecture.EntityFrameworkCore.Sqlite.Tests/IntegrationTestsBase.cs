@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Internal;
+using Microsoft.EntityFrameworkCore.Sqlite.Diagnostics.Internal;
 using Microsoft.Extensions.Logging;
 using Serilog;
 using Thinktecture.EntityFrameworkCore;
@@ -30,7 +31,7 @@ namespace Thinktecture
       protected Action<DbContextOptionsBuilder<TestDbContext>> ConfigureOptionsBuilder { get; set; }
       protected Action<ModelBuilder> ConfigureModel { get; set; }
 
-      protected IntegrationTestsBase([NotNull] ITestOutputHelper testOutputHelper,
+      protected IntegrationTestsBase([JetBrains.Annotations.NotNull] ITestOutputHelper testOutputHelper,
                                      [CanBeNull] IMigrationExecutionStrategy migrationExecutionStrategy = null)
          : base(migrationExecutionStrategy)
       {
@@ -40,11 +41,11 @@ namespace Thinktecture
          UseLoggerFactory(LoggerFactory);
       }
 
-      [NotNull]
+      [JetBrains.Annotations.NotNull]
       protected IDiagnosticsLogger<TCategory> CreateDiagnosticsLogger<TCategory>([CanBeNull] ILoggingOptions options = null, [CanBeNull] DiagnosticSource diagnosticSource = null)
          where TCategory : LoggerCategory<TCategory>, new()
       {
-         return new DiagnosticsLogger<TCategory>(LoggerFactory, options ?? new LoggingOptions(), diagnosticSource ?? new DiagnosticListener(typeof(TCategory).DisplayName()));
+         return new DiagnosticsLogger<TCategory>(LoggerFactory, options ?? new LoggingOptions(), diagnosticSource ?? new DiagnosticListener(typeof(TCategory).DisplayName()), new SqliteLoggingDefinitions());
       }
 
       protected override DbContextOptionsBuilder<TestDbContext> CreateOptionsBuilder(DbConnection connection)
@@ -71,7 +72,7 @@ namespace Thinktecture
          return ctx;
       }
 
-      private ILoggerFactory CreateLoggerFactory([NotNull] ITestOutputHelper testOutputHelper)
+      private ILoggerFactory CreateLoggerFactory([JetBrains.Annotations.NotNull] ITestOutputHelper testOutputHelper)
       {
          if (testOutputHelper == null)
             throw new ArgumentNullException(nameof(testOutputHelper));

@@ -19,12 +19,10 @@ namespace Thinktecture.EntityFrameworkCore.Data
       IReadOnlyList<IProperty> Properties { get; }
 
       /// <summary>
-      /// Gets the index of the provided <paramref name="property"/> that matches with the one of <see cref="IDataRecord.GetValue"/>.
+      /// Gets the index of the provided <paramref name="entityProperty"/> that matches with the one of <see cref="IDataRecord.GetValue"/>.
       /// </summary>
-      /// <param name="property">Property info to get the index for.</param>
+      /// <param name="entityProperty">Property to get the index for.</param>
       /// <returns>Index of the property.</returns>
-#pragma warning disable CA1716
-      int GetPropertyIndex([NotNull] IProperty property);
-#pragma warning restore CA1716
+      int GetPropertyIndex([NotNull] IProperty entityProperty);
    }
 }

@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.Metadata;
@@ -15,6 +15,7 @@ namespace Thinktecture.EntityFrameworkCore.Data
    /// Data reader for Entity Framework Core entities.
    /// </summary>
    /// <typeparam name="T">Type of the entity.</typeparam>
+   [SuppressMessage("ReSharper", "EF1001")]
    public sealed class EntityDataReader<T> : IEntityDataReader
       where T : class
    {
@@ -34,9 +35,9 @@ namespace Thinktecture.EntityFrameworkCore.Data
       /// <param name="ctx">Database context.</param>
       /// <param name="entities">Entities to read.</param>
       /// <param name="properties">Properties to read.</param>
-      public EntityDataReader([NotNull] DbContext ctx,
-                              [NotNull] IEnumerable<T> entities,
-                              [NotNull] IReadOnlyList<IProperty> properties)
+      public EntityDataReader([JetBrains.Annotations.NotNull] DbContext ctx,
+                              [JetBrains.Annotations.NotNull] IEnumerable<T> entities,
+                              [JetBrains.Annotations.NotNull] IReadOnlyList<IProperty> properties)
       {
          if (entities == null)
             throw new ArgumentNullException(nameof(entities));
@@ -51,8 +52,8 @@ namespace Thinktecture.EntityFrameworkCore.Data
          _enumerator = entities.GetEnumerator();
       }
 
-      [NotNull]
-      private Dictionary<int, Func<T, object>> BuildPropertyGetterLookup([NotNull] IReadOnlyList<IProperty> properties)
+      [JetBrains.Annotations.NotNull]
+      private Dictionary<int, Func<T, object>> BuildPropertyGetterLookup([JetBrains.Annotations.NotNull] IReadOnlyList<IProperty> properties)
       {
          var lookup = new Dictionary<int, Func<T, object>>();
 
@@ -71,10 +72,10 @@ namespace Thinktecture.EntityFrameworkCore.Data
          return lookup;
       }
 
-      [NotNull]
-      private Func<T, object> BuildGetter([NotNull] IProperty property)
+      [JetBrains.Annotations.NotNull]
+      private Func<T, object> BuildGetter([JetBrains.Annotations.NotNull] IProperty property)
       {
-         if (property.IsShadowProperty)
+         if (property.IsShadowProperty())
          {
             var shadowPropGetter = CreateShadowPropertyGetter(property);
             return shadowPropGetter.GetValue;
@@ -88,8 +89,8 @@ namespace Thinktecture.EntityFrameworkCore.Data
          return getter.GetClrValue;
       }
 
-      [NotNull]
-      private static Func<T, object> UseConverter([NotNull] Func<T, object> getter, [NotNull] ValueConverter converter)
+      [JetBrains.Annotations.NotNull]
+      private static Func<T, object> UseConverter([JetBrains.Annotations.NotNull] Func<T, object> getter, [JetBrains.Annotations.NotNull] ValueConverter converter)
       {
          var convert = converter.ConvertToProvider;
 
@@ -104,8 +105,8 @@ namespace Thinktecture.EntityFrameworkCore.Data
                 };
       }
 
-      [NotNull]
-      private IShadowPropertyGetter CreateShadowPropertyGetter([NotNull] IProperty property)
+      [JetBrains.Annotations.NotNull]
+      private IShadowPropertyGetter CreateShadowPropertyGetter([JetBrains.Annotations.NotNull] IProperty property)
       {
          var currentValueGetter = property.GetPropertyAccessors().CurrentValueGetter;
          var shadowPropGetterType = typeof(ShadowPropertyGetter<>).MakeGenericType(property.ClrType);
@@ -114,17 +115,17 @@ namespace Thinktecture.EntityFrameworkCore.Data
       }
 
       /// <inheritdoc />
-      public int GetPropertyIndex(IProperty property)
+      public int GetPropertyIndex(IProperty entityProperty)
       {
-         if (property == null)
-            throw new ArgumentNullException(nameof(property));
+         if (entityProperty == null)
+            throw new ArgumentNullException(nameof(entityProperty));
 
-         var index = Properties.IndexOf(property);
+         var index = Properties.IndexOf(entityProperty);
 
          if (index >= 0)
             return index;
 
-         throw new ArgumentException($"The property '{property.Name}' of type '{property.ClrType.DisplayName()}' cannot be read by current reader.");
+         throw new ArgumentException($"The property '{entityProperty.Name}' of type '{entityProperty.ClrType.DisplayName()}' cannot be read by current reader.");
       }
 
       /// <inheritdoc />
