@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Thinktecture.EntityFrameworkCore.Infrastructure;
 using Thinktecture.EntityFrameworkCore.Migrations;
+using Thinktecture.EntityFrameworkCore.Query;
 
 // ReSharper disable once CheckNamespace
 namespace Thinktecture
@@ -36,8 +37,6 @@ namespace Thinktecture
       public static SqlServerDbContextOptionsBuilder AddRowNumberSupport([NotNull] this SqlServerDbContextOptionsBuilder sqlServerOptionsBuilder,
                                                                          bool addRowNumberSupport = true)
       {
-         ((IRelationalDbContextOptionsBuilderInfrastructure)sqlServerOptionsBuilder).OptionsBuilder.AddDescendingSupport();
-
          return AddOrUpdateExtensions(sqlServerOptionsBuilder, extension => extension.AddRowNumberSupport = addRowNumberSupport);
       }
 

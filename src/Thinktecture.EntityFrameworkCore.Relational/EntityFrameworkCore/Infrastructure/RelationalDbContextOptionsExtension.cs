@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Thinktecture.EntityFrameworkCore.Migrations;
-using Thinktecture.EntityFrameworkCore.Query.ExpressionTranslators;
+using Thinktecture.EntityFrameworkCore.Query;
 
 namespace Thinktecture.EntityFrameworkCore.Infrastructure
 {
@@ -24,17 +24,13 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       private static readonly IRelationalDbContextComponentDecorator _defaultDecorator = new RelationalDbContextComponentDecorator();
 
       private readonly List<ServiceDescriptor> _serviceDescriptors;
+      private readonly List<Type> _evaluatableExpressionFilterPlugins;
 
       private DbContextOptionsExtensionInfo _info;
 
       /// <inheritdoc />
       [JetBrains.Annotations.NotNull]
       public DbContextOptionsExtensionInfo Info => _info ??= new RelationalDbContextOptionsExtensionInfo(this);
-
-      /// <summary>
-      /// Indication whether to add support for "order by desc".
-      /// </summary>
-      public bool AddDescendingSupport { get; set; }
 
       /// <summary>
       /// Adds components so Entity Framework Core can handle changes of the database schema at runtime.
@@ -52,13 +48,24 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       public RelationalDbContextOptionsExtension()
       {
          _serviceDescriptors = new List<ServiceDescriptor>();
+         _evaluatableExpressionFilterPlugins = new List<Type>();
       }
 
       /// <inheritdoc />
       public void ApplyServices(IServiceCollection services)
       {
          services.TryAddSingleton(this);
-         services.Add<IMethodCallTranslatorPlugin, RelationalMethodCallTranslatorPlugin>(GetLifetime<IMethodCallTranslatorPlugin>());
+
+         if (_evaluatableExpressionFilterPlugins.Count > 0)
+         {
+            var decorator = ComponentDecorator ?? _defaultDecorator;
+            decorator.RegisterDecorator<IEvaluatableExpressionFilter>(services, typeof(CompositeEvaluatableExpressionFilter<>));
+
+            foreach (var plugin in _evaluatableExpressionFilterPlugins)
+            {
+               services.AddSingleton(typeof(IEvaluatableExpressionFilterPlugin), plugin);
+            }
+         }
 
          if (AddSchemaRespectingComponents)
             RegisterDefaultSchemaRespectingComponents(services);
@@ -118,6 +125,19 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
          _serviceDescriptors.Add(serviceDescriptor);
       }
 
+      /// <summary>
+      /// Adds an <see cref="IEvaluatableExpressionFilterPlugin"/> to the dependency injection.
+      /// </summary>
+      /// <typeparam name="T">Type of the plugin.</typeparam>
+      public void AddEvaluatableExpressionFilterPlugin<T>()
+         where T : IEvaluatableExpressionFilterPlugin
+      {
+         var type = typeof(T);
+
+         if (!_evaluatableExpressionFilterPlugins.Contains(type))
+            _evaluatableExpressionFilterPlugins.Add(type);
+      }
+
       private class RelationalDbContextOptionsExtensionInfo : DbContextOptionsExtensionInfo
       {
          private readonly RelationalDbContextOptionsExtension _extension;
@@ -130,8 +150,8 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
          public override string LogFragment => _logFragment ??= $@"
 {{
    'Number of custom services'={_extension._serviceDescriptors.Count},
-   'Default schema respecting components added'={_extension.AddSchemaRespectingComponents},
-   'DescendingSupport'={_extension.AddDescendingSupport}
+   'Number of evaluatable expression filter plugins'={_extension._evaluatableExpressionFilterPlugins.Count},
+   'Default schema respecting components added'={_extension.AddSchemaRespectingComponents}
 }}";
 
          public RelationalDbContextOptionsExtensionInfo([JetBrains.Annotations.NotNull] RelationalDbContextOptionsExtension extension)

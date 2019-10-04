@@ -56,7 +56,7 @@ namespace Thinktecture
                                   .Select(c => new
                                                {
                                                   c.Id,
-                                                  RowNumber = EF.Functions.RowNumber(c.Id)
+                                                  RowNumber = EF.Functions.RowNumber(EF.Functions.OrderBy(c.Id))
                                                })
                                   .ToListAsync();
 
@@ -67,7 +67,7 @@ namespace Thinktecture
                                                   {
                                                      o.Id,
                                                      o.CustomerId,
-                                                     RowNumber = EF.Functions.RowNumber(o.Date)
+                                                     RowNumber = EF.Functions.RowNumber(EF.Functions.OrderBy(o.Date))
                                                   })
                                      // Previous query must be a sub query to access "RowNumber"
                                      .AsSubQuery()

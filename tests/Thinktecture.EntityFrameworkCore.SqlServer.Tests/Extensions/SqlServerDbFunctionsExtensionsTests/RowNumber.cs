@@ -29,7 +29,7 @@ namespace Thinktecture.Extensions.SqlServerDbFunctionsExtensionsTests
                                   .Select(e => new
                                                {
                                                   e.Name,
-                                                  RowNumber = EF.Functions.RowNumber(e.Name)
+                                                  RowNumber = EF.Functions.RowNumber(EF.Functions.OrderBy(e.Name))
                                                })
                                   .ToList();
 
@@ -48,7 +48,7 @@ namespace Thinktecture.Extensions.SqlServerDbFunctionsExtensionsTests
                                   .Select(e => new
                                                {
                                                   e.Id,
-                                                  RowNumber = EF.Functions.RowNumber(e.Id)
+                                                  RowNumber = EF.Functions.RowNumber(EF.Functions.OrderBy(e.Id))
                                                })
                                   .ToList();
 
@@ -67,7 +67,7 @@ namespace Thinktecture.Extensions.SqlServerDbFunctionsExtensionsTests
                                   .Select(e => new
                                                {
                                                   e.Name,
-                                                  RowNumber = EF.Functions.RowNumber(EF.Functions.Descending(e.Name))
+                                                  RowNumber = EF.Functions.RowNumber(EF.Functions.OrderByDescending(e.Name))
                                                })
                                   .ToList();
 
@@ -86,11 +86,7 @@ namespace Thinktecture.Extensions.SqlServerDbFunctionsExtensionsTests
                                   .Select(e => new
                                                {
                                                   e.Count,
-                                                  RowNumber = EF.Functions.RowNumber(new
-                                                                                     {
-                                                                                        e.Name,
-                                                                                        e.Count
-                                                                                     })
+                                                  RowNumber = EF.Functions.RowNumber(EF.Functions.OrderBy(e.Name).ThenBy(e.Count))
                                                })
                                   .ToList();
 
@@ -109,11 +105,7 @@ namespace Thinktecture.Extensions.SqlServerDbFunctionsExtensionsTests
                                   .Select(e => new
                                                {
                                                   e.Count,
-                                                  RowNumber = EF.Functions.RowNumber(new
-                                                                                     {
-                                                                                        e.Name,
-                                                                                        Count = EF.Functions.Descending(e.Count)
-                                                                                     })
+                                                  RowNumber = EF.Functions.RowNumber(EF.Functions.OrderBy(e.Name).ThenByDescending(e.Count))
                                                })
                                   .ToList();
 
@@ -132,7 +124,7 @@ namespace Thinktecture.Extensions.SqlServerDbFunctionsExtensionsTests
                                   .Select(e => new
                                                {
                                                   e.Name,
-                                                  RowNumber = EF.Functions.RowNumber(e.Name, e.Name)
+                                                  RowNumber = EF.Functions.RowNumber(e.Name, EF.Functions.OrderBy(e.Name))
                                                })
                                   .ToList();
 
@@ -151,16 +143,8 @@ namespace Thinktecture.Extensions.SqlServerDbFunctionsExtensionsTests
                                   .Select(e => new
                                                {
                                                   e.Count,
-                                                  RowNumber = EF.Functions.RowNumber(new
-                                                                                     {
-                                                                                        e.Name,
-                                                                                        e.Count
-                                                                                     },
-                                                                                     new
-                                                                                     {
-                                                                                        e.Name,
-                                                                                        e.Count
-                                                                                     })
+                                                  RowNumber = EF.Functions.RowNumber(e.Name, e.Count,
+                                                                                     EF.Functions.OrderBy(e.Name).ThenBy(e.Count))
                                                })
                                   .ToList();
 
@@ -178,7 +162,7 @@ namespace Thinktecture.Extensions.SqlServerDbFunctionsExtensionsTests
                                  .Select(e => new
                                               {
                                                  e.Name,
-                                                 RowNumber = EF.Functions.RowNumber(e.Name)
+                                                 RowNumber = EF.Functions.RowNumber(EF.Functions.OrderBy(e.Name))
                                               })
                                  .Where(i => i.RowNumber == 1);
 
@@ -197,7 +181,7 @@ namespace Thinktecture.Extensions.SqlServerDbFunctionsExtensionsTests
                                  .Select(e => new
                                               {
                                                  e,
-                                                 RowNumber = EF.Functions.RowNumber(e.Name)
+                                                 RowNumber = EF.Functions.RowNumber(EF.Functions.OrderBy(e.Name))
                                               });
 
          var entities = query.ToList();
@@ -224,7 +208,7 @@ namespace Thinktecture.Extensions.SqlServerDbFunctionsExtensionsTests
                                   .Select(e => new
                                                {
                                                   e.Name,
-                                                  RowNumber = EF.Functions.RowNumber(e.Name)
+                                                  RowNumber = EF.Functions.RowNumber(EF.Functions.OrderBy(e.Name))
                                                })
                                   .AsSubQuery()
                                   .Where(i => i.RowNumber == 1)

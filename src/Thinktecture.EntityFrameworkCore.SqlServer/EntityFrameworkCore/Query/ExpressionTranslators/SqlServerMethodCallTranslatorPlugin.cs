@@ -17,8 +17,7 @@ namespace Thinktecture.EntityFrameworkCore.Query.ExpressionTranslators
       /// <summary>
       /// Initializes new instance of <see cref="SqlServerMethodCallTranslatorPlugin"/>.
       /// </summary>
-      public SqlServerMethodCallTranslatorPlugin([NotNull] ISqlExpressionFactory expressionFactory,
-                                                 [NotNull] SqlServerDbContextOptionsExtension extension)
+      public SqlServerMethodCallTranslatorPlugin([NotNull] SqlServerDbContextOptionsExtension extension)
       {
          if (extension == null)
             throw new ArgumentNullException(nameof(extension));
@@ -26,7 +25,7 @@ namespace Thinktecture.EntityFrameworkCore.Query.ExpressionTranslators
          var translators = new List<IMethodCallTranslator>();
 
          if (extension.AddRowNumberSupport)
-            translators.Add(new SqlServerRowNumberTranslator(expressionFactory));
+            translators.Add(new SqlServerRowNumberTranslator());
 
          Translators = translators;
       }
