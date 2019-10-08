@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using FluentAssertions;
-using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Migrations.Operations;
 using Moq;
@@ -15,7 +14,7 @@ namespace Thinktecture.EntityFrameworkCore.Migrations.DefaultSchemaRespectingMig
 {
    public class CreateMigration : DefaultSchemaRespectingMigrationAssemblyTestsBase
    {
-      public CreateMigration([NotNull] ITestOutputHelper testOutputHelper)
+      public CreateMigration(ITestOutputHelper testOutputHelper)
          : base(testOutputHelper)
       {
       }
@@ -26,7 +25,7 @@ namespace Thinktecture.EntityFrameworkCore.Migrations.DefaultSchemaRespectingMig
          CurrentCtxMock.Setup(c => c.Context).Returns(CreateContextWithSchema("Schema1"));
 
          // ReSharper disable once AssignNullToNotNullAttribute
-         SUT.Invoking(sut => sut.CreateMigration(null, "DummyProvider"))
+         SUT.Invoking(sut => sut.CreateMigration(null!, "DummyProvider"))
             .Should().Throw<ArgumentNullException>();
       }
 
@@ -36,7 +35,7 @@ namespace Thinktecture.EntityFrameworkCore.Migrations.DefaultSchemaRespectingMig
          CurrentCtxMock.Setup(c => c.Context).Returns(CreateContextWithSchema("Schema1"));
 
          // ReSharper disable once AssignNullToNotNullAttribute
-         SUT.Invoking(sut => sut.CreateMigration(typeof(MigrationWithSchema).GetTypeInfo(), null))
+         SUT.Invoking(sut => sut.CreateMigration(typeof(MigrationWithSchema).GetTypeInfo(), null!))
             .Should().Throw<ArgumentNullException>();
       }
 
@@ -121,7 +120,7 @@ namespace Thinktecture.EntityFrameworkCore.Migrations.DefaultSchemaRespectingMig
          migration.DownOperations[0].Should().BeOfType<DropColumnOperation>().Subject.Schema.Should().BeNull();
       }
 
-      private void VerifySchema([NotNull] Migration migration, [CanBeNull] string schema)
+      private void VerifySchema(Migration migration, string? schema)
       {
          SchemaSetterMock.Verify(s => s.SetSchema(migration.UpOperations, schema), Times.Once);
          SchemaSetterMock.Verify(s => s.SetSchema(migration.DownOperations, schema), Times.Once);

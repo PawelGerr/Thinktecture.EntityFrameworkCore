@@ -25,9 +25,8 @@ namespace Thinktecture
       /// <paramref name="type"/> is <c>null</c>.
       /// </exception>
       /// <exception cref="ArgumentException">The provided type <paramref name="type"/> is not known by provided <paramref name="model"/>.</exception>
-      [JetBrains.Annotations.NotNull]
       [SuppressMessage("ReSharper", "EF1001")]
-      public static IEntityType GetEntityType([JetBrains.Annotations.NotNull] this IModel model, [JetBrains.Annotations.NotNull] Type type)
+      public static IEntityType GetEntityType(this IModel model, Type type)
       {
          if (model == null)
             throw new ArgumentNullException(nameof(model));

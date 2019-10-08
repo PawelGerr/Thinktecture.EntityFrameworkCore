@@ -1,5 +1,4 @@
 using System;
-using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -21,8 +20,7 @@ namespace Thinktecture
       /// <typeparam name="TContext">Type of the context.</typeparam>
       /// <typeparam name="TPlugin">Type of the plugin implementing <see cref="IRelationalTypeMappingSourcePlugin"/>.</typeparam>
       /// <returns>Options builder for chaining.</returns>
-      [NotNull]
-      public static DbContextOptionsBuilder<TContext> AddRelationalTypeMappingSourcePlugin<TContext, TPlugin>([NotNull] this DbContextOptionsBuilder<TContext> builder)
+      public static DbContextOptionsBuilder<TContext> AddRelationalTypeMappingSourcePlugin<TContext, TPlugin>(this DbContextOptionsBuilder<TContext> builder)
          where TContext : DbContext
          where TPlugin : IRelationalTypeMappingSourcePlugin
       {
@@ -37,8 +35,7 @@ namespace Thinktecture
       /// <param name="builder">Options builder.</param>
       /// <typeparam name="TPlugin">Type of the plugin implementing <see cref="IRelationalTypeMappingSourcePlugin"/>.</typeparam>
       /// <returns>Options builder for chaining.</returns>
-      [NotNull]
-      public static DbContextOptionsBuilder AddRelationalTypeMappingSourcePlugin<TPlugin>([NotNull] this DbContextOptionsBuilder builder)
+      public static DbContextOptionsBuilder AddRelationalTypeMappingSourcePlugin<TPlugin>(this DbContextOptionsBuilder builder)
          where TPlugin : IRelationalTypeMappingSourcePlugin
       {
          builder.AddOrUpdateExtension<RelationalDbContextOptionsExtension>(extension => extension.AddRelationalTypeMappingSourcePlugin(typeof(TPlugin)));
@@ -52,8 +49,7 @@ namespace Thinktecture
       /// <param name="addDefaultSchemaRespectingComponents">Indication whether to enable or disable the feature.</param>
       /// <returns>The provided <paramref name="builder"/>.</returns>
       /// <exception cref="ArgumentNullException"><paramref name="builder"/> is <c>null</c>.</exception>
-      [NotNull]
-      public static DbContextOptionsBuilder<T> AddSchemaRespectingComponents<T>([NotNull] this DbContextOptionsBuilder<T> builder,
+      public static DbContextOptionsBuilder<T> AddSchemaRespectingComponents<T>(this DbContextOptionsBuilder<T> builder,
                                                                                 bool addDefaultSchemaRespectingComponents = true)
          where T : DbContext
       {
@@ -68,8 +64,7 @@ namespace Thinktecture
       /// <param name="addDefaultSchemaRespectingComponents">Indication whether to enable or disable the feature.</param>
       /// <returns>The provided <paramref name="builder"/>.</returns>
       /// <exception cref="ArgumentNullException"><paramref name="builder"/> is <c>null</c>.</exception>
-      [NotNull]
-      public static DbContextOptionsBuilder AddSchemaRespectingComponents([NotNull] this DbContextOptionsBuilder builder,
+      public static DbContextOptionsBuilder AddSchemaRespectingComponents(this DbContextOptionsBuilder builder,
                                                                           bool addDefaultSchemaRespectingComponents = true)
       {
          builder.AddOrUpdateExtension<RelationalDbContextOptionsExtension>(extension => extension.AddSchemaRespectingComponents = addDefaultSchemaRespectingComponents);
@@ -84,8 +79,7 @@ namespace Thinktecture
       /// <typeparam name="TPlugin">Type of the plugin.</typeparam>
       /// <returns>The provided <paramref name="builder"/>.</returns>
       /// <exception cref="ArgumentNullException"><paramref name="builder"/> is <c>null</c>.</exception>
-      [NotNull]
-      public static DbContextOptionsBuilder<T> AddEvaluatableExpressionFilterPlugin<T, TPlugin>([NotNull] this DbContextOptionsBuilder<T> builder)
+      public static DbContextOptionsBuilder<T> AddEvaluatableExpressionFilterPlugin<T, TPlugin>(this DbContextOptionsBuilder<T> builder)
          where T : DbContext
          where TPlugin : IEvaluatableExpressionFilterPlugin
       {
@@ -100,8 +94,7 @@ namespace Thinktecture
       /// <typeparam name="T">Type of the plugin.</typeparam>
       /// <returns>The provided <paramref name="builder"/>.</returns>
       /// <exception cref="ArgumentNullException"><paramref name="builder"/> is <c>null</c>.</exception>
-      [NotNull]
-      public static DbContextOptionsBuilder AddEvaluatableExpressionFilterPlugin<T>([NotNull] this DbContextOptionsBuilder builder)
+      public static DbContextOptionsBuilder AddEvaluatableExpressionFilterPlugin<T>(this DbContextOptionsBuilder builder)
          where T : IEvaluatableExpressionFilterPlugin
       {
          builder.AddOrUpdateExtension<RelationalDbContextOptionsExtension>(extension => extension.AddEvaluatableExpressionFilterPlugin<T>());
@@ -119,8 +112,8 @@ namespace Thinktecture
       /// - or
       /// <paramref name="callback"/> is null.
       /// </exception>
-      public static void AddOrUpdateExtension<TExtension>([NotNull] this DbContextOptionsBuilder optionsBuilder,
-                                                          [NotNull] Action<TExtension> callback)
+      public static void AddOrUpdateExtension<TExtension>(this DbContextOptionsBuilder optionsBuilder,
+                                                          Action<TExtension> callback)
          where TExtension : class, IDbContextOptionsExtension, new()
       {
          if (optionsBuilder == null)

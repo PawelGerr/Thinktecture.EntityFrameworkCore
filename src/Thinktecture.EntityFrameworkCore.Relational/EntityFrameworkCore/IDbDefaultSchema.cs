@@ -8,6 +8,6 @@ namespace Thinktecture.EntityFrameworkCore
       /// <summary>
       /// Database schema.
       /// </summary>
-      string Schema { get; }
+      string? Schema { get; }
    }
 }

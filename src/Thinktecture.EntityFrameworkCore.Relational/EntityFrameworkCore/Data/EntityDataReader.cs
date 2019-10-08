@@ -21,7 +21,7 @@ namespace Thinktecture.EntityFrameworkCore.Data
    {
       private readonly DbContext _ctx;
       private readonly IEnumerator<T> _enumerator;
-      private readonly Dictionary<int, Func<T, object>> _propertyGetterLookup;
+      private readonly Dictionary<int, Func<T, object?>> _propertyGetterLookup;
 
       /// <inheritdoc />
       public IReadOnlyList<IProperty> Properties { get; }
@@ -35,9 +35,9 @@ namespace Thinktecture.EntityFrameworkCore.Data
       /// <param name="ctx">Database context.</param>
       /// <param name="entities">Entities to read.</param>
       /// <param name="properties">Properties to read.</param>
-      public EntityDataReader([JetBrains.Annotations.NotNull] DbContext ctx,
-                              [JetBrains.Annotations.NotNull] IEnumerable<T> entities,
-                              [JetBrains.Annotations.NotNull] IReadOnlyList<IProperty> properties)
+      public EntityDataReader(DbContext ctx,
+                              IEnumerable<T> entities,
+                              IReadOnlyList<IProperty> properties)
       {
          if (entities == null)
             throw new ArgumentNullException(nameof(entities));
@@ -52,10 +52,9 @@ namespace Thinktecture.EntityFrameworkCore.Data
          _enumerator = entities.GetEnumerator();
       }
 
-      [JetBrains.Annotations.NotNull]
-      private Dictionary<int, Func<T, object>> BuildPropertyGetterLookup([JetBrains.Annotations.NotNull] IReadOnlyList<IProperty> properties)
+      private Dictionary<int, Func<T, object?>> BuildPropertyGetterLookup(IReadOnlyList<IProperty> properties)
       {
-         var lookup = new Dictionary<int, Func<T, object>>();
+         var lookup = new Dictionary<int, Func<T, object?>>();
 
          for (var i = 0; i < properties.Count; i++)
          {
@@ -72,8 +71,7 @@ namespace Thinktecture.EntityFrameworkCore.Data
          return lookup;
       }
 
-      [JetBrains.Annotations.NotNull]
-      private Func<T, object> BuildGetter([JetBrains.Annotations.NotNull] IProperty property)
+      private Func<T, object?> BuildGetter(IProperty property)
       {
          if (property.IsShadowProperty())
          {
@@ -89,8 +87,7 @@ namespace Thinktecture.EntityFrameworkCore.Data
          return getter.GetClrValue;
       }
 
-      [JetBrains.Annotations.NotNull]
-      private static Func<T, object> UseConverter([JetBrains.Annotations.NotNull] Func<T, object> getter, [JetBrains.Annotations.NotNull] ValueConverter converter)
+      private static Func<T, object?> UseConverter(Func<T, object?> getter, ValueConverter converter)
       {
          var convert = converter.ConvertToProvider;
 
@@ -105,8 +102,7 @@ namespace Thinktecture.EntityFrameworkCore.Data
                 };
       }
 
-      [JetBrains.Annotations.NotNull]
-      private IShadowPropertyGetter CreateShadowPropertyGetter([JetBrains.Annotations.NotNull] IProperty property)
+      private IShadowPropertyGetter CreateShadowPropertyGetter(IProperty property)
       {
          var currentValueGetter = property.GetPropertyAccessors().CurrentValueGetter;
          var shadowPropGetterType = typeof(ShadowPropertyGetter<>).MakeGenericType(property.ClrType);
@@ -129,7 +125,7 @@ namespace Thinktecture.EntityFrameworkCore.Data
       }
 
       /// <inheritdoc />
-      public object GetValue(int i)
+      public object? GetValue(int i)
       {
          return _propertyGetterLookup[i](_enumerator.Current);
       }

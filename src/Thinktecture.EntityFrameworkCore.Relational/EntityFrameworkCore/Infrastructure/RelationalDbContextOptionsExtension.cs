@@ -26,10 +26,9 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       private readonly List<ServiceDescriptor> _serviceDescriptors;
       private readonly List<Type> _evaluatableExpressionFilterPlugins;
 
-      private DbContextOptionsExtensionInfo _info;
+      private DbContextOptionsExtensionInfo? _info;
 
       /// <inheritdoc />
-      [JetBrains.Annotations.NotNull]
       public DbContextOptionsExtensionInfo Info => _info ??= new RelationalDbContextOptionsExtensionInfo(this);
 
       /// <summary>
@@ -40,7 +39,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       /// <summary>
       /// Decorates components.
       /// </summary>
-      public IRelationalDbContextComponentDecorator ComponentDecorator { get; set; }
+      public IRelationalDbContextComponentDecorator? ComponentDecorator { get; set; }
 
       /// <summary>
       /// Initializes new instance of <see cref="RelationalDbContextOptionsExtension"/>.
@@ -81,7 +80,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
          return EntityFrameworkRelationalServicesBuilder.RelationalServices[typeof(TService)].Lifetime;
       }
 
-      private void RegisterDefaultSchemaRespectingComponents([JetBrains.Annotations.NotNull] IServiceCollection services)
+      private void RegisterDefaultSchemaRespectingComponents(IServiceCollection services)
       {
          services.AddSingleton<IMigrationOperationSchemaSetter, MigrationOperationSchemaSetter>();
          var decorator = ComponentDecorator ?? _defaultDecorator;
@@ -101,7 +100,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       /// </summary>
       /// <param name="type">An implementation of <see cref="IRelationalTypeMappingSourcePlugin"/>.</param>
       /// <exception cref="ArgumentNullException"><paramref name="type"/> is <c>null</c>.</exception>
-      public void AddRelationalTypeMappingSourcePlugin([JetBrains.Annotations.NotNull] Type type)
+      public void AddRelationalTypeMappingSourcePlugin(Type type)
       {
          if (type == null)
             throw new ArgumentNullException(nameof(type));
@@ -117,7 +116,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       /// </summary>
       /// <param name="serviceDescriptor">Service descriptor to add.</param>
       /// <exception cref="ArgumentNullException"><paramref name="serviceDescriptor"/> is <c>null</c>.</exception>
-      public void Add([JetBrains.Annotations.NotNull] ServiceDescriptor serviceDescriptor)
+      public void Add(ServiceDescriptor serviceDescriptor)
       {
          if (serviceDescriptor == null)
             throw new ArgumentNullException(nameof(serviceDescriptor));
@@ -144,9 +143,8 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
 
          public override bool IsDatabaseProvider => false;
 
-         private string _logFragment;
+         private string? _logFragment;
 
-         [JetBrains.Annotations.NotNull]
          public override string LogFragment => _logFragment ??= $@"
 {{
    'Number of custom services'={_extension._serviceDescriptors.Count},
@@ -154,7 +152,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
    'Default schema respecting components added'={_extension.AddSchemaRespectingComponents}
 }}";
 
-         public RelationalDbContextOptionsExtensionInfo([JetBrains.Annotations.NotNull] RelationalDbContextOptionsExtension extension)
+         public RelationalDbContextOptionsExtensionInfo(RelationalDbContextOptionsExtension extension)
             : base(extension)
          {
             _extension = extension ?? throw new ArgumentNullException(nameof(extension));

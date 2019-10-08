@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
-using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Thinktecture.EntityFrameworkCore.BulkOperations;
@@ -25,10 +24,9 @@ namespace Thinktecture
       /// <param name="cancellationToken">Cancellation token.</param>
       /// <typeparam name="T">Entity type.</typeparam>
       /// <exception cref="ArgumentNullException"> <paramref name="ctx"/> or <paramref name="entities"/> is <c>null</c>.</exception>
-      [NotNull]
-      public static Task BulkInsertAsync<T>([NotNull] this DbContext ctx,
-                                            [NotNull] IEnumerable<T> entities,
-                                            [NotNull] Expression<Func<T, object>> propertiesToInsert,
+      public static Task BulkInsertAsync<T>(this DbContext ctx,
+                                            IEnumerable<T> entities,
+                                            Expression<Func<T, object>> propertiesToInsert,
                                             CancellationToken cancellationToken = default)
          where T : class
       {
@@ -49,23 +47,22 @@ namespace Thinktecture
       /// <param name="cancellationToken">Cancellation token.</param>
       /// <typeparam name="T">Entity type.</typeparam>
       /// <exception cref="ArgumentNullException"> <paramref name="ctx"/> or <paramref name="entities"/> is <c>null</c>.</exception>
-      [NotNull]
-      public static Task BulkInsertAsync<T>([NotNull] this DbContext ctx,
-                                            [NotNull] IEnumerable<T> entities,
-                                            [CanBeNull] IBulkInsertOptions options = null,
+      public static Task BulkInsertAsync<T>(this DbContext ctx,
+                                            IEnumerable<T> entities,
+                                            IBulkInsertOptions? options = null,
                                             CancellationToken cancellationToken = default)
          where T : class
       {
          var bulkInsertExecutor = ctx.GetService<IBulkOperationExecutor>();
-         options = options ?? bulkInsertExecutor.CreateOptions();
+         options ??= bulkInsertExecutor.CreateOptions();
 
          return BulkInsertAsync(bulkInsertExecutor, ctx, entities, options, cancellationToken);
       }
 
-      private static async Task BulkInsertAsync<T>([NotNull] IBulkOperationExecutor bulkInsertExecutor,
-                                                   [NotNull] DbContext ctx,
-                                                   [NotNull] IEnumerable<T> entities,
-                                                   [NotNull] IBulkInsertOptions options,
+      private static async Task BulkInsertAsync<T>(IBulkOperationExecutor bulkInsertExecutor,
+                                                   DbContext ctx,
+                                                   IEnumerable<T> entities,
+                                                   IBulkInsertOptions options,
                                                    CancellationToken cancellationToken)
          where T : class
       {

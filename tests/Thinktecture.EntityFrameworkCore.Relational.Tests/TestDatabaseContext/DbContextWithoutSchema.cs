@@ -1,14 +1,13 @@
 using System;
-using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 
 namespace Thinktecture.TestDatabaseContext
 {
    public class DbContextWithoutSchema : DbContext
    {
-      public Action<ModelBuilder> ConfigureModel { get; set; }
+      public Action<ModelBuilder>? ConfigureModel { get; set; }
 
-      public DbContextWithoutSchema([NotNull] DbContextOptions<DbContextWithoutSchema> options)
+      public DbContextWithoutSchema(DbContextOptions<DbContextWithoutSchema> options)
          : base(options)
       {
       }

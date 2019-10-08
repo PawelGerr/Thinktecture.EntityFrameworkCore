@@ -1,6 +1,5 @@
 using System;
 using System.Data.Common;
-using JetBrains.Annotations;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
@@ -20,35 +19,31 @@ namespace Thinktecture.EntityFrameworkCore.Testing
       // ReSharper disable once StaticMemberInGenericType because the lock are all for the same database context.
       private static readonly object _lock = new object();
 
-      [NotNull]
       private readonly string _connectionString;
 
       private readonly IMigrationExecutionStrategy _migrationExecutionStrategy;
 
-      private T _arrangeDbContext;
-      private T _actDbContext;
-      private T _assertDbContext;
-      private DbConnection _dbConnection;
-      private DbContextOptionsBuilder<T> _optionsBuilder;
-      private ILoggerFactory _loggerFactory;
+      private T? _arrangeDbContext;
+      private T? _actDbContext;
+      private T? _assertDbContext;
+      private DbConnection? _dbConnection;
+      private DbContextOptionsBuilder<T>? _optionsBuilder;
+      private ILoggerFactory? _loggerFactory;
 
       /// <summary>
       /// Database context for setting up the test data.
       /// </summary>
-      [NotNull]
-      protected T ArrangeDbContext => _arrangeDbContext ?? (_arrangeDbContext = CreateContext());
+      protected T ArrangeDbContext => _arrangeDbContext ??= CreateContext();
 
       /// <summary>
       /// Database context for the actual test.
       /// </summary>
-      [NotNull]
-      protected T ActDbContext => _actDbContext ?? (_actDbContext = CreateContext());
+      protected T ActDbContext => _actDbContext ??= CreateContext();
 
       /// <summary>
       /// Database context for making assertions.
       /// </summary>
-      [NotNull]
-      protected T AssertDbContext => _assertDbContext ?? (_assertDbContext = CreateContext());
+      protected T AssertDbContext => _assertDbContext ??= CreateContext();
 
       /// <summary>
       /// Indication whether the EF model cache should be disabled or not.
@@ -64,7 +59,7 @@ namespace Thinktecture.EntityFrameworkCore.Testing
       /// Initializes a new instance of <see cref="SqliteDbContextIntegrationTests{T}"/>
       /// </summary>
       /// <param name="migrationExecutionStrategy">Migrates the database.</param>
-      protected SqliteDbContextIntegrationTests([CanBeNull] IMigrationExecutionStrategy migrationExecutionStrategy = null)
+      protected SqliteDbContextIntegrationTests(IMigrationExecutionStrategy? migrationExecutionStrategy = null)
          : this("DataSource=:memory:", migrationExecutionStrategy)
       {
       }
@@ -74,8 +69,8 @@ namespace Thinktecture.EntityFrameworkCore.Testing
       /// </summary>
       /// <param name="connectionString">Connection string.</param>
       /// <param name="migrationExecutionStrategy">Migrates the database.</param>
-      protected SqliteDbContextIntegrationTests([NotNull] string connectionString,
-                                                [CanBeNull] IMigrationExecutionStrategy migrationExecutionStrategy = null)
+      protected SqliteDbContextIntegrationTests(string connectionString,
+                                                IMigrationExecutionStrategy? migrationExecutionStrategy = null)
       {
          _connectionString = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
          _migrationExecutionStrategy = migrationExecutionStrategy ?? MigrationExecutionStrategies.Migration;
@@ -86,8 +81,7 @@ namespace Thinktecture.EntityFrameworkCore.Testing
       /// </summary>
       /// <param name="options">Options to use for creation.</param>
       /// <returns>A new instance of the database context.</returns>
-      [NotNull]
-      protected virtual T CreateContext([NotNull] DbContextOptions<T> options)
+      protected virtual T CreateContext(DbContextOptions<T> options)
       {
          return (T)Activator.CreateInstance(typeof(T), options);
       }
@@ -97,21 +91,17 @@ namespace Thinktecture.EntityFrameworkCore.Testing
       /// </summary>
       /// <param name="loggerFactory">Logger factory to use.</param>
       // ReSharper disable once UnusedMember.Global
-      protected void UseLoggerFactory([CanBeNull] ILoggerFactory loggerFactory)
+      protected void UseLoggerFactory(ILoggerFactory? loggerFactory)
       {
          _loggerFactory = loggerFactory;
       }
 
-      [NotNull]
       private T CreateContext()
       {
          var isFirstCtx = _dbConnection == null;
 
-         if (isFirstCtx)
-         {
-            _dbConnection = CreateConnection(_connectionString);
-            _optionsBuilder = CreateOptionsBuilder(_dbConnection);
-         }
+         _dbConnection ??= CreateConnection(_connectionString);
+         _optionsBuilder ??= CreateOptionsBuilder(_dbConnection);
 
          var ctx = CreateContext(_optionsBuilder.Options);
 
@@ -126,8 +116,7 @@ namespace Thinktecture.EntityFrameworkCore.Testing
       /// </summary>
       /// <param name="connectionString">Connection string.</param>
       /// <returns>A database connection.</returns>
-      [NotNull]
-      protected virtual DbConnection CreateConnection([NotNull] string connectionString)
+      protected virtual DbConnection CreateConnection(string connectionString)
       {
          var connection = new SqliteConnection(connectionString);
          connection.Open();
@@ -140,7 +129,7 @@ namespace Thinktecture.EntityFrameworkCore.Testing
       /// </summary>
       /// <param name="ctx">Database context to run migrations for.</param>
       /// <exception cref="ArgumentNullException">The provided context is <c>null</c>.</exception>
-      protected virtual void RunMigrations([NotNull] T ctx)
+      protected virtual void RunMigrations(T ctx)
       {
          if (ctx == null)
             throw new ArgumentNullException(nameof(ctx));
@@ -158,8 +147,7 @@ namespace Thinktecture.EntityFrameworkCore.Testing
       /// <param name="connection">Database connection to use.</param>
       /// <returns>An instance of <see cref="DbContextOptionsBuilder{TContext}"/></returns>
       /// <exception cref="ArgumentNullException"><paramref name="connection"/> is null.</exception>
-      [NotNull]
-      protected virtual DbContextOptionsBuilder<T> CreateOptionsBuilder([NotNull] DbConnection connection)
+      protected virtual DbContextOptionsBuilder<T> CreateOptionsBuilder(DbConnection connection)
       {
          if (connection == null)
             throw new ArgumentNullException(nameof(connection));
@@ -184,7 +172,7 @@ namespace Thinktecture.EntityFrameworkCore.Testing
       /// </summary>
       /// <param name="builder">A builder for configuration of the options.</param>
       /// <exception cref="ArgumentNullException">The <paramref name="builder"/> is null.</exception>
-      protected virtual void ConfigureSqlite([NotNull] SqliteDbContextOptionsBuilder builder)
+      protected virtual void ConfigureSqlite(SqliteDbContextOptionsBuilder builder)
       {
       }
 

@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using JetBrains.Annotations;
 using Thinktecture.Collections;
 
 // ReSharper disable once CheckNamespace
@@ -19,8 +18,7 @@ namespace Thinktecture
       /// <typeparam name="T">Item type.</typeparam>
       /// <returns>An implementation of <see cref="IQueryable{T}"/>.</returns>
       /// <exception cref="ArgumentNullException"><paramref name="collection"/> is <c>null</c>.</exception>
-      [NotNull]
-      public static IQueryable<T> AsAsyncQueryable<T>([NotNull] this IEnumerable<T> collection)
+      public static IQueryable<T> AsAsyncQueryable<T>(this IEnumerable<T> collection)
       {
          return new AsyncEnumerable<T>(collection);
       }

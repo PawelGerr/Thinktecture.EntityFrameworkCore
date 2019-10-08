@@ -1,6 +1,5 @@
 using System;
 using System.Linq.Expressions;
-using JetBrains.Annotations;
 
 namespace Thinktecture.Linq.Expressions
 {
@@ -17,7 +16,7 @@ namespace Thinktecture.Linq.Expressions
       /// </summary>
       /// <param name="oldExpression">Expression to replace.</param>
       /// <param name="newExpression">Expression to replace with.</param>
-      public ExpressionReplacingVisitor([NotNull] Expression oldExpression, [NotNull] Expression newExpression)
+      public ExpressionReplacingVisitor(Expression oldExpression, Expression newExpression)
       {
          _oldExpression = oldExpression ?? throw new ArgumentNullException(nameof(oldExpression));
          _newExpression = newExpression ?? throw new ArgumentNullException(nameof(newExpression));

@@ -2,14 +2,14 @@ using System;
 using System.Linq.Expressions;
 using System.Reflection;
 using FluentAssertions;
-using JetBrains.Annotations;
 using Xunit;
 
 namespace Thinktecture.Linq.Expressions.ExpressionBodyExtractingVisitorTests
 {
    public class Visit
    {
-      private static readonly PropertyInfo _myOtherProperty = typeof(MyObject).GetProperty(nameof(MyObject.MyOtherProperty), BindingFlags.Instance | BindingFlags.Public);
+      private static readonly PropertyInfo _myOtherProperty = typeof(MyObject).GetProperty(nameof(MyObject.MyOtherProperty), BindingFlags.Instance | BindingFlags.Public)
+                                                              ?? throw new Exception($"The property {nameof(MyObject.MyOtherProperty)} not found.");
 
       [Fact]
       public void Should_return_the_same_expression_if_no_ExtractBody_found()
@@ -24,7 +24,7 @@ namespace Thinktecture.Linq.Expressions.ExpressionBodyExtractingVisitorTests
       [Fact]
       public void Should_replace_ExtractBody_with_lambda_body_provided_as_field()
       {
-         Expression<Func<MyObject, string>> extractFromExpression = o => o.MyOtherProperty;
+         Expression<Func<MyObject, string?>> extractFromExpression = o => o.MyOtherProperty;
          Expression<Func<MyObject, bool>> expression = o => o.MyProperty == extractFromExpression.ExtractBody(o);
 
          var visitedExpression = (Expression<Func<MyObject, bool>>)ExpressionBodyExtractingVisitor.Instance.Visit(expression);
@@ -35,7 +35,7 @@ namespace Thinktecture.Linq.Expressions.ExpressionBodyExtractingVisitorTests
       [Fact]
       public void Should_replace_ExtractBody_with_lambda_body_provided_as_property()
       {
-         Expression<Func<MyObject, string>> extractFromExpression = o => o.MyOtherProperty;
+         Expression<Func<MyObject, string?>> extractFromExpression = o => o.MyOtherProperty;
          var extractExpressionHolder = new { Expr = extractFromExpression };
          Expression<Func<MyObject, bool>> expression = o => o.MyProperty == extractExpressionHolder.Expr.ExtractBody(o);
 
@@ -47,7 +47,7 @@ namespace Thinktecture.Linq.Expressions.ExpressionBodyExtractingVisitorTests
       [Fact]
       public void Should_replace_ExtractBody_with_lambda_body_provided_inline()
       {
-         Expression<Func<MyObject, bool>> expression = o => o.MyProperty == ((Expression<Func<MyObject, string>>)(i => i.MyOtherProperty)).ExtractBody(o);
+         Expression<Func<MyObject, bool>> expression = o => o.MyProperty == ((Expression<Func<MyObject, string?>>)(i => i.MyOtherProperty)).ExtractBody(o);
 
          var visitedExpression = (Expression<Func<MyObject, bool>>)ExpressionBodyExtractingVisitor.Instance.Visit(expression);
 
@@ -75,7 +75,7 @@ namespace Thinktecture.Linq.Expressions.ExpressionBodyExtractingVisitorTests
          ValidateVisitedExpressions(expression, visitedExpression);
       }
 
-      private static void ValidateVisitedExpressions([NotNull] Expression<Func<MyObject, bool>> expression, [NotNull] Expression<Func<MyObject, bool>> visitedExpression)
+      private static void ValidateVisitedExpressions(Expression<Func<MyObject, bool>> expression, Expression<Func<MyObject, bool>> visitedExpression)
       {
          visitedExpression.Should()
                           .NotBeNull().And
@@ -93,17 +93,15 @@ namespace Thinktecture.Linq.Expressions.ExpressionBodyExtractingVisitorTests
       private class MyObject
       {
          // ReSharper disable once UnusedAutoPropertyAccessor.Local
-         public string MyProperty { get; set; }
-         public string MyOtherProperty { get; set; }
+         public string? MyProperty { get; set; }
+         public string? MyOtherProperty { get; set; }
 
-         [NotNull]
-         public static Expression<Func<MyObject, string>> GetExpressionFromStaticMethod()
+         public static Expression<Func<MyObject, string?>> GetExpressionFromStaticMethod()
          {
             return o => o.MyOtherProperty;
          }
 
-         [NotNull]
-         public Expression<Func<MyObject, string>> GetExpressionFromInstanceMethod()
+         public Expression<Func<MyObject, string?>> GetExpressionFromInstanceMethod()
          {
             return o => o.MyOtherProperty;
          }

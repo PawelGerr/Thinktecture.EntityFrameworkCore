@@ -3,7 +3,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Diagnostics.CodeAnalysis;
-using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Serilog;
@@ -22,12 +21,12 @@ namespace Thinktecture
    {
       private static readonly ConcurrentDictionary<ITestOutputHelper, ILoggerFactory> _loggerFactoryCache = new ConcurrentDictionary<ITestOutputHelper, ILoggerFactory>();
 
-      protected Action<DbContextOptionsBuilder<DbContextWithSchema>> ConfigureOptionsBuilder { get; set; }
-      protected Action<ModelBuilder> ConfigureModel { get; set; }
-      protected string Schema { get; set; }
+      protected Action<DbContextOptionsBuilder<DbContextWithSchema>>? ConfigureOptionsBuilder { get; set; }
+      protected Action<ModelBuilder>? ConfigureModel { get; set; }
+      protected string? Schema { get; set; }
 
-      protected IntegrationTestsBase([JetBrains.Annotations.NotNull] ITestOutputHelper testOutputHelper,
-                                     [CanBeNull] IMigrationExecutionStrategy migrationExecutionStrategy = null)
+      protected IntegrationTestsBase(ITestOutputHelper testOutputHelper,
+                                     IMigrationExecutionStrategy? migrationExecutionStrategy = null)
          : base(migrationExecutionStrategy ?? MigrationExecutionStrategies.NoMigration)
       {
          DisableModelCache = true;
@@ -49,7 +48,7 @@ namespace Thinktecture
          return new DbContextWithSchema(options, Schema) { ConfigureModel = ConfigureModel };
       }
 
-      private ILoggerFactory CreateLoggerFactory([JetBrains.Annotations.NotNull] ITestOutputHelper testOutputHelper)
+      private ILoggerFactory CreateLoggerFactory(ITestOutputHelper testOutputHelper)
       {
          if (testOutputHelper == null)
             throw new ArgumentNullException(nameof(testOutputHelper));
@@ -64,14 +63,12 @@ namespace Thinktecture
                                                                });
       }
 
-      [JetBrains.Annotations.NotNull]
       protected DbContextWithSchema CreateContextWithSchema(string schema)
       {
          var options = new DbContextOptionsBuilder<DbContextWithSchema>().Options;
          return new DbContextWithSchema(options, schema) { ConfigureModel = ConfigureModel };
       }
 
-      [JetBrains.Annotations.NotNull]
       protected DbContextWithoutSchema CreateContextWithoutSchema()
       {
          var options = new DbContextOptionsBuilder<DbContextWithoutSchema>().Options;

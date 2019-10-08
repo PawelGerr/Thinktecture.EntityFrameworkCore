@@ -1,7 +1,6 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 
@@ -26,8 +25,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
       /// <paramref name="entityType"/> is <c>null</c>.
       /// </exception>
       /// <exception cref="ArgumentException">The provided type <paramref name="entityType"/> is not known by the <paramref name="ctx"/>.</exception>
-      [NotNull, ItemNotNull]
-      Task<ITempTableReference> CreateTempTableAsync([NotNull] DbContext ctx, [NotNull] IEntityType entityType, [NotNull] TempTableCreationOptions options, CancellationToken cancellationToken = default);
+      Task<ITempTableReference> CreateTempTableAsync(DbContext ctx, IEntityType entityType, TempTableCreationOptions options, CancellationToken cancellationToken = default);
 
       /// <summary>
       /// Creates a primary key in a temp table with provided <paramref name="tableName"/>.
@@ -42,7 +40,6 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
       /// <param name="tableName">Table name to create the primary key in.</param>
       /// <param name="checkForExistence">If <c>true</c> then the primary key is not going to be created if it exists already.</param>
       /// <param name="cancellationToken">Cancellation token.</param>
-      [NotNull]
-      Task CreatePrimaryKeyAsync([NotNull] DbContext ctx, [NotNull] IEntityType entityType, [NotNull] string tableName, bool checkForExistence = false, CancellationToken cancellationToken = default);
+      Task CreatePrimaryKeyAsync(DbContext ctx, IEntityType entityType, string tableName, bool checkForExistence = false, CancellationToken cancellationToken = default);
    }
 }

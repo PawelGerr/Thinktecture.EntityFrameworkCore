@@ -4,7 +4,6 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using FluentAssertions;
-using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Moq;
@@ -19,7 +18,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqliteBulkOperationExe
    {
       private readonly SqliteBulkOperationExecutor _sut;
 
-      public BulkInsertAsync([NotNull] ITestOutputHelper testOutputHelper)
+      public BulkInsertAsync(ITestOutputHelper testOutputHelper)
          : base(testOutputHelper)
       {
          var sqlGenerationHelperMock = new Mock<ISqlGenerationHelper>();
@@ -125,10 +124,10 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqliteBulkOperationExe
                           };
          testEntity.SetPrivateField(3);
          var testEntities = new[] { testEntity };
-         var idProperty = typeof(TestEntity).GetProperty(nameof(TestEntity.Id));
-         var countProperty = typeof(TestEntity).GetProperty(nameof(TestEntity.Count));
-         var propertyWithBackingField = typeof(TestEntity).GetProperty(nameof(TestEntity.PropertyWithBackingField));
-         var privateField = typeof(TestEntity).GetField("_privateField", BindingFlags.Instance | BindingFlags.NonPublic);
+         var idProperty = typeof(TestEntity).GetProperty(nameof(TestEntity.Id)) ?? throw new Exception($"Property {nameof(TestEntity.Id)} not found.");
+         var countProperty = typeof(TestEntity).GetProperty(nameof(TestEntity.Count)) ?? throw new Exception($"Property {nameof(TestEntity.Count)} not found.");
+         var propertyWithBackingField = typeof(TestEntity).GetProperty(nameof(TestEntity.PropertyWithBackingField)) ?? throw new Exception($"Property {nameof(TestEntity.PropertyWithBackingField)} not found.");
+         var privateField = typeof(TestEntity).GetField("_privateField", BindingFlags.Instance | BindingFlags.NonPublic) ?? throw new Exception("Field _privateField not found.");
 
          await _sut.BulkInsertAsync(ActDbContext,
                                     ActDbContext.GetEntityType<TestEntity>(),

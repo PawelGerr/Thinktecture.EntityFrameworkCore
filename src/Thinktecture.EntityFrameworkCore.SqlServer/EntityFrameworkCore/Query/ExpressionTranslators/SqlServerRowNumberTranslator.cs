@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -17,8 +16,7 @@ namespace Thinktecture.EntityFrameworkCore.Query.ExpressionTranslators
    public class SqlServerRowNumberTranslator : IMethodCallTranslator
    {
       /// <inheritdoc />
-      [CanBeNull]
-      public SqlExpression Translate(SqlExpression instance, MethodInfo method, IReadOnlyList<SqlExpression> arguments)
+      public SqlExpression? Translate(SqlExpression instance, MethodInfo method, IReadOnlyList<SqlExpression> arguments)
       {
          if (method.DeclaringType == typeof(SqlServerDbFunctionsExtensions))
          {
@@ -58,8 +56,7 @@ namespace Thinktecture.EntityFrameworkCore.Query.ExpressionTranslators
          return null;
       }
 
-      [NotNull]
-      private static IReadOnlyList<SqlExpression> ExtractParams([NotNull] SqlExpression parameter)
+      private static IReadOnlyList<SqlExpression> ExtractParams(SqlExpression parameter)
       {
          if (parameter is SqlUnaryExpression unary)
          {

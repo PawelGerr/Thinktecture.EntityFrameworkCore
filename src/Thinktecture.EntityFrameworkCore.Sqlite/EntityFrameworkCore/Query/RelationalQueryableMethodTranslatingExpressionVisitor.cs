@@ -26,7 +26,6 @@ namespace Thinktecture.EntityFrameworkCore.Query
       }
 
       /// <inheritdoc />
-      [JetBrains.Annotations.NotNull]
       protected override QueryableMethodTranslatingExpressionVisitor CreateSubqueryVisitor()
       {
          return new SqliteRelationalQueryableMethodTranslatingExpressionVisitor(this);

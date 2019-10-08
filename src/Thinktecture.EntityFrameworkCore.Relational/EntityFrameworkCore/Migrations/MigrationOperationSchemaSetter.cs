@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore.Migrations.Operations;
 
 namespace Thinktecture.EntityFrameworkCore.Migrations
@@ -12,7 +11,7 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
    public class MigrationOperationSchemaSetter : IMigrationOperationSchemaSetter
    {
       /// <inheritdoc />
-      public void SetSchema(IReadOnlyList<MigrationOperation> operations, string schema)
+      public void SetSchema(IReadOnlyList<MigrationOperation> operations, string? schema)
       {
          if (operations == null)
             throw new ArgumentNullException(nameof(operations));
@@ -23,7 +22,7 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
          }
       }
 
-      private static void SetSchema([NotNull] MigrationOperation operation, [CanBeNull] string schema)
+      private static void SetSchema(MigrationOperation operation, string? schema)
       {
          if (operation == null)
             throw new ArgumentNullException(nameof(operation));
@@ -47,7 +46,7 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
          }
       }
 
-      private static void SetSchema([NotNull] CreateTableOperation op, [CanBeNull] string schema)
+      private static void SetSchema(CreateTableOperation op, string? schema)
       {
          if (op == null)
             throw new ArgumentNullException(nameof(op));
@@ -71,7 +70,7 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
          }
       }
 
-      private static void SetSchema([NotNull] RenameTableOperation op, [CanBeNull] string schema)
+      private static void SetSchema(RenameTableOperation op, string? schema)
       {
          if (op == null)
             throw new ArgumentNullException(nameof(op));
@@ -83,7 +82,7 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
             op.NewSchema = schema;
       }
 
-      private static void SetSchema([NotNull] AddForeignKeyOperation op, [CanBeNull] string schema)
+      private static void SetSchema(AddForeignKeyOperation op, string? schema)
       {
          if (op == null)
             throw new ArgumentNullException(nameof(op));
@@ -95,7 +94,7 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
             op.PrincipalSchema = schema;
       }
 
-      private static void SetSchema([NotNull] MigrationOperation operation, [NotNull] Type opType, [NotNull] string propertyName, [CanBeNull] string schema)
+      private static void SetSchema(MigrationOperation operation, Type opType, string propertyName, string? schema)
       {
          var propInfo = opType.GetProperty(propertyName);
 

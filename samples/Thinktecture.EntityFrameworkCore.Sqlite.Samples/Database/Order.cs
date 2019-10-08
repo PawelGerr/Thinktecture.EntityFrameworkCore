@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using JetBrains.Annotations;
 
 namespace Thinktecture.Database
 {
@@ -8,18 +7,19 @@ namespace Thinktecture.Database
    {
       public Guid Id { get; set; }
       public DateTime Date { get; set; }
-      public string Text { get; set; }
+      public string? Text { get; set; }
       public Guid CustomerId { get; set; }
 
+#nullable disable
       public Customer Customer { get; set; }
+#nullable enable
 
-      private List<OrderItem> _orderItems;
+      private List<OrderItem>? _orderItems;
 
-      [NotNull]
       // ReSharper disable once UnusedMember.Global
       public List<OrderItem> OrderItems
       {
-         get => _orderItems ?? (_orderItems = new List<OrderItem>());
+         get => _orderItems ??= new List<OrderItem>();
          set => _orderItems = value;
       }
    }

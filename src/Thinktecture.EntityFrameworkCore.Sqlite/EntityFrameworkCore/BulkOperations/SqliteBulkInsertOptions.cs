@@ -9,7 +9,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
    public class SqliteBulkInsertOptions : IBulkInsertOptions
    {
       /// <inheritdoc />
-      public IEntityMembersProvider EntityMembersProvider { get; set; }
+      public IEntityMembersProvider? EntityMembersProvider { get; set; }
 
       /// <summary>
       /// Behavior for auto-increment columns.

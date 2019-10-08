@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using FluentAssertions;
-using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Migrations.Operations;
 using Xunit;
@@ -9,12 +8,11 @@ namespace Thinktecture.EntityFrameworkCore.Migrations.MigrationOperationSchemaSe
 {
    public class SetSchema
    {
-      private IDbDefaultSchema _schema;
-      private List<MigrationOperation> _operations;
+      private IDbDefaultSchema? _schema;
+      private List<MigrationOperation>? _operations;
 
       private readonly MigrationBuilder _builder = new MigrationBuilder("provider");
 
-      [NotNull]
       private List<MigrationOperation> Operations
       {
          get

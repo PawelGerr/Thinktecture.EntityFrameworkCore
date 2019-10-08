@@ -15,7 +15,7 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
    [Collection("BulkInsertTempTableAsync")]
    public class BulkInsertIntoTempTableAsync : IntegrationTestsBase
    {
-      public BulkInsertIntoTempTableAsync([JetBrains.Annotations.NotNull] ITestOutputHelper testOutputHelper)
+      public BulkInsertIntoTempTableAsync(ITestOutputHelper testOutputHelper)
          : base(testOutputHelper, true)
       {
       }

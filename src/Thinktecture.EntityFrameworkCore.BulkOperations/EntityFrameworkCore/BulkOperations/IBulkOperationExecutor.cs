@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 
@@ -16,7 +15,6 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       /// Creates options with default values.
       /// </summary>
       /// <returns>Options to use with <see cref="IBulkOperationExecutor"/>.</returns>
-      [NotNull]
       IBulkInsertOptions CreateOptions();
 
       /// <summary>
@@ -29,11 +27,10 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       /// <param name="cancellationToken">Cancellation token.</param>
       /// <typeparam name="T">Entity/query type.</typeparam>
       /// <returns></returns>
-      [NotNull]
-      Task BulkInsertAsync<T>([NotNull] DbContext ctx,
-                              [NotNull] IEntityType entityType,
-                              [NotNull] IEnumerable<T> entities,
-                              [NotNull] IBulkInsertOptions options,
+      Task BulkInsertAsync<T>(DbContext ctx,
+                              IEntityType entityType,
+                              IEnumerable<T> entities,
+                              IBulkInsertOptions options,
                               CancellationToken cancellationToken = default)
          where T : class;
 
@@ -49,13 +46,12 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       /// <param name="cancellationToken">Cancellation token.</param>
       /// <typeparam name="T">Entity/query type.</typeparam>
       /// <returns></returns>
-      [NotNull]
-      Task BulkInsertAsync<T>([NotNull] DbContext ctx,
-                              [NotNull] IEntityType entityType,
-                              [NotNull] IEnumerable<T> entities,
-                              [CanBeNull] string schema,
-                              [NotNull] string tableName,
-                              [NotNull] IBulkInsertOptions options,
+      Task BulkInsertAsync<T>(DbContext ctx,
+                              IEntityType entityType,
+                              IEnumerable<T> entities,
+                              string? schema,
+                              string tableName,
+                              IBulkInsertOptions options,
                               CancellationToken cancellationToken = default)
          where T : class;
    }

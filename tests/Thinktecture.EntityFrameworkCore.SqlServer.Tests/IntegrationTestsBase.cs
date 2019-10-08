@@ -3,7 +3,6 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
-using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
@@ -25,9 +24,9 @@ namespace Thinktecture
 
       protected ILoggerFactory LoggerFactory { get; }
 
-      public Action<ModelBuilder> ConfigureModel { get; set; }
+      public Action<ModelBuilder>? ConfigureModel { get; set; }
 
-      protected IntegrationTestsBase([JetBrains.Annotations.NotNull] ITestOutputHelper testOutputHelper, bool useSharedTables)
+      protected IntegrationTestsBase(ITestOutputHelper testOutputHelper, bool useSharedTables)
          : base(TestContext.Instance.ConnectionString, useSharedTables)
       {
          DisableModelCache = true;
@@ -35,8 +34,7 @@ namespace Thinktecture
          UseLoggerFactory(LoggerFactory);
       }
 
-      [JetBrains.Annotations.NotNull]
-      protected IDiagnosticsLogger<TCategory> CreateDiagnosticsLogger<TCategory>([CanBeNull] ILoggingOptions options = null, [CanBeNull] DiagnosticSource diagnosticSource = null)
+      protected IDiagnosticsLogger<TCategory> CreateDiagnosticsLogger<TCategory>(ILoggingOptions? options = null, DiagnosticSource? diagnosticSource = null)
          where TCategory : LoggerCategory<TCategory>, new()
       {
          return new DiagnosticsLogger<TCategory>(LoggerFactory, options ?? new LoggingOptions(), diagnosticSource ?? new DiagnosticListener(typeof(TCategory).DisplayName()), new SqlServerLoggingDefinitions());
@@ -51,7 +49,7 @@ namespace Thinktecture
          return ctx;
       }
 
-      private ILoggerFactory CreateLoggerFactory([JetBrains.Annotations.NotNull] ITestOutputHelper testOutputHelper)
+      private ILoggerFactory CreateLoggerFactory(ITestOutputHelper testOutputHelper)
       {
          if (testOutputHelper == null)
             throw new ArgumentNullException(nameof(testOutputHelper));

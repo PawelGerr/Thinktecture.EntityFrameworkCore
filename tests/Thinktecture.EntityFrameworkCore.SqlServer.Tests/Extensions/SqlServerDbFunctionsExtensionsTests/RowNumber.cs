@@ -1,7 +1,6 @@
 using System;
 using System.Linq;
 using FluentAssertions;
-using JetBrains.Annotations;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Thinktecture.TestDatabaseContext;
@@ -13,7 +12,7 @@ namespace Thinktecture.Extensions.SqlServerDbFunctionsExtensionsTests
    // ReSharper disable once InconsistentNaming
    public class RowNumber : IntegrationTestsBase
    {
-      public RowNumber([NotNull] ITestOutputHelper testOutputHelper)
+      public RowNumber(ITestOutputHelper testOutputHelper)
          : base(testOutputHelper, true)
       {
       }

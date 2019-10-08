@@ -11,7 +11,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure.DefaultSchemaModelCust
 {
    public class Customize : IntegrationTestsBase
    {
-      public Customize([JetBrains.Annotations.NotNull] ITestOutputHelper testOutputHelper)
+      public Customize(ITestOutputHelper testOutputHelper)
          : base(testOutputHelper)
       {
          ConfigureOptionsBuilder = builder =>

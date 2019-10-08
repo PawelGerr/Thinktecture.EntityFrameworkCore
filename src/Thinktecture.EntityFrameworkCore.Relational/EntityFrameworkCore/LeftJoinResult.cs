@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace Thinktecture.EntityFrameworkCore
 {
    /// <summary>
@@ -7,14 +9,18 @@ namespace Thinktecture.EntityFrameworkCore
    /// <typeparam name="TRight">Type of the entity  on the right side of the JOIN.</typeparam>
    public class LeftJoinResult<TLeft, TRight>
    {
+#nullable disable
       /// <summary>
       /// Entity on the left side of the JOIN.
       /// </summary>
+      [DisallowNull]
       public TLeft Left { get; set; }
 
       /// <summary>
       /// Entity  on the right side of the JOIN.
       /// </summary>
+      [MaybeNull, AllowNull]
       public TRight Right { get; set; }
+#nullable enable
    }
 }

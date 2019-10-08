@@ -1,5 +1,4 @@
 using System;
-using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations.Operations;
 using Microsoft.EntityFrameworkCore.Migrations.Operations.Builders;
@@ -23,8 +22,7 @@ namespace Thinktecture
       /// - or <paramref name="columns"/> collection is <c>null</c>.
       /// </exception>
       /// <exception cref="ArgumentException"><paramref name="columns"/> collection is empty.</exception>
-      [NotNull]
-      public static OperationBuilder<CreateIndexOperation> IncludeColumns([NotNull] this OperationBuilder<CreateIndexOperation> operation, [NotNull] params string[] columns)
+      public static OperationBuilder<CreateIndexOperation> IncludeColumns(this OperationBuilder<CreateIndexOperation> operation, params string[] columns)
       {
          if (operation == null)
             throw new ArgumentNullException(nameof(operation));
@@ -44,8 +42,7 @@ namespace Thinktecture
       /// <param name="operation">Operation</param>
       /// <returns>The provided <paramref name="operation"/>.</returns>
       /// <exception cref="ArgumentNullException">The provided <paramref name="operation"/> is <c>null</c>.</exception>
-      [NotNull]
-      public static OperationBuilder<AddColumnOperation> AsIdentityColumn([NotNull] this OperationBuilder<AddColumnOperation> operation)
+      public static OperationBuilder<AddColumnOperation> AsIdentityColumn(this OperationBuilder<AddColumnOperation> operation)
       {
          if (operation == null)
             throw new ArgumentNullException(nameof(operation));
@@ -62,8 +59,7 @@ namespace Thinktecture
       /// <param name="isClustered">Indication whether the PK should be clustered or not.</param>
       /// <returns>The provided <paramref name="operation"/>.</returns>
       /// <exception cref="ArgumentNullException">The <paramref name="operation"/> is <c>null</c>.</exception>
-      [NotNull]
-      public static OperationBuilder<AddPrimaryKeyOperation> IsClustered([NotNull] this OperationBuilder<AddPrimaryKeyOperation> operation, bool isClustered = true)
+      public static OperationBuilder<AddPrimaryKeyOperation> IsClustered(this OperationBuilder<AddPrimaryKeyOperation> operation, bool isClustered = true)
       {
          if (operation == null)
             throw new ArgumentNullException(nameof(operation));

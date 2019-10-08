@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore.Metadata;
@@ -13,15 +12,14 @@ namespace Thinktecture.EntityFrameworkCore.Data.EntityDataReaderFactoryTests
 {
    public class Create : IntegrationTestsBase
    {
-      private EntityDataReaderFactory _sut;
+      private EntityDataReaderFactory? _sut;
 
       private readonly IProperty _column2Property;
 
-      [JetBrains.Annotations.NotNull]
       // ReSharper disable once InconsistentNaming
       private EntityDataReaderFactory SUT => _sut ??= new EntityDataReaderFactory();
 
-      public Create([JetBrains.Annotations.NotNull] ITestOutputHelper testOutputHelper)
+      public Create(ITestOutputHelper testOutputHelper)
          : base(testOutputHelper)
       {
          _column2Property = ArrangeDbContext.GetEntityType<TestEntity>().GetProperty(nameof(TestEntity.Column2));
@@ -31,7 +29,7 @@ namespace Thinktecture.EntityFrameworkCore.Data.EntityDataReaderFactoryTests
       public void Should_throw_if_context_is_null()
       {
          // ReSharper disable once AssignNullToNotNullAttribute
-         SUT.Invoking(sut => sut.Create(null, Array.Empty<TestEntity>(), Array.Empty<IProperty>()))
+         SUT.Invoking(sut => sut.Create(null!, Array.Empty<TestEntity>(), Array.Empty<IProperty>()))
             .Should().Throw<ArgumentNullException>();
       }
 
@@ -39,7 +37,7 @@ namespace Thinktecture.EntityFrameworkCore.Data.EntityDataReaderFactoryTests
       public void Should_throw_if_entities_is_null()
       {
          // ReSharper disable once AssignNullToNotNullAttribute
-         SUT.Invoking(sut => sut.Create<TestEntity>(ActDbContext, null, Array.Empty<IProperty>()))
+         SUT.Invoking(sut => sut.Create<TestEntity>(ActDbContext, null!, Array.Empty<IProperty>()))
             .Should().Throw<ArgumentNullException>();
       }
 
@@ -47,7 +45,7 @@ namespace Thinktecture.EntityFrameworkCore.Data.EntityDataReaderFactoryTests
       public void Should_throw_if_properties_is_null()
       {
          // ReSharper disable once AssignNullToNotNullAttribute
-         SUT.Invoking(sut => sut.Create(ActDbContext, Array.Empty<TestEntity>(), null))
+         SUT.Invoking(sut => sut.Create(ActDbContext, Array.Empty<TestEntity>(), null!))
             .Should().Throw<ArgumentNullException>();
       }
 

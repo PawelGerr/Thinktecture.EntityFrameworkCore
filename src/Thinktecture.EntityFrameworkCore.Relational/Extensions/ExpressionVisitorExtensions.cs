@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
-using JetBrains.Annotations;
 
 // ReSharper disable once CheckNamespace
 namespace Thinktecture
@@ -20,8 +19,7 @@ namespace Thinktecture
       /// <returns>
       /// New collection with visited expressions if at least one visited expression has been changed; otherwise the provided <paramref name="expressions"/>.
       /// </returns>
-      [NotNull]
-      public static IReadOnlyList<T> VisitExpressions<T>([NotNull] this ExpressionVisitor visitor, [NotNull] IReadOnlyList<T> expressions)
+      public static IReadOnlyList<T> VisitExpressions<T>(this ExpressionVisitor visitor, IReadOnlyList<T> expressions)
          where T : Expression
       {
          if (visitor == null)

@@ -4,7 +4,6 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
-using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore.Query.Internal;
 
 namespace Thinktecture.Collections
@@ -13,21 +12,20 @@ namespace Thinktecture.Collections
    {
       IQueryProvider IQueryable.Provider => new AsyncQueryProvider(this);
 
-      public AsyncEnumerable([NotNull] IEnumerable<T> enumerable)
+      public AsyncEnumerable(IEnumerable<T> enumerable)
          : base(enumerable)
       {
          if (enumerable == null)
             throw new ArgumentNullException(nameof(enumerable));
       }
 
-      public AsyncEnumerable([NotNull] Expression expression)
+      public AsyncEnumerable(Expression expression)
          : base(expression)
       {
          if (expression == null)
             throw new ArgumentNullException(nameof(expression));
       }
 
-      [NotNull]
       public IAsyncEnumerator<T> GetAsyncEnumerator(CancellationToken cancellationToken)
       {
          return new AsyncEnumerator(this.AsEnumerable().GetEnumerator());
@@ -39,7 +37,7 @@ namespace Thinktecture.Collections
 
          public T Current => _enumerator.Current;
 
-         public AsyncEnumerator([NotNull] IEnumerator<T> enumerator)
+         public AsyncEnumerator(IEnumerator<T> enumerator)
          {
             _enumerator = enumerator ?? throw new ArgumentNullException(nameof(enumerator));
          }
@@ -61,12 +59,11 @@ namespace Thinktecture.Collections
       {
          private readonly IQueryProvider _queryProvider;
 
-         internal AsyncQueryProvider([NotNull] IQueryProvider queryProvider)
+         internal AsyncQueryProvider(IQueryProvider queryProvider)
          {
             _queryProvider = queryProvider ?? throw new ArgumentNullException(nameof(queryProvider));
          }
 
-         [NotNull]
          public IQueryable CreateQuery(Expression expression)
          {
             return new AsyncEnumerable<T>(expression);
@@ -87,7 +84,6 @@ namespace Thinktecture.Collections
             return _queryProvider.Execute<TResult>(expression);
          }
 
-         [NotNull]
          public TResult ExecuteAsync<TResult>(Expression expression, CancellationToken cancellationToken)
          {
             return Execute<TResult>(expression);

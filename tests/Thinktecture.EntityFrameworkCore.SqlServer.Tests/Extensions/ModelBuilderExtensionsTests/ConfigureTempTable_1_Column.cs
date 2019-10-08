@@ -2,7 +2,6 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
-using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Thinktecture.EntityFrameworkCore.TempTables;
 using Xunit;
@@ -13,7 +12,7 @@ namespace Thinktecture.Extensions.ModelBuilderExtensionsTests
    // ReSharper disable once InconsistentNaming
    public class ConfigureTempTable_1_Column : IntegrationTestsBase
    {
-      public ConfigureTempTable_1_Column([NotNull] ITestOutputHelper testOutputHelper)
+      public ConfigureTempTable_1_Column(ITestOutputHelper testOutputHelper)
          : base(testOutputHelper, true)
       {
       }
@@ -75,7 +74,7 @@ namespace Thinktecture.Extensions.ModelBuilderExtensionsTests
       [Fact]
       public void Should_introduce_temp_table_with_string()
       {
-         ConfigureModel = builder => builder.ConfigureTempTable<string>();
+         ConfigureModel = builder => builder.ConfigureTempTable<string>().Property(t => t.Column1).IsRequired(false);
 
          var entityType = ActDbContext.Model.FindEntityType(typeof(TempTable<string>));
          entityType.Name.Should().Be("Thinktecture.EntityFrameworkCore.TempTables.TempTable<string>");

@@ -1,5 +1,4 @@
 using System;
-using JetBrains.Annotations;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Thinktecture.EntityFrameworkCore.Infrastructure
@@ -15,6 +14,6 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       /// <param name="services">Service collection.</param>
       /// <param name="genericDecoratorTypeDefinition">Generic type definition.</param>
       /// <typeparam name="TService">Service type.</typeparam>
-      void RegisterDecorator<TService>([NotNull] IServiceCollection services, [NotNull] Type genericDecoratorTypeDefinition);
+      void RegisterDecorator<TService>(IServiceCollection services, Type genericDecoratorTypeDefinition);
    }
 }

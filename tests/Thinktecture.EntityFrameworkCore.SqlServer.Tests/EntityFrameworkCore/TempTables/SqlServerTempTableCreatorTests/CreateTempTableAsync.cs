@@ -3,7 +3,6 @@ using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
-using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Moq;
@@ -19,7 +18,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
       private readonly SqlServerTempTableCreator _sut;
       private readonly TempTableCreationOptions _optionsWithNonUniqueName;
 
-      public CreateTempTableAsync([NotNull] ITestOutputHelper testOutputHelper)
+      public CreateTempTableAsync(ITestOutputHelper testOutputHelper)
          : base(testOutputHelper, true)
       {
          var sqlGenerationHelperMock = new Mock<ISqlGenerationHelper>();
@@ -295,7 +294,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
          await _sut.CreateTempTableAsync(ActDbContext, ActDbContext.GetEntityType<TempTable<string>>(), _optionsWithNonUniqueName).ConfigureAwait(false);
 
          var columns = AssertDbContext.GetTempTableColumns<TempTable<string>>().ToList();
-         ValidateColumn(columns[0], nameof(TempTable<string>.Column1), "nvarchar", true);
+         ValidateColumn(columns[0], nameof(TempTable<string>.Column1), "nvarchar", false);
       }
 
       [Fact]
@@ -306,7 +305,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
          await _sut.CreateTempTableAsync(ActDbContext, ActDbContext.GetEntityType<TempTable<string>>(), _optionsWithNonUniqueName).ConfigureAwait(false);
 
          var columns = AssertDbContext.GetTempTableColumns<TempTable<string>>().ToList();
-         ValidateColumn(columns[0], nameof(TempTable<string>.Column1), "nvarchar", true, charMaxLength: 50);
+         ValidateColumn(columns[0], nameof(TempTable<string>.Column1), "nvarchar", false, charMaxLength: 50);
       }
 
       [Fact]
@@ -320,10 +319,10 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
          columns.Should().HaveCount(2);
 
          ValidateColumn(columns[0], nameof(TempTable<int, string>.Column1), "int", false);
-         ValidateColumn(columns[1], nameof(TempTable<int, string>.Column2), "nvarchar", true);
+         ValidateColumn(columns[1], nameof(TempTable<int, string>.Column2), "nvarchar", false);
       }
 
-      private void ValidateColumn([NotNull] InformationSchemaColumn column, string name, string type, bool isNullable, byte? numericPrecision = null, int? numericScale = null, int? charMaxLength = null)
+      private void ValidateColumn(InformationSchemaColumn column, string name, string type, bool isNullable, byte? numericPrecision = null, int? numericScale = null, int? charMaxLength = null)
       {
          if (column == null)
             throw new ArgumentNullException(nameof(column));

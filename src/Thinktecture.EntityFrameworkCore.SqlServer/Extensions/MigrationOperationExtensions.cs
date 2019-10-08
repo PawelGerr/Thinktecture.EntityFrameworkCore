@@ -1,5 +1,4 @@
 using System;
-using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore.Migrations.Operations;
 using Thinktecture.EntityFrameworkCore.Migrations;
 
@@ -21,7 +20,7 @@ namespace Thinktecture
       /// <param name="operation">Operation to check for the flag.</param>
       /// <returns><c>true</c> if the check is required; otherwise <c>false</c>.</returns>
       /// <exception cref="ArgumentNullException"><paramref name="operation"/> is <c>null</c>.</exception>
-      public static bool IfNotExistsCheckRequired([NotNull] this MigrationOperation operation)
+      public static bool IfNotExistsCheckRequired(this MigrationOperation operation)
       {
          if (operation == null)
             throw new ArgumentNullException(nameof(operation));
@@ -39,7 +38,7 @@ namespace Thinktecture
       /// <param name="operation">Operation to check for the flag.</param>
       /// <returns><c>true</c> if the check is required; otherwise <c>false</c>.</returns>
       /// <exception cref="ArgumentNullException"><paramref name="operation"/> is <c>null</c>.</exception>
-      public static bool IfExistsCheckRequired([NotNull] this MigrationOperation operation)
+      public static bool IfExistsCheckRequired(this MigrationOperation operation)
       {
          if (operation == null)
             throw new ArgumentNullException(nameof(operation));

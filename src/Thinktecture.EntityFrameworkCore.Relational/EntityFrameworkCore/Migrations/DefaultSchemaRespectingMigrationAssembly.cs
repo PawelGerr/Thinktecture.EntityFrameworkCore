@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
-using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Internal;
@@ -35,10 +34,10 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
       public Assembly Assembly => _innerMigrationsAssembly.Assembly;
 
       /// <inheritdoc />
-      public DefaultSchemaRespectingMigrationAssembly([JetBrains.Annotations.NotNull] TMigrationsAssembly migrationsAssembly,
-                                                      [JetBrains.Annotations.NotNull] IMigrationOperationSchemaSetter schemaSetter,
-                                                      [JetBrains.Annotations.NotNull] ICurrentDbContext currentContext,
-                                                      [JetBrains.Annotations.NotNull] IServiceProvider serviceProvider)
+      public DefaultSchemaRespectingMigrationAssembly(TMigrationsAssembly migrationsAssembly,
+                                                      IMigrationOperationSchemaSetter schemaSetter,
+                                                      ICurrentDbContext currentContext,
+                                                      IServiceProvider serviceProvider)
       {
          _innerMigrationsAssembly = migrationsAssembly ?? throw new ArgumentNullException(nameof(migrationsAssembly));
          _schemaSetter = schemaSetter ?? throw new ArgumentNullException(nameof(schemaSetter));
@@ -54,7 +53,6 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
       }
 
       /// <inheritdoc />
-      [JetBrains.Annotations.NotNull]
       public Migration CreateMigration(TypeInfo migrationClass, string activeProvider)
       {
          if (migrationClass == null)
@@ -81,8 +79,7 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
          throw new ArgumentException($"For instantiation of default schema respecting migration of type '{migrationClass.Name}' the database context of type '{_context.GetType().DisplayName()}' has to implement the interface '{nameof(IDbDefaultSchema)}'.", nameof(migrationClass));
       }
 
-      [JetBrains.Annotations.NotNull]
-      private Migration CreateInstance([JetBrains.Annotations.NotNull] TypeInfo migrationClass, IDbDefaultSchema schema, string activeProvider)
+      private Migration CreateInstance(TypeInfo migrationClass, IDbDefaultSchema schema, string activeProvider)
       {
          var migration = (Migration)ActivatorUtilities.CreateInstance(_serviceProvider, migrationClass.AsType(), schema);
          migration.ActiveProvider = activeProvider;
@@ -90,8 +87,7 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
          return migration;
       }
 
-      [JetBrains.Annotations.NotNull]
-      private Migration CreateInstance([JetBrains.Annotations.NotNull] TypeInfo migrationClass, string activeProvider)
+      private Migration CreateInstance(TypeInfo migrationClass, string activeProvider)
       {
          var migration = (Migration)ActivatorUtilities.CreateInstance(_serviceProvider, migrationClass.AsType());
          migration.ActiveProvider = activeProvider;
@@ -99,7 +95,7 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
          return migration;
       }
 
-      private void SetSchema([JetBrains.Annotations.NotNull] IReadOnlyList<MigrationOperation> operations, [CanBeNull] IDbDefaultSchema schema)
+      private void SetSchema(IReadOnlyList<MigrationOperation> operations, [AllowNull] IDbDefaultSchema schema)
       {
          if (schema?.Schema != null)
             _schemaSetter.SetSchema(operations, schema.Schema);

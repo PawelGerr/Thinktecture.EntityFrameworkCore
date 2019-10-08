@@ -1,6 +1,5 @@
 using System;
 using System.Linq;
-using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Thinktecture.EntityFrameworkCore;
 using Thinktecture.EntityFrameworkCore.TempTables;
@@ -11,27 +10,29 @@ namespace Thinktecture.TestDatabaseContext
    public class TestDbContext : DbContext, IDbDefaultSchema
    {
       /// <inheritdoc />
-      public string Schema { get; }
+      public string? Schema { get; }
 
+#nullable disable
       public DbSet<TestEntity> TestEntities { get; set; }
       public DbSet<TestEntityWithAutoIncrement> TestEntitiesWithAutoIncrement { get; set; }
       public DbSet<TestEntityWithRowVersion> TestEntitiesWithRowVersion { get; set; }
       public DbSet<TestEntityWithShadowProperties> TestEntitiesWithShadowProperties { get; set; }
+#nullable enable
 
-      public Action<ModelBuilder> ConfigureModel { get; set; }
+      public Action<ModelBuilder>? ConfigureModel { get; set; }
 
-      public TestDbContext([NotNull] DbContextOptions<TestDbContext> options, [CanBeNull] IDbDefaultSchema schema)
+      public TestDbContext(DbContextOptions<TestDbContext> options, IDbDefaultSchema? schema)
          : base(options)
       {
          Schema = schema?.Schema;
       }
 
-      protected override void OnModelCreating([NotNull] ModelBuilder modelBuilder)
+      protected override void OnModelCreating(ModelBuilder modelBuilder)
       {
          base.OnModelCreating(modelBuilder);
 
          modelBuilder.Entity<TestEntity>().Property("_privateField");
-         modelBuilder.Entity<TestEntity>().Property(e => e.ConvertibleClass).HasConversion(c => c.Key, k => new ConvertibleClass(k));
+         modelBuilder.Entity<TestEntity>().Property(e => e.ConvertibleClass).HasConversion(c => c!.Key, k => new ConvertibleClass(k));
 
          modelBuilder.Entity<TestEntityWithAutoIncrement>().Property(e => e.Id).UseIdentityColumn();
 
@@ -51,20 +52,18 @@ namespace Thinktecture.TestDatabaseContext
          modelBuilder.Entity<InformationSchemaKeyColumn>().HasNoKey();
       }
 
-      [NotNull]
       public IQueryable<InformationSchemaColumn> GetCustomTempTableColumns<T>()
       {
          return GetTempTableColumns(typeof(T));
       }
 
-      [NotNull]
       public IQueryable<InformationSchemaColumn> GetTempTableColumns<T>()
          where T : class
       {
          return GetTempTableColumns(typeof(T));
       }
 
-      private IQueryable<InformationSchemaColumn> GetTempTableColumns([NotNull] Type type)
+      private IQueryable<InformationSchemaColumn> GetTempTableColumns(Type type)
       {
          if (type == null)
             throw new ArgumentNullException(nameof(type));
@@ -83,7 +82,6 @@ WHERE
    OBJECT_ID(TABLE_CATALOG + '..' + TABLE_NAME) = OBJECT_ID({"tempdb.." + tableName})");
       }
 
-      [NotNull]
       public IQueryable<InformationSchemaTableConstraint> GetTempTableConstraints<T>()
       {
          var tableName = this.GetEntityType<T>().GetTableName();
@@ -100,7 +98,6 @@ WHERE
    OBJECT_ID(TABLE_CATALOG + '..' + TABLE_NAME) = OBJECT_ID({"tempdb.." + tableName})");
       }
 
-      [NotNull]
       public IQueryable<InformationSchemaConstraintColumn> GetTempTableConstraintsColumns<T>()
       {
          var tableName = this.GetEntityType<T>().GetTableName();
@@ -117,7 +114,6 @@ WHERE
    OBJECT_ID(TABLE_CATALOG + '..' + TABLE_NAME) = OBJECT_ID({"tempdb.." + tableName})");
       }
 
-      [NotNull]
       public IQueryable<InformationSchemaKeyColumn> GetTempTableKeyColumns<T>()
       {
          var tableName = this.GetEntityType<T>().GetTableName();
@@ -125,7 +121,6 @@ WHERE
          return GetTempTableKeyColumns(tableName);
       }
 
-      [NotNull]
       public IQueryable<InformationSchemaKeyColumn> GetTempTableKeyColumns<TColumn1, TColumn2>()
       {
          var tableName = this.GetEntityType<TempTable<TColumn1, TColumn2>>().GetTableName();

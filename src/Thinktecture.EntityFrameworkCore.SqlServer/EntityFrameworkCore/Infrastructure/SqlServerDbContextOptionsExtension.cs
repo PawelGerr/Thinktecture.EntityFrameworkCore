@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -24,10 +23,9 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
    [SuppressMessage("ReSharper", "EF1001")]
    public class SqlServerDbContextOptionsExtension : IDbContextOptionsExtension
    {
-      private SqlServerDbContextOptionsExtensionInfo _info;
+      private SqlServerDbContextOptionsExtensionInfo? _info;
 
       /// <inheritdoc />
-      [JetBrains.Annotations.NotNull]
       public DbContextOptionsExtensionInfo Info => _info ??= new SqlServerDbContextOptionsExtensionInfo(this);
 
       /// <summary>
@@ -105,9 +103,8 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
          private readonly SqlServerDbContextOptionsExtension _extension;
          public override bool IsDatabaseProvider => false;
 
-         private string _logFragment;
+         private string? _logFragment;
 
-         [JetBrains.Annotations.NotNull]
          public override string LogFragment => _logFragment ??= $@"
 {{
    'RowNumberSupport'={_extension.AddRowNumberSupport},
@@ -117,7 +114,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
 }}";
 
          /// <inheritdoc />
-         public SqlServerDbContextOptionsExtensionInfo([JetBrains.Annotations.NotNull] SqlServerDbContextOptionsExtension extension)
+         public SqlServerDbContextOptionsExtensionInfo(SqlServerDbContextOptionsExtension extension)
             : base(extension)
          {
             _extension = extension ?? throw new ArgumentNullException(nameof(extension));

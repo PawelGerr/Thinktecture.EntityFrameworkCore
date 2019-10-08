@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Data.Common;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
@@ -28,11 +27,11 @@ namespace Thinktecture
       private static readonly ConcurrentDictionary<ITestOutputHelper, ILoggerFactory> _loggerFactoryCache = new ConcurrentDictionary<ITestOutputHelper, ILoggerFactory>();
 
       protected ILoggerFactory LoggerFactory { get; }
-      protected Action<DbContextOptionsBuilder<TestDbContext>> ConfigureOptionsBuilder { get; set; }
-      protected Action<ModelBuilder> ConfigureModel { get; set; }
+      protected Action<DbContextOptionsBuilder<TestDbContext>>? ConfigureOptionsBuilder { get; set; }
+      protected Action<ModelBuilder>? ConfigureModel { get; set; }
 
-      protected IntegrationTestsBase([JetBrains.Annotations.NotNull] ITestOutputHelper testOutputHelper,
-                                     [CanBeNull] IMigrationExecutionStrategy migrationExecutionStrategy = null)
+      protected IntegrationTestsBase(ITestOutputHelper testOutputHelper,
+                                     IMigrationExecutionStrategy? migrationExecutionStrategy = null)
          : base(migrationExecutionStrategy)
       {
          DisableModelCache = true;
@@ -41,8 +40,7 @@ namespace Thinktecture
          UseLoggerFactory(LoggerFactory);
       }
 
-      [JetBrains.Annotations.NotNull]
-      protected IDiagnosticsLogger<TCategory> CreateDiagnosticsLogger<TCategory>([CanBeNull] ILoggingOptions options = null, [CanBeNull] DiagnosticSource diagnosticSource = null)
+      protected IDiagnosticsLogger<TCategory> CreateDiagnosticsLogger<TCategory>(ILoggingOptions? options = null, DiagnosticSource? diagnosticSource = null)
          where TCategory : LoggerCategory<TCategory>, new()
       {
          return new DiagnosticsLogger<TCategory>(LoggerFactory, options ?? new LoggingOptions(), diagnosticSource ?? new DiagnosticListener(typeof(TCategory).DisplayName()), new SqliteLoggingDefinitions());
@@ -72,7 +70,7 @@ namespace Thinktecture
          return ctx;
       }
 
-      private ILoggerFactory CreateLoggerFactory([JetBrains.Annotations.NotNull] ITestOutputHelper testOutputHelper)
+      private ILoggerFactory CreateLoggerFactory(ITestOutputHelper testOutputHelper)
       {
          if (testOutputHelper == null)
             throw new ArgumentNullException(nameof(testOutputHelper));

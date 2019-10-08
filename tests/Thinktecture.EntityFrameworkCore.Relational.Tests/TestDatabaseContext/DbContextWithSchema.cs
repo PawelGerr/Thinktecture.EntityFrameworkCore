@@ -1,5 +1,4 @@
 using System;
-using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Thinktecture.EntityFrameworkCore;
 
@@ -8,14 +7,15 @@ namespace Thinktecture.TestDatabaseContext
    public class DbContextWithSchema : DbContext, IDbDefaultSchema
    {
       /// <inheritdoc />
-      public string Schema { get; }
+      public string? Schema { get; }
 
+#nullable disable
       public DbSet<TestEntity> TestEntities { get; set; }
       public DbSet<TestQuery> TestQuery { get; set; }
+#nullable enable
+      public Action<ModelBuilder>? ConfigureModel { get; set; }
 
-      public Action<ModelBuilder> ConfigureModel { get; set; }
-
-      public DbContextWithSchema([NotNull] DbContextOptions<DbContextWithSchema> options, string schema)
+      public DbContextWithSchema(DbContextOptions<DbContextWithSchema> options, string? schema)
          : base(options)
       {
          Schema = schema;
@@ -26,7 +26,7 @@ namespace Thinktecture.TestDatabaseContext
          throw new NotSupportedException();
       }
 
-      protected override void OnModelCreating([NotNull] ModelBuilder modelBuilder)
+      protected override void OnModelCreating(ModelBuilder modelBuilder)
       {
          base.OnModelCreating(modelBuilder);
 

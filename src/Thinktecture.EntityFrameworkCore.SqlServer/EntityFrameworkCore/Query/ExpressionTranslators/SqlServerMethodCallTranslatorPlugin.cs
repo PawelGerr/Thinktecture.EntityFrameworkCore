@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore.Query;
 using Thinktecture.EntityFrameworkCore.Infrastructure;
 
@@ -17,7 +16,7 @@ namespace Thinktecture.EntityFrameworkCore.Query.ExpressionTranslators
       /// <summary>
       /// Initializes new instance of <see cref="SqlServerMethodCallTranslatorPlugin"/>.
       /// </summary>
-      public SqlServerMethodCallTranslatorPlugin([NotNull] SqlServerDbContextOptionsExtension extension)
+      public SqlServerMethodCallTranslatorPlugin(SqlServerDbContextOptionsExtension extension)
       {
          if (extension == null)
             throw new ArgumentNullException(nameof(extension));

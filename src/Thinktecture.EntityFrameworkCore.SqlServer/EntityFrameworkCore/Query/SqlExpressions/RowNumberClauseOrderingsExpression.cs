@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -20,14 +19,13 @@ namespace Thinktecture.EntityFrameworkCore.Query.SqlExpressions
       public IReadOnlyList<OrderingExpression> Orderings { get; }
 
       /// <inheritdoc />
-      public RowNumberClauseOrderingsExpression([NotNull] IReadOnlyList<OrderingExpression> orderings)
+      public RowNumberClauseOrderingsExpression(IReadOnlyList<OrderingExpression> orderings)
          : base(typeof(RowNumberOrderByClause), RelationalTypeMapping.NullMapping)
       {
          Orderings = orderings ?? throw new ArgumentNullException(nameof(orderings));
       }
 
       /// <inheritdoc />
-      [NotNull]
       protected override Expression VisitChildren(ExpressionVisitor visitor)
       {
          var visited = visitor.VisitExpressions(Orderings);
@@ -46,8 +44,7 @@ namespace Thinktecture.EntityFrameworkCore.Query.SqlExpressions
       /// </summary>
       /// <param name="orderings">Orderings to add.</param>
       /// <returns>New instance of <see cref="RowNumberClauseOrderingsExpression"/>.</returns>
-      [NotNull]
-      public RowNumberClauseOrderingsExpression AddColumns([NotNull] IEnumerable<OrderingExpression> orderings)
+      public RowNumberClauseOrderingsExpression AddColumns(IEnumerable<OrderingExpression> orderings)
       {
          if (orderings == null)
             throw new ArgumentNullException(nameof(orderings));

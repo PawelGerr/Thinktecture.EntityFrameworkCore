@@ -7,7 +7,6 @@ using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using JetBrains.Annotations;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -41,8 +40,8 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       /// </summary>
       /// <param name="sqlGenerationHelper">SQL generation helper.</param>
       /// <param name="logger"></param>
-      public SqliteBulkOperationExecutor([JetBrains.Annotations.NotNull] ISqlGenerationHelper sqlGenerationHelper,
-                                         [JetBrains.Annotations.NotNull] IDiagnosticsLogger<SqliteDbLoggerCategory.BulkOperation> logger)
+      public SqliteBulkOperationExecutor(ISqlGenerationHelper sqlGenerationHelper,
+                                         IDiagnosticsLogger<SqliteDbLoggerCategory.BulkOperation> logger)
       {
          _sqlGenerationHelper = sqlGenerationHelper ?? throw new ArgumentNullException(nameof(sqlGenerationHelper));
          _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -72,7 +71,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       public async Task BulkInsertAsync<T>(DbContext ctx,
                                            IEntityType entityType,
                                            IEnumerable<T> entities,
-                                           string schema,
+                                           string? schema,
                                            string tableName,
                                            IBulkInsertOptions options,
                                            CancellationToken cancellationToken = default)
@@ -125,7 +124,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
                      for (var i = 0; i < reader.FieldCount; i++)
                      {
                         var paramInfo = parameterInfos[i];
-                        var value = reader.GetValue(i);
+                        object? value = reader.GetValue(i);
 
                         if (sqliteOptions.AutoIncrementBehavior == SqliteAutoIncrementBehavior.SetZeroToNull && paramInfo.IsAutoIncrementColumn && value.Equals(0))
                            value = null;
@@ -147,8 +146,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
          }
       }
 
-      [JetBrains.Annotations.NotNull]
-      private static ParameterInfo[] CreateParameters([JetBrains.Annotations.NotNull] IEntityDataReader reader, SqliteCommand command)
+      private static ParameterInfo[] CreateParameters(IEntityDataReader reader, SqliteCommand command)
       {
          var parameters = new ParameterInfo[reader.Properties.Count];
 
@@ -166,9 +164,8 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
          return parameters;
       }
 
-      [JetBrains.Annotations.NotNull]
-      private string GetInsertStatement([JetBrains.Annotations.NotNull] IEntityDataReader reader,
-                                        [JetBrains.Annotations.NotNull] string tableIdentifier)
+      private string GetInsertStatement(IEntityDataReader reader,
+                                        string tableIdentifier)
       {
          var sb = new StringBuilder();
          sb.Append("INSERT INTO ").Append(tableIdentifier).Append("(");
@@ -201,7 +198,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
          return sb.ToString();
       }
 
-      private static bool IsAutoIncrement([JetBrains.Annotations.NotNull] IProperty property)
+      private static bool IsAutoIncrement(IProperty property)
       {
          return property.ValueGenerated == ValueGenerated.OnAdd
                 && (property.ClrType == typeof(int) || property.ClrType == typeof(int?))
@@ -220,9 +217,8 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
 {insertStatement}", (long)duration.TotalMilliseconds, insertStatement);
       }
 
-      [JetBrains.Annotations.NotNull]
-      private static IReadOnlyList<IProperty> GetPropertiesForInsert([CanBeNull] IEntityMembersProvider entityMembersProvider,
-                                                                     [JetBrains.Annotations.NotNull] IEntityType entityType)
+      private static IReadOnlyList<IProperty> GetPropertiesForInsert(IEntityMembersProvider? entityMembersProvider,
+                                                                     IEntityType entityType)
       {
          if (entityMembersProvider == null)
             return entityType.GetProperties().Where(p => p.GetBeforeSaveBehavior() != PropertySaveBehavior.Ignore).ToList();
@@ -230,8 +226,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
          return ConvertToEntityProperties(entityMembersProvider.GetMembers(), entityType);
       }
 
-      [JetBrains.Annotations.NotNull]
-      private static IReadOnlyList<IProperty> ConvertToEntityProperties([JetBrains.Annotations.NotNull] IReadOnlyList<MemberInfo> memberInfos, [JetBrains.Annotations.NotNull] IEntityType entityType)
+      private static IReadOnlyList<IProperty> ConvertToEntityProperties(IReadOnlyList<MemberInfo> memberInfos, IEntityType entityType)
       {
          var properties = new IProperty[memberInfos.Count];
 
@@ -246,8 +241,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
          return properties;
       }
 
-      [CanBeNull]
-      private static IProperty FindProperty([JetBrains.Annotations.NotNull] IEntityType entityType, [JetBrains.Annotations.NotNull] MemberInfo memberInfo)
+      private static IProperty? FindProperty(IEntityType entityType, MemberInfo memberInfo)
       {
          foreach (var property in entityType.GetProperties())
          {
@@ -263,7 +257,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
          public readonly SqliteParameter Parameter;
          public readonly bool IsAutoIncrementColumn;
 
-         public ParameterInfo([JetBrains.Annotations.NotNull] SqliteParameter parameter, bool isAutoIncrementColumn)
+         public ParameterInfo(SqliteParameter parameter, bool isAutoIncrementColumn)
          {
             Parameter = parameter;
             IsAutoIncrementColumn = isAutoIncrementColumn;

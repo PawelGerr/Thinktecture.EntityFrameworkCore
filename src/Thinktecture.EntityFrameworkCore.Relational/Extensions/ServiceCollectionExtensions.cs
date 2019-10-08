@@ -1,5 +1,4 @@
 using System;
-using JetBrains.Annotations;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -21,7 +20,7 @@ namespace Thinktecture
       /// <typeparam name="TService">The type of the service to add.</typeparam>
       /// <typeparam name="TImplementation">The type of the implementation to use.</typeparam>
       /// <exception cref="ArgumentNullException"><paramref name="services"/> is <c>null</c>.</exception>
-      public static void TryAdd<TService, TImplementation>([NotNull] this IServiceCollection services, ServiceLifetime lifetime)
+      public static void TryAdd<TService, TImplementation>(this IServiceCollection services, ServiceLifetime lifetime)
          where TImplementation : TService
       {
          if (services == null)
@@ -40,7 +39,7 @@ namespace Thinktecture
       /// <typeparam name="TService">The type of the service to add.</typeparam>
       /// <typeparam name="TImplementation">The type of the implementation to use.</typeparam>
       /// <exception cref="ArgumentNullException"><paramref name="services"/> is <c>null</c>.</exception>
-      public static void Add<TService, TImplementation>([NotNull] this IServiceCollection services, ServiceLifetime lifetime)
+      public static void Add<TService, TImplementation>(this IServiceCollection services, ServiceLifetime lifetime)
          where TImplementation : TService
       {
          if (services == null)

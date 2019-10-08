@@ -4,7 +4,6 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Thinktecture.EntityFrameworkCore.BulkOperations;
 
@@ -25,14 +24,13 @@ namespace Thinktecture
       /// <param name="cancellationToken">Cancellation token.</param>
       /// <typeparam name="T">Entity type.</typeparam>
       /// <exception cref="ArgumentNullException"> <paramref name="ctx"/> or <paramref name="entities"/> is <c>null</c>.</exception>
-      [NotNull]
-      public static Task BulkInsertAsync<T>([NotNull] this DbContext ctx,
-                                            [NotNull] IEnumerable<T> entities,
-                                            [CanBeNull] SqliteBulkInsertOptions options,
+      public static Task BulkInsertAsync<T>(this DbContext ctx,
+                                            IEnumerable<T> entities,
+                                            SqliteBulkInsertOptions? options,
                                             CancellationToken cancellationToken = default)
          where T : class
       {
-         return ctx.BulkInsertAsync(entities, (IBulkInsertOptions)options, cancellationToken);
+         return ctx.BulkInsertAsync(entities, (IBulkInsertOptions?)options, cancellationToken);
       }
    }
 }

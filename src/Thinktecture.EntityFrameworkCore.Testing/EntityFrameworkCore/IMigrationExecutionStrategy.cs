@@ -1,4 +1,3 @@
-using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 
 namespace Thinktecture.EntityFrameworkCore
@@ -12,6 +11,6 @@ namespace Thinktecture.EntityFrameworkCore
       /// Migrates the database.
       /// </summary>
       /// <param name="ctx">Database context.</param>
-      void Migrate([NotNull] DbContext ctx);
+      void Migrate(DbContext ctx);
    }
 }

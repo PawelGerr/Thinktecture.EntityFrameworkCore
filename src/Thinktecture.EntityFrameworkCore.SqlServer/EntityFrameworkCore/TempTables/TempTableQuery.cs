@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using JetBrains.Annotations;
 
 namespace Thinktecture.EntityFrameworkCore.TempTables
 {
@@ -23,7 +22,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
       /// </summary>
       /// <param name="query">Query.</param>
       /// <param name="tempTableReference">Reference to a temp table.</param>
-      public TempTableQuery([NotNull] IQueryable<T> query, [NotNull] ITempTableReference tempTableReference)
+      public TempTableQuery(IQueryable<T> query, ITempTableReference tempTableReference)
       {
          Query = query ?? throw new ArgumentNullException(nameof(query));
          _tempTableReference = tempTableReference ?? throw new ArgumentNullException(nameof(tempTableReference));

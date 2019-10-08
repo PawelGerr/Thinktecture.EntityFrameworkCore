@@ -1,5 +1,4 @@
 using System;
-using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 
@@ -17,13 +16,12 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       /// Initializes new instance of <see cref="DefaultSchemaRespectingModelCacheKeyFactory{TFactory}"/>.
       /// </summary>
       /// <param name="factory">Inner factory.</param>
-      public DefaultSchemaRespectingModelCacheKeyFactory([NotNull] TFactory factory)
+      public DefaultSchemaRespectingModelCacheKeyFactory(TFactory factory)
       {
          _factory = factory ?? throw new ArgumentNullException(nameof(factory));
       }
 
       /// <inheritdoc />
-      [NotNull]
       public object Create(DbContext context)
       {
          if (context == null)

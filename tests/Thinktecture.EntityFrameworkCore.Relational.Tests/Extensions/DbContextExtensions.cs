@@ -1,4 +1,3 @@
-using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 
@@ -7,8 +6,7 @@ namespace Thinktecture
 {
    public static class DbContextExtensions
    {
-      [NotNull]
-      public static IEntityType GetEntityType<T>([NotNull] this DbContext ctx)
+      public static IEntityType GetEntityType<T>(this DbContext ctx)
       {
          return ctx.Model.GetEntityType(typeof(T));
       }

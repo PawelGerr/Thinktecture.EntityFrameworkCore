@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Query;
 
@@ -23,7 +22,7 @@ namespace Thinktecture.EntityFrameworkCore.Query
       /// </summary>
       /// <param name="filter">Inner filter.</param>
       /// <param name="plugins">Plugins.</param>
-      public CompositeEvaluatableExpressionFilter([NotNull] T filter, [NotNull] IEnumerable<IEvaluatableExpressionFilterPlugin> plugins)
+      public CompositeEvaluatableExpressionFilter(T filter, IEnumerable<IEvaluatableExpressionFilterPlugin> plugins)
       {
          _filter = filter ?? throw new ArgumentNullException(nameof(filter));
          _plugins = plugins?.ToList() ?? throw new ArgumentNullException(nameof(plugins));

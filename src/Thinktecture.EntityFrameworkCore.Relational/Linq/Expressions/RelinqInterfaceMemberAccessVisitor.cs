@@ -3,7 +3,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore.Internal;
 
 namespace Thinktecture.Linq.Expressions
@@ -29,7 +28,7 @@ namespace Thinktecture.Linq.Expressions
 
             if (conversion.Type.IsInterface && conversion.Type.IsAssignableFrom(conversion.Operand.Type))
             {
-               MemberInfo member = null;
+               MemberInfo? member = null;
 
                if (node.Member.MemberType == MemberTypes.Property)
                   member = FindProperty(conversion.Operand.Type, conversion.Type, (PropertyInfo)node.Member);
@@ -45,8 +44,7 @@ namespace Thinktecture.Linq.Expressions
          return base.VisitMember(node);
       }
 
-      [CanBeNull]
-      private static MemberInfo FindProperty([JetBrains.Annotations.NotNull] Type dstType, [JetBrains.Annotations.NotNull] Type interfaceType, [JetBrains.Annotations.NotNull] PropertyInfo interfaceMember)
+      private static MemberInfo? FindProperty(Type dstType, Type interfaceType, PropertyInfo interfaceMember)
       {
          var map = dstType.GetInterfaceMap(interfaceType);
          var targetMethod = FindTargetMethod(map, interfaceMember);
@@ -60,7 +58,7 @@ namespace Thinktecture.Linq.Expressions
          return null;
       }
 
-      private static MethodInfo FindTargetMethod(InterfaceMapping map, PropertyInfo interfaceProperty)
+      private static MethodInfo? FindTargetMethod(InterfaceMapping map, PropertyInfo interfaceProperty)
       {
          for (var i = 0; i < map.InterfaceMethods.Length; i++)
          {

@@ -1,5 +1,4 @@
 using System;
-using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -20,7 +19,6 @@ namespace Thinktecture
 
       public string ConnectionString => Configuration.GetConnectionString("default");
 
-      [NotNull]
       private static SamplesContext CreateTestConfiguration()
       {
          var config = GetConfiguration();
@@ -29,7 +27,7 @@ namespace Thinktecture
          return new SamplesContext(config, loggerFactory);
       }
 
-      public SamplesContext([NotNull] IConfiguration config, [NotNull] ILoggerFactory loggerFactory)
+      public SamplesContext(IConfiguration config, ILoggerFactory loggerFactory)
       {
          _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
          Configuration = config ?? throw new ArgumentNullException(nameof(config));
@@ -42,7 +40,7 @@ namespace Thinktecture
                 .Build();
       }
 
-      public IServiceProvider CreateServiceProvider([CanBeNull] string schema = null)
+      public IServiceProvider CreateServiceProvider(string? schema = null)
       {
          var services = new ServiceCollection()
             .AddDbContext<DemoDbContext>(builder => builder

@@ -19,10 +19,9 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
    [SuppressMessage("ReSharper", "EF1001")]
    public class SqliteDbContextOptionsExtension : IDbContextOptionsExtension
    {
-      private SqliteDbContextOptionsExtensionInfo _info;
+      private SqliteDbContextOptionsExtensionInfo? _info;
 
       /// <inheritdoc />
-      [JetBrains.Annotations.NotNull]
       public DbContextOptionsExtensionInfo Info => _info ??= new SqliteDbContextOptionsExtensionInfo(this);
 
       /// <summary>
@@ -66,16 +65,15 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
          private readonly SqliteDbContextOptionsExtension _extension;
          public override bool IsDatabaseProvider => false;
 
-         private string _logFragment;
+         private string? _logFragment;
 
-         [JetBrains.Annotations.NotNull]
          public override string LogFragment => _logFragment ??= $@"
 {{
    'BulkOperationSupport'={_extension.AddBulkOperationSupport}
 }}";
 
          /// <inheritdoc />
-         public SqliteDbContextOptionsExtensionInfo([JetBrains.Annotations.NotNull] SqliteDbContextOptionsExtension extension)
+         public SqliteDbContextOptionsExtensionInfo(SqliteDbContextOptionsExtension extension)
             : base(extension)
          {
             _extension = extension ?? throw new ArgumentNullException(nameof(extension));

@@ -11,7 +11,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.PropertiesProviderTest
       public void Should_throw_if_expression_is_null()
       {
          // ReSharper disable once AssignNullToNotNullAttribute
-         Action action = () => EntityMembersProvider.From<TestEntity>(null);
+         Action action = () => EntityMembersProvider.From<TestEntity>(null!);
          action.Should().Throw<ArgumentNullException>();
       }
 
@@ -25,7 +25,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.PropertiesProviderTest
       [Fact]
       public void Should_throw_if_expression_return_constant()
       {
-         Action action = () => EntityMembersProvider.From<TestEntity>(entity => null);
+         Action action = () => EntityMembersProvider.From<TestEntity>(entity => null!);
          action.Should().Throw<NotSupportedException>();
       }
 
@@ -36,7 +36,8 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.PropertiesProviderTest
 
          var properties = propertiesProvider.GetMembers();
          properties.Should().HaveCount(1);
-         properties.Should().Contain(typeof(TestEntity).GetProperty(nameof(TestEntity.Id)));
+         var idProperty = typeof(TestEntity).GetProperty(nameof(TestEntity.Id)) ?? throw new Exception($"Property {nameof(TestEntity.Id)} not found.");
+         properties.Should().Contain(idProperty);
       }
 
       [Fact]
@@ -46,8 +47,10 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.PropertiesProviderTest
 
          var properties = propertiesProvider.GetMembers();
          properties.Should().HaveCount(2);
-         properties.Should().Contain(typeof(TestEntity).GetProperty(nameof(TestEntity.Id)));
-         properties.Should().Contain(typeof(TestEntity).GetProperty(nameof(TestEntity.Count)));
+         var idProperty = typeof(TestEntity).GetProperty(nameof(TestEntity.Id)) ?? throw new Exception($"Property {nameof(TestEntity.Id)} not found.");
+         var countProperty = typeof(TestEntity).GetProperty(nameof(TestEntity.Count)) ?? throw new Exception($"Property {nameof(TestEntity.Count)} not found.");
+         properties.Should().Contain(idProperty);
+         properties.Should().Contain(countProperty);
       }
    }
 }

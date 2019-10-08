@@ -1,6 +1,5 @@
 using System;
 using FluentAssertions;
-using JetBrains.Annotations;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -8,13 +7,12 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure.DefaultSchemaRespectin
 {
    public class Create : IntegrationTestsBase
    {
-      private DefaultSchemaRespectingModelCacheKeyFactory<TestModelCacheKeyFactory> _sut;
+      private DefaultSchemaRespectingModelCacheKeyFactory<TestModelCacheKeyFactory>? _sut;
 
-      [NotNull]
       // ReSharper disable once InconsistentNaming
-      private DefaultSchemaRespectingModelCacheKeyFactory<TestModelCacheKeyFactory> SUT => _sut ?? (_sut = new DefaultSchemaRespectingModelCacheKeyFactory<TestModelCacheKeyFactory>(new TestModelCacheKeyFactory()));
+      private DefaultSchemaRespectingModelCacheKeyFactory<TestModelCacheKeyFactory> SUT => _sut ??= new DefaultSchemaRespectingModelCacheKeyFactory<TestModelCacheKeyFactory>(new TestModelCacheKeyFactory());
 
-      public Create([NotNull] ITestOutputHelper testOutputHelper)
+      public Create(ITestOutputHelper testOutputHelper)
          : base(testOutputHelper)
       {
       }
@@ -23,7 +21,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure.DefaultSchemaRespectin
       public void Should_throw_if_ctx_is_null()
       {
          // ReSharper disable once AssignNullToNotNullAttribute
-         SUT.Invoking(sut => sut.Create(null))
+         SUT.Invoking(sut => sut.Create(null!))
             .Should().Throw<ArgumentNullException>();
       }
 

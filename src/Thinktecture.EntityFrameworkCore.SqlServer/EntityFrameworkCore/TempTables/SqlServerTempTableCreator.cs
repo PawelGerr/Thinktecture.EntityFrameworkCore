@@ -28,8 +28,8 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
       /// </summary>
       /// <param name="sqlGenerationHelper">SQL generation helper.</param>
       /// <param name="typeMappingSource">Type mappings.</param>
-      public SqlServerTempTableCreator([JetBrains.Annotations.NotNull] ISqlGenerationHelper sqlGenerationHelper,
-                                       [JetBrains.Annotations.NotNull] IRelationalTypeMappingSource typeMappingSource)
+      public SqlServerTempTableCreator(ISqlGenerationHelper sqlGenerationHelper,
+                                       IRelationalTypeMappingSource typeMappingSource)
       {
          _sqlGenerationHelper = sqlGenerationHelper ?? throw new ArgumentNullException(nameof(sqlGenerationHelper));
          _typeMappingSource = typeMappingSource ?? throw new ArgumentNullException(nameof(typeMappingSource));
@@ -69,8 +69,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
          return new SqlServerTempTableReference(logger, _sqlGenerationHelper, tableName, ctx.Database);
       }
 
-      [JetBrains.Annotations.NotNull]
-      private static string GetTableName([JetBrains.Annotations.NotNull] IEntityType entityType, bool makeTableNameUnique)
+      private static string GetTableName(IEntityType entityType, bool makeTableNameUnique)
       {
          var tableName = entityType.GetTableName();
 
@@ -117,8 +116,7 @@ END
          await ctx.Database.ExecuteSqlRawAsync(sql, cancellationToken).ConfigureAwait(false);
       }
 
-      [JetBrains.Annotations.NotNull]
-      private string GetTempTableCreationSql([JetBrains.Annotations.NotNull] IEnumerable<IProperty> properties, [JetBrains.Annotations.NotNull] string tableName, bool isUnique)
+      private string GetTempTableCreationSql(IEnumerable<IProperty> properties, string tableName, bool isUnique)
       {
          if (properties == null)
             throw new ArgumentNullException(nameof(properties));
@@ -144,8 +142,7 @@ END
 ";
       }
 
-      [JetBrains.Annotations.NotNull]
-      private string GetColumnsDefinitions([JetBrains.Annotations.NotNull] IEnumerable<IProperty> properties)
+      private string GetColumnsDefinitions(IEnumerable<IProperty> properties)
       {
          if (properties == null)
             throw new ArgumentNullException(nameof(properties));
@@ -189,7 +186,7 @@ END
          return sb.ToString();
       }
 
-      private static bool IsIdentityColumn([JetBrains.Annotations.NotNull] IProperty property)
+      private static bool IsIdentityColumn(IProperty property)
       {
          return SqlServerValueGenerationStrategy.IdentityColumn.Equals(property.FindAnnotation(SqlServerAnnotationNames.ValueGenerationStrategy)?.Value);
       }

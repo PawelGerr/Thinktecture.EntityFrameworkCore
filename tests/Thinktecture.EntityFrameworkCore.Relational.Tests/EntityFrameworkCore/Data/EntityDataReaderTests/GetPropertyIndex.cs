@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using FluentAssertions;
-using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Thinktecture.TestDatabaseContext;
@@ -16,13 +15,12 @@ namespace Thinktecture.EntityFrameworkCore.Data.EntityDataReaderTests
       private readonly IProperty _column1;
       private readonly IProperty _column2;
 
-      private EntityDataReader<TestEntity> _sut;
+      private EntityDataReader<TestEntity>? _sut;
 
-      [NotNull]
       // ReSharper disable once InconsistentNaming
-      private EntityDataReader<TestEntity> SUT => _sut ?? (_sut = new EntityDataReader<TestEntity>(ActDbContext, Array.Empty<TestEntity>(), _propertiesToRead));
+      private EntityDataReader<TestEntity> SUT => _sut ??= new EntityDataReader<TestEntity>(ActDbContext, Array.Empty<TestEntity>(), _propertiesToRead);
 
-      public GetPropertyIndex([NotNull] ITestOutputHelper testOutputHelper)
+      public GetPropertyIndex(ITestOutputHelper testOutputHelper)
          : base(testOutputHelper)
       {
          _column1 = ArrangeDbContext.GetEntityType<TestEntity>().GetProperty(nameof(TestEntity.Column1));

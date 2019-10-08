@@ -11,6 +11,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
       /// </summary>
       public TColumn1 Column1 { get; set; }
 
+#nullable disable
       /// <summary>
       /// Initializes <see cref="TempTable{TColumn1}"/>.
       /// </summary>
@@ -18,6 +19,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
       public TempTable()
       {
       }
+#nullable enable
 
       /// <summary>
       /// Initializes <see cref="TempTable{TColumn1}"/>.
@@ -46,6 +48,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
       /// </summary>
       public TColumn2 Column2 { get; set; }
 
+#nullable disable
       /// <summary>
       /// Initializes <see cref="TempTable{TColumn1,TColumn2}"/>.
       /// </summary>
@@ -53,6 +56,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
       public TempTable()
       {
       }
+#nullable enable
 
       /// <summary>
       /// Initializes <see cref="TempTable{TColumn1,TColumn2}"/>.

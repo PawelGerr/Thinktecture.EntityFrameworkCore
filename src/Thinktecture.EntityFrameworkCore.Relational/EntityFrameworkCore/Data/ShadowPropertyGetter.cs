@@ -1,5 +1,4 @@
 using System;
-using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking.Internal;
 using Microsoft.EntityFrameworkCore.Infrastructure;
@@ -25,17 +24,14 @@ namespace Thinktecture.EntityFrameworkCore.Data
       /// - or
       /// <paramref name="getter"/> is <c>null</c>.
       /// </exception>
-      public ShadowPropertyGetter([NotNull] DbContext ctx, [NotNull] Delegate getter)
+      public ShadowPropertyGetter(DbContext ctx, Delegate getter)
       {
-         if (getter == null)
-            throw new ArgumentNullException(nameof(getter));
-
          _ctx = ctx ?? throw new ArgumentNullException(nameof(ctx));
-         _getter = (Func<InternalEntityEntry, TValue>)getter;
+         _getter = (Func<InternalEntityEntry, TValue>)getter ?? throw new ArgumentNullException(nameof(getter));
       }
 
       /// <inheritdoc />
-      public object GetValue(object entity)
+      public object? GetValue(object entity)
       {
          var entry = _ctx.Entry(entity);
          var internalEntry = ((IInfrastructure<InternalEntityEntry>)entry).Instance;

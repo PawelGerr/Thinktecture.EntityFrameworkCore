@@ -1,5 +1,4 @@
 using System;
-using JetBrains.Annotations;
 
 namespace Thinktecture.EntityFrameworkCore
 {
@@ -17,7 +16,7 @@ namespace Thinktecture.EntityFrameworkCore
       /// Initializes new instance of <see cref="DbDefaultSchema"/>.
       /// </summary>
       /// <param name="schema"></param>
-      public DbDefaultSchema([NotNull] string schema)
+      public DbDefaultSchema(string schema)
       {
          Schema = schema ?? throw new ArgumentNullException(nameof(schema));
       }

@@ -17,14 +17,13 @@ namespace Thinktecture
 
       public string ConnectionString => Configuration.GetConnectionString("default");
 
-      [JetBrains.Annotations.NotNull]
       private static TestContext CreateTestConfiguration()
       {
          var config = GetConfiguration();
          return new TestContext(config);
       }
 
-      public TestContext([JetBrains.Annotations.NotNull] IConfiguration config)
+      public TestContext(IConfiguration config)
       {
          Configuration = config ?? throw new ArgumentNullException(nameof(config));
       }

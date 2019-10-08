@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
-using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Thinktecture.EntityFrameworkCore.BulkOperations;
 using Thinktecture.EntityFrameworkCore.TempTables;
@@ -15,7 +14,7 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
    [Collection("BulkInsertTempTableAsync")]
    public class BulkInsertValuesIntoTempTableAsync_2_Column : IntegrationTestsBase
    {
-      public BulkInsertValuesIntoTempTableAsync_2_Column([NotNull] ITestOutputHelper testOutputHelper)
+      public BulkInsertValuesIntoTempTableAsync_2_Column(ITestOutputHelper testOutputHelper)
          : base(testOutputHelper, true)
       {
       }
@@ -37,15 +36,15 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
       [Fact]
       public async Task Should_insert_string_string()
       {
-         ConfigureModel = builder => builder.ConfigureTempTable<string, string>();
+         ConfigureModel = builder => builder.ConfigureTempTable<string, string>().Property(t => t.Column2).IsRequired(false);
 
-         var values = new List<(string, string)> { ("value1", null) };
+         var values = new List<(string, string?)> { ("value1", null) };
          var query = await ActDbContext.BulkInsertValuesIntoTempTableAsync(values, new SqlTempTableBulkInsertOptions { PrimaryKeyCreation = PrimaryKeyCreation.None }).ConfigureAwait(false);
 
          var tempTable = await query.Query.ToListAsync().ConfigureAwait(false);
          tempTable.Should()
                   .HaveCount(1).And
-                  .BeEquivalentTo(new TempTable<string, string>("value1", null));
+                  .BeEquivalentTo(new TempTable<string, string?>("value1", null));
       }
 
       [Fact]

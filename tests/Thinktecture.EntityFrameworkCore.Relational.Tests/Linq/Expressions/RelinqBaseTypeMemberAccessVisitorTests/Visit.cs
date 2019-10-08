@@ -15,7 +15,7 @@ namespace Thinktecture.Linq.Expressions.RelinqBaseTypeMemberAccessVisitorTests
       [Fact]
       public void Should_not_change_expression_without_conversion()
       {
-         Expression<Func<MyImplicitImplementingObject, string>> expression = o => o.MyProperty;
+         Expression<Func<MyImplicitImplementingObject, string?>> expression = o => o.MyProperty;
 
          var visitedExpression = RelinqInterfaceMemberAccessVisitor.Instance.Visit(expression);
 
@@ -81,8 +81,7 @@ namespace Thinktecture.Linq.Expressions.RelinqBaseTypeMemberAccessVisitorTests
          memberExpression.Expression.Should().Be(expression.Parameters[0]);
       }
 
-      [JetBrains.Annotations.NotNull]
-      private static Expression<Func<T, string>> GetInterfaceImplementingExpression<T>()
+      private static Expression<Func<T, string?>> GetInterfaceImplementingExpression<T>()
          where T : IMyObject
       {
          return o => o.MyProperty;
@@ -90,29 +89,29 @@ namespace Thinktecture.Linq.Expressions.RelinqBaseTypeMemberAccessVisitorTests
 
       private interface IMyObject
       {
-         string MyProperty { get; }
+         string? MyProperty { get; }
       }
 
       private class MyImplicitImplementingObject : IMyObject
       {
-         public string MyProperty { get; }
+         public string? MyProperty { get; }
       }
 
       private class MyImplicitImplementingObjectWithSetter : IMyObject
       {
-         public string MyProperty { get; set; }
+         public string? MyProperty { get; set; }
       }
 
       private class MyExplicitImplementingObject : IMyObject
       {
-         string IMyObject.MyProperty { get; }
+         string? IMyObject.MyProperty { get; }
       }
 
       private class MyDualImplementingObject : IMyObject
       {
-         string IMyObject.MyProperty { get; }
+         string? IMyObject.MyProperty { get; }
 
-         public string MyProperty { get; }
+         public string? MyProperty { get; }
       }
    }
 }

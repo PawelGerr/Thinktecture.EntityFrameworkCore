@@ -32,6 +32,6 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       public bool EnableStreaming { get; set; } = true;
 
       /// <inheritdoc />
-      public IEntityMembersProvider EntityMembersProvider { get; set; }
+      public IEntityMembersProvider? EntityMembersProvider { get; set; }
    }
 }

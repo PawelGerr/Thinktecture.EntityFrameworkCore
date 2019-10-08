@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Reflection;
-using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore.Metadata;
 
 namespace Thinktecture.EntityFrameworkCore.Data
@@ -15,7 +14,6 @@ namespace Thinktecture.EntityFrameworkCore.Data
       /// Gets the properties the reader is created for.
       /// </summary>
       /// <returns>A collection of <see cref="PropertyInfo"/>.</returns>
-      [NotNull]
       IReadOnlyList<IProperty> Properties { get; }
 
       /// <summary>
@@ -23,6 +21,6 @@ namespace Thinktecture.EntityFrameworkCore.Data
       /// </summary>
       /// <param name="entityProperty">Property to get the index for.</param>
       /// <returns>Index of the property.</returns>
-      int GetPropertyIndex([NotNull] IProperty entityProperty);
+      int GetPropertyIndex(IProperty entityProperty);
    }
 }

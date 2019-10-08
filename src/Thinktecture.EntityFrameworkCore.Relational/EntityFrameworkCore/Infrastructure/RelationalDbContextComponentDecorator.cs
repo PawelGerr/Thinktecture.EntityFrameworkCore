@@ -25,7 +25,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
          services[index] = ServiceDescriptor.Describe(typeof(TService), decoratorType, lifetime);
       }
 
-      private static (Type implementationType, ServiceLifetime lifetime, int index) GetLatestRegistration<TService>([JetBrains.Annotations.NotNull] IServiceCollection services)
+      private static (Type implementationType, ServiceLifetime lifetime, int index) GetLatestRegistration<TService>(IServiceCollection services)
       {
          for (var i = services.Count - 1; i >= 0; i--)
          {

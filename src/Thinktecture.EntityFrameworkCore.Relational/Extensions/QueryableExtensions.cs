@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore.Query.Internal;
 using Thinktecture.EntityFrameworkCore;
 
@@ -41,13 +40,12 @@ namespace Thinktecture
       /// - or <paramref name="rightKeySelector"/> is <c>null</c>
       /// - or <paramref name="resultSelector"/> is <c>null</c>.
       /// </exception>
-      [NotNull]
       public static IQueryable<TResult> LeftJoin<TLeft, TRight, TKey, TResult>(
-         [NotNull] this IQueryable<TLeft> left,
-         [NotNull] IEnumerable<TRight> right,
-         [NotNull] Expression<Func<TLeft, TKey>> leftKeySelector,
-         [NotNull] Expression<Func<TRight, TKey>> rightKeySelector,
-         [NotNull] Expression<Func<LeftJoinResult<TLeft, TRight>, TResult>> resultSelector)
+         this IQueryable<TLeft> left,
+         IEnumerable<TRight> right,
+         Expression<Func<TLeft, TKey>> leftKeySelector,
+         Expression<Func<TRight, TKey>> rightKeySelector,
+         Expression<Func<LeftJoinResult<TLeft, TRight>, TResult>> resultSelector)
       {
          if (left == null)
             throw new ArgumentNullException(nameof(left));
@@ -77,8 +75,7 @@ namespace Thinktecture
       /// <typeparam name="TEntity">Type of the entity.</typeparam>
       /// <returns>Query that will be executed as a sub query.</returns>
       /// <exception cref="ArgumentNullException"><paramref name="source"/> is <c>null</c>.</exception>
-      [NotNull]
-      public static IQueryable<TEntity> AsSubQuery<TEntity>([NotNull] this IQueryable<TEntity> source)
+      public static IQueryable<TEntity> AsSubQuery<TEntity>(this IQueryable<TEntity> source)
       {
          if (source == null)
             throw new ArgumentNullException(nameof(source));

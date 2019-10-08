@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
@@ -14,12 +13,11 @@ namespace Thinktecture.EntityFrameworkCore.Migrations.DefaultSchemaRespectingMig
       protected Mock<IMigrationOperationSchemaSetter> SchemaSetterMock { get; }
       protected IServiceCollection Services { get; }
 
-      private DefaultSchemaRespectingMigrationAssembly<TestMigrationsAssembly> _sut;
+      private DefaultSchemaRespectingMigrationAssembly<TestMigrationsAssembly>? _sut;
 
-      [NotNull]
-      protected DefaultSchemaRespectingMigrationAssembly<TestMigrationsAssembly> SUT => _sut ?? (_sut = new DefaultSchemaRespectingMigrationAssembly<TestMigrationsAssembly>(InnerMigrationsAssembly, SchemaSetterMock.Object, CurrentCtxMock.Object, Services.BuildServiceProvider()));
+      protected DefaultSchemaRespectingMigrationAssembly<TestMigrationsAssembly> SUT => _sut ??= new DefaultSchemaRespectingMigrationAssembly<TestMigrationsAssembly>(InnerMigrationsAssembly, SchemaSetterMock.Object, CurrentCtxMock.Object, Services.BuildServiceProvider());
 
-      protected DefaultSchemaRespectingMigrationAssemblyTestsBase([NotNull] ITestOutputHelper testOutputHelper)
+      protected DefaultSchemaRespectingMigrationAssemblyTestsBase(ITestOutputHelper testOutputHelper)
          : base(testOutputHelper)
       {
          InnerMigrationsAssembly = new TestMigrationsAssembly();

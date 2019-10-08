@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 
@@ -21,8 +20,7 @@ namespace Thinktecture.EntityFrameworkCore.Data
       /// <param name="properties">Properties of the entity of type <typeparamref name="T"/> to generate the data reader for.</param>
       /// <typeparam name="T">Type of the entity.</typeparam>
       /// <returns>An instance of <see cref="IEntityDataReader"/>.</returns>
-      [NotNull]
-      IEntityDataReader Create<T>([NotNull] DbContext ctx, [NotNull] IEnumerable<T> entities, [NotNull] IReadOnlyList<IProperty> properties)
+      IEntityDataReader Create<T>(DbContext ctx, IEnumerable<T> entities, IReadOnlyList<IProperty> properties)
          where T : class;
    }
 }

@@ -1,5 +1,4 @@
 using System;
-using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Thinktecture.EntityFrameworkCore.Infrastructure;
 
@@ -17,8 +16,7 @@ namespace Thinktecture
       /// <param name="sqliteOptionsBuilder">SQLite options builder.</param>
       /// <param name="addCustomQueryableMethodTranslatingExpressionVisitorFactory">Indication whether to add a custom factory.</param>
       /// <returns>Provided <paramref name="sqliteOptionsBuilder"/>.</returns>
-      [NotNull]
-      public static SqliteDbContextOptionsBuilder AddCustomQueryableMethodTranslatingExpressionVisitorFactory([NotNull] this SqliteDbContextOptionsBuilder sqliteOptionsBuilder,
+      public static SqliteDbContextOptionsBuilder AddCustomQueryableMethodTranslatingExpressionVisitorFactory(this SqliteDbContextOptionsBuilder sqliteOptionsBuilder,
                                                                                                               bool addCustomQueryableMethodTranslatingExpressionVisitorFactory = true)
       {
          return AddOrUpdateExtensions(sqliteOptionsBuilder, extension => extension.AddCustomQueryableMethodTranslatingExpressionVisitorFactory = addCustomQueryableMethodTranslatingExpressionVisitorFactory);
@@ -30,16 +28,14 @@ namespace Thinktecture
       /// <param name="sqliteOptionsBuilder">SQLite options builder.</param>
       /// <param name="addBulkOperationSupport">Indication whether to enable or disable the feature.</param>
       /// <returns>Provided <paramref name="sqliteOptionsBuilder"/>.</returns>
-      [NotNull]
-      public static SqliteDbContextOptionsBuilder AddBulkOperationSupport([NotNull] this SqliteDbContextOptionsBuilder sqliteOptionsBuilder,
+      public static SqliteDbContextOptionsBuilder AddBulkOperationSupport(this SqliteDbContextOptionsBuilder sqliteOptionsBuilder,
                                                                           bool addBulkOperationSupport = true)
       {
          return AddOrUpdateExtensions(sqliteOptionsBuilder, extension => extension.AddBulkOperationSupport = addBulkOperationSupport);
       }
 
-      [NotNull]
-      private static SqliteDbContextOptionsBuilder AddOrUpdateExtensions([NotNull] this SqliteDbContextOptionsBuilder sqliteOptionsBuilder,
-                                                                         [NotNull] Action<SqliteDbContextOptionsExtension> callback)
+      private static SqliteDbContextOptionsBuilder AddOrUpdateExtensions(this SqliteDbContextOptionsBuilder sqliteOptionsBuilder,
+                                                                         Action<SqliteDbContextOptionsExtension> callback)
       {
          var infrastructure = (IRelationalDbContextOptionsBuilderInfrastructure)sqliteOptionsBuilder;
          infrastructure.OptionsBuilder.AddOrUpdateExtension(callback);

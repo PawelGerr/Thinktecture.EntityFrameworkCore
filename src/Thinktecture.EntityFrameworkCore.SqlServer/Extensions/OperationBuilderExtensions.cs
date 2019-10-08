@@ -1,5 +1,4 @@
 using System;
-using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore.Migrations.Operations;
 using Microsoft.EntityFrameworkCore.Migrations.Operations.Builders;
 using Thinktecture.EntityFrameworkCore.Migrations;
@@ -34,7 +33,7 @@ namespace Thinktecture
       /// <param name="builder">An operation builder.</param>
       /// <typeparam name="T">Type of the migration operation.</typeparam>
       /// <exception cref="ArgumentNullException">Operation builder is <c>null</c>.</exception>
-      public static void IfNotExists<T>([NotNull] this OperationBuilder<T> builder)
+      public static void IfNotExists<T>(this OperationBuilder<T> builder)
          where T : MigrationOperation
       {
          if (builder == null)
@@ -53,7 +52,7 @@ namespace Thinktecture
       /// <param name="builder">An operation builder.</param>
       /// <typeparam name="T">Type of the migration operation.</typeparam>
       /// <exception cref="ArgumentNullException">Operation builder is <c>null</c>.</exception>
-      public static void IfExists<T>([NotNull] this OperationBuilder<T> builder)
+      public static void IfExists<T>(this OperationBuilder<T> builder)
          where T : MigrationOperation
       {
          if (builder == null)

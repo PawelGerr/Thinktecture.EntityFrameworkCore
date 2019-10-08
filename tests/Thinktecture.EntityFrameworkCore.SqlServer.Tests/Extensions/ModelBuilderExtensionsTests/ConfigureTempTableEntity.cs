@@ -1,6 +1,5 @@
 using System.Linq;
 using FluentAssertions;
-using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Thinktecture.TestDatabaseContext;
 using Xunit;
@@ -11,7 +10,7 @@ namespace Thinktecture.Extensions.ModelBuilderExtensionsTests
    // ReSharper disable once InconsistentNaming
    public class ConfigureTempTableEntity : IntegrationTestsBase
    {
-      public ConfigureTempTableEntity([NotNull] ITestOutputHelper testOutputHelper)
+      public ConfigureTempTableEntity(ITestOutputHelper testOutputHelper)
          : base(testOutputHelper, true)
       {
       }

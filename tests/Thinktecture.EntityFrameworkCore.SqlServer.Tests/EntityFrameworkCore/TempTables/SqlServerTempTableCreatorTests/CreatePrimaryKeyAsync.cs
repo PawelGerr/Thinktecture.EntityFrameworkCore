@@ -18,7 +18,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
    {
       private readonly SqlServerTempTableCreator _sut;
 
-      public CreatePrimaryKeyAsync([JetBrains.Annotations.NotNull] ITestOutputHelper testOutputHelper)
+      public CreatePrimaryKeyAsync(ITestOutputHelper testOutputHelper)
          : base(testOutputHelper, true)
       {
          var sqlGenerationHelperMock = new Mock<ISqlGenerationHelper>();

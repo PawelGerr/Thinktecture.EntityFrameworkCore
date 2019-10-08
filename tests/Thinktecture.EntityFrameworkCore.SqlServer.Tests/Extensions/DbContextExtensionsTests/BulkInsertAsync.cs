@@ -2,7 +2,6 @@ using System;
 using System.Reflection;
 using System.Threading.Tasks;
 using FluentAssertions;
-using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Thinktecture.EntityFrameworkCore.BulkOperations;
 using Thinktecture.TestDatabaseContext;
@@ -15,7 +14,7 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
    public class BulkInsertAsync : IntegrationTestsBase
    {
       /// <inheritdoc />
-      public BulkInsertAsync([NotNull] ITestOutputHelper testOutputHelper)
+      public BulkInsertAsync(ITestOutputHelper testOutputHelper)
          : base(testOutputHelper, true)
       {
       }
@@ -55,12 +54,21 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
                           };
          var testEntities = new[] { testEntity };
 
-         var idProperty = typeof(TestEntity).GetProperty(nameof(TestEntity.Id));
-         var countProperty = typeof(TestEntity).GetProperty(nameof(TestEntity.Count));
-         var propertyWithBackingField = typeof(TestEntity).GetProperty(nameof(TestEntity.PropertyWithBackingField));
-         var privateField = typeof(TestEntity).GetField("_privateField", BindingFlags.Instance | BindingFlags.NonPublic);
+         var idProperty = typeof(TestEntity).GetProperty(nameof(TestEntity.Id)) ?? throw new Exception($"Property {nameof(TestEntity.Id)} not found.");
+         var countProperty = typeof(TestEntity).GetProperty(nameof(TestEntity.Count)) ?? throw new Exception($"Property {nameof(TestEntity.Count)} not found.");
+         var propertyWithBackingField = typeof(TestEntity).GetProperty(nameof(TestEntity.PropertyWithBackingField)) ?? throw new Exception($"Property {nameof(TestEntity.PropertyWithBackingField)} not found.");
+         var privateField = typeof(TestEntity).GetField("_privateField", BindingFlags.Instance | BindingFlags.NonPublic) ?? throw new Exception($"Field _privateField not found.");
 
-         await ActDbContext.BulkInsertAsync(testEntities, new SqlServerBulkInsertOptions { EntityMembersProvider = new EntityMembersProvider(new MemberInfo[] { idProperty, countProperty, propertyWithBackingField, privateField }) });
+         await ActDbContext.BulkInsertAsync(testEntities, new SqlServerBulkInsertOptions
+                                                          {
+                                                             EntityMembersProvider = new EntityMembersProvider(new MemberInfo[]
+                                                                                                               {
+                                                                                                                  idProperty,
+                                                                                                                  countProperty,
+                                                                                                                  propertyWithBackingField,
+                                                                                                                  privateField
+                                                                                                               })
+                                                          });
 
          var loadedEntities = await AssertDbContext.TestEntities.ToListAsync();
          loadedEntities.Should().HaveCount(1);

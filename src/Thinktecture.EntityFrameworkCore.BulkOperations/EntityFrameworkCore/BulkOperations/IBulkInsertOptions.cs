@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using JetBrains.Annotations;
 
 namespace Thinktecture.EntityFrameworkCore.BulkOperations
 {
@@ -13,7 +12,6 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       /// Properties to insert.
       /// If the <see cref="EntityMembersProvider"/> is null then all properties of the entity are going to be inserted.
       /// </summary>
-      [CanBeNull]
-      IEntityMembersProvider EntityMembersProvider { get; set; }
+      IEntityMembersProvider? EntityMembersProvider { get; set; }
    }
 }

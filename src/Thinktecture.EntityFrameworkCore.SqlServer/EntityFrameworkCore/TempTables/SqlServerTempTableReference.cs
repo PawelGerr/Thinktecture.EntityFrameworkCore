@@ -1,6 +1,5 @@
 using System;
 using System.Data;
-using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
@@ -28,10 +27,10 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
       /// <param name="sqlGenerationHelper">SQL generation helper.</param>
       /// <param name="tableName">The name of the temp table.</param>
       /// <param name="database">Database facade.</param>
-      public SqlServerTempTableReference([NotNull] IDiagnosticsLogger<DbLoggerCategory.Query> logger,
-                                         [NotNull] ISqlGenerationHelper sqlGenerationHelper,
-                                         [NotNull] string tableName,
-                                         [NotNull] DatabaseFacade database)
+      public SqlServerTempTableReference(IDiagnosticsLogger<DbLoggerCategory.Query> logger,
+                                         ISqlGenerationHelper sqlGenerationHelper,
+                                         string tableName,
+                                         DatabaseFacade database)
       {
          Name = tableName ?? throw new ArgumentNullException(nameof(tableName));
          _logger = logger ?? throw new ArgumentNullException(nameof(logger));

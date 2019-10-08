@@ -8,7 +8,9 @@ namespace Thinktecture.Database
       public Guid ProductId { get; set; }
       public int Count { get; set; }
 
+#nullable disable
       public Order Order { get; set; }
       public Product Product { get; set; }
+#nullable enable
    }
 }

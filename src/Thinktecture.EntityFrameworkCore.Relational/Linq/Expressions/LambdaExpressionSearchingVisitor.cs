@@ -25,8 +25,7 @@ namespace Thinktecture.Linq.Expressions
       /// <returns>Found instance of <see cref="LambdaExpression"/>.</returns>
       /// <exception cref="ArgumentNullException">Provided <paramref name="expression"/> is null.</exception>
       /// <exception cref="ArgumentException">Provided <paramref name="expression"/> does not contain a lambda.</exception>
-      [JetBrains.Annotations.NotNull]
-      public LambdaExpression GetLambda([JetBrains.Annotations.NotNull] Expression expression)
+      public LambdaExpression GetLambda(Expression expression)
       {
          if (expression == null)
             throw new ArgumentNullException(nameof(expression));
@@ -87,14 +86,17 @@ namespace Thinktecture.Linq.Expressions
                                                {
                                                   var visitedArgument = Visit(a);
 
+                                                  if (visitedArgument is null)
+                                                     throw new NotSupportedException($"The expressions representing the arguments of the method call could not be translated. Found expression: {a}");
+
                                                   if (visitedArgument.NodeType != ExpressionType.Constant)
-                                                     throw new NotSupportedException($"All expressions representing the arguments of the method call must be of type '{ExpressionType.Constant}'. Found expression: {instanceExpression.GetType().DisplayName()}");
+                                                     throw new NotSupportedException($"All expressions representing the arguments of the method call must be of type '{ExpressionType.Constant}'. Found expression: {visitedArgument.GetType().DisplayName()}");
 
                                                   return ((ConstantExpression)a).Value;
                                                })
                              .ToArray();
 
-         var value = node.Method.Invoke(((ConstantExpression)instanceExpression)?.Value, arguments);
+         var value = node.Method.Invoke(((ConstantExpression?)instanceExpression)?.Value, arguments);
 
          if (value is Expression exp)
             return exp;
@@ -102,8 +104,7 @@ namespace Thinktecture.Linq.Expressions
          return Expression.Constant(value);
       }
 
-      [JetBrains.Annotations.NotNull]
-      private static object GetMemberValue([JetBrains.Annotations.NotNull] MemberExpression memberAccess, object instance)
+      private static object GetMemberValue(MemberExpression memberAccess, object instance)
       {
          if (memberAccess == null)
             throw new ArgumentNullException(nameof(memberAccess));
@@ -123,8 +124,7 @@ namespace Thinktecture.Linq.Expressions
          }
       }
 
-      [JetBrains.Annotations.NotNull]
-      private static Exception NotSupported([JetBrains.Annotations.NotNull] Expression node)
+      private static Exception NotSupported(Expression node)
       {
          return new NotSupportedException($"Node of type '{node.GetType().DisplayName()}' is not supported.");
       }

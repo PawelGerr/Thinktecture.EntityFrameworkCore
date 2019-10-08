@@ -1,5 +1,4 @@
 using System;
-using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Migrations.Operations;
@@ -17,7 +16,7 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
       /// </summary>
       /// <param name="dependencies">Dependencies.</param>
       /// <param name="migrationsAnnotations">Migration annotations.</param>
-      public ThinktectureSqlServerMigrationsSqlGenerator([NotNull] MigrationsSqlGeneratorDependencies dependencies, [NotNull] IMigrationsAnnotationProvider migrationsAnnotations)
+      public ThinktectureSqlServerMigrationsSqlGenerator(MigrationsSqlGeneratorDependencies dependencies, IMigrationsAnnotationProvider migrationsAnnotations)
          : base(dependencies, migrationsAnnotations)
       {
       }
@@ -151,12 +150,12 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
          builder.EndCommand();
       }
 
-      private string GenerateSqlLiteral([CanBeNull] string text)
+      private string GenerateSqlLiteral(string text)
       {
          return Dependencies.TypeMappingSource.GetMapping(typeof(string)).GenerateSqlLiteral(text);
       }
 
-      private string DelimitIdentifier([NotNull] string name, string schema)
+      private string DelimitIdentifier(string name, string schema)
       {
          return Dependencies.SqlGenerationHelper.DelimitIdentifier(name, schema);
       }

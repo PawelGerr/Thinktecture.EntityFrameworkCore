@@ -1,5 +1,4 @@
 using System;
-using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 
@@ -18,7 +17,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       /// Initializes new instance <see cref="DefaultSchemaModelCustomizer{TModelCustomizer}"/>.
       /// </summary>
       /// <param name="modelCustomizer">Inner model customizer.</param>
-      public DefaultSchemaModelCustomizer([NotNull] TModelCustomizer modelCustomizer)
+      public DefaultSchemaModelCustomizer(TModelCustomizer modelCustomizer)
       {
          _modelCustomizer = modelCustomizer ?? throw new ArgumentNullException(nameof(modelCustomizer));
       }

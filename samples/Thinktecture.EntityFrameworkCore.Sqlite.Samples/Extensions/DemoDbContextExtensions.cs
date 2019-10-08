@@ -1,6 +1,5 @@
 using System;
 using System.Threading.Tasks;
-using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Thinktecture.Database;
 
@@ -9,7 +8,7 @@ namespace Thinktecture
 {
    public static class DemoDbContextExtensions
    {
-      public static async Task<Guid> EnsureCustomerAsync([NotNull] this DemoDbContext ctx, Guid id)
+      public static async Task<Guid> EnsureCustomerAsync(this DemoDbContext ctx, Guid id)
       {
          if (ctx == null)
             throw new ArgumentNullException(nameof(ctx));
@@ -23,7 +22,7 @@ namespace Thinktecture
          return id;
       }
 
-      public static async Task<Guid> EnsureProductAsync([NotNull] this DemoDbContext ctx, Guid id)
+      public static async Task<Guid> EnsureProductAsync(this DemoDbContext ctx, Guid id)
       {
          if (ctx == null)
             throw new ArgumentNullException(nameof(ctx));
@@ -37,7 +36,7 @@ namespace Thinktecture
          return id;
       }
 
-      public static async Task<Guid> EnsureOrderAsync([NotNull] this DemoDbContext ctx, Guid id, Guid customerId)
+      public static async Task<Guid> EnsureOrderAsync(this DemoDbContext ctx, Guid id, Guid customerId)
       {
          if (ctx == null)
             throw new ArgumentNullException(nameof(ctx));
@@ -51,7 +50,7 @@ namespace Thinktecture
          return id;
       }
 
-      public static async Task EnsureOrderItemAsync([NotNull] this DemoDbContext ctx, Guid orderId, Guid productId, int count)
+      public static async Task EnsureOrderItemAsync(this DemoDbContext ctx, Guid orderId, Guid productId, int count)
       {
          if (ctx == null)
             throw new ArgumentNullException(nameof(ctx));

@@ -1,8 +1,6 @@
 using System.Linq.Expressions;
-using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Query;
-using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 
 namespace Thinktecture.EntityFrameworkCore.Query
 {
@@ -26,7 +24,6 @@ namespace Thinktecture.EntityFrameworkCore.Query
       }
 
       /// <inheritdoc />
-      [NotNull]
       protected override QueryableMethodTranslatingExpressionVisitor CreateSubqueryVisitor()
       {
          return new RelationalQueryableMethodTranslatingExpressionVisitor(this);

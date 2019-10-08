@@ -1,6 +1,5 @@
 using System;
 using System.Linq.Expressions;
-using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 
@@ -21,8 +20,7 @@ namespace Thinktecture
       /// <exception cref="ArgumentNullException">
       /// <paramref name="visitor"/> or <paramref name="methodCallExpression"/> is <c>null</c>.
       /// </exception>
-      [CanBeNull]
-      public static ShapedQueryExpression TranslateCustomMethods([NotNull] this RelationalQueryableMethodTranslatingExpressionVisitor visitor, [NotNull] MethodCallExpression methodCallExpression)
+      public static ShapedQueryExpression? TranslateCustomMethods(this RelationalQueryableMethodTranslatingExpressionVisitor visitor, MethodCallExpression methodCallExpression)
       {
          if (visitor == null)
             throw new ArgumentNullException(nameof(visitor));
