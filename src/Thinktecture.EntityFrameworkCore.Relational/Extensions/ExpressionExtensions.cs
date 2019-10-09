@@ -22,7 +22,7 @@ namespace Thinktecture
       // ReSharper disable UnusedParameter.Global
       public static TOut ExtractBody<TIn, TOut>(this Expression<Func<TIn, TOut>> lambda, TIn parameter)
       {
-         throw new InvalidOperationException($"This method is not intended to be used directly but with the '{nameof(ExpressionBodyExtractingVisitor)}'.");
+         throw new InvalidOperationException($"This method is not intended to be used directly but with the '{nameof(ExpressionBodyExtractingVisitor)}' only.");
       }
       // ReSharper restore UnusedParameter.Global
    }

@@ -49,106 +49,97 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
       [Fact]
       public async Task Should_open_connection()
       {
-         using (var con = CreateConnection(TestContext.Instance.ConnectionString))
-         {
-            var builder = CreateOptionsBuilder(con);
+         using var con = CreateConnection(TestContext.Instance.ConnectionString);
 
-            using (var ctx = new TestDbContext(builder.Options, new DbDefaultSchema(Schema)))
-            {
-               ctx.Database.GetDbConnection().State.Should().Be(ConnectionState.Closed);
+         var builder = CreateOptionsBuilder(con);
 
-               // ReSharper disable once RedundantArgumentDefaultValue
-               await _sut.CreateTempTableAsync(ctx, ctx.GetEntityType<TestEntity>(), _optionsWithNonUniqueName).ConfigureAwait(false);
+         using var ctx = new TestDbContext(builder.Options, new DbDefaultSchema(Schema));
 
-               ctx.Database.GetDbConnection().State.Should().Be(ConnectionState.Open);
-            }
-         }
+         ctx.Database.GetDbConnection().State.Should().Be(ConnectionState.Closed);
+
+         // ReSharper disable once RedundantArgumentDefaultValue
+         await _sut.CreateTempTableAsync(ctx, ctx.GetEntityType<TestEntity>(), _optionsWithNonUniqueName).ConfigureAwait(false);
+
+         ctx.Database.GetDbConnection().State.Should().Be(ConnectionState.Open);
       }
 
       [Fact]
       public async Task Should_return_reference_to_be_able_to_close_connection()
       {
-         using (var con = CreateConnection(TestContext.Instance.ConnectionString))
-         {
-            var builder = CreateOptionsBuilder(con);
+         using var con = CreateConnection(TestContext.Instance.ConnectionString);
 
-            using (var ctx = new TestDbContext(builder.Options, new DbDefaultSchema(Schema)))
-            {
-               ctx.Database.GetDbConnection().State.Should().Be(ConnectionState.Closed);
+         var builder = CreateOptionsBuilder(con);
 
-               // ReSharper disable once RedundantArgumentDefaultValue
-               var tempTableReference = await _sut.CreateTempTableAsync(ctx, ctx.GetEntityType<TestEntity>(), _optionsWithNonUniqueName).ConfigureAwait(false);
-               tempTableReference.Dispose();
+         using var ctx = new TestDbContext(builder.Options, new DbDefaultSchema(Schema));
 
-               ctx.Database.GetDbConnection().State.Should().Be(ConnectionState.Closed);
-            }
-         }
+         ctx.Database.GetDbConnection().State.Should().Be(ConnectionState.Closed);
+
+         // ReSharper disable once RedundantArgumentDefaultValue
+         var tempTableReference = await _sut.CreateTempTableAsync(ctx, ctx.GetEntityType<TestEntity>(), _optionsWithNonUniqueName).ConfigureAwait(false);
+         tempTableReference.Dispose();
+
+         ctx.Database.GetDbConnection().State.Should().Be(ConnectionState.Closed);
       }
 
       [Fact]
       public async Task Should_return_reference_to_be_able_to_close_connection_event_if_ctx_is_disposed()
       {
-         using (var con = CreateConnection(TestContext.Instance.ConnectionString))
+         using var con = CreateConnection(TestContext.Instance.ConnectionString);
+
+         var builder = CreateOptionsBuilder(con);
+
+         ITempTableReference tempTableReference;
+
+         using (var ctx = new TestDbContext(builder.Options, new DbDefaultSchema(Schema)))
          {
-            var builder = CreateOptionsBuilder(con);
+            ctx.Database.GetDbConnection().State.Should().Be(ConnectionState.Closed);
 
-            ITempTableReference tempTableReference;
-
-            using (var ctx = new TestDbContext(builder.Options, new DbDefaultSchema(Schema)))
-            {
-               ctx.Database.GetDbConnection().State.Should().Be(ConnectionState.Closed);
-
-               // ReSharper disable once RedundantArgumentDefaultValue
-               tempTableReference = await _sut.CreateTempTableAsync(ctx, ctx.GetEntityType<TestEntity>(), _optionsWithNonUniqueName).ConfigureAwait(false);
-            }
-
-            con.State.Should().Be(ConnectionState.Open);
-            tempTableReference.Dispose();
-            con.State.Should().Be(ConnectionState.Closed);
+            // ReSharper disable once RedundantArgumentDefaultValue
+            tempTableReference = await _sut.CreateTempTableAsync(ctx, ctx.GetEntityType<TestEntity>(), _optionsWithNonUniqueName).ConfigureAwait(false);
          }
+
+         con.State.Should().Be(ConnectionState.Open);
+         tempTableReference.Dispose();
+         con.State.Should().Be(ConnectionState.Closed);
       }
 
       [Fact]
       public async Task Should_return_table_ref_that_does_nothing_after_connection_is_disposed()
       {
-         using (var con = CreateConnection(TestContext.Instance.ConnectionString))
-         {
-            var builder = CreateOptionsBuilder(con);
+         using var con = CreateConnection(TestContext.Instance.ConnectionString);
 
-            using (var ctx = new TestDbContext(builder.Options, new DbDefaultSchema(Schema)))
-            {
-               ctx.Database.GetDbConnection().State.Should().Be(ConnectionState.Closed);
+         var builder = CreateOptionsBuilder(con);
 
-               // ReSharper disable once RedundantArgumentDefaultValue
-               var tempTableReference = await _sut.CreateTempTableAsync(ctx, ctx.GetEntityType<TestEntity>(), _optionsWithNonUniqueName).ConfigureAwait(false);
-               con.Dispose();
+         using var ctx = new TestDbContext(builder.Options, new DbDefaultSchema(Schema));
 
-               con.State.Should().Be(ConnectionState.Closed);
-               tempTableReference.Dispose();
-               con.State.Should().Be(ConnectionState.Closed);
-            }
-         }
+         ctx.Database.GetDbConnection().State.Should().Be(ConnectionState.Closed);
+
+         // ReSharper disable once RedundantArgumentDefaultValue
+         var tempTableReference = await _sut.CreateTempTableAsync(ctx, ctx.GetEntityType<TestEntity>(), _optionsWithNonUniqueName).ConfigureAwait(false);
+         con.Dispose();
+
+         con.State.Should().Be(ConnectionState.Closed);
+         tempTableReference.Dispose();
+         con.State.Should().Be(ConnectionState.Closed);
       }
 
       [Fact]
       public async Task Should_return_table_ref_that_does_nothing_after_connection_is_closed()
       {
-         using (var con = CreateConnection(TestContext.Instance.ConnectionString))
-         {
-            var builder = CreateOptionsBuilder(con);
+         using var con = CreateConnection(TestContext.Instance.ConnectionString);
 
-            using (var ctx = new TestDbContext(builder.Options, new DbDefaultSchema(Schema)))
-            {
-               ctx.Database.GetDbConnection().State.Should().Be(ConnectionState.Closed);
+         var builder = CreateOptionsBuilder(con);
 
-               // ReSharper disable once RedundantArgumentDefaultValue
-               var tempTableReference = await _sut.CreateTempTableAsync(ctx, ctx.GetEntityType<TestEntity>(), _optionsWithNonUniqueName).ConfigureAwait(false);
-               con.Close();
+         using var ctx = new TestDbContext(builder.Options, new DbDefaultSchema(Schema));
 
-               tempTableReference.Dispose();
-               con.State.Should().Be(ConnectionState.Closed);
-            }
-         }
+         ctx.Database.GetDbConnection().State.Should().Be(ConnectionState.Closed);
+
+         // ReSharper disable once RedundantArgumentDefaultValue
+         var tempTableReference = await _sut.CreateTempTableAsync(ctx, ctx.GetEntityType<TestEntity>(), _optionsWithNonUniqueName).ConfigureAwait(false);
+         con.Close();
+
+         tempTableReference.Dispose();
+         con.State.Should().Be(ConnectionState.Closed);
       }
 
       [Fact]

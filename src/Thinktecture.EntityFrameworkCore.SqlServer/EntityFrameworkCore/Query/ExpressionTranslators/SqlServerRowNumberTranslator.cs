@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Reflection;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
@@ -54,29 +53,6 @@ namespace Thinktecture.EntityFrameworkCore.Query.ExpressionTranslators
          }
 
          return null;
-      }
-
-      private static IReadOnlyList<SqlExpression> ExtractParams(SqlExpression parameter)
-      {
-         if (parameter is SqlUnaryExpression unary)
-         {
-            if (unary.OperatorType == ExpressionType.Convert)
-               return new[] { unary.Operand };
-         }
-
-         if (parameter is SqlConstantExpression constant)
-         {
-            if (constant.Value == null)
-               throw new NotSupportedException("The value 'null' is not supported.");
-
-            if (constant.Value is IReadOnlyList<SqlExpression> collection)
-               return collection;
-
-            if (constant.Value is IEnumerable<SqlExpression> enumerable)
-               return enumerable.ToList();
-         }
-
-         return new[] { parameter };
       }
    }
 }

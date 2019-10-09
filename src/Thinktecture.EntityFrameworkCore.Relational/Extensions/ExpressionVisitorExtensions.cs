@@ -12,7 +12,7 @@ namespace Thinktecture
    {
       /// <summary>
       /// Visits a collection of <paramref name="expressions"/> and returns new collection if it least one expression has been changed.
-      /// The provided <paramref name="expressions"/> are returned if there are no changes.
+      /// Otherwise the provided <paramref name="expressions"/> are returned if there are no changes.
       /// </summary>
       /// <param name="visitor">Visitor to use.</param>
       /// <param name="expressions">Expressions to visit.</param>

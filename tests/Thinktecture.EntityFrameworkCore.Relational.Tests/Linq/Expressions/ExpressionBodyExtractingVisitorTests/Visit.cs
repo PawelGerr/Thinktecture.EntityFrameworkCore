@@ -16,7 +16,7 @@ namespace Thinktecture.Linq.Expressions.ExpressionBodyExtractingVisitorTests
       {
          Expression<Func<MyObject, bool>> expression = o => o.MyProperty == null;
 
-         var visitedExpression = ExpressionBodyExtractingVisitor.Instance.Visit(expression);
+         var visitedExpression = ExpressionBodyExtractingVisitor.Rewrite(expression);
 
          visitedExpression.Should().Be(expression);
       }
@@ -27,7 +27,7 @@ namespace Thinktecture.Linq.Expressions.ExpressionBodyExtractingVisitorTests
          Expression<Func<MyObject, string?>> extractFromExpression = o => o.MyOtherProperty;
          Expression<Func<MyObject, bool>> expression = o => o.MyProperty == extractFromExpression.ExtractBody(o);
 
-         var visitedExpression = (Expression<Func<MyObject, bool>>)ExpressionBodyExtractingVisitor.Instance.Visit(expression);
+         var visitedExpression = ExpressionBodyExtractingVisitor.Rewrite(expression);
 
          ValidateVisitedExpressions(expression, visitedExpression);
       }
@@ -39,7 +39,7 @@ namespace Thinktecture.Linq.Expressions.ExpressionBodyExtractingVisitorTests
          var extractExpressionHolder = new { Expr = extractFromExpression };
          Expression<Func<MyObject, bool>> expression = o => o.MyProperty == extractExpressionHolder.Expr.ExtractBody(o);
 
-         var visitedExpression = (Expression<Func<MyObject, bool>>)ExpressionBodyExtractingVisitor.Instance.Visit(expression);
+         var visitedExpression = ExpressionBodyExtractingVisitor.Rewrite(expression);
 
          ValidateVisitedExpressions(expression, visitedExpression);
       }
@@ -49,7 +49,7 @@ namespace Thinktecture.Linq.Expressions.ExpressionBodyExtractingVisitorTests
       {
          Expression<Func<MyObject, bool>> expression = o => o.MyProperty == ((Expression<Func<MyObject, string?>>)(i => i.MyOtherProperty)).ExtractBody(o);
 
-         var visitedExpression = (Expression<Func<MyObject, bool>>)ExpressionBodyExtractingVisitor.Instance.Visit(expression);
+         var visitedExpression = ExpressionBodyExtractingVisitor.Rewrite(expression);
 
          ValidateVisitedExpressions(expression, visitedExpression);
       }
@@ -59,7 +59,7 @@ namespace Thinktecture.Linq.Expressions.ExpressionBodyExtractingVisitorTests
       {
          Expression<Func<MyObject, bool>> expression = o => o.MyProperty == MyObject.GetExpressionFromStaticMethod().ExtractBody(o);
 
-         var visitedExpression = (Expression<Func<MyObject, bool>>)ExpressionBodyExtractingVisitor.Instance.Visit(expression);
+         var visitedExpression = ExpressionBodyExtractingVisitor.Rewrite(expression);
 
          ValidateVisitedExpressions(expression, visitedExpression);
       }
@@ -70,7 +70,7 @@ namespace Thinktecture.Linq.Expressions.ExpressionBodyExtractingVisitorTests
          var myObj = new MyObject();
          Expression<Func<MyObject, bool>> expression = o => o.MyProperty == myObj.GetExpressionFromInstanceMethod().ExtractBody(o);
 
-         var visitedExpression = (Expression<Func<MyObject, bool>>)ExpressionBodyExtractingVisitor.Instance.Visit(expression);
+         var visitedExpression = ExpressionBodyExtractingVisitor.Rewrite(expression);
 
          ValidateVisitedExpressions(expression, visitedExpression);
       }

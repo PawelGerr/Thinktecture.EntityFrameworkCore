@@ -93,50 +93,50 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
          var sqlCon = (SqlConnection)ctx.Database.GetDbConnection();
          var sqlTx = (SqlTransaction?)ctx.Database.CurrentTransaction?.GetDbTransaction();
 
-         using (var reader = factory.Create(ctx, entities, properties))
-         using (var bulkCopy = new SqlBulkCopy(sqlCon, sqlServerOptions.SqlBulkCopyOptions, sqlTx))
+         using var reader = factory.Create(ctx, entities, properties);
+         using var bulkCopy = new SqlBulkCopy(sqlCon, sqlServerOptions.SqlBulkCopyOptions, sqlTx)
+                              {
+                                 DestinationTableName = _sqlGenerationHelper.DelimitIdentifier(tableName, schema),
+                                 EnableStreaming = sqlServerOptions.EnableStreaming
+                              };
+
+         if (sqlServerOptions.BulkCopyTimeout.HasValue)
+            bulkCopy.BulkCopyTimeout = (int)sqlServerOptions.BulkCopyTimeout.Value.TotalSeconds;
+
+         if (sqlServerOptions.BatchSize.HasValue)
+            bulkCopy.BatchSize = sqlServerOptions.BatchSize.Value;
+
+         var columnsSb = new StringBuilder();
+
+         for (var i = 0; i < reader.Properties.Count; i++)
          {
-            bulkCopy.DestinationTableName = _sqlGenerationHelper.DelimitIdentifier(tableName, schema);
-            bulkCopy.EnableStreaming = sqlServerOptions.EnableStreaming;
+            var property = reader.Properties[i];
+            var index = reader.GetPropertyIndex(property);
+            var columnName = property.GetColumnName();
 
-            if (sqlServerOptions.BulkCopyTimeout.HasValue)
-               bulkCopy.BulkCopyTimeout = (int)sqlServerOptions.BulkCopyTimeout.Value.TotalSeconds;
+            bulkCopy.ColumnMappings.Add(new SqlBulkCopyColumnMapping(index, columnName));
 
-            if (sqlServerOptions.BatchSize.HasValue)
-               bulkCopy.BatchSize = sqlServerOptions.BatchSize.Value;
+            if (columnsSb.Length > 0)
+               columnsSb.Append(", ");
 
-            var columnsSb = new StringBuilder();
+            columnsSb.Append(columnName).Append(" ").Append(property.GetColumnType());
+         }
 
-            for (var i = 0; i < reader.Properties.Count; i++)
-            {
-               var property = reader.Properties[i];
-               var index = reader.GetPropertyIndex(property);
-               var columnName = property.GetColumnName();
+         await ctx.Database.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
 
-               bulkCopy.ColumnMappings.Add(new SqlBulkCopyColumnMapping(index, columnName));
+         try
+         {
+            var columns = columnsSb.ToString();
+            LogInserting(sqlServerOptions.SqlBulkCopyOptions, bulkCopy, columns);
+            var stopwatch = Stopwatch.StartNew();
 
-               if (columnsSb.Length > 0)
-                  columnsSb.Append(", ");
+            await bulkCopy.WriteToServerAsync(reader, cancellationToken).ConfigureAwait(false);
 
-               columnsSb.Append(columnName).Append(" ").Append(property.GetColumnType());
-            }
-
-            await ctx.Database.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
-
-            try
-            {
-               var columns = columnsSb.ToString();
-               LogInserting(sqlServerOptions.SqlBulkCopyOptions, bulkCopy, columns);
-               var stopwatch = Stopwatch.StartNew();
-
-               await bulkCopy.WriteToServerAsync(reader, cancellationToken).ConfigureAwait(false);
-
-               LogInserted(sqlServerOptions.SqlBulkCopyOptions, stopwatch.Elapsed, bulkCopy, columns);
-            }
-            finally
-            {
-               ctx.Database.CloseConnection();
-            }
+            LogInserted(sqlServerOptions.SqlBulkCopyOptions, stopwatch.Elapsed, bulkCopy, columns);
+         }
+         finally
+         {
+            ctx.Database.CloseConnection();
          }
       }
 

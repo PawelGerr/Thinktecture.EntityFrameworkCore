@@ -34,23 +34,22 @@ namespace Thinktecture
          if (ctx == null)
             throw new ArgumentNullException(nameof(ctx));
 
-         using (var command = ctx.Database.GetDbConnection().CreateCommand())
+         using var command = ctx.Database.GetDbConnection().CreateCommand();
+
+         command.Transaction = ctx.Database.CurrentTransaction?.GetDbTransaction();
+         command.CommandText = "SELECT MIN_ACTIVE_ROWVERSION();";
+
+         await ctx.Database.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
+
+         try
          {
-            command.Transaction = ctx.Database.CurrentTransaction?.GetDbTransaction();
-            command.CommandText = "SELECT MIN_ACTIVE_ROWVERSION();";
+            var bytes = (byte[])await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
 
-            await ctx.Database.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
-
-            try
-            {
-               var bytes = (byte[])await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
-
-               return (long)_rowVersionConverter.ConvertFromProvider(bytes);
-            }
-            finally
-            {
-               ctx.Database.CloseConnection();
-            }
+            return (long)_rowVersionConverter.ConvertFromProvider(bytes);
+         }
+         finally
+         {
+            ctx.Database.CloseConnection();
          }
       }
 
@@ -182,7 +181,7 @@ namespace Thinktecture
          if (entities == null)
             throw new ArgumentNullException(nameof(entities));
 
-         options = options ?? new SqlTempTableBulkInsertOptions();
+         options ??= new SqlTempTableBulkInsertOptions();
          var entityType = ctx.Model.GetEntityType(typeof(T));
          var tempTableCreator = ctx.GetService<ITempTableCreator>();
          var bulkInsertExecutor = ctx.GetService<IBulkOperationExecutor>();

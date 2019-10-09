@@ -33,9 +33,9 @@ namespace Thinktecture.EntityFrameworkCore.Query
       {
          for (var i = 0; i < _plugins.Count; i++)
          {
-            var evaluatable = _plugins[i].IsEvaluatableExpression(expression, model);
-            if (evaluatable.HasValue)
-               return evaluatable.Value;
+            var isEvaluatable = _plugins[i].IsEvaluatableExpression(expression, model);
+            if (isEvaluatable.HasValue)
+               return isEvaluatable.Value;
          }
 
          return _filter.IsEvaluatableExpression(expression, model);

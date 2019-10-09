@@ -17,7 +17,7 @@ namespace Thinktecture.Linq.Expressions.RelinqBaseTypeMemberAccessVisitorTests
       {
          Expression<Func<MyImplicitImplementingObject, string?>> expression = o => o.MyProperty;
 
-         var visitedExpression = RelinqInterfaceMemberAccessVisitor.Instance.Visit(expression);
+         var visitedExpression = RelinqInterfaceMemberAccessVisitor.Rewrite(expression);
 
          visitedExpression.Should().Be(expression);
       }
@@ -27,7 +27,7 @@ namespace Thinktecture.Linq.Expressions.RelinqBaseTypeMemberAccessVisitorTests
       {
          var expression = GetInterfaceImplementingExpression<MyImplicitImplementingObject>();
 
-         var visitedExpression = RelinqInterfaceMemberAccessVisitor.Instance.Visit(expression);
+         var visitedExpression = RelinqInterfaceMemberAccessVisitor.Rewrite(expression);
 
          var memberExpression = visitedExpression.As<LambdaExpression>().Body.As<MemberExpression>();
 
@@ -41,7 +41,7 @@ namespace Thinktecture.Linq.Expressions.RelinqBaseTypeMemberAccessVisitorTests
       {
          var expression = GetInterfaceImplementingExpression<MyImplicitImplementingObjectWithSetter>();
 
-         var visitedExpression = RelinqInterfaceMemberAccessVisitor.Instance.Visit(expression);
+         var visitedExpression = RelinqInterfaceMemberAccessVisitor.Rewrite(expression);
 
          var memberExpression = visitedExpression.As<LambdaExpression>().Body.As<MemberExpression>();
 
@@ -55,7 +55,7 @@ namespace Thinktecture.Linq.Expressions.RelinqBaseTypeMemberAccessVisitorTests
       {
          var expression = GetInterfaceImplementingExpression<MyExplicitImplementingObject>();
 
-         var visitedExpression = RelinqInterfaceMemberAccessVisitor.Instance.Visit(expression);
+         var visitedExpression = RelinqInterfaceMemberAccessVisitor.Rewrite(expression);
 
          var memberExpression = visitedExpression.As<LambdaExpression>().Body.As<MemberExpression>();
 
@@ -70,7 +70,7 @@ namespace Thinktecture.Linq.Expressions.RelinqBaseTypeMemberAccessVisitorTests
       {
          var expression = GetInterfaceImplementingExpression<MyDualImplementingObject>();
 
-         var visitedExpression = RelinqInterfaceMemberAccessVisitor.Instance.Visit(expression);
+         var visitedExpression = RelinqInterfaceMemberAccessVisitor.Rewrite(expression);
 
          var memberExpression = visitedExpression.As<LambdaExpression>().Body.As<MemberExpression>();
 

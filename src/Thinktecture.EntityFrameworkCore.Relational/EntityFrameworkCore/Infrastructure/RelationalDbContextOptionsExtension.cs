@@ -36,10 +36,16 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       /// </summary>
       public bool AddSchemaRespectingComponents { get; set; }
 
+      private IRelationalDbContextComponentDecorator? _componentDecorator;
+
       /// <summary>
       /// Decorates components.
       /// </summary>
-      public IRelationalDbContextComponentDecorator? ComponentDecorator { get; set; }
+      public IRelationalDbContextComponentDecorator ComponentDecorator
+      {
+         get => _componentDecorator ?? _defaultDecorator;
+         set => _componentDecorator = value;
+      }
 
       /// <summary>
       /// Initializes new instance of <see cref="RelationalDbContextOptionsExtension"/>.
@@ -57,8 +63,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
 
          if (_evaluatableExpressionFilterPlugins.Count > 0)
          {
-            var decorator = ComponentDecorator ?? _defaultDecorator;
-            decorator.RegisterDecorator<IEvaluatableExpressionFilter>(services, typeof(CompositeEvaluatableExpressionFilter<>));
+            ComponentDecorator.RegisterDecorator<IEvaluatableExpressionFilter>(services, typeof(CompositeEvaluatableExpressionFilter<>));
 
             foreach (var plugin in _evaluatableExpressionFilterPlugins)
             {
@@ -75,19 +80,13 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
          }
       }
 
-      private static ServiceLifetime GetLifetime<TService>()
-      {
-         return EntityFrameworkRelationalServicesBuilder.RelationalServices[typeof(TService)].Lifetime;
-      }
-
       private void RegisterDefaultSchemaRespectingComponents(IServiceCollection services)
       {
          services.AddSingleton<IMigrationOperationSchemaSetter, MigrationOperationSchemaSetter>();
-         var decorator = ComponentDecorator ?? _defaultDecorator;
 
-         decorator.RegisterDecorator<IModelCacheKeyFactory>(services, typeof(DefaultSchemaRespectingModelCacheKeyFactory<>));
-         decorator.RegisterDecorator<IModelCustomizer>(services, typeof(DefaultSchemaModelCustomizer<>));
-         decorator.RegisterDecorator<IMigrationsAssembly>(services, typeof(DefaultSchemaRespectingMigrationAssembly<>));
+         ComponentDecorator.RegisterDecorator<IModelCacheKeyFactory>(services, typeof(DefaultSchemaRespectingModelCacheKeyFactory<>));
+         ComponentDecorator.RegisterDecorator<IModelCustomizer>(services, typeof(DefaultSchemaModelCustomizer<>));
+         ComponentDecorator.RegisterDecorator<IMigrationsAssembly>(services, typeof(DefaultSchemaRespectingMigrationAssembly<>));
       }
 
       /// <inheritdoc />
@@ -166,6 +165,8 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
          public override void PopulateDebugInfo(IDictionary<string, string> debugInfo)
          {
             debugInfo["Thinktecture:AddSchemaRespectingComponents"] = _extension.AddSchemaRespectingComponents.ToString(CultureInfo.InvariantCulture);
+            debugInfo["Thinktecture:EvaluatableExpressionFilterPlugins"] = String.Join(", ", _extension._evaluatableExpressionFilterPlugins.Select(t => t.DisplayName()));
+            debugInfo["Thinktecture:ServiceDescriptors"] = String.Join(", ", _extension._serviceDescriptors);
          }
       }
    }

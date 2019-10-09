@@ -42,7 +42,6 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
          _innerMigrationsAssembly = migrationsAssembly ?? throw new ArgumentNullException(nameof(migrationsAssembly));
          _schemaSetter = schemaSetter ?? throw new ArgumentNullException(nameof(schemaSetter));
          _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
-         // ReSharper disable once ConstantConditionalAccessQualifier
          _context = currentContext?.Context ?? throw new ArgumentNullException(nameof(currentContext));
       }
 

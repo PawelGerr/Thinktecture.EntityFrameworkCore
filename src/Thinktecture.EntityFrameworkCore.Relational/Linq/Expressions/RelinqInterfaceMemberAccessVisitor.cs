@@ -14,10 +14,30 @@ namespace Thinktecture.Linq.Expressions
    [SuppressMessage("ReSharper", "EF1001")]
    public class RelinqInterfaceMemberAccessVisitor : ExpressionVisitor
    {
+      private static readonly RelinqInterfaceMemberAccessVisitor _instance = new RelinqInterfaceMemberAccessVisitor();
+
       /// <summary>
-      /// An instance of <see cref="RelinqInterfaceMemberAccessVisitor"/>.
+      /// Rewrites the provided <paramref name="expression"/> so the property of the concrete implementation type is used instead of an interface.
       /// </summary>
-      public static readonly RelinqInterfaceMemberAccessVisitor Instance = new RelinqInterfaceMemberAccessVisitor();
+      /// <param name="expression">Expression to rewrite.</param>
+      /// <typeparam name="T">Type of the expression.</typeparam>
+      /// <returns>
+      /// A rewritten <paramref name="expression"/> if it contains property-access to an interface;
+      /// otherwise the provided <paramref name="expression"/>.
+      /// </returns>
+      /// <exception cref="NotSupportedException">
+      /// The provided <paramref name="expression"/> could not be rewritten.
+      /// </exception>
+      public static T Rewrite<T>(T expression)
+         where T : Expression
+      {
+         var visitedExpression = _instance.Visit(expression);
+
+         if (visitedExpression is T exp)
+            return exp;
+
+         throw new NotSupportedException($"The provided expression could not be rewritten: {expression}");
+      }
 
       /// <inheritdoc />
       protected override Expression VisitMember(MemberExpression node)

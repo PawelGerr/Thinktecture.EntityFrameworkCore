@@ -93,56 +93,54 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
          var properties = GetPropertiesForInsert(sqliteOptions.EntityMembersProvider, entityType);
          var sqlCon = (SqliteConnection)ctx.Database.GetDbConnection();
 
-         using (var reader = factory.Create(ctx, entities, properties))
+         using var reader = factory.Create(ctx, entities, properties);
+
+         await ctx.Database.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
+
+         try
          {
-            await ctx.Database.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
+            using var command = sqlCon.CreateCommand();
+
+            var tableIdentifier = _sqlGenerationHelper.DelimitIdentifier(tableName, schema);
+#pragma warning disable CA2100
+            command.CommandText = GetInsertStatement(reader, tableIdentifier);
+#pragma warning restore CA2100
+            var parameterInfos = CreateParameters(reader, command);
 
             try
             {
-               using (var command = sqlCon.CreateCommand())
-               {
-                  var tableIdentifier = _sqlGenerationHelper.DelimitIdentifier(tableName, schema);
-#pragma warning disable CA2100
-                  command.CommandText = GetInsertStatement(reader, tableIdentifier);
-#pragma warning restore CA2100
-                  var parameterInfos = CreateParameters(reader, command);
-
-                  try
-                  {
-                     command.Prepare();
-                  }
-                  catch (SqliteException ex)
-                  {
-                     throw new InvalidOperationException($"Cannot access destination table '{tableIdentifier}'.", ex);
-                  }
-
-                  LogInserting(command.CommandText);
-                  var stopwatch = Stopwatch.StartNew();
-
-                  while (reader.Read())
-                  {
-                     for (var i = 0; i < reader.FieldCount; i++)
-                     {
-                        var paramInfo = parameterInfos[i];
-                        object? value = reader.GetValue(i);
-
-                        if (sqliteOptions.AutoIncrementBehavior == SqliteAutoIncrementBehavior.SetZeroToNull && paramInfo.IsAutoIncrementColumn && value.Equals(0))
-                           value = null;
-
-                        paramInfo.Parameter.Value = value ?? DBNull.Value;
-                     }
-
-                     await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
-                  }
-
-                  stopwatch.Stop();
-                  LogInserted(command.CommandText, stopwatch.Elapsed);
-               }
+               command.Prepare();
             }
-            finally
+            catch (SqliteException ex)
             {
-               ctx.Database.CloseConnection();
+               throw new InvalidOperationException($"Cannot access destination table '{tableIdentifier}'.", ex);
             }
+
+            LogInserting(command.CommandText);
+            var stopwatch = Stopwatch.StartNew();
+
+            while (reader.Read())
+            {
+               for (var i = 0; i < reader.FieldCount; i++)
+               {
+                  var paramInfo = parameterInfos[i];
+                  object? value = reader.GetValue(i);
+
+                  if (sqliteOptions.AutoIncrementBehavior == SqliteAutoIncrementBehavior.SetZeroToNull && paramInfo.IsAutoIncrementColumn && value.Equals(0))
+                     value = null;
+
+                  paramInfo.Parameter.Value = value ?? DBNull.Value;
+               }
+
+               await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+            }
+
+            stopwatch.Stop();
+            LogInserted(command.CommandText, stopwatch.Elapsed);
+         }
+         finally
+         {
+            ctx.Database.CloseConnection();
          }
       }
 

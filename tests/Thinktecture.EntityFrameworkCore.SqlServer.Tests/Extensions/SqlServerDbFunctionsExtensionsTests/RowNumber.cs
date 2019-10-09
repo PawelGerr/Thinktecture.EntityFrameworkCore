@@ -152,6 +152,24 @@ namespace Thinktecture.Extensions.SqlServerDbFunctionsExtensionsTests
       }
 
       [Fact]
+      public void Throws_if_RowNumber_contains_NewExpression()
+      {
+         ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("4883F7E0-FC8C-45FF-A579-DF351A3E79BF"), Name = "1", Count = 1 });
+         ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("18C13F68-0981-4853-92FC-FB7B2551F70A"), Name = "1", Count = 2 });
+         ArrangeDbContext.SaveChanges();
+
+         var query = ActDbContext.TestEntities
+                                 .Select(e => new
+                                              {
+                                                 e.Count,
+                                                 RowNumber = EF.Functions.RowNumber(new { e.Name, e.Count },
+                                                                                    EF.Functions.OrderBy(e.Name).ThenBy(e.Count))
+                                              });
+         query.Invoking(q => q.ToList()).Should().Throw<NotSupportedException>()
+              .WithMessage("The EF function 'RowNumber' contains some expressions not supported by the Entity Framework. One of the reason is the creation of new objects like: 'new { e.MyProperty, e.MyOtherProperty }'.");
+      }
+
+      [Fact]
       public void Should_throw_if_accessing_RowNumber_not_within_subquery()
       {
          ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("4883F7E0-FC8C-45FF-A579-DF351A3E79BF"), Name = "1" });

@@ -13,10 +13,7 @@ namespace Thinktecture.Linq.Expressions
    [SuppressMessage("ReSharper", "EF1001")]
    public class LambdaExpressionSearchingVisitor : ExpressionVisitor
    {
-      /// <summary>
-      /// An instance of <see cref="LambdaExpressionSearchingVisitor"/>.
-      /// </summary>
-      public static readonly LambdaExpressionSearchingVisitor Instance = new LambdaExpressionSearchingVisitor();
+      private static readonly LambdaExpressionSearchingVisitor _instance = new LambdaExpressionSearchingVisitor();
 
       /// <summary>
       /// Searches for <see cref="LambdaExpression"/> in provided <paramref name="expression"/>.
@@ -25,12 +22,12 @@ namespace Thinktecture.Linq.Expressions
       /// <returns>Found instance of <see cref="LambdaExpression"/>.</returns>
       /// <exception cref="ArgumentNullException">Provided <paramref name="expression"/> is null.</exception>
       /// <exception cref="ArgumentException">Provided <paramref name="expression"/> does not contain a lambda.</exception>
-      public LambdaExpression GetLambda(Expression expression)
+      public static LambdaExpression GetLambda(Expression expression)
       {
          if (expression == null)
             throw new ArgumentNullException(nameof(expression));
 
-         var foundExpression = Visit(expression);
+         var foundExpression = _instance.Visit(expression);
 
          if (foundExpression == null || foundExpression.NodeType != ExpressionType.Lambda)
             throw new ArgumentException("The provided expression does not contain nor point to a lambda expression.");
@@ -61,7 +58,7 @@ namespace Thinktecture.Linq.Expressions
          if (instanceExpression.NodeType != ExpressionType.Constant)
             instanceExpression = Visit(instanceExpression);
 
-         if (instanceExpression.NodeType == ExpressionType.Constant)
+         if (instanceExpression?.NodeType == ExpressionType.Constant)
          {
             var value = GetMemberValue(node, ((ConstantExpression)instanceExpression).Value);
 

@@ -34,7 +34,7 @@ namespace Thinktecture.Extensions.ModelBuilderExtensionsTests
          var entityType = ActDbContext.Model.FindEntityType(typeof(TempTable<int, int?>));
          entityType.Name.Should().Be("Thinktecture.EntityFrameworkCore.TempTables.TempTable<int, System.Nullable<int>>");
 
-         var properties = entityType.GetProperties();
+         var properties = entityType.GetProperties().ToList();
          properties.Should().HaveCount(2);
 
          properties.Select(p => p.IsNullable).Should().BeEquivalentTo(new[] { false, true });
@@ -50,7 +50,7 @@ namespace Thinktecture.Extensions.ModelBuilderExtensionsTests
          var entityType = ActDbContext.Model.FindEntityType(typeof(TempTable<string, string>));
          entityType.Name.Should().Be("Thinktecture.EntityFrameworkCore.TempTables.TempTable<string, string>");
 
-         var properties = entityType.GetProperties();
+         var properties = entityType.GetProperties().ToList();
          properties.Should().HaveCount(2);
 
          properties.Select(p => p.IsNullable).Should().BeEquivalentTo(new[] { false, false });

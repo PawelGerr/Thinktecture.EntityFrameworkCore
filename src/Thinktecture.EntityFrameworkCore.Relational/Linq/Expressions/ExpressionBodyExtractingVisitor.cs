@@ -11,12 +11,29 @@ namespace Thinktecture.Linq.Expressions
    /// </summary>
    public class ExpressionBodyExtractingVisitor : ExpressionVisitor
    {
-      /// <summary>
-      /// An instance of <see cref="ExpressionBodyExtractingVisitor"/>.
-      /// </summary>
-      public static readonly ExpressionBodyExtractingVisitor Instance = new ExpressionBodyExtractingVisitor();
-
+      private static readonly ExpressionBodyExtractingVisitor _instance = new ExpressionBodyExtractingVisitor();
       private static readonly MethodInfo _extractBodyMethod = typeof(ExpressionExtensions).GetMethod(nameof(ExpressionExtensions.ExtractBody), BindingFlags.Static | BindingFlags.Public);
+
+      /// <summary>
+      /// Rewrites the provided <paramref name="expression"/> if it contains <see cref="ExpressionExtensions.ExtractBody{TIn,TOut}"/>.
+      /// </summary>
+      /// <param name="expression">Expression to rewrite.</param>
+      /// <typeparam name="T">The type of the lambda expression.</typeparam>
+      /// <returns>
+      /// A rewritten <paramref name="expression"/> if any occurrences of <see cref="ExpressionExtensions.ExtractBody{TIn,TOut}"/> have been found;
+      /// otherwise the provided <paramref name="expression"/> is returned.
+      /// </returns>
+      /// <exception cref="NotSupportedException">The provided <paramref name="expression"/> could not be rewritten.</exception>
+      public static T Rewrite<T>(T expression)
+         where T : LambdaExpression
+      {
+         var visitedExpression = _instance.Visit(expression);
+
+         if (visitedExpression is T lambda)
+            return lambda;
+
+         throw new NotSupportedException($"The provided expression is not supported: {expression}");
+      }
 
       /// <inheritdoc />
       protected override Expression VisitMethodCall(MethodCallExpression node)
@@ -25,7 +42,7 @@ namespace Thinktecture.Linq.Expressions
             return base.VisitMethodCall(node);
 
          var newParameter = node.Arguments[1];
-         var lambda = LambdaExpressionSearchingVisitor.Instance.GetLambda(node.Arguments[0]);
+         var lambda = LambdaExpressionSearchingVisitor.GetLambda(node.Arguments[0]);
          var oldParameter = lambda.Parameters[0];
 
          var expressionReplacer = new ExpressionReplacingVisitor(oldParameter, newParameter);
