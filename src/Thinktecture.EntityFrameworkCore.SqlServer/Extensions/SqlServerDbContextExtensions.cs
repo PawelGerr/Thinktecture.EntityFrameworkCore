@@ -8,9 +8,9 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Thinktecture.EntityFrameworkCore.BulkOperations;
 using Thinktecture.EntityFrameworkCore.TempTables;
-using Thinktecture.EntityFrameworkCore.ValueConversion;
 
 // ReSharper disable once CheckNamespace
 namespace Thinktecture
@@ -20,7 +20,7 @@ namespace Thinktecture
    /// </summary>
    public static class SqlServerDbContextExtensions
    {
-      private static readonly RowVersionValueConverter _rowVersionConverter = new RowVersionValueConverter();
+      private static readonly NumberToBytesConverter<long> _rowVersionConverter = new NumberToBytesConverter<long>();
 
       /// <summary>
       /// Fetches <c>MIN_ACTIVE_ROWVERSION</c> from SQL Server.

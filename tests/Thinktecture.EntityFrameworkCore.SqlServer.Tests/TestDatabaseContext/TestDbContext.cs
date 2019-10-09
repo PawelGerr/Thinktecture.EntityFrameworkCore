@@ -1,9 +1,9 @@
 using System;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Thinktecture.EntityFrameworkCore;
 using Thinktecture.EntityFrameworkCore.TempTables;
-using Thinktecture.EntityFrameworkCore.ValueConversion;
 
 namespace Thinktecture.TestDatabaseContext
 {
@@ -39,7 +39,7 @@ namespace Thinktecture.TestDatabaseContext
          modelBuilder.Entity<TestEntityWithRowVersion>()
                      .Property(e => e.RowVersion)
                      .IsRowVersion()
-                     .HasConversion(RowVersionValueConverter.Instance);
+                     .HasConversion(new NumberToBytesConverter<long>());
 
          modelBuilder.Entity<TestEntityWithShadowProperties>().Property<string>("ShadowStringProperty").HasMaxLength(50);
          modelBuilder.Entity<TestEntityWithShadowProperties>().Property<int?>("ShadowIntProperty");

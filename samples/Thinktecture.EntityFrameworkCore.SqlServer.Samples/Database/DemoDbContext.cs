@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Thinktecture.EntityFrameworkCore;
-using Thinktecture.EntityFrameworkCore.ValueConversion;
 
 namespace Thinktecture.Database
 {
@@ -35,7 +35,7 @@ namespace Thinktecture.Database
          modelBuilder.Entity<Customer>()
                      .Property(c => c.RowVersion)
                      .IsRowVersion()
-                     .HasConversion(RowVersionValueConverter.Instance);
+                     .HasConversion(new NumberToBytesConverter<long>());
 
          modelBuilder.Entity<OrderItem>().HasKey(i => new { i.OrderId, i.ProductId });
       }
