@@ -34,7 +34,7 @@ namespace Thinktecture
          if (ctx == null)
             throw new ArgumentNullException(nameof(ctx));
 
-         using var command = ctx.Database.GetDbConnection().CreateCommand();
+         await using var command = ctx.Database.GetDbConnection().CreateCommand();
 
          command.Transaction = ctx.Database.CurrentTransaction?.GetDbTransaction();
          command.CommandText = "SELECT MIN_ACTIVE_ROWVERSION();";
@@ -51,45 +51,6 @@ namespace Thinktecture
          {
             ctx.Database.CloseConnection();
          }
-      }
-
-      /// <summary>
-      /// Creates a temp table using custom type '<typeparamref name="T"/>'.
-      /// </summary>
-      /// <param name="ctx">Database context to use.</param>
-      /// <param name="makeTableNameUnique">Indication whether the table name should be unique.</param>
-      /// <param name="cancellationToken">Cancellation token.</param>
-      /// <typeparam name="T">Type of custom temp table.</typeparam>
-      /// <returns>Table name</returns>
-      /// <exception cref="ArgumentNullException"><paramref name="ctx"/> is <c>null</c>.</exception>
-      /// <exception cref="ArgumentException">The provided type <typeparamref name="T"/> is not known by provided <paramref name="ctx"/>.</exception>
-      public static Task<ITempTableReference> CreateTempTableAsync<T>(this DbContext ctx, bool makeTableNameUnique = true, CancellationToken cancellationToken = default)
-         where T : class
-      {
-         return ctx.CreateTempTableAsync(typeof(T), new TempTableCreationOptions { MakeTableNameUnique = makeTableNameUnique }, cancellationToken);
-      }
-
-      /// <summary>
-      /// Creates a temp table.
-      /// </summary>
-      /// <param name="ctx">Database context to use.</param>
-      /// <param name="type">Type of the entity.</param>
-      /// <param name="options">Options.</param>
-      /// <param name="cancellationToken">Cancellation token.</param>
-      /// <returns>Table name</returns>
-      /// <exception cref="ArgumentNullException">
-      /// <paramref name="ctx"/> is <c>null</c>
-      /// - or
-      /// <paramref name="type"/> is <c>null</c>.
-      /// </exception>
-      /// <exception cref="ArgumentException">The provided type <paramref name="type"/> is not known by provided <paramref name="ctx"/>.</exception>
-      public static Task<ITempTableReference> CreateTempTableAsync(this DbContext ctx, Type type, TempTableCreationOptions options, CancellationToken cancellationToken)
-      {
-         if (ctx == null)
-            throw new ArgumentNullException(nameof(ctx));
-
-         var entityType = ctx.Model.GetEntityType(type);
-         return ctx.GetService<ITempTableCreator>().CreateTempTableAsync(ctx, entityType, options, cancellationToken);
       }
 
       /// <summary>
@@ -123,7 +84,7 @@ namespace Thinktecture
       /// <exception cref="ArgumentNullException"> <paramref name="ctx"/> or <paramref name="values"/> is <c>null</c>.</exception>
       public static Task<ITempTableQuery<TempTable<TColumn1>>> BulkInsertValuesIntoTempTableAsync<TColumn1>(this DbContext ctx,
                                                                                                             IEnumerable<TColumn1> values,
-                                                                                                            SqlTempTableBulkInsertOptions? options = null,
+                                                                                                            SqlServerTempTableBulkInsertOptions? options = null,
                                                                                                             CancellationToken cancellationToken = default)
       {
          if (values == null)
@@ -148,7 +109,7 @@ namespace Thinktecture
       /// <exception cref="ArgumentNullException"> <paramref name="ctx"/> or <paramref name="values"/> is <c>null</c>.</exception>
       public static Task<ITempTableQuery<TempTable<TColumn1, TColumn2>>> BulkInsertValuesIntoTempTableAsync<TColumn1, TColumn2>(this DbContext ctx,
                                                                                                                                 IEnumerable<(TColumn1 column1, TColumn2 column2)> values,
-                                                                                                                                SqlTempTableBulkInsertOptions? options = null,
+                                                                                                                                SqlServerTempTableBulkInsertOptions? options = null,
                                                                                                                                 CancellationToken cancellationToken = default)
       {
          if (values == null)
@@ -172,7 +133,7 @@ namespace Thinktecture
       /// <exception cref="ArgumentNullException"> <paramref name="ctx"/> or <paramref name="entities"/> is <c>null</c>.</exception>
       public static async Task<ITempTableQuery<T>> BulkInsertIntoTempTableAsync<T>(this DbContext ctx,
                                                                                    IEnumerable<T> entities,
-                                                                                   SqlTempTableBulkInsertOptions? options = null,
+                                                                                   SqlServerTempTableBulkInsertOptions? options = null,
                                                                                    CancellationToken cancellationToken = default)
          where T : class
       {
@@ -181,21 +142,18 @@ namespace Thinktecture
          if (entities == null)
             throw new ArgumentNullException(nameof(entities));
 
-         options ??= new SqlTempTableBulkInsertOptions();
+         options ??= new SqlServerTempTableBulkInsertOptions();
          var entityType = ctx.Model.GetEntityType(typeof(T));
-         var tempTableCreator = ctx.GetService<ITempTableCreator>();
+         var tempTableCreator = ctx.GetService<ISqlServerTempTableCreator>();
          var bulkInsertExecutor = ctx.GetService<IBulkOperationExecutor>();
 
          var tempTableReference = await tempTableCreator.CreateTempTableAsync(ctx, entityType, options.TempTableCreationOptions, cancellationToken).ConfigureAwait(false);
 
          try
          {
-            if (options.PrimaryKeyCreation == PrimaryKeyCreation.BeforeBulkInsert)
-               await tempTableCreator.CreatePrimaryKeyAsync(ctx, entityType, tempTableReference.Name, !options.TempTableCreationOptions.MakeTableNameUnique, cancellationToken).ConfigureAwait(false);
+            await bulkInsertExecutor.BulkInsertAsync(ctx, entityType, entities, null, tempTableReference.Name, options.BulkInsertOptions, cancellationToken).ConfigureAwait(false);
 
-            await bulkInsertExecutor.BulkInsertAsync(ctx, entityType, entities, null, tempTableReference.Name, options.ServerBulkInsertOptions, cancellationToken).ConfigureAwait(false);
-
-            if (options.PrimaryKeyCreation == PrimaryKeyCreation.AfterBulkInsert)
+            if (options.PrimaryKeyCreation == SqlServerPrimaryKeyCreation.AfterBulkInsert)
                await tempTableCreator.CreatePrimaryKeyAsync(ctx, entityType, tempTableReference.Name, !options.TempTableCreationOptions.MakeTableNameUnique, cancellationToken).ConfigureAwait(false);
 
             var query = ctx.GetTempTableQuery<T>(tempTableReference.Name);

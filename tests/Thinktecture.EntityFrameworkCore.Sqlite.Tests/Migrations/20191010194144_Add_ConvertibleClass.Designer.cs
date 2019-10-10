@@ -2,14 +2,17 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Thinktecture.TestDatabaseContext;
 
 namespace Thinktecture.Migrations
 {
     [DbContext(typeof(TestDbContext))]
-    class TestDbContextModelSnapshot : ModelSnapshot
+    [Migration("20191010194144_Add_ConvertibleClass")]
+    partial class Add_ConvertibleClass
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

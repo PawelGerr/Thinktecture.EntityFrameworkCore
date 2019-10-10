@@ -3,7 +3,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
    /// <summary>
    /// Defines whether and when the primary key should be created.
    /// </summary>
-   public enum PrimaryKeyCreation
+   public enum SqlServerPrimaryKeyCreation
    {
       /// <summary>
       /// No primary key should be created.

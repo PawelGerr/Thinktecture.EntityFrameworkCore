@@ -23,6 +23,18 @@ namespace Thinktecture
       }
 
       /// <summary>
+      /// Adds support for temp tables.
+      /// </summary>
+      /// <param name="sqliteOptionsBuilder">SQLite options builder.</param>
+      /// <param name="addTempTableSupport">Indication whether to enable or disable the feature.</param>
+      /// <returns>Provided <paramref name="sqliteOptionsBuilder"/>.</returns>
+      public static SqliteDbContextOptionsBuilder AddTempTableSupport(this SqliteDbContextOptionsBuilder sqliteOptionsBuilder,
+                                                                      bool addTempTableSupport = true)
+      {
+         return AddOrUpdateExtensions(sqliteOptionsBuilder, extension => extension.AddTempTableSupport = addTempTableSupport);
+      }
+
+      /// <summary>
       /// Adds support for bulk operations.
       /// </summary>
       /// <param name="sqliteOptionsBuilder">SQLite options builder.</param>

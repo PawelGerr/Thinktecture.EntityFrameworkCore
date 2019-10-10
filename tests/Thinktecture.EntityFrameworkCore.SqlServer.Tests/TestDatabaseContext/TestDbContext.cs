@@ -52,22 +52,10 @@ namespace Thinktecture.TestDatabaseContext
          modelBuilder.Entity<InformationSchemaKeyColumn>().HasNoKey();
       }
 
-      public IQueryable<InformationSchemaColumn> GetCustomTempTableColumns<T>()
-      {
-         return GetTempTableColumns(typeof(T));
-      }
-
       public IQueryable<InformationSchemaColumn> GetTempTableColumns<T>()
          where T : class
       {
-         return GetTempTableColumns(typeof(T));
-      }
-
-      private IQueryable<InformationSchemaColumn> GetTempTableColumns(Type type)
-      {
-         if (type == null)
-            throw new ArgumentNullException(nameof(type));
-
+         var type = typeof(T);
          var tableName = Model.GetEntityType(type).GetTableName();
 
          if (!tableName.StartsWith("#", StringComparison.Ordinal))

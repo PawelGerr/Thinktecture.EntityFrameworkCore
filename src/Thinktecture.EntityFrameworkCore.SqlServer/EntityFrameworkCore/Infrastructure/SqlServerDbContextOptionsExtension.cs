@@ -76,7 +76,11 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
             services.AddSingleton<IQueryableMethodTranslatingExpressionVisitorFactory, SqlServerQueryableMethodTranslatingExpressionVisitorFactory>();
 
          if (AddTempTableSupport)
-            services.TryAdd<ITempTableCreator, SqlServerTempTableCreator>(GetLifetime<ISqlGenerationHelper>());
+         {
+            var lifetime = GetLifetime<ISqlGenerationHelper>();
+            services.TryAdd<ISqlServerTempTableCreator, SqlServerTempTableCreator>(lifetime);
+            services.TryAdd(ServiceDescriptor.Describe(typeof(ITempTableCreator), provider => provider.GetRequiredService<ISqlServerTempTableCreator>(), lifetime));
+         }
 
          if (AddBulkOperationSupport)
          {
@@ -129,9 +133,9 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
          /// <inheritdoc />
          public override void PopulateDebugInfo(IDictionary<string, string> debugInfo)
          {
-            debugInfo["Thinktecture:AddRowNumberSupport"] = _extension.AddRowNumberSupport.ToString(CultureInfo.InvariantCulture);
-            debugInfo["Thinktecture:AddBulkOperationSupport"] = _extension.AddBulkOperationSupport.ToString(CultureInfo.InvariantCulture);
-            debugInfo["Thinktecture:AddTempTableSupport"] = _extension.AddTempTableSupport.ToString(CultureInfo.InvariantCulture);
+            debugInfo["Thinktecture:RowNumberSupport"] = _extension.AddRowNumberSupport.ToString(CultureInfo.InvariantCulture);
+            debugInfo["Thinktecture:BulkOperationSupport"] = _extension.AddBulkOperationSupport.ToString(CultureInfo.InvariantCulture);
+            debugInfo["Thinktecture:TempTableSupport"] = _extension.AddTempTableSupport.ToString(CultureInfo.InvariantCulture);
             debugInfo["Thinktecture:UseThinktectureSqlServerMigrationsSqlGenerator"] = _extension.UseThinktectureSqlServerMigrationsSqlGenerator.ToString(CultureInfo.InvariantCulture);
          }
       }

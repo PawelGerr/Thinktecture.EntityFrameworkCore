@@ -7,6 +7,7 @@ namespace Thinktecture.TestDatabaseContext
       public Guid Id { get; set; }
       public string? Name { get; set; }
       public int Count { get; set; }
+      public ConvertibleClass? ConvertibleClass { get; set; }
 
       private int _propertyWithBackingField;
 

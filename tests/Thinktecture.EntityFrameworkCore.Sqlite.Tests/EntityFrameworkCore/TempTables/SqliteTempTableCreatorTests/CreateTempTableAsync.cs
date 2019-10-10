@@ -3,6 +3,7 @@ using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Moq;
@@ -10,24 +11,24 @@ using Thinktecture.TestDatabaseContext;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorTests
+namespace Thinktecture.EntityFrameworkCore.TempTables.SqliteTempTableCreatorTests
 {
    // ReSharper disable once InconsistentNaming
    public class CreateTempTableAsync : IntegrationTestsBase
    {
-      private readonly SqlServerTempTableCreator _sut;
+      private readonly SqliteTempTableCreator _sut;
       private readonly TempTableCreationOptions _optionsWithNonUniqueName;
 
       public CreateTempTableAsync(ITestOutputHelper testOutputHelper)
-         : base(testOutputHelper, true)
+         : base(testOutputHelper)
       {
          var sqlGenerationHelperMock = new Mock<ISqlGenerationHelper>();
          var relationalTypeMappingSourceMock = new Mock<IRelationalTypeMappingSource>();
          sqlGenerationHelperMock.Setup(h => h.DelimitIdentifier(It.IsAny<string>(), It.IsAny<string>()))
-                                .Returns<string, string>((name, schema) => schema == null ? $"[{name}]" : $"[{schema}].[{name}]");
+                                .Returns<string, string>((name, schema) => schema == null ? $"\"{name}\"" : $"\"{schema}\".\"{name}\"");
          sqlGenerationHelperMock.Setup(h => h.DelimitIdentifier(It.IsAny<string>()))
-                                .Returns<string>(name => $"[{name}]");
-         _sut = new SqlServerTempTableCreator(sqlGenerationHelperMock.Object, relationalTypeMappingSourceMock.Object);
+                                .Returns<string>(name => $"\"{name}\"");
+         _sut = new SqliteTempTableCreator(sqlGenerationHelperMock.Object, relationalTypeMappingSourceMock.Object);
          _optionsWithNonUniqueName = new TempTableCreationOptions { MakeTableNameUnique = false };
       }
 
@@ -42,8 +43,8 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
          var columns = AssertDbContext.GetTempTableColumns<CustomTempTable>().ToList();
          columns.Should().HaveCount(2);
 
-         ValidateColumn(columns[0], nameof(CustomTempTable.Column1), "int", false);
-         ValidateColumn(columns[1], nameof(CustomTempTable.Column2), "nvarchar", true);
+         ValidateColumn(columns[0], nameof(CustomTempTable.Column1), "INTEGER", false);
+         ValidateColumn(columns[1], nameof(CustomTempTable.Column2), "TEXT", true);
       }
 
       [Fact]
@@ -56,24 +57,20 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
          // ReSharper disable once RedundantArgumentDefaultValue
          await _sut.CreateTempTableAsync(ActDbContext, ActDbContext.GetEntityType<TempTable<int, string>>(), _optionsWithNonUniqueName).ConfigureAwait(false);
 
-         var constraints = await AssertDbContext.GetTempTableConstraints<TempTable<int, string>>().ToListAsync();
-         constraints.Should().HaveCount(1)
-                    .And.Subject.First().CONSTRAINT_TYPE.Should().Be("PRIMARY KEY");
-
          var keyColumns = await AssertDbContext.GetTempTableKeyColumns<TempTable<int, string>>().ToListAsync();
          keyColumns.Should().HaveCount(2);
-         keyColumns[0].COLUMN_NAME.Should().Be(nameof(TempTable<int, string>.Column1));
-         keyColumns[1].COLUMN_NAME.Should().Be(nameof(TempTable<int, string>.Column2));
+         keyColumns[0].Name.Should().Be(nameof(TempTable<int, string>.Column1));
+         keyColumns[1].Name.Should().Be(nameof(TempTable<int, string>.Column2));
       }
 
       [Fact]
       public async Task Should_open_connection()
       {
-         await using var con = CreateConnection(TestContext.Instance.ConnectionString);
+         await using var con = new SqliteConnection("DataSource=:memory:");
 
          var builder = CreateOptionsBuilder(con);
 
-         await using var ctx = new TestDbContext(builder.Options, new DbDefaultSchema(Schema));
+         await using var ctx = new TestDbContext(builder.Options);
 
          ctx.Database.GetDbConnection().State.Should().Be(ConnectionState.Closed);
 
@@ -86,11 +83,11 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
       [Fact]
       public async Task Should_return_reference_to_be_able_to_close_connection()
       {
-         await using var con = CreateConnection(TestContext.Instance.ConnectionString);
+         await using var con = new SqliteConnection("DataSource=:memory:");
 
          var builder = CreateOptionsBuilder(con);
 
-         await using var ctx = new TestDbContext(builder.Options, new DbDefaultSchema(Schema));
+         await using var ctx = new TestDbContext(builder.Options);
 
          ctx.Database.GetDbConnection().State.Should().Be(ConnectionState.Closed);
 
@@ -104,13 +101,13 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
       [Fact]
       public async Task Should_return_reference_to_be_able_to_close_connection_event_if_ctx_is_disposed()
       {
-         await using var con = CreateConnection(TestContext.Instance.ConnectionString);
+         await using var con = new SqliteConnection("DataSource=:memory:");
 
          var builder = CreateOptionsBuilder(con);
 
          ITempTableReference tempTableReference;
 
-         await using (var ctx = new TestDbContext(builder.Options, new DbDefaultSchema(Schema)))
+         await using (var ctx = new TestDbContext(builder.Options))
          {
             ctx.Database.GetDbConnection().State.Should().Be(ConnectionState.Closed);
 
@@ -126,11 +123,11 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
       [Fact]
       public async Task Should_return_table_ref_that_does_nothing_after_connection_is_disposed()
       {
-         await using var con = CreateConnection(TestContext.Instance.ConnectionString);
+         await using var con = new SqliteConnection("DataSource=:memory:");
 
          var builder = CreateOptionsBuilder(con);
 
-         await using var ctx = new TestDbContext(builder.Options, new DbDefaultSchema(Schema));
+         await using var ctx = new TestDbContext(builder.Options);
 
          ctx.Database.GetDbConnection().State.Should().Be(ConnectionState.Closed);
 
@@ -146,11 +143,11 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
       [Fact]
       public async Task Should_return_table_ref_that_does_nothing_after_connection_is_closed()
       {
-         await using var con = CreateConnection(TestContext.Instance.ConnectionString);
+         await using var con = new SqliteConnection("DataSource=:memory:");
 
          var builder = CreateOptionsBuilder(con);
 
-         await using var ctx = new TestDbContext(builder.Options, new DbDefaultSchema(Schema));
+         await using var ctx = new TestDbContext(builder.Options);
 
          ctx.Database.GetDbConnection().State.Should().Be(ConnectionState.Closed);
 
@@ -181,15 +178,15 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
          // ReSharper disable once RedundantArgumentDefaultValue
          await _sut.CreateTempTableAsync(ActDbContext, ActDbContext.GetEntityType<TestEntity>(), _optionsWithNonUniqueName).ConfigureAwait(false);
 
-         var columns = AssertDbContext.GetTempTableColumns<TestEntity>().OrderBy(c => c.COLUMN_NAME).ToList();
+         var columns = AssertDbContext.GetTempTableColumns<TestEntity>().OrderBy(c => c.Name).ToList();
          columns.Should().HaveCount(6);
 
-         ValidateColumn(columns[0], "_privateField", "int", false);
-         ValidateColumn(columns[1], nameof(TestEntity.ConvertibleClass), "int", true);
-         ValidateColumn(columns[2], nameof(TestEntity.Count), "int", false);
-         ValidateColumn(columns[3], nameof(TestEntity.Id), "uniqueidentifier", false);
-         ValidateColumn(columns[4], nameof(TestEntity.Name), "nvarchar", true);
-         ValidateColumn(columns[5], nameof(TestEntity.PropertyWithBackingField), "int", false);
+         ValidateColumn(columns[0], nameof(TestEntity.ConvertibleClass), "INTEGER", true);
+         ValidateColumn(columns[1], nameof(TestEntity.Count), "INTEGER", false);
+         ValidateColumn(columns[2], nameof(TestEntity.Id), "TEXT", false);
+         ValidateColumn(columns[3], nameof(TestEntity.Name), "TEXT", true);
+         ValidateColumn(columns[4], nameof(TestEntity.PropertyWithBackingField), "INTEGER", false);
+         ValidateColumn(columns[5], "_privateField", "INTEGER", false);
       }
 
       [Fact]
@@ -216,8 +213,8 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
 
          await _sut.CreateTempTableAsync(ActDbContext, ActDbContext.GetEntityType<TempTable<int>>(), _optionsWithNonUniqueName).ConfigureAwait(false);
 
-         var constraints = await AssertDbContext.GetTempTableConstraints<TempTable<int>>().ToListAsync().ConfigureAwait(false);
-         constraints.Should().HaveCount(0);
+         var constraints = await AssertDbContext.GetTempTableKeyColumns<TempTable<int>>().ToListAsync().ConfigureAwait(false);
+         constraints.Should().BeEmpty();
       }
 
       [Fact]
@@ -228,7 +225,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
          await _sut.CreateTempTableAsync(ActDbContext, ActDbContext.GetEntityType<TempTable<int>>(), _optionsWithNonUniqueName).ConfigureAwait(false);
 
          var columns = AssertDbContext.GetTempTableColumns<TempTable<int>>().ToList();
-         ValidateColumn(columns[0], nameof(TempTable<int>.Column1), "int", false);
+         ValidateColumn(columns[0], nameof(TempTable<int>.Column1), "INTEGER", false);
       }
 
       [Fact]
@@ -239,7 +236,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
          await _sut.CreateTempTableAsync(ActDbContext, ActDbContext.GetEntityType<TempTable<int?>>(), _optionsWithNonUniqueName).ConfigureAwait(false);
 
          var columns = AssertDbContext.GetTempTableColumns<TempTable<int?>>().ToList();
-         ValidateColumn(columns[0], nameof(TempTable<int?>.Column1), "int", true);
+         ValidateColumn(columns[0], nameof(TempTable<int?>.Column1), "INTEGER", true);
       }
 
       [Fact]
@@ -250,7 +247,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
          await _sut.CreateTempTableAsync(ActDbContext, ActDbContext.GetEntityType<TempTable<int?>>(), _optionsWithNonUniqueName).ConfigureAwait(false);
 
          var columns = AssertDbContext.GetTempTableColumns<TempTable<int?>>().ToList();
-         ValidateColumn(columns[0], nameof(TempTable<int?>.Column1), "int", false);
+         ValidateColumn(columns[0], nameof(TempTable<int?>.Column1), "INTEGER", false);
       }
 
       [Fact]
@@ -261,7 +258,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
          await _sut.CreateTempTableAsync(ActDbContext, ActDbContext.GetEntityType<TempTable<double>>(), _optionsWithNonUniqueName).ConfigureAwait(false);
 
          var columns = AssertDbContext.GetTempTableColumns<TempTable<double>>().ToList();
-         ValidateColumn(columns[0], nameof(TempTable<double>.Column1), "float", false);
+         ValidateColumn(columns[0], nameof(TempTable<double>.Column1), "REAL", false);
       }
 
       [Fact]
@@ -272,7 +269,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
          await _sut.CreateTempTableAsync(ActDbContext, ActDbContext.GetEntityType<TempTable<decimal>>(), _optionsWithNonUniqueName).ConfigureAwait(false);
 
          var columns = AssertDbContext.GetTempTableColumns<TempTable<decimal>>().ToList();
-         ValidateColumn(columns[0], nameof(TempTable<decimal>.Column1), "decimal", false);
+         ValidateColumn(columns[0], nameof(TempTable<decimal>.Column1), "TEXT", false); // decimal is stored as TEXT (see SqliteTypeMappingSource)
       }
 
       [Fact]
@@ -283,7 +280,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
          await _sut.CreateTempTableAsync(ActDbContext, ActDbContext.GetEntityType<TempTable<decimal>>(), _optionsWithNonUniqueName).ConfigureAwait(false);
 
          var columns = AssertDbContext.GetTempTableColumns<TempTable<decimal>>().ToList();
-         ValidateColumn(columns[0], nameof(TempTable<decimal>.Column1), "decimal", false, 20, 5);
+         ValidateColumn(columns[0], nameof(TempTable<decimal>.Column1), "decimal(20,5)", false);
       }
 
       [Fact]
@@ -294,7 +291,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
          await _sut.CreateTempTableAsync(ActDbContext, ActDbContext.GetEntityType<TempTable<bool>>(), _optionsWithNonUniqueName).ConfigureAwait(false);
 
          var columns = AssertDbContext.GetTempTableColumns<TempTable<bool>>().ToList();
-         ValidateColumn(columns[0], nameof(TempTable<bool>.Column1), "bit", false);
+         ValidateColumn(columns[0], nameof(TempTable<bool>.Column1), "INTEGER", false);
       }
 
       [Fact]
@@ -305,7 +302,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
          await _sut.CreateTempTableAsync(ActDbContext, ActDbContext.GetEntityType<TempTable<string>>(), _optionsWithNonUniqueName).ConfigureAwait(false);
 
          var columns = AssertDbContext.GetTempTableColumns<TempTable<string>>().ToList();
-         ValidateColumn(columns[0], nameof(TempTable<string>.Column1), "nvarchar", false);
+         ValidateColumn(columns[0], nameof(TempTable<string>.Column1), "TEXT", false);
       }
 
       [Fact]
@@ -316,7 +313,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
          await _sut.CreateTempTableAsync(ActDbContext, ActDbContext.GetEntityType<TempTable<string>>(), _optionsWithNonUniqueName).ConfigureAwait(false);
 
          var columns = AssertDbContext.GetTempTableColumns<TempTable<string>>().ToList();
-         ValidateColumn(columns[0], nameof(TempTable<string>.Column1), "nvarchar", false, charMaxLength: 50);
+         ValidateColumn(columns[0], nameof(TempTable<string>.Column1), "TEXT", false);
       }
 
       [Fact]
@@ -329,27 +326,18 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
          var columns = AssertDbContext.GetTempTableColumns<TempTable<int, string>>().ToList();
          columns.Should().HaveCount(2);
 
-         ValidateColumn(columns[0], nameof(TempTable<int, string>.Column1), "int", false);
-         ValidateColumn(columns[1], nameof(TempTable<int, string>.Column2), "nvarchar", false);
+         ValidateColumn(columns[0], nameof(TempTable<int, string>.Column1), "INTEGER", false);
+         ValidateColumn(columns[1], nameof(TempTable<int, string>.Column2), "TEXT", false);
       }
 
-      private void ValidateColumn(InformationSchemaColumn column, string name, string type, bool isNullable, byte? numericPrecision = null, int? numericScale = null, int? charMaxLength = null)
+      private void ValidateColumn(SqliteTableInfo column, string name, string type, bool isNullable)
       {
          if (column == null)
             throw new ArgumentNullException(nameof(column));
 
-         column.COLUMN_NAME.Should().Be(name);
-         column.DATA_TYPE.Should().Be(type);
-         column.IS_NULLABLE.Should().Be(isNullable ? "YES" : "NO");
-
-         if (numericPrecision.HasValue)
-            column.NUMERIC_PRECISION.Should().Be(numericPrecision.Value);
-
-         if (numericScale.HasValue)
-            column.NUMERIC_SCALE.Should().Be(numericScale.Value);
-
-         if (charMaxLength.HasValue)
-            column.CHARACTER_MAXIMUM_LENGTH.Should().Be(charMaxLength.Value);
+         column.Name.Should().Be(name);
+         column.Type.Should().Be(type);
+         column.NotNull.Should().Be(isNullable ? 0 : 1);
       }
    }
 }

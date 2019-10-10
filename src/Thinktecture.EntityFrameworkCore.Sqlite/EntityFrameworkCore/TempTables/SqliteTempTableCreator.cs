@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -9,7 +8,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
-using Microsoft.EntityFrameworkCore.SqlServer.Metadata.Internal;
 using Microsoft.EntityFrameworkCore.Storage;
 
 namespace Thinktecture.EntityFrameworkCore.TempTables
@@ -17,19 +15,18 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
    /// <summary>
    /// Creates temp tables.
    /// </summary>
-   [SuppressMessage("ReSharper", "EF1001")]
-   public class SqlServerTempTableCreator : ISqlServerTempTableCreator
+   public class SqliteTempTableCreator : ITempTableCreator
    {
       private readonly ISqlGenerationHelper _sqlGenerationHelper;
       private readonly IRelationalTypeMappingSource _typeMappingSource;
 
       /// <summary>
-      /// Initializes <see cref="SqlServerTempTableCreator"/>.
+      /// Initializes <see cref="SqliteTempTableCreator"/>.
       /// </summary>
       /// <param name="sqlGenerationHelper">SQL generation helper.</param>
       /// <param name="typeMappingSource">Type mappings.</param>
-      public SqlServerTempTableCreator(ISqlGenerationHelper sqlGenerationHelper,
-                                       IRelationalTypeMappingSource typeMappingSource)
+      public SqliteTempTableCreator(ISqlGenerationHelper sqlGenerationHelper,
+                                    IRelationalTypeMappingSource typeMappingSource)
       {
          _sqlGenerationHelper = sqlGenerationHelper ?? throw new ArgumentNullException(nameof(sqlGenerationHelper));
          _typeMappingSource = typeMappingSource ?? throw new ArgumentNullException(nameof(typeMappingSource));
@@ -65,55 +62,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
 
          var logger = ctx.GetService<IDiagnosticsLogger<DbLoggerCategory.Query>>();
 
-         return new SqlServerTempTableReference(logger, _sqlGenerationHelper, tableName, ctx.Database);
-      }
-
-      private static string GetTableName(IEntityType entityType, bool makeTableNameUnique)
-      {
-         var tableName = entityType.GetTableName();
-
-         if (!tableName.StartsWith("#", StringComparison.Ordinal))
-            tableName = $"#{tableName}";
-
-         if (makeTableNameUnique)
-            tableName = $"{tableName}_{Guid.NewGuid():N}";
-
-         return tableName;
-      }
-
-      /// <inheritdoc />
-      public async Task CreatePrimaryKeyAsync(DbContext ctx,
-                                              IEntityType entityType,
-                                              string tableName,
-                                              bool checkForExistence = false,
-                                              CancellationToken cancellationToken = default)
-      {
-         if (ctx == null)
-            throw new ArgumentNullException(nameof(ctx));
-         if (entityType == null)
-            throw new ArgumentNullException(nameof(entityType));
-         if (tableName == null)
-            throw new ArgumentNullException(nameof(tableName));
-
-         var keyProperties = entityType.FindPrimaryKey()?.Properties ?? entityType.GetProperties();
-         var columnNames = keyProperties.Select(p => p.GetColumnName());
-
-         var sql = $@"
-ALTER TABLE {_sqlGenerationHelper.DelimitIdentifier(tableName)}
-ADD CONSTRAINT {_sqlGenerationHelper.DelimitIdentifier($"PK_{tableName}_{Guid.NewGuid():N}")} PRIMARY KEY CLUSTERED ({String.Join(", ", columnNames)});
-";
-
-         if (checkForExistence)
-         {
-            sql = $@"
-IF(NOT EXISTS (SELECT * FROM tempdb.INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE CONSTRAINT_TYPE = 'PRIMARY KEY' AND OBJECT_ID(TABLE_CATALOG + '..' + TABLE_NAME) = OBJECT_ID('tempdb..{tableName}')))
-BEGIN
-{sql}
-END
-";
-         }
-
-         await ctx.Database.ExecuteSqlRawAsync(sql, cancellationToken).ConfigureAwait(false);
+         return new SqliteTempTableReference(logger, _sqlGenerationHelper, tableName, ctx.Database);
       }
 
       private string GetTempTableCreationSql(IEntityType entityType, string tableName, bool isUnique, bool createPrimaryKey)
@@ -122,7 +71,7 @@ END
             throw new ArgumentNullException(nameof(tableName));
 
          var sql = $@"
-      CREATE TABLE {_sqlGenerationHelper.DelimitIdentifier(tableName)}
+      CREATE TEMPORARY TABLE {_sqlGenerationHelper.DelimitIdentifier(tableName)}
       (
 {GetColumnsDefinitions(entityType, createPrimaryKey)}
       );";
@@ -131,22 +80,15 @@ END
             return sql;
 
          return $@"
-IF(OBJECT_ID('tempdb..{tableName}') IS NOT NULL)
-   TRUNCATE TABLE {_sqlGenerationHelper.DelimitIdentifier(tableName)};
-ELSE
-BEGIN
+DROP TABLE IF EXISTS {_sqlGenerationHelper.DelimitIdentifier(tableName, "temp")};
+
 {sql}
-END
 ";
       }
 
       private string GetColumnsDefinitions(IEntityType entityType, bool createPrimaryKey)
       {
-         if (entityType == null)
-            throw new ArgumentNullException(nameof(entityType));
-
          var properties = entityType.GetProperties();
-
          var sb = new StringBuilder();
          var isFirst = true;
 
@@ -160,8 +102,8 @@ END
               .Append(property.GetColumnType())
               .Append(property.IsNullable ? " NULL" : " NOT NULL");
 
-            if (IsIdentityColumn(property))
-               sb.Append(" IDENTITY");
+            if (property.IsAutoIncrement())
+               sb.Append("AUTOINCREMENT");
 
             var defaultValueSql = property.GetDefaultValueSql();
 
@@ -214,9 +156,14 @@ END
          }
       }
 
-      private static bool IsIdentityColumn(IProperty property)
+      private static string GetTableName(IEntityType entityType, bool makeTableNameUnique)
       {
-         return SqlServerValueGenerationStrategy.IdentityColumn.Equals(property.FindAnnotation(SqlServerAnnotationNames.ValueGenerationStrategy)?.Value);
+         var tableName = entityType.GetTableName();
+
+         if (makeTableNameUnique)
+            tableName = $"{tableName}_{Guid.NewGuid():N}";
+
+         return tableName;
       }
    }
 }

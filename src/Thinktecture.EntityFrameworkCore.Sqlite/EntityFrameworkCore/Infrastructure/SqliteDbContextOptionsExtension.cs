@@ -10,6 +10,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Thinktecture.EntityFrameworkCore.BulkOperations;
 using Thinktecture.EntityFrameworkCore.Data;
 using Thinktecture.EntityFrameworkCore.Query;
+using Thinktecture.EntityFrameworkCore.TempTables;
 
 namespace Thinktecture.EntityFrameworkCore.Infrastructure
 {
@@ -25,9 +26,20 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       public DbContextOptionsExtensionInfo Info => _info ??= new SqliteDbContextOptionsExtensionInfo(this);
 
       /// <summary>
+      /// Enables and disables support for temp tables.
+      /// </summary>
+      public bool AddTempTableSupport { get; set; }
+
+      private bool _addBulkOperationSupport;
+
+      /// <summary>
       /// Enables and disables support for bulk operations.
       /// </summary>
-      public bool AddBulkOperationSupport { get; set; }
+      public bool AddBulkOperationSupport
+      {
+         get => _addBulkOperationSupport || AddTempTableSupport; // temp tables require bulk operations
+         set => _addBulkOperationSupport = value;
+      }
 
       /// <summary>
       /// A custom factory is registered if <c>true</c>.
@@ -42,6 +54,9 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
 
          if (AddCustomQueryableMethodTranslatingExpressionVisitorFactory)
             services.AddSingleton<IQueryableMethodTranslatingExpressionVisitorFactory, SqliteQueryableMethodTranslatingExpressionVisitorFactory>();
+
+         if (AddTempTableSupport)
+            services.TryAdd<ITempTableCreator, SqliteTempTableCreator>(GetLifetime<ISqlGenerationHelper>());
 
          if (AddBulkOperationSupport)
          {
@@ -70,7 +85,8 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
          public override string LogFragment => _logFragment ??= $@"
 {{
    'BulkOperationSupport'={_extension.AddBulkOperationSupport},
-   'AddCustomQueryableMethodTranslatingExpressionVisitorFactory'={_extension.AddCustomQueryableMethodTranslatingExpressionVisitorFactory}
+   'TempTableSupport'={_extension.AddTempTableSupport},
+   'CustomQueryableMethodTranslatingExpressionVisitorFactory'={_extension.AddCustomQueryableMethodTranslatingExpressionVisitorFactory}
 }}";
 
          /// <inheritdoc />
@@ -89,8 +105,9 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
          /// <inheritdoc />
          public override void PopulateDebugInfo(IDictionary<string, string> debugInfo)
          {
-            debugInfo["Thinktecture:AddBulkOperationSupport"] = _extension.AddBulkOperationSupport.ToString(CultureInfo.InvariantCulture);
-            debugInfo["Thinktecture:AddCustomQueryableMethodTranslatingExpressionVisitorFactory"] = _extension.AddCustomQueryableMethodTranslatingExpressionVisitorFactory.ToString(CultureInfo.InvariantCulture);
+            debugInfo["Thinktecture:BulkOperationSupport"] = _extension.AddBulkOperationSupport.ToString(CultureInfo.InvariantCulture);
+            debugInfo["Thinktecture:TempTableSupport"] = _extension.AddTempTableSupport.ToString(CultureInfo.InvariantCulture);
+            debugInfo["Thinktecture:CustomQueryableMethodTranslatingExpressionVisitorFactory"] = _extension.AddCustomQueryableMethodTranslatingExpressionVisitorFactory.ToString(CultureInfo.InvariantCulture);
          }
       }
    }

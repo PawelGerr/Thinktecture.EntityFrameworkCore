@@ -99,7 +99,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
 
          try
          {
-            using var command = sqlCon.CreateCommand();
+            await using var command = sqlCon.CreateCommand();
 
             var tableIdentifier = _sqlGenerationHelper.DelimitIdentifier(tableName, schema);
 #pragma warning disable CA2100
@@ -155,7 +155,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
 
             var parameter = command.CreateParameter();
             parameter.ParameterName = $"$p{index}";
-            parameters[i] = new ParameterInfo(parameter, IsAutoIncrement(property));
+            parameters[i] = new ParameterInfo(parameter, property.IsAutoIncrement());
             command.Parameters.Add(parameter);
          }
 
@@ -194,13 +194,6 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
          sb.Append(");");
 
          return sb.ToString();
-      }
-
-      private static bool IsAutoIncrement(IProperty property)
-      {
-         return property.ValueGenerated == ValueGenerated.OnAdd
-                && (property.ClrType == typeof(int) || property.ClrType == typeof(int?))
-                && property.FindTypeMapping()?.Converter == null;
       }
 
       private void LogInserting(string insertStatement)
