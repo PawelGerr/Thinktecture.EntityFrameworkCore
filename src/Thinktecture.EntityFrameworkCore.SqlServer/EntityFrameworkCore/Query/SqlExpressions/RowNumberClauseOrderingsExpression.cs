@@ -25,6 +25,7 @@ namespace Thinktecture.EntityFrameworkCore.Query.SqlExpressions
          Orderings = orderings ?? throw new ArgumentNullException(nameof(orderings));
       }
 
+      /// <inheritdoc />
       protected override Expression Accept(ExpressionVisitor visitor)
       {
          if (visitor is QuerySqlGenerator)

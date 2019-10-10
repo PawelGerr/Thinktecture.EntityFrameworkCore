@@ -42,6 +42,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Thinktecture.EntityFramewor
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Thinktecture.EntityFrameworkCore.Testing.Tests", "tests\Thinktecture.EntityFrameworkCore.Testing.Tests\Thinktecture.EntityFrameworkCore.Testing.Tests.csproj", "{E2A920F7-ED3D-4C73-8207-8C578A9B8AD8}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Thinktecture.EntityFrameworkCore.BulkOperations.Tests", "tests\Thinktecture.EntityFrameworkCore.BulkOperations.Tests\Thinktecture.EntityFrameworkCore.BulkOperations.Tests.csproj", "{8B96D351-8A49-41C2-ABC8-5F9DC047C774}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -61,6 +63,7 @@ Global
 		{BEF60B0C-F3D0-4FB3-B975-63AA20A5AC59} = {564262E5-94E5-4B32-8B0E-444D454DD35F}
 		{C553EA83-3793-4B28-99BB-66A148564746} = {564262E5-94E5-4B32-8B0E-444D454DD35F}
 		{E2A920F7-ED3D-4C73-8207-8C578A9B8AD8} = {FC71B400-ACDA-4BBE-BCC1-D1CFB4EDEFE3}
+		{8B96D351-8A49-41C2-ABC8-5F9DC047C774} = {FC71B400-ACDA-4BBE-BCC1-D1CFB4EDEFE3}
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{B43A04CC-FB33-4B06-AC9B-BBDE177EF0E4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
@@ -115,5 +118,9 @@ Global
 		{E2A920F7-ED3D-4C73-8207-8C578A9B8AD8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E2A920F7-ED3D-4C73-8207-8C578A9B8AD8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E2A920F7-ED3D-4C73-8207-8C578A9B8AD8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8B96D351-8A49-41C2-ABC8-5F9DC047C774}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8B96D351-8A49-41C2-ABC8-5F9DC047C774}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8B96D351-8A49-41C2-ABC8-5F9DC047C774}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8B96D351-8A49-41C2-ABC8-5F9DC047C774}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

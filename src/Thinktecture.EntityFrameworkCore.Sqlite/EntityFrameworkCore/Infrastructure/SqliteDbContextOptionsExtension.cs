@@ -69,7 +69,8 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
 
          public override string LogFragment => _logFragment ??= $@"
 {{
-   'BulkOperationSupport'={_extension.AddBulkOperationSupport}
+   'BulkOperationSupport'={_extension.AddBulkOperationSupport},
+   'AddCustomQueryableMethodTranslatingExpressionVisitorFactory'={_extension.AddCustomQueryableMethodTranslatingExpressionVisitorFactory}
 }}";
 
          /// <inheritdoc />
@@ -89,6 +90,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
          public override void PopulateDebugInfo(IDictionary<string, string> debugInfo)
          {
             debugInfo["Thinktecture:AddBulkOperationSupport"] = _extension.AddBulkOperationSupport.ToString(CultureInfo.InvariantCulture);
+            debugInfo["Thinktecture:AddCustomQueryableMethodTranslatingExpressionVisitorFactory"] = _extension.AddCustomQueryableMethodTranslatingExpressionVisitorFactory.ToString(CultureInfo.InvariantCulture);
          }
       }
    }
