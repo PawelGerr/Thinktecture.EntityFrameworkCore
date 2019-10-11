@@ -11,7 +11,6 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
@@ -86,7 +85,10 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
             throw new ArgumentNullException(nameof(options));
 
          if (!(options is SqlServerBulkInsertOptions sqlServerOptions))
-            throw new ArgumentException($"'{nameof(SqlServerBulkOperationExecutor)}' expected options of type '{nameof(SqlServerBulkInsertOptions)}' but found '{options.GetType().DisplayName()}'.", nameof(options));
+         {
+            sqlServerOptions = new SqlServerBulkInsertOptions();
+            sqlServerOptions.InitializeFrom(options);
+         }
 
          var factory = ctx.GetService<IEntityDataReaderFactory>();
          var properties = GetPropertiesForInsert(options.EntityMembersProvider, entityType);

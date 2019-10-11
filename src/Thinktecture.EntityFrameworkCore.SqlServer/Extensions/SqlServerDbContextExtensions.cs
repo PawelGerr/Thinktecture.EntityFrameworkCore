@@ -54,24 +54,6 @@ namespace Thinktecture
       }
 
       /// <summary>
-      /// Copies <paramref name="entities"/> into a table using <see cref="SqlBulkCopy"/>.
-      /// </summary>
-      /// <param name="ctx">Database context.</param>
-      /// <param name="entities">Entities to insert.</param>
-      /// <param name="options">Options.</param>
-      /// <param name="cancellationToken">Cancellation token.</param>
-      /// <typeparam name="T">Entity type.</typeparam>
-      /// <exception cref="ArgumentNullException"> <paramref name="ctx"/> or <paramref name="entities"/> is <c>null</c>.</exception>
-      public static Task BulkInsertAsync<T>(this DbContext ctx,
-                                            IEnumerable<T> entities,
-                                            SqlServerBulkInsertOptions? options,
-                                            CancellationToken cancellationToken = default)
-         where T : class
-      {
-         return ctx.BulkInsertAsync(entities, (IBulkInsertOptions?)options, cancellationToken);
-      }
-
-      /// <summary>
       /// Copies <paramref name="values"/> into a temp table using <see cref="SqlBulkCopy"/>
       /// and returns the query for accessing the inserted records.
       /// </summary>

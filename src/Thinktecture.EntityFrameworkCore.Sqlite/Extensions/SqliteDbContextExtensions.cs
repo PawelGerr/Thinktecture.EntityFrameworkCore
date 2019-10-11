@@ -19,24 +19,6 @@ namespace Thinktecture
    public static class SqliteDbContextExtensions
    {
       /// <summary>
-      /// Copies <paramref name="entities"/> into a table.
-      /// </summary>
-      /// <param name="ctx">Database context.</param>
-      /// <param name="entities">Entities to insert.</param>
-      /// <param name="options">Options.</param>
-      /// <param name="cancellationToken">Cancellation token.</param>
-      /// <typeparam name="T">Entity type.</typeparam>
-      /// <exception cref="ArgumentNullException"> <paramref name="ctx"/> or <paramref name="entities"/> is <c>null</c>.</exception>
-      public static Task BulkInsertAsync<T>(this DbContext ctx,
-                                            IEnumerable<T> entities,
-                                            SqliteBulkInsertOptions? options,
-                                            CancellationToken cancellationToken = default)
-         where T : class
-      {
-         return ctx.BulkInsertAsync(entities, (IBulkInsertOptions?)options, cancellationToken);
-      }
-
-      /// <summary>
       /// Copies <paramref name="values"/> into a temp table
       /// and returns the query for accessing the inserted records.
       /// </summary>

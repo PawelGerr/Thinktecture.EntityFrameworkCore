@@ -14,7 +14,7 @@ namespace Thinktecture
    /// <summary>
    /// Extension methods for <see cref="DbContext"/>.
    /// </summary>
-   public static class DbContextExtensions
+   public static class BulkOperationsDbContextExtensions
    {
       /// <summary>
       /// Creates a temp table using custom type '<typeparamref name="T"/>'.
@@ -25,8 +25,10 @@ namespace Thinktecture
       /// <typeparam name="T">Type of custom temp table.</typeparam>
       /// <returns>Table name</returns>
       /// <exception cref="ArgumentNullException"><paramref name="ctx"/> is <c>null</c>.</exception>
-      /// <exception cref="ArgumentException">The provided type <typeparamref name="T"/> is not known by provided <paramref name="ctx"/>.</exception>
-      public static Task<ITempTableReference> CreateTempTableAsync<T>(this DbContext ctx, bool makeTableNameUnique = true, CancellationToken cancellationToken = default)
+      /// <exception cref="ArgumentException">The provided type <typeparamref name="T"/> is not known by the provided <paramref name="ctx"/>.</exception>
+      public static Task<ITempTableReference> CreateTempTableAsync<T>(this DbContext ctx,
+                                                                      bool makeTableNameUnique = true,
+                                                                      CancellationToken cancellationToken = default)
          where T : class
       {
          return ctx.CreateTempTableAsync(typeof(T), new TempTableCreationOptions { MakeTableNameUnique = makeTableNameUnique }, cancellationToken);
@@ -42,11 +44,14 @@ namespace Thinktecture
       /// <returns>Table name</returns>
       /// <exception cref="ArgumentNullException">
       /// <paramref name="ctx"/> is <c>null</c>
-      /// - or
-      /// <paramref name="type"/> is <c>null</c>.
+      /// - or  <paramref name="type"/> is <c>null</c>
+      /// - or  <paramref name="options"/> is <c>null</c>.
       /// </exception>
       /// <exception cref="ArgumentException">The provided type <paramref name="type"/> is not known by provided <paramref name="ctx"/>.</exception>
-      public static Task<ITempTableReference> CreateTempTableAsync(this DbContext ctx, Type type, TempTableCreationOptions options, CancellationToken cancellationToken)
+      public static Task<ITempTableReference> CreateTempTableAsync(this DbContext ctx,
+                                                                   Type type,
+                                                                   TempTableCreationOptions options,
+                                                                   CancellationToken cancellationToken)
       {
          if (ctx == null)
             throw new ArgumentNullException(nameof(ctx));

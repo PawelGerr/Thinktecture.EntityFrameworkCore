@@ -11,7 +11,6 @@ using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
@@ -87,7 +86,10 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
             throw new ArgumentNullException(nameof(options));
 
          if (!(options is SqliteBulkInsertOptions sqliteOptions))
-            throw new ArgumentException($"'{nameof(SqliteBulkOperationExecutor)}' expected options of type '{nameof(SqliteBulkInsertOptions)}' but found '{options.GetType().DisplayName()}'.", nameof(options));
+         {
+            sqliteOptions = new SqliteBulkInsertOptions();
+            sqliteOptions.InitializeFrom(options);
+         }
 
          var factory = ctx.GetService<IEntityDataReaderFactory>();
          var properties = GetPropertiesForInsert(sqliteOptions.EntityMembersProvider, entityType);

@@ -6,7 +6,7 @@ using Microsoft.Data.SqlClient;
 namespace Thinktecture.EntityFrameworkCore.BulkOperations
 {
    /// <summary>
-   /// Options used by <see cref="SqlServerDbContextExtensions.BulkInsertAsync{T}"/>.
+   /// Bulk insert options for SQL Server.
    /// </summary>
    public class SqlServerBulkInsertOptions : IBulkInsertOptions
    {
@@ -33,5 +33,22 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
 
       /// <inheritdoc />
       public IEntityMembersProvider? EntityMembersProvider { get; set; }
+
+      /// <inheritdoc />
+      public void InitializeFrom(IBulkInsertOptions options)
+      {
+         if (options == null)
+            throw new ArgumentNullException(nameof(options));
+
+         EntityMembersProvider = options.EntityMembersProvider;
+
+         if (options is SqlServerBulkInsertOptions sqlServerOptions)
+         {
+            BulkCopyTimeout = sqlServerOptions.BulkCopyTimeout;
+            SqlBulkCopyOptions = sqlServerOptions.SqlBulkCopyOptions;
+            BatchSize = sqlServerOptions.BatchSize;
+            EnableStreaming = sqlServerOptions.EnableStreaming;
+         }
+      }
    }
 }
