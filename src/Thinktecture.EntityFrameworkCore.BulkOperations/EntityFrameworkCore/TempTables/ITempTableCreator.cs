@@ -25,6 +25,6 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
       /// <paramref name="entityType"/> is <c>null</c>.
       /// </exception>
       /// <exception cref="ArgumentException">The provided type <paramref name="entityType"/> is not known by the <paramref name="ctx"/>.</exception>
-      Task<ITempTableReference> CreateTempTableAsync(DbContext ctx, IEntityType entityType, TempTableCreationOptions options, CancellationToken cancellationToken = default);
+      Task<ITempTableReference> CreateTempTableAsync(DbContext ctx, IEntityType entityType, ITempTableCreationOptions options, CancellationToken cancellationToken = default);
    }
 }

@@ -15,6 +15,7 @@ using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
 using Thinktecture.EntityFrameworkCore.Data;
+using Thinktecture.EntityFrameworkCore.TempTables;
 
 namespace Thinktecture.EntityFrameworkCore.BulkOperations
 {
@@ -23,7 +24,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
    /// </summary>
    // ReSharper disable once ClassNeverInstantiated.Global
    [SuppressMessage("ReSharper", "EF1001")]
-   public class SqliteBulkOperationExecutor : IBulkOperationExecutor
+   public class SqliteBulkOperationExecutor : IBulkOperationExecutor, ITempTableBulkOperationExecutor
    {
       private readonly ISqlGenerationHelper _sqlGenerationHelper;
       private readonly IDiagnosticsLogger<SqliteDbLoggerCategory.BulkOperation> _logger;
@@ -47,9 +48,15 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       }
 
       /// <inheritdoc />
-      public IBulkInsertOptions CreateOptions()
+      IBulkInsertOptions IBulkOperationExecutor.CreateOptions()
       {
          return new SqliteBulkInsertOptions();
+      }
+
+      /// <inheritdoc />
+      ITempTableBulkInsertOptions ITempTableBulkOperationExecutor.CreateOptions()
+      {
+         return new SqliteTempTableBulkInsertOptions();
       }
 
       /// <inheritdoc />
@@ -243,6 +250,48 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
          }
 
          return null;
+      }
+
+      /// <inheritdoc />
+      public async Task<ITempTableQuery<T>> BulkInsertIntoTempTableAsync<T>(DbContext ctx,
+                                                                            IEnumerable<T> entities,
+                                                                            ITempTableBulkInsertOptions options,
+                                                                            CancellationToken cancellationToken = default)
+         where T : class
+      {
+         if (ctx == null)
+            throw new ArgumentNullException(nameof(ctx));
+         if (entities == null)
+            throw new ArgumentNullException(nameof(entities));
+         if (options == null)
+            throw new ArgumentNullException(nameof(options));
+
+         var entityType = ctx.Model.GetEntityType(typeof(T));
+         var tempTableCreator = ctx.GetService<ITempTableCreator>();
+         var bulkInsertExecutor = ctx.GetService<IBulkOperationExecutor>();
+
+         if (!(options is SqliteTempTableBulkInsertOptions))
+         {
+            var sqliteOptions = new SqliteTempTableBulkInsertOptions();
+            sqliteOptions.InitializeFrom(options);
+            options = sqliteOptions;
+         }
+
+         var tempTableReference = await tempTableCreator.CreateTempTableAsync(ctx, entityType, options.TempTableCreationOptions, cancellationToken).ConfigureAwait(false);
+
+         try
+         {
+            await bulkInsertExecutor.BulkInsertAsync(ctx, entityType, entities, null, tempTableReference.Name, options.BulkInsertOptions, cancellationToken).ConfigureAwait(false);
+
+            var query = ctx.Set<T>().FromSqlRaw($"SELECT * FROM {_sqlGenerationHelper.DelimitIdentifier(tempTableReference.Name)}");
+
+            return new TempTableQuery<T>(query, tempTableReference);
+         }
+         catch (Exception)
+         {
+            tempTableReference.Dispose();
+            throw;
+         }
       }
 
       private readonly struct ParameterInfo

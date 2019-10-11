@@ -3,20 +3,15 @@ using Thinktecture.EntityFrameworkCore.TempTables;
 namespace Thinktecture.EntityFrameworkCore.BulkOperations
 {
    /// <summary>
-   /// Options used by the <see cref="SqliteDbContextExtensions.BulkInsertIntoTempTableAsync{T}"/>.
+   /// Bulk insert options for SQLite.
    /// </summary>
-   public class SqliteTempTableBulkInsertOptions
+   public class SqliteTempTableBulkInsertOptions : ITempTableBulkInsertOptions
    {
-      /// <summary>
-      /// Options for bulk insert.
-      /// </summary>
-      internal SqliteBulkInsertOptions BulkInsertOptions { get; }
+      IBulkInsertOptions ITempTableBulkInsertOptions.BulkInsertOptions => _bulkInsertOptions;
+      ITempTableCreationOptions ITempTableBulkInsertOptions.TempTableCreationOptions => _tempTableCreationOptions;
 
-      /// <summary>
-      /// Options for creation of the temp table.
-      /// Default is set to <c>true</c>.
-      /// </summary>
-      internal TempTableCreationOptions TempTableCreationOptions { get; }
+      private readonly SqliteBulkInsertOptions _bulkInsertOptions;
+      private readonly TempTableCreationOptions _tempTableCreationOptions;
 
       /// <summary>
       /// Properties to insert.
@@ -24,8 +19,8 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       /// </summary>
       public IEntityMembersProvider? EntityMembersProvider
       {
-         get => BulkInsertOptions.EntityMembersProvider;
-         set => BulkInsertOptions.EntityMembersProvider = value;
+         get => _bulkInsertOptions.EntityMembersProvider;
+         set => _bulkInsertOptions.EntityMembersProvider = value;
       }
 
       /// <summary>
@@ -34,8 +29,8 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       /// </summary>
       public SqliteAutoIncrementBehavior AutoIncrementBehavior
       {
-         get => BulkInsertOptions.AutoIncrementBehavior;
-         set => BulkInsertOptions.AutoIncrementBehavior = value;
+         get => _bulkInsertOptions.AutoIncrementBehavior;
+         set => _bulkInsertOptions.AutoIncrementBehavior = value;
       }
 
       /// <summary>
@@ -44,8 +39,8 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       /// </summary>
       public bool MakeTableNameUnique
       {
-         get => TempTableCreationOptions.MakeTableNameUnique;
-         set => TempTableCreationOptions.MakeTableNameUnique = value;
+         get => _tempTableCreationOptions.MakeTableNameUnique;
+         set => _tempTableCreationOptions.MakeTableNameUnique = value;
       }
 
       /// <summary>
@@ -54,8 +49,8 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       /// </summary>
       public bool CreatePrimaryKey
       {
-         get => TempTableCreationOptions.CreatePrimaryKey;
-         set => TempTableCreationOptions.CreatePrimaryKey = value;
+         get => _tempTableCreationOptions.CreatePrimaryKey;
+         set => _tempTableCreationOptions.CreatePrimaryKey = value;
       }
 
       /// <summary>
@@ -63,8 +58,19 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       /// </summary>
       public SqliteTempTableBulkInsertOptions()
       {
-         BulkInsertOptions = new SqliteBulkInsertOptions();
-         TempTableCreationOptions = new TempTableCreationOptions();
+         _bulkInsertOptions = new SqliteBulkInsertOptions();
+         _tempTableCreationOptions = new TempTableCreationOptions();
+      }
+
+      /// <inheritdoc />
+      public void InitializeFrom(ITempTableBulkInsertOptions options)
+      {
+         EntityMembersProvider = options.BulkInsertOptions.EntityMembersProvider;
+         MakeTableNameUnique = options.TempTableCreationOptions.MakeTableNameUnique;
+         CreatePrimaryKey = options.TempTableCreationOptions.CreatePrimaryKey;
+
+         if (options is SqliteTempTableBulkInsertOptions sqliteOptions)
+            AutoIncrementBehavior = sqliteOptions.AutoIncrementBehavior;
       }
    }
 }

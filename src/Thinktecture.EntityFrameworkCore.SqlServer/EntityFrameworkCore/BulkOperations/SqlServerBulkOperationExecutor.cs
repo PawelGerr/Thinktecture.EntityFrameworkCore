@@ -15,6 +15,7 @@ using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
 using Thinktecture.EntityFrameworkCore.Data;
+using Thinktecture.EntityFrameworkCore.TempTables;
 
 namespace Thinktecture.EntityFrameworkCore.BulkOperations
 {
@@ -22,7 +23,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
    /// Executes bulk operations.
    /// </summary>
    [SuppressMessage("ReSharper", "EF1001")]
-   public class SqlServerBulkOperationExecutor : IBulkOperationExecutor
+   public class SqlServerBulkOperationExecutor : IBulkOperationExecutor, ITempTableBulkOperationExecutor
    {
       private readonly ISqlGenerationHelper _sqlGenerationHelper;
       private readonly IDiagnosticsLogger<SqlServerDbLoggerCategory.BulkOperation> _logger;
@@ -46,9 +47,15 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       }
 
       /// <inheritdoc />
-      public IBulkInsertOptions CreateOptions()
+      IBulkInsertOptions IBulkOperationExecutor.CreateOptions()
       {
          return new SqlServerBulkInsertOptions();
+      }
+
+      /// <inheritdoc />
+      ITempTableBulkInsertOptions ITempTableBulkOperationExecutor.CreateOptions()
+      {
+         return new SqlServerTempTableBulkInsertOptions();
       }
 
       /// <inheritdoc />
@@ -190,6 +197,55 @@ INSERT BULK {table} ({columns})", (long)duration.TotalMilliseconds,
          }
 
          return null;
+      }
+
+      /// <inheritdoc />
+      public async Task<ITempTableQuery<T>> BulkInsertIntoTempTableAsync<T>(DbContext ctx,
+                                                                            IEnumerable<T> entities,
+                                                                            ITempTableBulkInsertOptions options,
+                                                                            CancellationToken cancellationToken = default)
+         where T : class
+      {
+         if (ctx == null)
+            throw new ArgumentNullException(nameof(ctx));
+         if (entities == null)
+            throw new ArgumentNullException(nameof(entities));
+         if (options == null)
+            throw new ArgumentNullException(nameof(options));
+
+         var entityType = ctx.Model.GetEntityType(typeof(T));
+         var tempTableCreator = ctx.GetService<ISqlServerTempTableCreator>();
+
+         if (!(options is SqlServerTempTableBulkInsertOptions sqlServerOptions))
+         {
+            sqlServerOptions = new SqlServerTempTableBulkInsertOptions();
+            sqlServerOptions.InitializeFrom(options);
+            options = sqlServerOptions;
+         }
+
+         var tempTableOptions = options.TempTableCreationOptions;
+
+         if (sqlServerOptions.PrimaryKeyCreation == SqlServerPrimaryKeyCreation.AfterBulkInsert && tempTableOptions.CreatePrimaryKey)
+            tempTableOptions = new TempTableCreationOptions { CreatePrimaryKey = false, MakeTableNameUnique = tempTableOptions.MakeTableNameUnique };
+
+         var tempTableReference = await tempTableCreator.CreateTempTableAsync(ctx, entityType, tempTableOptions, cancellationToken).ConfigureAwait(false);
+
+         try
+         {
+            await BulkInsertAsync(ctx, entityType, entities, null, tempTableReference.Name, options.BulkInsertOptions, cancellationToken).ConfigureAwait(false);
+
+            if (sqlServerOptions.PrimaryKeyCreation == SqlServerPrimaryKeyCreation.AfterBulkInsert)
+               await tempTableCreator.CreatePrimaryKeyAsync(ctx, entityType, tempTableReference.Name, !options.TempTableCreationOptions.MakeTableNameUnique, cancellationToken).ConfigureAwait(false);
+
+            var query = ctx.Set<T>().FromSqlRaw($"SELECT * FROM {_sqlGenerationHelper.DelimitIdentifier(tempTableReference.Name)}");
+
+            return new TempTableQuery<T>(query, tempTableReference);
+         }
+         catch (Exception)
+         {
+            tempTableReference.Dispose();
+            throw;
+         }
       }
    }
 }

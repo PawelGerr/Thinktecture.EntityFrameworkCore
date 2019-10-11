@@ -85,7 +85,10 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
          if (AddBulkOperationSupport)
          {
             services.TryAddSingleton<IEntityDataReaderFactory, EntityDataReaderFactory>();
-            services.TryAdd<IBulkOperationExecutor, SqlServerBulkOperationExecutor>(GetLifetime<ISqlGenerationHelper>());
+            var lifetime = GetLifetime<ISqlGenerationHelper>();
+            services.TryAdd<SqlServerBulkOperationExecutor, SqlServerBulkOperationExecutor>(lifetime);
+            services.TryAdd(ServiceDescriptor.Describe(typeof(IBulkOperationExecutor), provider => provider.GetRequiredService<SqlServerBulkOperationExecutor>(), lifetime));
+            services.TryAdd(ServiceDescriptor.Describe(typeof(ITempTableBulkOperationExecutor), provider => provider.GetRequiredService<SqlServerBulkOperationExecutor>(), lifetime));
          }
 
          if (UseThinktectureSqlServerMigrationsSqlGenerator)

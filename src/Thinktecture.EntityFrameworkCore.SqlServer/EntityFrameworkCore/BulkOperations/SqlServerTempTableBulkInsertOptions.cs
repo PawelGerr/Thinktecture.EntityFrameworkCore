@@ -7,20 +7,15 @@ using Thinktecture.EntityFrameworkCore.TempTables;
 namespace Thinktecture.EntityFrameworkCore.BulkOperations
 {
    /// <summary>
-   /// Options used by the <see cref="SqlServerDbContextExtensions.BulkInsertIntoTempTableAsync{T}"/>.
+   /// Options used by the <see cref="BulkOperationsDbContextExtensions.BulkInsertIntoTempTableAsync{T}"/>.
    /// </summary>
-   public class SqlServerTempTableBulkInsertOptions
+   public class SqlServerTempTableBulkInsertOptions : ITempTableBulkInsertOptions
    {
-      /// <summary>
-      /// Options for bulk insert.
-      /// </summary>
-      internal SqlServerBulkInsertOptions BulkInsertOptions { get; }
+      IBulkInsertOptions ITempTableBulkInsertOptions.BulkInsertOptions => _bulkInsertOptions;
+      ITempTableCreationOptions ITempTableBulkInsertOptions.TempTableCreationOptions => _tempTableCreationOptions;
 
-      /// <summary>
-      /// Options for creation of the temp table.
-      /// Default is set to <c>true</c>.
-      /// </summary>
-      internal TempTableCreationOptions TempTableCreationOptions { get; }
+      private readonly SqlServerBulkInsertOptions _bulkInsertOptions;
+      private readonly TempTableCreationOptions _tempTableCreationOptions;
 
       private SqlServerPrimaryKeyCreation _primaryKeyCreation;
 
@@ -34,7 +29,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
          set
          {
             _primaryKeyCreation = value;
-            TempTableCreationOptions.CreatePrimaryKey = value == SqlServerPrimaryKeyCreation.BeforeBulkInsert;
+            _tempTableCreationOptions.CreatePrimaryKey = value != SqlServerPrimaryKeyCreation.None;
          }
       }
 
@@ -44,8 +39,8 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       /// </summary>
       public bool MakeTableNameUnique
       {
-         get => TempTableCreationOptions.MakeTableNameUnique;
-         set => TempTableCreationOptions.MakeTableNameUnique = value;
+         get => _tempTableCreationOptions.MakeTableNameUnique;
+         set => _tempTableCreationOptions.MakeTableNameUnique = value;
       }
 
       /// <summary>
@@ -53,8 +48,8 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       /// </summary>
       public TimeSpan? BulkCopyTimeout
       {
-         get => BulkInsertOptions.BulkCopyTimeout;
-         set => BulkInsertOptions.BulkCopyTimeout = value;
+         get => _bulkInsertOptions.BulkCopyTimeout;
+         set => _bulkInsertOptions.BulkCopyTimeout = value;
       }
 
       /// <summary>
@@ -62,8 +57,8 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       /// </summary>
       public SqlBulkCopyOptions SqlBulkCopyOptions
       {
-         get => BulkInsertOptions.SqlBulkCopyOptions;
-         set => BulkInsertOptions.SqlBulkCopyOptions = value;
+         get => _bulkInsertOptions.SqlBulkCopyOptions;
+         set => _bulkInsertOptions.SqlBulkCopyOptions = value;
       }
 
       /// <summary>
@@ -71,8 +66,8 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       /// </summary>
       public int? BatchSize
       {
-         get => BulkInsertOptions.BatchSize;
-         set => BulkInsertOptions.BatchSize = value;
+         get => _bulkInsertOptions.BatchSize;
+         set => _bulkInsertOptions.BatchSize = value;
       }
 
       /// <summary>
@@ -81,8 +76,8 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       /// </summary>
       public bool EnableStreaming
       {
-         get => BulkInsertOptions.EnableStreaming;
-         set => BulkInsertOptions.EnableStreaming = value;
+         get => _bulkInsertOptions.EnableStreaming;
+         set => _bulkInsertOptions.EnableStreaming = value;
       }
 
       /// <summary>
@@ -91,8 +86,8 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       /// <returns>A collection of <see cref="MemberInfo"/>.</returns>
       public IEntityMembersProvider? EntityMembersProvider
       {
-         get => BulkInsertOptions.EntityMembersProvider;
-         set => BulkInsertOptions.EntityMembersProvider = value;
+         get => _bulkInsertOptions.EntityMembersProvider;
+         set => _bulkInsertOptions.EntityMembersProvider = value;
       }
 
       /// <summary>
@@ -100,9 +95,32 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       /// </summary>
       public SqlServerTempTableBulkInsertOptions()
       {
-         BulkInsertOptions = new SqlServerBulkInsertOptions();
-         TempTableCreationOptions = new TempTableCreationOptions();
+         _bulkInsertOptions = new SqlServerBulkInsertOptions();
+         _tempTableCreationOptions = new TempTableCreationOptions();
+
          PrimaryKeyCreation = SqlServerPrimaryKeyCreation.AfterBulkInsert;
+      }
+
+      /// <inheritdoc />
+      public void InitializeFrom(ITempTableBulkInsertOptions options)
+      {
+         MakeTableNameUnique = options.TempTableCreationOptions.MakeTableNameUnique;
+         EntityMembersProvider = options.BulkInsertOptions.EntityMembersProvider;
+
+         if (options is SqlServerTempTableBulkInsertOptions sqlServerOptions)
+         {
+            PrimaryKeyCreation = sqlServerOptions.PrimaryKeyCreation;
+            BatchSize = sqlServerOptions.BatchSize;
+            EnableStreaming = sqlServerOptions.EnableStreaming;
+            BulkCopyTimeout = sqlServerOptions.BulkCopyTimeout;
+            SqlBulkCopyOptions = sqlServerOptions.SqlBulkCopyOptions;
+         }
+         else
+         {
+            PrimaryKeyCreation = options.TempTableCreationOptions.CreatePrimaryKey
+                                    ? SqlServerPrimaryKeyCreation.AfterBulkInsert
+                                    : SqlServerPrimaryKeyCreation.None;
+         }
       }
    }
 }

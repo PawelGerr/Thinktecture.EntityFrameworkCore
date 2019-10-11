@@ -38,7 +38,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
       /// <inheritdoc />
       public async Task<ITempTableReference> CreateTempTableAsync(DbContext ctx,
                                                                   IEntityType entityType,
-                                                                  TempTableCreationOptions options,
+                                                                  ITempTableCreationOptions options,
                                                                   CancellationToken cancellationToken = default)
       {
          if (ctx == null)
