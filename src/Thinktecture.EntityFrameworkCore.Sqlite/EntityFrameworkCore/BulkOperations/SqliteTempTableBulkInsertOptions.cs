@@ -5,7 +5,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
    /// <summary>
    /// Bulk insert options for SQLite.
    /// </summary>
-   public class SqliteTempTableBulkInsertOptions : ITempTableBulkInsertOptions
+   public sealed class SqliteTempTableBulkInsertOptions : ITempTableBulkInsertOptions
    {
       IBulkInsertOptions ITempTableBulkInsertOptions.BulkInsertOptions => _bulkInsertOptions;
       ITempTableCreationOptions ITempTableBulkInsertOptions.TempTableCreationOptions => _tempTableCreationOptions;

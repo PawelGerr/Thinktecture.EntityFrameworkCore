@@ -8,7 +8,7 @@ namespace Thinktecture.EntityFrameworkCore.Query.ExpressionTranslators
    /// <summary>
    /// Plugin registering method translators.
    /// </summary>
-   public class SqlServerMethodCallTranslatorPlugin : IMethodCallTranslatorPlugin
+   public sealed class SqlServerMethodCallTranslatorPlugin : IMethodCallTranslatorPlugin
    {
       /// <inheritdoc />
       public IEnumerable<IMethodCallTranslator> Translators { get; }

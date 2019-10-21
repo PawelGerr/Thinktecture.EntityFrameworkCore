@@ -19,7 +19,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
    /// Extensions for DbContextOptions.
    /// </summary>
    [SuppressMessage("ReSharper", "EF1001")]
-   public class RelationalDbContextOptionsExtension : IDbContextOptionsExtension
+   public sealed class RelationalDbContextOptionsExtension : IDbContextOptionsExtension
    {
       private static readonly IRelationalDbContextComponentDecorator _defaultDecorator = new RelationalDbContextComponentDecorator();
 

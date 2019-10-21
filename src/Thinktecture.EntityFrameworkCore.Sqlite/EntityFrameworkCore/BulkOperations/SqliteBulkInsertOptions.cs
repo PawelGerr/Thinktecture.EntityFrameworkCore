@@ -6,7 +6,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
    /// <summary>
    /// Bulk insert options for SQLite.
    /// </summary>
-   public class SqliteBulkInsertOptions : IBulkInsertOptions
+   public sealed class SqliteBulkInsertOptions : IBulkInsertOptions
    {
       /// <inheritdoc />
       public IEntityMembersProvider? EntityMembersProvider { get; set; }

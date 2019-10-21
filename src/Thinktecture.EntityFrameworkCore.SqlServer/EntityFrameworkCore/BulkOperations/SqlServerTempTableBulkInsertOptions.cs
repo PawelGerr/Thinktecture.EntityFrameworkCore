@@ -9,7 +9,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
    /// <summary>
    /// Options used by the <see cref="BulkOperationsDbContextExtensions.BulkInsertIntoTempTableAsync{T}"/>.
    /// </summary>
-   public class SqlServerTempTableBulkInsertOptions : ITempTableBulkInsertOptions
+   public sealed class SqlServerTempTableBulkInsertOptions : ITempTableBulkInsertOptions
    {
       IBulkInsertOptions ITempTableBulkInsertOptions.BulkInsertOptions => _bulkInsertOptions;
       ITempTableCreationOptions ITempTableBulkInsertOptions.TempTableCreationOptions => _tempTableCreationOptions;

@@ -10,7 +10,7 @@ namespace Thinktecture.EntityFrameworkCore.Data
    /// Factory for <see cref="IEntityDataReader"/>.
    /// </summary>
    // ReSharper disable once ClassNeverInstantiated.Global
-   public class EntityDataReaderFactory : IEntityDataReaderFactory
+   public sealed class EntityDataReaderFactory : IEntityDataReaderFactory
    {
       /// <inheritdoc />
       public IEntityDataReader Create<T>(DbContext ctx, IEnumerable<T> entities, IReadOnlyList<IProperty> properties)

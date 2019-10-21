@@ -9,9 +9,9 @@ using Microsoft.EntityFrameworkCore.Metadata;
 namespace Thinktecture
 {
    /// <summary>
-   /// Extension methods for <see cref="DbContext"/>.
+   /// Extension methods for <see cref="IModel"/>.
    /// </summary>
-   public static class DbContextExtensions
+   public static class RelationalModelExtensions
    {
       /// <summary>
       /// Fetches meta data for entity of provided <paramref name="type"/>.

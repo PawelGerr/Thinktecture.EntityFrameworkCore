@@ -7,7 +7,7 @@ namespace Thinktecture.EntityFrameworkCore.Query
    /// <summary>
    /// Factory for creation of the <see cref="SqliteRelationalQueryableMethodTranslatingExpressionVisitor"/>.
    /// </summary>
-   public class SqliteQueryableMethodTranslatingExpressionVisitorFactory : IQueryableMethodTranslatingExpressionVisitorFactory
+   public sealed class SqliteQueryableMethodTranslatingExpressionVisitorFactory : IQueryableMethodTranslatingExpressionVisitorFactory
    {
       private readonly QueryableMethodTranslatingExpressionVisitorDependencies _dependencies;
       private readonly RelationalQueryableMethodTranslatingExpressionVisitorDependencies _relationalDependencies;

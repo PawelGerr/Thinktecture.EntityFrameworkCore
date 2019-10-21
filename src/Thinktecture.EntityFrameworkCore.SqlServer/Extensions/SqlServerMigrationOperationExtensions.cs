@@ -8,7 +8,7 @@ namespace Thinktecture
    /// <summary>
    /// Extensions for <see cref="MigrationOperation"/>.
    /// </summary>
-   public static class MigrationOperationExtensions
+   public static class SqlServerMigrationOperationExtensions
    {
       /// <summary>
       /// Gets an indication whether the "IfNotExists" check is required.
@@ -25,7 +25,7 @@ namespace Thinktecture
          if (operation == null)
             throw new ArgumentNullException(nameof(operation));
 
-         return operation[OperationBuilderExtensions.IfNotExistsKey] is bool ifNotExists && ifNotExists;
+         return operation[SqlServerOperationBuilderExtensions.IfNotExistsKey] is bool ifNotExists && ifNotExists;
       }
 
       /// <summary>
@@ -43,7 +43,7 @@ namespace Thinktecture
          if (operation == null)
             throw new ArgumentNullException(nameof(operation));
 
-         return operation[OperationBuilderExtensions.IfExistsKey] is bool ifNotExists && ifNotExists;
+         return operation[SqlServerOperationBuilderExtensions.IfExistsKey] is bool ifNotExists && ifNotExists;
       }
    }
 }

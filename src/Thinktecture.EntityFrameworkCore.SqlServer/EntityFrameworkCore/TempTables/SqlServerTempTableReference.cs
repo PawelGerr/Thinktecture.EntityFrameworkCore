@@ -17,6 +17,8 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
       private readonly ISqlGenerationHelper _sqlGenerationHelper;
       private readonly DatabaseFacade _database;
 
+      private bool _isDisposed;
+
       /// <inheritdoc />
       public string Name { get; }
 
@@ -41,6 +43,11 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
       /// <inheritdoc />
       public void Dispose()
       {
+         if (_isDisposed)
+            return;
+
+         _isDisposed = true;
+
          try
          {
             if (_database.GetDbConnection().State != ConnectionState.Open)

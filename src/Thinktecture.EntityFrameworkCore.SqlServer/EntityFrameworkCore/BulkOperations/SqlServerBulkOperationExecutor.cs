@@ -23,7 +23,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
    /// Executes bulk operations.
    /// </summary>
    [SuppressMessage("ReSharper", "EF1001")]
-   public class SqlServerBulkOperationExecutor : IBulkOperationExecutor, ITempTableBulkOperationExecutor
+   public sealed class SqlServerBulkOperationExecutor : IBulkOperationExecutor, ITempTableBulkOperationExecutor
    {
       private readonly ISqlGenerationHelper _sqlGenerationHelper;
       private readonly IDiagnosticsLogger<SqlServerDbLoggerCategory.BulkOperation> _logger;

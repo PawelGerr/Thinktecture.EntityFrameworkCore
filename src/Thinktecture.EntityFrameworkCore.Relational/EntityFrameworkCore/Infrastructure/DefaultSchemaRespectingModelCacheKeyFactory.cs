@@ -7,7 +7,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
    /// <summary>
    /// Cache key factory that takes the schema into account.
    /// </summary>
-   public class DefaultSchemaRespectingModelCacheKeyFactory<TFactory> : IModelCacheKeyFactory
+   public sealed class DefaultSchemaRespectingModelCacheKeyFactory<TFactory> : IModelCacheKeyFactory
       where TFactory : class, IModelCacheKeyFactory
    {
       private readonly TFactory _factory;

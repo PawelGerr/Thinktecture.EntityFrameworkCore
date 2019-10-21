@@ -7,7 +7,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
    /// Disables the model cache.
    /// </summary>
    // ReSharper disable once ClassNeverInstantiated.Global
-   public class CachePerContextModelCacheKeyFactory : IModelCacheKeyFactory
+   public sealed class CachePerContextModelCacheKeyFactory : IModelCacheKeyFactory
    {
       /// <inheritdoc />
       public object Create(DbContext context)

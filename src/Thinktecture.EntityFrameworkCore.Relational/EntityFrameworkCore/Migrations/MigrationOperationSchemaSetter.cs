@@ -8,7 +8,7 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
    /// <summary>
    /// Applies the schema to operations.
    /// </summary>
-   public class MigrationOperationSchemaSetter : IMigrationOperationSchemaSetter
+   public sealed class MigrationOperationSchemaSetter : IMigrationOperationSchemaSetter
    {
       /// <inheritdoc />
       public void SetSchema(IReadOnlyList<MigrationOperation> operations, string? schema)

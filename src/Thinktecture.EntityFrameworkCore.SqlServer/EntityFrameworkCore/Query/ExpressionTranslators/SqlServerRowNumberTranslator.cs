@@ -12,7 +12,7 @@ namespace Thinktecture.EntityFrameworkCore.Query.ExpressionTranslators
    /// <summary>
    /// Translated extension method "RowNumber"
    /// </summary>
-   public class SqlServerRowNumberTranslator : IMethodCallTranslator
+   public sealed class SqlServerRowNumberTranslator : IMethodCallTranslator
    {
       /// <inheritdoc />
       public SqlExpression? Translate(SqlExpression instance, MethodInfo method, IReadOnlyList<SqlExpression> arguments)

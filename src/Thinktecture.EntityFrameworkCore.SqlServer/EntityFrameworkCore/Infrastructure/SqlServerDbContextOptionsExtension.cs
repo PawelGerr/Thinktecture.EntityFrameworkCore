@@ -21,7 +21,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
    /// Extensions for DbContextOptions.
    /// </summary>
    [SuppressMessage("ReSharper", "EF1001")]
-   public class SqlServerDbContextOptionsExtension : IDbContextOptionsExtension
+   public sealed class SqlServerDbContextOptionsExtension : IDbContextOptionsExtension
    {
       private SqlServerDbContextOptionsExtensionInfo? _info;
 
@@ -53,7 +53,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
 
       /// <summary>
       /// A custom factory is registered if <c>true</c>.
-      /// The factory is required to be able to translate custom methods like <see cref="QueryableExtensions.AsSubQuery{TEntity}"/>.
+      /// The factory is required to be able to translate custom methods like <see cref="RelationalQueryableExtensions.AsSubQuery{TEntity}"/>.
       /// </summary>
       public bool AddCustomQueryableMethodTranslatingExpressionVisitorFactory
       {

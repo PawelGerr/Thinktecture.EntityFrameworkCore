@@ -8,7 +8,7 @@ namespace Thinktecture
    /// <summary>
    /// Extension methods for <see cref="IServiceCollection"/>.
    /// </summary>
-   public static class ServiceCollectionExtensions
+   public static class RelationalServiceCollectionExtensions
    {
       /// <summary>
       /// Adds a service of the type specified in <typeparamref name="TService" /> with an

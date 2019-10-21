@@ -9,7 +9,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
    /// <summary>
    /// Gets entity members provided via the constructor.
    /// </summary>
-   public class EntityMembersProvider : IEntityMembersProvider
+   public sealed class EntityMembersProvider : IEntityMembersProvider
    {
       private readonly IReadOnlyList<MemberInfo> _members;
 

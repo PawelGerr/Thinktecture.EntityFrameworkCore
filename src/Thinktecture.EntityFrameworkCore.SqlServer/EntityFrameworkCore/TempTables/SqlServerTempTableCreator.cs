@@ -18,7 +18,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
    /// Creates temp tables.
    /// </summary>
    [SuppressMessage("ReSharper", "EF1001")]
-   public class SqlServerTempTableCreator : ISqlServerTempTableCreator
+   public sealed class SqlServerTempTableCreator : ISqlServerTempTableCreator
    {
       private readonly ISqlGenerationHelper _sqlGenerationHelper;
       private readonly IRelationalTypeMappingSource _typeMappingSource;

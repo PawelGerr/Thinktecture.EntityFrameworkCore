@@ -6,7 +6,7 @@ namespace Thinktecture.Linq.Expressions
    /// <summary>
    /// Replaces one expression with another.
    /// </summary>
-   public class ExpressionReplacingVisitor : ExpressionVisitor
+   public sealed class ExpressionReplacingVisitor : ExpressionVisitor
    {
       private readonly Expression _oldExpression;
       private readonly Expression _newExpression;

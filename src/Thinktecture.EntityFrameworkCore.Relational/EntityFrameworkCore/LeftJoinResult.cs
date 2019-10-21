@@ -7,13 +7,12 @@ namespace Thinktecture.EntityFrameworkCore
    /// </summary>
    /// <typeparam name="TLeft">Type of the entity on the left side of the JOIN.</typeparam>
    /// <typeparam name="TRight">Type of the entity  on the right side of the JOIN.</typeparam>
-   public class LeftJoinResult<TLeft, TRight>
+   public sealed class LeftJoinResult<TLeft, TRight>
    {
-#nullable disable
       /// <summary>
       /// Entity on the left side of the JOIN.
       /// </summary>
-      [DisallowNull]
+      [NotNull, DisallowNull]
       public TLeft Left { get; set; }
 
       /// <summary>
@@ -21,6 +20,11 @@ namespace Thinktecture.EntityFrameworkCore
       /// </summary>
       [MaybeNull, AllowNull]
       public TRight Right { get; set; }
+
+#nullable disable
+      internal LeftJoinResult()
+      {
+      }
 #nullable enable
    }
 }

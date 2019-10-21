@@ -8,7 +8,7 @@ namespace Thinktecture
    /// <summary>
    /// Extension methods for <see cref="ExpressionVisitor"/>.
    /// </summary>
-   public static class ExpressionVisitorExtensions
+   public static class RelationalExpressionVisitorExtensions
    {
       /// <summary>
       /// Visits a collection of <paramref name="expressions"/> and returns new collection if it least one expression has been changed.

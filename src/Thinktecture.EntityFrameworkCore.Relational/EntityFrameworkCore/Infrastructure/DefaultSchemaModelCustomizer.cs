@@ -8,7 +8,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
    /// Sets default database schema.
    /// </summary>
    // ReSharper disable once ClassNeverInstantiated.Global
-   public class DefaultSchemaModelCustomizer<TModelCustomizer> : IModelCustomizer
+   public sealed class DefaultSchemaModelCustomizer<TModelCustomizer> : IModelCustomizer
       where TModelCustomizer : class, IModelCustomizer
    {
       private readonly TModelCustomizer _modelCustomizer;

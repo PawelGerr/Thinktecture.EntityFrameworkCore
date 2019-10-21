@@ -3,7 +3,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
    /// <summary>
    /// Options required for creation of a temp table
    /// </summary>
-   public class TempTableCreationOptions : ITempTableCreationOptions
+   public sealed class TempTableCreationOptions : ITempTableCreationOptions
    {
       /// <summary>
       /// Indication whether the table name should be unique.

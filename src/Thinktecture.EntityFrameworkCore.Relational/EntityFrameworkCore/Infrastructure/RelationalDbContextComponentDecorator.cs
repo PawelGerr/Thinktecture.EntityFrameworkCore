@@ -9,7 +9,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
    /// Decorates EF Core components.
    /// </summary>
    [SuppressMessage("ReSharper", "EF1001")]
-   public class RelationalDbContextComponentDecorator : IRelationalDbContextComponentDecorator
+   public sealed class RelationalDbContextComponentDecorator : IRelationalDbContextComponentDecorator
    {
       /// <inheritdoc />
       public void RegisterDecorator<TService>(IServiceCollection services, Type genericDecoratorTypeDefinition)

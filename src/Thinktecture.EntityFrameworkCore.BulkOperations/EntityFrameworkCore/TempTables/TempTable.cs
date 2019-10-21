@@ -4,7 +4,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
    /// Represents a temp table with 1 column.
    /// </summary>
    /// <typeparam name="TColumn1">Type of column 1.</typeparam>
-   public class TempTable<TColumn1>
+   public sealed class TempTable<TColumn1>
    {
       /// <summary>
       /// Temp table column 1.
@@ -36,7 +36,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
    /// </summary>
    /// <typeparam name="TColumn1">Type of column 1.</typeparam>
    /// <typeparam name="TColumn2">Type of column 2.</typeparam>
-   public class TempTable<TColumn1, TColumn2>
+   public sealed class TempTable<TColumn1, TColumn2>
    {
       /// <summary>
       /// Temp table column 1.

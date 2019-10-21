@@ -8,7 +8,7 @@ namespace Thinktecture
    /// <summary>
    /// Extension methods for expressions.
    /// </summary>
-   public static class ExpressionExtensions
+   public static class RelationalExpressionExtensions
    {
       /// <summary>
       /// This method is for use with <see cref="ExpressionBodyExtractingVisitor"/> only!

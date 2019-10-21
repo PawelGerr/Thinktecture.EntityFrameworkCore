@@ -11,7 +11,7 @@ namespace Thinktecture
    /// <summary>
    /// Extensions for <see cref="DbContextOptionsBuilder"/>.
    /// </summary>
-   public static class DbContextOptionsBuilderExtensions
+   public static class RelationalDbContextOptionsBuilderExtensions
    {
       /// <summary>
       /// Add an <see cref="IRelationalTypeMappingSourcePlugin"/> to dependency injection.

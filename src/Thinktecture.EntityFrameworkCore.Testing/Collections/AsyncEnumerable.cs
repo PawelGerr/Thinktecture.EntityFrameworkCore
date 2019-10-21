@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore.Query.Internal;
 
 namespace Thinktecture.Collections
 {
-   internal class AsyncEnumerable<T> : EnumerableQuery<T>, IAsyncEnumerable<T>, IQueryable<T>
+   internal sealed class AsyncEnumerable<T> : EnumerableQuery<T>, IAsyncEnumerable<T>, IQueryable<T>
    {
       IQueryProvider IQueryable.Provider => new AsyncQueryProvider(this);
 
@@ -19,7 +19,7 @@ namespace Thinktecture.Collections
             throw new ArgumentNullException(nameof(enumerable));
       }
 
-      public AsyncEnumerable(Expression expression)
+      private AsyncEnumerable(Expression expression)
          : base(expression)
       {
          if (expression == null)
@@ -31,7 +31,7 @@ namespace Thinktecture.Collections
          return new AsyncEnumerator(this.AsEnumerable().GetEnumerator());
       }
 
-      private class AsyncEnumerator : IAsyncEnumerator<T>
+      private sealed class AsyncEnumerator : IAsyncEnumerator<T>
       {
          private readonly IEnumerator<T> _enumerator;
 
@@ -55,7 +55,7 @@ namespace Thinktecture.Collections
          }
       }
 
-      private class AsyncQueryProvider : IAsyncQueryProvider
+      private sealed class AsyncQueryProvider : IAsyncQueryProvider
       {
          private readonly IQueryProvider _queryProvider;
 

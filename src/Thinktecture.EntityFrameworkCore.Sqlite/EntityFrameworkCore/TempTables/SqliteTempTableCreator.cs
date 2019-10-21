@@ -15,7 +15,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
    /// <summary>
    /// Creates temp tables.
    /// </summary>
-   public class SqliteTempTableCreator : ITempTableCreator
+   public sealed class SqliteTempTableCreator : ITempTableCreator
    {
       private readonly ISqlGenerationHelper _sqlGenerationHelper;
       private readonly IRelationalTypeMappingSource _typeMappingSource;

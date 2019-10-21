@@ -11,7 +11,7 @@ namespace Thinktecture.EntityFrameworkCore.Query
    /// Evaluatable expression filter decorator.
    /// </summary>
    /// <typeparam name="T">Type of inner filter.</typeparam>
-   public class CompositeEvaluatableExpressionFilter<T> : IEvaluatableExpressionFilter
+   public sealed class CompositeEvaluatableExpressionFilter<T> : IEvaluatableExpressionFilter
       where T : class, IEvaluatableExpressionFilter
    {
       private readonly T _filter;

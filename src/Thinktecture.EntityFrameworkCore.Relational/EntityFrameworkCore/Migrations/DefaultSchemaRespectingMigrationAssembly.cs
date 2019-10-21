@@ -16,7 +16,7 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
    /// An implementation of <see cref="IMigrationsAssembly"/> that is able to instantiate migrations requiring an <see cref="IDbDefaultSchema"/>.
    /// </summary>
    [SuppressMessage("ReSharper", "EF1001")]
-   public class DefaultSchemaRespectingMigrationAssembly<TMigrationsAssembly> : IMigrationsAssembly
+   public sealed class DefaultSchemaRespectingMigrationAssembly<TMigrationsAssembly> : IMigrationsAssembly
       where TMigrationsAssembly : class, IMigrationsAssembly
    {
       private readonly TMigrationsAssembly _innerMigrationsAssembly;

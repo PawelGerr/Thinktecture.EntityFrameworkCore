@@ -9,7 +9,7 @@ namespace Thinktecture.EntityFrameworkCore.Data
    /// Getter for a shadow property.
    /// </summary>
    /// <typeparam name="TValue">Type of the shadow property.</typeparam>
-   public class ShadowPropertyGetter<TValue> : IShadowPropertyGetter
+   public sealed class ShadowPropertyGetter<TValue> : IShadowPropertyGetter
    {
       private readonly DbContext _ctx;
       private readonly Func<InternalEntityEntry, TValue> _getter;

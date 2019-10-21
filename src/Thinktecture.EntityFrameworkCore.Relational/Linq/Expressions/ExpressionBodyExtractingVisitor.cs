@@ -5,22 +5,22 @@ using System.Reflection;
 namespace Thinktecture.Linq.Expressions
 {
    /// <summary>
-   /// Searches for occurrences of <see cref="ExpressionExtensions.ExtractBody{TIn,TOut}"/>
+   /// Searches for occurrences of <see cref="RelationalExpressionExtensions.ExtractBody{TIn,TOut}"/>
    /// and replaces them with the body of the provided lambda expression.
-   /// The references to the original lambda parameter is replaced with the one provided with <see cref="ExpressionExtensions.ExtractBody{TIn,TOut}"/>.
+   /// The references to the original lambda parameter is replaced with the one provided with <see cref="RelationalExpressionExtensions.ExtractBody{TIn,TOut}"/>.
    /// </summary>
    public class ExpressionBodyExtractingVisitor : ExpressionVisitor
    {
       private static readonly ExpressionBodyExtractingVisitor _instance = new ExpressionBodyExtractingVisitor();
-      private static readonly MethodInfo _extractBodyMethod = typeof(ExpressionExtensions).GetMethod(nameof(ExpressionExtensions.ExtractBody), BindingFlags.Static | BindingFlags.Public);
+      private static readonly MethodInfo _extractBodyMethod = typeof(RelationalExpressionExtensions).GetMethod(nameof(RelationalExpressionExtensions.ExtractBody), BindingFlags.Static | BindingFlags.Public);
 
       /// <summary>
-      /// Rewrites the provided <paramref name="expression"/> if it contains <see cref="ExpressionExtensions.ExtractBody{TIn,TOut}"/>.
+      /// Rewrites the provided <paramref name="expression"/> if it contains <see cref="RelationalExpressionExtensions.ExtractBody{TIn,TOut}"/>.
       /// </summary>
       /// <param name="expression">Expression to rewrite.</param>
       /// <typeparam name="T">The type of the lambda expression.</typeparam>
       /// <returns>
-      /// A rewritten <paramref name="expression"/> if any occurrences of <see cref="ExpressionExtensions.ExtractBody{TIn,TOut}"/> have been found;
+      /// A rewritten <paramref name="expression"/> if any occurrences of <see cref="RelationalExpressionExtensions.ExtractBody{TIn,TOut}"/> have been found;
       /// otherwise the provided <paramref name="expression"/> is returned.
       /// </returns>
       /// <exception cref="NotSupportedException">The provided <paramref name="expression"/> could not be rewritten.</exception>

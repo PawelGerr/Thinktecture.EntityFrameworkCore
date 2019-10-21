@@ -12,7 +12,7 @@ namespace Thinktecture
    public static class RelationalQueryableMethodTranslatingExpressionVisitorExtensions
    {
       /// <summary>
-      /// Translates custom methods like <see cref="QueryableExtensions.AsSubQuery{TEntity}"/>.
+      /// Translates custom methods like <see cref="RelationalQueryableExtensions.AsSubQuery{TEntity}"/>.
       /// </summary>
       /// <param name="visitor">The visitor.</param>
       /// <param name="methodCallExpression">Method call to translate.</param>
@@ -27,8 +27,8 @@ namespace Thinktecture
          if (methodCallExpression == null)
             throw new ArgumentNullException(nameof(methodCallExpression));
 
-         if (methodCallExpression.Method.DeclaringType == typeof(QueryableExtensions)
-             && methodCallExpression.Method.Name == nameof(QueryableExtensions.AsSubQuery))
+         if (methodCallExpression.Method.DeclaringType == typeof(RelationalQueryableExtensions)
+             && methodCallExpression.Method.Name == nameof(RelationalQueryableExtensions.AsSubQuery))
          {
             var expression = visitor.Visit(methodCallExpression.Arguments[0]);
 

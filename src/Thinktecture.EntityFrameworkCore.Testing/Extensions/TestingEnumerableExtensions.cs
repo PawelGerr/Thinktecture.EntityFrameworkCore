@@ -9,7 +9,7 @@ namespace Thinktecture
    /// <summary>
    /// Extension methods for <see cref="IEnumerable{T}"/>.
    /// </summary>
-   public static class EnumerableExtensions
+   public static class TestingEnumerableExtensions
    {
       /// <summary>
       /// Creates an <see cref="IQueryable{T}"/> that implements <see cref="IAsyncEnumerable{T}"/>.

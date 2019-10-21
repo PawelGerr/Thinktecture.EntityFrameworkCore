@@ -5,7 +5,7 @@ namespace Thinktecture.EntityFrameworkCore
    /// <summary>
    /// DB schema.
    /// </summary>
-   public class DbDefaultSchema : IDbDefaultSchema
+   public sealed class DbDefaultSchema : IDbDefaultSchema
    {
       /// <summary>
       /// Database schema

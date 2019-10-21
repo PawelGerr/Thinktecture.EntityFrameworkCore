@@ -12,9 +12,9 @@ namespace Thinktecture
    /// <summary>
    /// Extensions for <see cref="IQueryable{T}"/>.
    /// </summary>
-   public static class QueryableExtensions
+   public static class RelationalQueryableExtensions
    {
-      private static readonly MethodInfo _asSubQuery = typeof(QueryableExtensions).GetMethods(BindingFlags.Public | BindingFlags.Static)
+      private static readonly MethodInfo _asSubQuery = typeof(RelationalQueryableExtensions).GetMethods(BindingFlags.Public | BindingFlags.Static)
                                                                                   .Single(m => m.Name == nameof(AsSubQuery) && m.IsGenericMethod);
 
       /// <summary>

@@ -8,7 +8,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
    /// <summary>
    /// Bulk insert options for SQL Server.
    /// </summary>
-   public class SqlServerBulkInsertOptions : IBulkInsertOptions
+   public sealed class SqlServerBulkInsertOptions : IBulkInsertOptions
    {
       /// <summary>
       /// Timeout used by <see cref="SqlBulkCopy"/>

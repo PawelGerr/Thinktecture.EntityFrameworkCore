@@ -11,7 +11,7 @@ namespace Thinktecture.EntityFrameworkCore.Query.SqlExpressions
    /// <summary>
    /// Accumulator for orderings.
    /// </summary>
-   public class RowNumberClauseOrderingsExpression : SqlExpression
+   public sealed class RowNumberClauseOrderingsExpression : SqlExpression
    {
       /// <summary>
       /// Orderings.
