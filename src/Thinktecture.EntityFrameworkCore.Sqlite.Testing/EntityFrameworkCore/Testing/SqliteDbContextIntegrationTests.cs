@@ -73,7 +73,7 @@ namespace Thinktecture.EntityFrameworkCore.Testing
                                                 IMigrationExecutionStrategy? migrationExecutionStrategy = null)
       {
          _connectionString = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
-         _migrationExecutionStrategy = migrationExecutionStrategy ?? MigrationExecutionStrategies.Migration;
+         _migrationExecutionStrategy = migrationExecutionStrategy ?? MigrationExecutionStrategies.Migrations;
       }
 
       /// <summary>

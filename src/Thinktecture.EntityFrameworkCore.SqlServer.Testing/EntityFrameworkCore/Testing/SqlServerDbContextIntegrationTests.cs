@@ -81,14 +81,17 @@ namespace Thinktecture.EntityFrameworkCore.Testing
       /// </summary>
       /// <param name="connectionString">Connection string to use.</param>
       /// <param name="useSharedTables">Indication whether new tables with a new schema should be created or not.</param>
-      /// <param name="migrationExecutionStrategy">Migrates the database.</param>
+      /// <param name="migrationExecutionStrategy">
+      /// Migrates the database.
+      /// Default is <see cref="MigrationExecutionStrategies.Migrations"/>.
+      /// </param>
       protected SqlServerDbContextIntegrationTests(string connectionString,
-                                                   bool useSharedTables,
+                                                   bool useSharedTables = true,
                                                    IMigrationExecutionStrategy? migrationExecutionStrategy = null)
       {
          _connectionString = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
          _useSharedTables = useSharedTables;
-         _migrationExecutionStrategy = migrationExecutionStrategy ?? MigrationExecutionStrategies.Migration;
+         _migrationExecutionStrategy = migrationExecutionStrategy ?? MigrationExecutionStrategies.Migrations;
       }
 
       /// <summary>

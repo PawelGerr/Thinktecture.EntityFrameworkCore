@@ -16,7 +16,7 @@ namespace Thinktecture.EntityFrameworkCore
       /// <summary>
       /// The database will be migrated using <see cref="RelationalDatabaseFacadeExtensions.Migrate"/>.
       /// </summary>
-      public static readonly IMigrationExecutionStrategy Migration = new MigrationExecutionStrategy();
+      public static readonly IMigrationExecutionStrategy Migrations = new MigrationExecutionStrategy();
 
       /// <summary>
       /// The database will be migrated using <see cref="DatabaseFacade.EnsureCreated"/>.
