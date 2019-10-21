@@ -19,7 +19,7 @@ namespace Thinktecture.EntityFrameworkCore.Testing
       // ReSharper disable once StaticMemberInGenericType because the lock are all for the same database context.
       private static readonly object _lock = new object();
 
-      private readonly string _connectionString;
+      private const string _CONNECTION_STRING = "DataSource=:memory:";
 
       private readonly IMigrationExecutionStrategy _migrationExecutionStrategy;
 
@@ -60,19 +60,7 @@ namespace Thinktecture.EntityFrameworkCore.Testing
       /// </summary>
       /// <param name="migrationExecutionStrategy">Migrates the database.</param>
       protected SqliteDbContextIntegrationTests(IMigrationExecutionStrategy? migrationExecutionStrategy = null)
-         : this("DataSource=:memory:", migrationExecutionStrategy)
       {
-      }
-
-      /// <summary>
-      /// Initializes a new instance of <see cref="SqliteDbContextIntegrationTests{T}"/>
-      /// </summary>
-      /// <param name="connectionString">Connection string.</param>
-      /// <param name="migrationExecutionStrategy">Migrates the database.</param>
-      protected SqliteDbContextIntegrationTests(string connectionString,
-                                                IMigrationExecutionStrategy? migrationExecutionStrategy = null)
-      {
-         _connectionString = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
          _migrationExecutionStrategy = migrationExecutionStrategy ?? MigrationExecutionStrategies.Migrations;
       }
 
@@ -100,7 +88,7 @@ namespace Thinktecture.EntityFrameworkCore.Testing
       {
          var isFirstCtx = _dbConnection == null;
 
-         _dbConnection ??= CreateConnection(_connectionString);
+         _dbConnection ??= CreateConnection(_CONNECTION_STRING);
          _optionsBuilder ??= CreateOptionsBuilder(_dbConnection);
 
          var ctx = CreateContext(_optionsBuilder.Options);
