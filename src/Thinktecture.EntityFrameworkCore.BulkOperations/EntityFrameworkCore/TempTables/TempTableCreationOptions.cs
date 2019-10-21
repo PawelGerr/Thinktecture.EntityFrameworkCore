@@ -13,8 +13,8 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
 
       /// <summary>
       /// Indication whether to create the primary key along with the creation of the temp table.
-      /// Default is <c>false</c>.
+      /// Default is <c>true</c>.
       /// </summary>
-      public bool CreatePrimaryKey { get; set; }
+      public bool CreatePrimaryKey { get; set; } = true;
    }
 }

@@ -28,7 +28,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
          sqlGenerationHelperMock.Setup(h => h.DelimitIdentifier(It.IsAny<string>()))
                                 .Returns<string>(name => $"[{name}]");
          _sut = new SqlServerTempTableCreator(sqlGenerationHelperMock.Object, relationalTypeMappingSourceMock.Object);
-         _optionsWithNonUniqueName = new TempTableCreationOptions { MakeTableNameUnique = false };
+         _optionsWithNonUniqueName = new TempTableCreationOptions { MakeTableNameUnique = false, CreatePrimaryKey = false };
       }
 
       [Fact]

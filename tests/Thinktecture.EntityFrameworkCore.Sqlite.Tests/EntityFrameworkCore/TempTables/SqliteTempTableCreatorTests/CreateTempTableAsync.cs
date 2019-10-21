@@ -210,6 +210,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqliteTempTableCreatorTest
       public async Task Should_create_temp_table_without_primary_key()
       {
          ConfigureModel = builder => builder.ConfigureTempTable<int>();
+         _optionsWithNonUniqueName.CreatePrimaryKey = false;
 
          await _sut.CreateTempTableAsync(ActDbContext, ActDbContext.GetEntityType<TempTable<int>>(), _optionsWithNonUniqueName).ConfigureAwait(false);
 
