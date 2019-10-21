@@ -69,7 +69,8 @@ namespace Thinktecture
 
          public LoggerBuilder()
          {
-            Services = new ServiceCollection();
+            Services = new ServiceCollection()
+               .AddLogging();
          }
       }
    }

@@ -35,6 +35,9 @@ namespace Thinktecture
                var orderId = await ctx.EnsureOrderAsync(new Guid("EC1CBF87-F53F-4EF4-B286-8F5EB0AE810D"), customerId);
                await ctx.EnsureOrderItemAsync(orderId, productId, 42);
 
+               // Bulk insert into temp tables
+               await DoBulkInsertIntoTempTableAsync(ctx);
+
                // Bulk insert into "real" tables
                await DoBulkInsertIntoRealTableAsync(ctx);
                await DoBulkInsertSpecifiedColumnsIntoRealTableAsync(ctx);
@@ -63,6 +66,16 @@ namespace Thinktecture
          Console.WriteLine($"Found customers: {String.Join(", ", customerOrder.Select(co => $"{{ CustomerId={co.Customer.Id}, OrderId={co.Order?.Id} }}"))}");
       }
 
+      private static async Task DoBulkInsertIntoTempTableAsync(DemoDbContext ctx)
+      {
+         var customersToInsert = new Customer { Id = Guid.NewGuid() };
+         using var tempTable = await ctx.BulkInsertIntoTempTableAsync(new[] { customersToInsert });
+
+         var insertedCustomer = await tempTable.Query.FirstAsync(c => c.Id == customersToInsert.Id);
+
+         Console.WriteLine($"Customer from temp table: {insertedCustomer.Id}");
+      }
+
       private static async Task DoBulkInsertIntoRealTableAsync(DemoDbContext ctx)
       {
          var customersToInsert = new Customer { Id = Guid.NewGuid() };
@@ -70,7 +83,7 @@ namespace Thinktecture
 
          var insertedCustomer = await ctx.Customers.FirstAsync(c => c.Id == customersToInsert.Id);
 
-         Console.WriteLine($"Inserted customers: {insertedCustomer.Id}");
+         Console.WriteLine($"Inserted customer: {insertedCustomer.Id}");
       }
 
       private static async Task DoBulkInsertSpecifiedColumnsIntoRealTableAsync(DemoDbContext ctx)
@@ -86,7 +99,7 @@ namespace Thinktecture
 
          var insertedCustomer = await ctx.Customers.FirstAsync(c => c.Id == customersToInsert.Id);
 
-         Console.WriteLine($"Inserted customers: {insertedCustomer.Id}");
+         Console.WriteLine($"Inserted customer: {insertedCustomer.Id}");
       }
    }
 }

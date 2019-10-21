@@ -45,7 +45,7 @@ namespace Thinktecture
             .AddDbContext<DemoDbContext>(builder => builder
                                                     .UseSqlite(ConnectionString, sqlOptions =>
                                                                                  {
-                                                                                    sqlOptions.AddBulkOperationSupport();
+                                                                                    sqlOptions.AddTempTableSupport();
                                                                                  })
                                                     .EnableSensitiveDataLogging()
                                                     .UseLoggerFactory(_loggerFactory));
@@ -59,7 +59,8 @@ namespace Thinktecture
 
          public LoggerBuilder()
          {
-            Services = new ServiceCollection();
+            Services = new ServiceCollection()
+               .AddLogging();
          }
       }
    }
