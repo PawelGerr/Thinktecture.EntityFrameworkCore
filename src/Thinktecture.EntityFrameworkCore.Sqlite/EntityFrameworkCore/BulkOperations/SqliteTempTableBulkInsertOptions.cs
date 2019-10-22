@@ -14,16 +14,6 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       private readonly TempTableCreationOptions _tempTableCreationOptions;
 
       /// <summary>
-      /// Properties to insert.
-      /// If the <see cref="EntityMembersProvider"/> is null then all properties of the entity are going to be inserted.
-      /// </summary>
-      public IEntityMembersProvider? EntityMembersProvider
-      {
-         get => _bulkInsertOptions.EntityMembersProvider;
-         set => _bulkInsertOptions.EntityMembersProvider = value;
-      }
-
-      /// <summary>
       /// Behavior for auto-increment columns.
       /// Default is <see cref="SqliteAutoIncrementBehavior.SetZeroToNull"/>
       /// </summary>
@@ -54,16 +44,32 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       }
 
       /// <summary>
+      /// Properties to insert.
+      /// If the <see cref="EntityMembersProvider"/> is null then all properties of the entity are going to be inserted.
+      /// </summary>
+      public IEntityMembersProvider? EntityMembersProvider
+      {
+         get => _bulkInsertOptions.EntityMembersProvider;
+         set
+         {
+            _bulkInsertOptions.EntityMembersProvider = value;
+            _tempTableCreationOptions.EntityMembersProvider = value;
+         }
+      }
+
+      /// <summary>
       /// Initializes new instance of <see cref="SqliteTempTableBulkInsertOptions"/>.
       /// </summary>
-      public SqliteTempTableBulkInsertOptions()
+      public SqliteTempTableBulkInsertOptions(ITempTableBulkInsertOptions? optionsToInitializeFrom = null)
       {
          _bulkInsertOptions = new SqliteBulkInsertOptions();
          _tempTableCreationOptions = new TempTableCreationOptions();
+
+         if (optionsToInitializeFrom != null)
+            InitializeFrom(optionsToInitializeFrom);
       }
 
-      /// <inheritdoc />
-      public void InitializeFrom(ITempTableBulkInsertOptions options)
+      private void InitializeFrom(ITempTableBulkInsertOptions options)
       {
          EntityMembersProvider = options.BulkInsertOptions.EntityMembersProvider;
          MakeTableNameUnique = options.TempTableCreationOptions.MakeTableNameUnique;

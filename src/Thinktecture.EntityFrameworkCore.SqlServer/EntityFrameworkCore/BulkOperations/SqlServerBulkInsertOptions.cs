@@ -34,15 +34,18 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       /// <inheritdoc />
       public IEntityMembersProvider? EntityMembersProvider { get; set; }
 
-      /// <inheritdoc />
-      public void InitializeFrom(IBulkInsertOptions options)
+      /// <summary>
+      /// Initializes new instance of <see cref="SqlServerBulkInsertOptions"/>.
+      /// </summary>
+      /// <param name="optionsToInitializeFrom">Options to initialize from.</param>
+      public SqlServerBulkInsertOptions(IBulkInsertOptions? optionsToInitializeFrom = null)
       {
-         if (options == null)
-            throw new ArgumentNullException(nameof(options));
+         if (optionsToInitializeFrom == null)
+            return;
 
-         EntityMembersProvider = options.EntityMembersProvider;
+         EntityMembersProvider = optionsToInitializeFrom.EntityMembersProvider;
 
-         if (options is SqlServerBulkInsertOptions sqlServerOptions)
+         if (optionsToInitializeFrom is SqlServerBulkInsertOptions sqlServerOptions)
          {
             BulkCopyTimeout = sqlServerOptions.BulkCopyTimeout;
             SqlBulkCopyOptions = sqlServerOptions.SqlBulkCopyOptions;

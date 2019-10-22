@@ -17,15 +17,18 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       /// </summary>
       public SqliteAutoIncrementBehavior AutoIncrementBehavior { get; set; } = SqliteAutoIncrementBehavior.SetZeroToNull;
 
-      /// <inheritdoc />
-      public void InitializeFrom(IBulkInsertOptions options)
+      /// <summary>
+      /// Initializes new instance of <see cref="SqliteBulkInsertOptions"/>.
+      /// </summary>
+      /// <param name="optionsToInitializeFrom">Options to initialize from.</param>
+      public SqliteBulkInsertOptions(IBulkInsertOptions? optionsToInitializeFrom = null)
       {
-         if (options == null)
-            throw new ArgumentNullException(nameof(options));
+         if (optionsToInitializeFrom is null)
+            return;
 
-         EntityMembersProvider = options.EntityMembersProvider;
+         EntityMembersProvider = optionsToInitializeFrom.EntityMembersProvider;
 
-         if (options is SqliteBulkInsertOptions sqliteOptions)
+         if (optionsToInitializeFrom is SqliteBulkInsertOptions sqliteOptions)
             AutoIncrementBehavior = sqliteOptions.AutoIncrementBehavior;
       }
    }

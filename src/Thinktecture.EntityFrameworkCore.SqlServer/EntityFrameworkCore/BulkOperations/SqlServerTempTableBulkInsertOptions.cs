@@ -87,22 +87,28 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       public IEntityMembersProvider? EntityMembersProvider
       {
          get => _bulkInsertOptions.EntityMembersProvider;
-         set => _bulkInsertOptions.EntityMembersProvider = value;
+         set
+         {
+            _bulkInsertOptions.EntityMembersProvider = value;
+            _tempTableCreationOptions.EntityMembersProvider = value;
+         }
       }
 
       /// <summary>
       /// Initializes new instance of <see cref="SqlServerTempTableBulkInsertOptions"/>.
       /// </summary>
-      public SqlServerTempTableBulkInsertOptions()
+      public SqlServerTempTableBulkInsertOptions(ITempTableBulkInsertOptions? optionsToInitializeFrom = null)
       {
          _bulkInsertOptions = new SqlServerBulkInsertOptions();
          _tempTableCreationOptions = new TempTableCreationOptions();
 
          PrimaryKeyCreation = SqlServerPrimaryKeyCreation.AfterBulkInsert;
+
+         if (optionsToInitializeFrom != null)
+            InitializeFrom(optionsToInitializeFrom);
       }
 
-      /// <inheritdoc />
-      public void InitializeFrom(ITempTableBulkInsertOptions options)
+      private void InitializeFrom(ITempTableBulkInsertOptions options)
       {
          MakeTableNameUnique = options.TempTableCreationOptions.MakeTableNameUnique;
          EntityMembersProvider = options.BulkInsertOptions.EntityMembersProvider;

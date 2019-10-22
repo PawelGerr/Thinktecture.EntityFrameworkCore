@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -38,7 +37,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       /// Initializes new instance of <see cref="SqlServerBulkOperationExecutor"/>.
       /// </summary>
       /// <param name="sqlGenerationHelper">SQL generation helper.</param>
-      /// <param name="logger"></param>
+      /// <param name="logger">Logger.</param>
       public SqlServerBulkOperationExecutor(ISqlGenerationHelper sqlGenerationHelper,
                                             IDiagnosticsLogger<SqlServerDbLoggerCategory.BulkOperation> logger)
       {
@@ -92,13 +91,10 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
             throw new ArgumentNullException(nameof(options));
 
          if (!(options is SqlServerBulkInsertOptions sqlServerOptions))
-         {
-            sqlServerOptions = new SqlServerBulkInsertOptions();
-            sqlServerOptions.InitializeFrom(options);
-         }
+            sqlServerOptions = new SqlServerBulkInsertOptions(options);
 
          var factory = ctx.GetService<IEntityDataReaderFactory>();
-         var properties = GetPropertiesForInsert(options.EntityMembersProvider, entityType);
+         var properties = options.EntityMembersProvider.GetPropertiesForInsert(entityType);
          var sqlCon = (SqlConnection)ctx.Database.GetDbConnection();
          var sqlTx = (SqlTransaction?)ctx.Database.CurrentTransaction?.GetDbTransaction();
 
@@ -164,41 +160,6 @@ INSERT BULK {table} ({columns})", (long)duration.TotalMilliseconds,
                                        bulkCopy.DestinationTableName, columns);
       }
 
-      private static IReadOnlyList<IProperty> GetPropertiesForInsert(IEntityMembersProvider? entityMembersProvider,
-                                                                     IEntityType entityType)
-      {
-         if (entityMembersProvider == null)
-            return entityType.GetProperties().Where(p => p.GetBeforeSaveBehavior() != PropertySaveBehavior.Ignore).ToList();
-
-         return ConvertToEntityProperties(entityMembersProvider.GetMembers(), entityType);
-      }
-
-      private static IReadOnlyList<IProperty> ConvertToEntityProperties(IReadOnlyList<MemberInfo> memberInfos, IEntityType entityType)
-      {
-         var properties = new IProperty[memberInfos.Count];
-
-         for (var i = 0; i < memberInfos.Count; i++)
-         {
-            var memberInfo = memberInfos[i];
-            var property = FindProperty(entityType, memberInfo);
-
-            properties[i] = property ?? throw new ArgumentException($"The member '{memberInfo.Name}' has not found on entity '{entityType.Name}'.", nameof(memberInfos));
-         }
-
-         return properties;
-      }
-
-      private static IProperty? FindProperty(IEntityType entityType, MemberInfo memberInfo)
-      {
-         foreach (var property in entityType.GetProperties())
-         {
-            if (property.PropertyInfo == memberInfo || property.FieldInfo == memberInfo)
-               return property;
-         }
-
-         return null;
-      }
-
       /// <inheritdoc />
       public async Task<ITempTableQuery<T>> BulkInsertIntoTempTableAsync<T>(DbContext ctx,
                                                                             IEnumerable<T> entities,
@@ -218,8 +179,7 @@ INSERT BULK {table} ({columns})", (long)duration.TotalMilliseconds,
 
          if (!(options is SqlServerTempTableBulkInsertOptions sqlServerOptions))
          {
-            sqlServerOptions = new SqlServerTempTableBulkInsertOptions();
-            sqlServerOptions.InitializeFrom(options);
+            sqlServerOptions = new SqlServerTempTableBulkInsertOptions(options);
             options = sqlServerOptions;
          }
 

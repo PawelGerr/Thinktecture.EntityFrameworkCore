@@ -46,7 +46,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
             throw new ArgumentNullException(nameof(options));
 
          var tableName = GetTableName(entityType, options.MakeTableNameUnique);
-         var sql = GetTempTableCreationSql(entityType, tableName, options.MakeTableNameUnique, options.CreatePrimaryKey);
+         var sql = GetTempTableCreationSql(entityType, tableName, options);
 
          await ctx.Database.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
 
@@ -65,7 +65,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
          return new SqliteTempTableReference(logger, _sqlGenerationHelper, tableName, ctx.Database);
       }
 
-      private string GetTempTableCreationSql(IEntityType entityType, string tableName, bool isUnique, bool createPrimaryKey)
+      private string GetTempTableCreationSql(IEntityType entityType, string tableName, ITempTableCreationOptions options)
       {
          if (tableName == null)
             throw new ArgumentNullException(nameof(tableName));
@@ -73,10 +73,10 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
          var sql = $@"
       CREATE TEMPORARY TABLE {_sqlGenerationHelper.DelimitIdentifier(tableName)}
       (
-{GetColumnsDefinitions(entityType, createPrimaryKey)}
+{GetColumnsDefinitions(entityType, options)}
       );";
 
-         if (isUnique)
+         if (options.MakeTableNameUnique)
             return sql;
 
          return $@"
@@ -86,9 +86,9 @@ DROP TABLE IF EXISTS {_sqlGenerationHelper.DelimitIdentifier(tableName, "temp")}
 ";
       }
 
-      private string GetColumnsDefinitions(IEntityType entityType, bool createPrimaryKey)
+      private string GetColumnsDefinitions(IEntityType entityType, ITempTableCreationOptions options)
       {
-         var properties = entityType.GetProperties();
+         var properties = options.EntityMembersProvider.GetPropertiesForTempTable(entityType);
          var sb = new StringBuilder();
          var isFirst = true;
 
@@ -125,18 +125,23 @@ DROP TABLE IF EXISTS {_sqlGenerationHelper.DelimitIdentifier(tableName, "temp")}
             isFirst = false;
          }
 
-         if (createPrimaryKey)
-            CreatePkClause(entityType, sb);
+         if (options.CreatePrimaryKey)
+            CreatePkClause(entityType, properties, sb);
 
          return sb.ToString();
       }
 
-      private static void CreatePkClause(IEntityType entityType, StringBuilder sb)
+      private static void CreatePkClause(IEntityType entityType, IReadOnlyList<IProperty> properties, StringBuilder sb)
       {
          var keyProperties = entityType.FindPrimaryKey()?.Properties ?? entityType.GetProperties();
 
          if (keyProperties.Any())
          {
+            var missingColumns = keyProperties.Except(properties);
+
+            if (missingColumns.Any())
+               throw new ArgumentException($"Cannot create PRIMARY KEY because not all key columns are part of the temp table. Missing columns: {String.Join(", ", missingColumns.Select(c => c.GetColumnName()))}.");
+
             var columnNames = keyProperties.Select(p => p.GetColumnName());
 
             sb.AppendLine(",");

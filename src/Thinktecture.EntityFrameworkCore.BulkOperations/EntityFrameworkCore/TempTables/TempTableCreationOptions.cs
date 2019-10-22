@@ -1,3 +1,5 @@
+using Thinktecture.EntityFrameworkCore.BulkOperations;
+
 namespace Thinktecture.EntityFrameworkCore.TempTables
 {
    /// <summary>
@@ -5,16 +7,13 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
    /// </summary>
    public sealed class TempTableCreationOptions : ITempTableCreationOptions
    {
-      /// <summary>
-      /// Indication whether the table name should be unique.
-      /// Default is <c>true</c>.
-      /// </summary>
+      /// <inheritdoc />
       public bool MakeTableNameUnique { get; set; } = true;
 
-      /// <summary>
-      /// Indication whether to create the primary key along with the creation of the temp table.
-      /// Default is <c>true</c>.
-      /// </summary>
+      /// <inheritdoc />
       public bool CreatePrimaryKey { get; set; } = true;
+
+      /// <inheritdoc />
+      public IEntityMembersProvider? EntityMembersProvider { get; set; }
    }
 }

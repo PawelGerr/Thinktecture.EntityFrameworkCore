@@ -6,6 +6,7 @@ using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Moq;
+using Thinktecture.EntityFrameworkCore.BulkOperations;
 using Thinktecture.TestDatabaseContext;
 using Xunit;
 using Xunit.Abstractions;
@@ -47,6 +48,22 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
       }
 
       [Fact]
+      public async Task Should_create_temp_table_with_provided_column_only()
+      {
+         ConfigureModel = builder => builder.ConfigureTempTableEntity<CustomTempTable>();
+
+         _optionsWithNonUniqueName.EntityMembersProvider = EntityMembersProvider.From<CustomTempTable>(t => t.Column1);
+
+         // ReSharper disable once RedundantArgumentDefaultValue
+         await _sut.CreateTempTableAsync(ActDbContext, ActDbContext.GetEntityType<CustomTempTable>(), _optionsWithNonUniqueName).ConfigureAwait(false);
+
+         var columns = AssertDbContext.GetTempTableColumns<CustomTempTable>().ToList();
+         columns.Should().HaveCount(1);
+
+         ValidateColumn(columns[0], nameof(CustomTempTable.Column1), "int", false);
+      }
+
+      [Fact]
       public async Task Should_create_pk_if_options_flag_is_set()
       {
          _optionsWithNonUniqueName.CreatePrimaryKey = true;
@@ -64,6 +81,19 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
          keyColumns.Should().HaveCount(2);
          keyColumns[0].COLUMN_NAME.Should().Be(nameof(TempTable<int, string>.Column1));
          keyColumns[1].COLUMN_NAME.Should().Be(nameof(TempTable<int, string>.Column2));
+      }
+
+      [Fact]
+      public void Should_throw_if_some_pk_columns_are_missing()
+      {
+         _optionsWithNonUniqueName.CreatePrimaryKey = true;
+         _optionsWithNonUniqueName.EntityMembersProvider = EntityMembersProvider.From<CustomTempTable>(t => t.Column1);
+
+         ConfigureModel = builder => builder.ConfigureTempTableEntity<CustomTempTable>().Property(s => s.Column2).HasMaxLength(100);
+
+         // ReSharper disable once RedundantArgumentDefaultValue
+         _sut.Awaiting(sut => sut.CreateTempTableAsync(ActDbContext, ActDbContext.GetEntityType<CustomTempTable>(), _optionsWithNonUniqueName))
+             .Should().Throw<ArgumentException>().WithMessage("Cannot create PRIMARY KEY because not all key columns are part of the temp table. Missing columns: Column2.");
       }
 
       [Fact]

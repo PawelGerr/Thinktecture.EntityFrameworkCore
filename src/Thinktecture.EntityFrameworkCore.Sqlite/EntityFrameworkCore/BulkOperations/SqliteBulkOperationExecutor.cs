@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -93,13 +92,10 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
             throw new ArgumentNullException(nameof(options));
 
          if (!(options is SqliteBulkInsertOptions sqliteOptions))
-         {
-            sqliteOptions = new SqliteBulkInsertOptions();
-            sqliteOptions.InitializeFrom(options);
-         }
+            sqliteOptions = new SqliteBulkInsertOptions(options);
 
          var factory = ctx.GetService<IEntityDataReaderFactory>();
-         var properties = GetPropertiesForInsert(sqliteOptions.EntityMembersProvider, entityType);
+         var properties = sqliteOptions.EntityMembersProvider.GetPropertiesForInsert(entityType);
          var sqlCon = (SqliteConnection)ctx.Database.GetDbConnection();
 
          using var reader = factory.Create(ctx, entities, properties);
@@ -217,41 +213,6 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
 {insertStatement}", (long)duration.TotalMilliseconds, insertStatement);
       }
 
-      private static IReadOnlyList<IProperty> GetPropertiesForInsert(IEntityMembersProvider? entityMembersProvider,
-                                                                     IEntityType entityType)
-      {
-         if (entityMembersProvider == null)
-            return entityType.GetProperties().Where(p => p.GetBeforeSaveBehavior() != PropertySaveBehavior.Ignore).ToList();
-
-         return ConvertToEntityProperties(entityMembersProvider.GetMembers(), entityType);
-      }
-
-      private static IReadOnlyList<IProperty> ConvertToEntityProperties(IReadOnlyList<MemberInfo> memberInfos, IEntityType entityType)
-      {
-         var properties = new IProperty[memberInfos.Count];
-
-         for (var i = 0; i < memberInfos.Count; i++)
-         {
-            var memberInfo = memberInfos[i];
-            var property = FindProperty(entityType, memberInfo);
-
-            properties[i] = property ?? throw new ArgumentException($"The member '{memberInfo.Name}' has not found on entity '{entityType.Name}'.", nameof(memberInfos));
-         }
-
-         return properties;
-      }
-
-      private static IProperty? FindProperty(IEntityType entityType, MemberInfo memberInfo)
-      {
-         foreach (var property in entityType.GetProperties())
-         {
-            if (property.PropertyInfo == memberInfo || property.FieldInfo == memberInfo)
-               return property;
-         }
-
-         return null;
-      }
-
       /// <inheritdoc />
       public async Task<ITempTableQuery<T>> BulkInsertIntoTempTableAsync<T>(DbContext ctx,
                                                                             IEnumerable<T> entities,
@@ -272,8 +233,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
 
          if (!(options is SqliteTempTableBulkInsertOptions))
          {
-            var sqliteOptions = new SqliteTempTableBulkInsertOptions();
-            sqliteOptions.InitializeFrom(options);
+            var sqliteOptions = new SqliteTempTableBulkInsertOptions(options);
             options = sqliteOptions;
          }
 

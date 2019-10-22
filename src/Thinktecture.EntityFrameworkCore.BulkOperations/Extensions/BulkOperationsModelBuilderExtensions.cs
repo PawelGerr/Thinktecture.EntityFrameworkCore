@@ -12,7 +12,7 @@ namespace Thinktecture
    /// <summary>
    /// Extensions for <see cref="ModelBuilder"/>.
    /// </summary>
-   public static class ModelBuilderExtensions
+   public static class BulkOperationsModelBuilderExtensions
    {
       /// <summary>
       /// Introduces and configures a temp table.
