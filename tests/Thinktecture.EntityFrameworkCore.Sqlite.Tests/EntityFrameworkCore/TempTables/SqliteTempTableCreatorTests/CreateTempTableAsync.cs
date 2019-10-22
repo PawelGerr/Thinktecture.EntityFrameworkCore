@@ -53,7 +53,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqliteTempTableCreatorTest
       {
          ConfigureModel = builder => builder.ConfigureTempTableEntity<CustomTempTable>();
 
-         _optionsWithNonUniqueName.EntityMembersProvider = EntityMembersProvider.From<CustomTempTable>(t => t.Column1);
+         _optionsWithNonUniqueName.MembersToInclude = EntityMembersProvider.From<CustomTempTable>(t => t.Column1);
 
          // ReSharper disable once RedundantArgumentDefaultValue
          await _sut.CreateTempTableAsync(ActDbContext, ActDbContext.GetEntityType<CustomTempTable>(), _optionsWithNonUniqueName).ConfigureAwait(false);
@@ -84,7 +84,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqliteTempTableCreatorTest
       public void Should_throw_if_some_pk_columns_are_missing()
       {
          _optionsWithNonUniqueName.CreatePrimaryKey = true;
-         _optionsWithNonUniqueName.EntityMembersProvider = EntityMembersProvider.From<CustomTempTable>(t => t.Column1);
+         _optionsWithNonUniqueName.MembersToInclude = EntityMembersProvider.From<CustomTempTable>(t => t.Column1);
 
          ConfigureModel = builder => builder.ConfigureTempTableEntity<CustomTempTable>().Property(s => s.Column2).HasMaxLength(100);
 

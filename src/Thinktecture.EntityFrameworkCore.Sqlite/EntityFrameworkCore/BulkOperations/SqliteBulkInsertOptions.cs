@@ -9,7 +9,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
    public sealed class SqliteBulkInsertOptions : IBulkInsertOptions
    {
       /// <inheritdoc />
-      public IEntityMembersProvider? EntityMembersProvider { get; set; }
+      public IEntityMembersProvider? MembersToInsert { get; set; }
 
       /// <summary>
       /// Behavior for auto-increment columns.
@@ -26,7 +26,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
          if (optionsToInitializeFrom is null)
             return;
 
-         EntityMembersProvider = optionsToInitializeFrom.EntityMembersProvider;
+         MembersToInsert = optionsToInitializeFrom.MembersToInsert;
 
          if (optionsToInitializeFrom is SqliteBulkInsertOptions sqliteOptions)
             AutoIncrementBehavior = sqliteOptions.AutoIncrementBehavior;

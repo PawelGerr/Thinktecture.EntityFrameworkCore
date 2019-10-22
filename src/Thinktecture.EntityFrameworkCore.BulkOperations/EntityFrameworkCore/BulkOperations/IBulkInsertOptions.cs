@@ -10,8 +10,8 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
    {
       /// <summary>
       /// Properties to insert.
-      /// If the <see cref="EntityMembersProvider"/> is null then all properties of the entity are going to be inserted.
+      /// If the <see cref="MembersToInsert"/> is null then all properties of the entity are going to be inserted.
       /// </summary>
-      IEntityMembersProvider? EntityMembersProvider { get; set; }
+      IEntityMembersProvider? MembersToInsert { get; set; }
    }
 }

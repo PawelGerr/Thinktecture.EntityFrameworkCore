@@ -82,7 +82,7 @@ namespace Thinktecture
          var bulkInsertExecutor = ctx.GetService<IBulkOperationExecutor>();
 
          var options = bulkInsertExecutor.CreateOptions();
-         options.EntityMembersProvider = EntityMembersProvider.From(propertiesToInsert);
+         options.MembersToInsert = EntityMembersProvider.From(propertiesToInsert);
 
          return BulkInsertAsync(bulkInsertExecutor, ctx, entities, options, cancellationToken);
       }

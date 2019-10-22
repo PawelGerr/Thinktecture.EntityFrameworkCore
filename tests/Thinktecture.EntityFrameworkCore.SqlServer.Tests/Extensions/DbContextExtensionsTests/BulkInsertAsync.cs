@@ -61,7 +61,7 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
 
          await ActDbContext.BulkInsertAsync(testEntities, new SqlServerBulkInsertOptions
                                                           {
-                                                             EntityMembersProvider = new EntityMembersProvider(new MemberInfo[]
+                                                             MembersToInsert = new EntityMembersProvider(new MemberInfo[]
                                                                                                                {
                                                                                                                   idProperty,
                                                                                                                   countProperty,

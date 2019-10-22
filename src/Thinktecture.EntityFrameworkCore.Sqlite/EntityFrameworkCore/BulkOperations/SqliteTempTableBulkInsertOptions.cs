@@ -45,15 +45,15 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
 
       /// <summary>
       /// Properties to insert.
-      /// If the <see cref="EntityMembersProvider"/> is null then all properties of the entity are going to be inserted.
+      /// If the <see cref="MembersToInsert"/> is null then all properties of the entity are going to be inserted.
       /// </summary>
-      public IEntityMembersProvider? EntityMembersProvider
+      public IEntityMembersProvider? MembersToInsert
       {
-         get => _bulkInsertOptions.EntityMembersProvider;
+         get => _bulkInsertOptions.MembersToInsert;
          set
          {
-            _bulkInsertOptions.EntityMembersProvider = value;
-            _tempTableCreationOptions.EntityMembersProvider = value;
+            _bulkInsertOptions.MembersToInsert = value;
+            _tempTableCreationOptions.MembersToInclude = value;
          }
       }
 
@@ -71,7 +71,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
 
       private void InitializeFrom(ITempTableBulkInsertOptions options)
       {
-         EntityMembersProvider = options.BulkInsertOptions.EntityMembersProvider;
+         MembersToInsert = options.BulkInsertOptions.MembersToInsert;
          MakeTableNameUnique = options.TempTableCreationOptions.MakeTableNameUnique;
          CreatePrimaryKey = options.TempTableCreationOptions.CreatePrimaryKey;
 

@@ -170,7 +170,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
                                     testEntities,
                                     new SqlServerBulkInsertOptions
                                     {
-                                       EntityMembersProvider = new EntityMembersProvider(new MemberInfo[]
+                                       MembersToInsert = new EntityMembersProvider(new MemberInfo[]
                                                                                          {
                                                                                             idProperty,
                                                                                             countProperty,

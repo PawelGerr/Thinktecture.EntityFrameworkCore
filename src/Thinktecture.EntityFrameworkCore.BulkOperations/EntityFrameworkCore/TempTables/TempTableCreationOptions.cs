@@ -14,6 +14,6 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
       public bool CreatePrimaryKey { get; set; } = true;
 
       /// <inheritdoc />
-      public IEntityMembersProvider? EntityMembersProvider { get; set; }
+      public IEntityMembersProvider? MembersToInclude { get; set; }
    }
 }

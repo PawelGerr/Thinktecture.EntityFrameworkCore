@@ -134,7 +134,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqliteBulkOperationExe
                                     testEntities,
                                     new SqliteBulkInsertOptions
                                     {
-                                       EntityMembersProvider = new EntityMembersProvider(new MemberInfo[]
+                                       MembersToInsert = new EntityMembersProvider(new MemberInfo[]
                                                                                          {
                                                                                             idProperty,
                                                                                             countProperty,

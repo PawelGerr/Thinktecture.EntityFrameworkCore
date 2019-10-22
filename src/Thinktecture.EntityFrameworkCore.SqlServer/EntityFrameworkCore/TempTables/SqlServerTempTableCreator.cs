@@ -145,7 +145,7 @@ END
          if (entityType == null)
             throw new ArgumentNullException(nameof(entityType));
 
-         var properties = options.EntityMembersProvider.GetPropertiesForTempTable(entityType);
+         var properties = options.MembersToInclude.GetPropertiesForTempTable(entityType);
          var sb = new StringBuilder();
          var isFirst = true;
 

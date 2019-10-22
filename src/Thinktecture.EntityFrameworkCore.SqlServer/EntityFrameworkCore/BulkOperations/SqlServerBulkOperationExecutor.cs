@@ -94,23 +94,34 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
             sqlServerOptions = new SqlServerBulkInsertOptions(options);
 
          var factory = ctx.GetService<IEntityDataReaderFactory>();
-         var properties = options.EntityMembersProvider.GetPropertiesForInsert(entityType);
+         var properties = options.MembersToInsert.GetPropertiesForInsert(entityType);
          var sqlCon = (SqlConnection)ctx.Database.GetDbConnection();
          var sqlTx = (SqlTransaction?)ctx.Database.CurrentTransaction?.GetDbTransaction();
 
          using var reader = factory.Create(ctx, entities, properties);
-         using var bulkCopy = new SqlBulkCopy(sqlCon, sqlServerOptions.SqlBulkCopyOptions, sqlTx)
-                              {
-                                 DestinationTableName = _sqlGenerationHelper.DelimitIdentifier(tableName, schema),
-                                 EnableStreaming = sqlServerOptions.EnableStreaming
-                              };
+         using var bulkCopy = CreateSqlBulkCopy(sqlCon, sqlTx, schema, tableName, sqlServerOptions);
 
-         if (sqlServerOptions.BulkCopyTimeout.HasValue)
-            bulkCopy.BulkCopyTimeout = (int)sqlServerOptions.BulkCopyTimeout.Value.TotalSeconds;
+         var columns = SetColumnMappings(bulkCopy, reader);
 
-         if (sqlServerOptions.BatchSize.HasValue)
-            bulkCopy.BatchSize = sqlServerOptions.BatchSize.Value;
+         await ctx.Database.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
 
+         try
+         {
+            LogInserting(sqlServerOptions.SqlBulkCopyOptions, bulkCopy, columns);
+            var stopwatch = Stopwatch.StartNew();
+
+            await bulkCopy.WriteToServerAsync(reader, cancellationToken).ConfigureAwait(false);
+
+            LogInserted(sqlServerOptions.SqlBulkCopyOptions, stopwatch.Elapsed, bulkCopy, columns);
+         }
+         finally
+         {
+            ctx.Database.CloseConnection();
+         }
+      }
+
+      private static string SetColumnMappings(SqlBulkCopy bulkCopy, IEntityDataReader reader)
+      {
          var columnsSb = new StringBuilder();
 
          for (var i = 0; i < reader.Properties.Count; i++)
@@ -127,22 +138,24 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
             columnsSb.Append(columnName).Append(" ").Append(property.GetColumnType());
          }
 
-         await ctx.Database.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
+         return columnsSb.ToString();
+      }
 
-         try
-         {
-            var columns = columnsSb.ToString();
-            LogInserting(sqlServerOptions.SqlBulkCopyOptions, bulkCopy, columns);
-            var stopwatch = Stopwatch.StartNew();
+      private SqlBulkCopy CreateSqlBulkCopy(SqlConnection sqlCon, SqlTransaction? sqlTx, string? schema, string tableName, SqlServerBulkInsertOptions sqlServerOptions)
+      {
+         var bulkCopy = new SqlBulkCopy(sqlCon, sqlServerOptions.SqlBulkCopyOptions, sqlTx)
+                        {
+                           DestinationTableName = _sqlGenerationHelper.DelimitIdentifier(tableName, schema),
+                           EnableStreaming = sqlServerOptions.EnableStreaming
+                        };
 
-            await bulkCopy.WriteToServerAsync(reader, cancellationToken).ConfigureAwait(false);
+         if (sqlServerOptions.BulkCopyTimeout.HasValue)
+            bulkCopy.BulkCopyTimeout = (int)sqlServerOptions.BulkCopyTimeout.Value.TotalSeconds;
 
-            LogInserted(sqlServerOptions.SqlBulkCopyOptions, stopwatch.Elapsed, bulkCopy, columns);
-         }
-         finally
-         {
-            ctx.Database.CloseConnection();
-         }
+         if (sqlServerOptions.BatchSize.HasValue)
+            bulkCopy.BatchSize = sqlServerOptions.BatchSize.Value;
+
+         return bulkCopy;
       }
 
       private void LogInserting(SqlBulkCopyOptions options, SqlBulkCopy bulkCopy, string columns)

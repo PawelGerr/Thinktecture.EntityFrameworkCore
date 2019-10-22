@@ -84,13 +84,13 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       /// Gets members to work with.
       /// </summary>
       /// <returns>A collection of <see cref="MemberInfo"/>.</returns>
-      public IEntityMembersProvider? EntityMembersProvider
+      public IEntityMembersProvider? MembersToInsert
       {
-         get => _bulkInsertOptions.EntityMembersProvider;
+         get => _bulkInsertOptions.MembersToInsert;
          set
          {
-            _bulkInsertOptions.EntityMembersProvider = value;
-            _tempTableCreationOptions.EntityMembersProvider = value;
+            _bulkInsertOptions.MembersToInsert = value;
+            _tempTableCreationOptions.MembersToInclude = value;
          }
       }
 
@@ -111,7 +111,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       private void InitializeFrom(ITempTableBulkInsertOptions options)
       {
          MakeTableNameUnique = options.TempTableCreationOptions.MakeTableNameUnique;
-         EntityMembersProvider = options.BulkInsertOptions.EntityMembersProvider;
+         MembersToInsert = options.BulkInsertOptions.MembersToInsert;
 
          if (options is SqlServerTempTableBulkInsertOptions sqlServerOptions)
          {

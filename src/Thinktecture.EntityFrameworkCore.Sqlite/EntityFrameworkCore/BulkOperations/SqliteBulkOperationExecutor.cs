@@ -95,7 +95,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
             sqliteOptions = new SqliteBulkInsertOptions(options);
 
          var factory = ctx.GetService<IEntityDataReaderFactory>();
-         var properties = sqliteOptions.EntityMembersProvider.GetPropertiesForInsert(entityType);
+         var properties = sqliteOptions.MembersToInsert.GetPropertiesForInsert(entityType);
          var sqlCon = (SqliteConnection)ctx.Database.GetDbConnection();
 
          using var reader = factory.Create(ctx, entities, properties);

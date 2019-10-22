@@ -32,7 +32,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       public bool EnableStreaming { get; set; } = true;
 
       /// <inheritdoc />
-      public IEntityMembersProvider? EntityMembersProvider { get; set; }
+      public IEntityMembersProvider? MembersToInsert { get; set; }
 
       /// <summary>
       /// Initializes new instance of <see cref="SqlServerBulkInsertOptions"/>.
@@ -43,7 +43,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
          if (optionsToInitializeFrom == null)
             return;
 
-         EntityMembersProvider = optionsToInitializeFrom.EntityMembersProvider;
+         MembersToInsert = optionsToInitializeFrom.MembersToInsert;
 
          if (optionsToInitializeFrom is SqlServerBulkInsertOptions sqlServerOptions)
          {
