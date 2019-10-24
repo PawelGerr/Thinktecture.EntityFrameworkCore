@@ -26,6 +26,8 @@ namespace Thinktecture
             var ctx = scope.ServiceProvider.GetRequiredService<DemoDbContext>();
             await ctx.Database.MigrateAsync();
 
+            await FetchRowVersionsAsync(ctx);
+
             var customerId = await ctx.EnsureCustomerAsync(new Guid("11D67C68-6F1A-407B-9BD3-56C84FE15BB1"));
             var productId = await ctx.EnsureProductAsync(new Guid("872BCAC2-1A85-4B22-AC0F-7D920563A000"));
             var orderId = await ctx.EnsureOrderAsync(new Guid("EC1CBF87-F53F-4EF4-B286-8F5EB0AE810D"), customerId);
@@ -48,6 +50,15 @@ namespace Thinktecture
          }
 
          Console.WriteLine("Exiting samples...");
+      }
+
+      private static async Task FetchRowVersionsAsync(DemoDbContext ctx)
+      {
+         var minActiveRowVersion = await ctx.GetMinActiveRowVersionAsync();
+         Console.WriteLine($"Min active row version: {minActiveRowVersion}");
+
+         var lastUsedRowVersion = await ctx.GetLastUsedRowVersionAsync();
+         Console.WriteLine($"Last used row version: {lastUsedRowVersion}");
       }
 
       private static async Task DoRowNumberAsync(DemoDbContext ctx)
