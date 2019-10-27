@@ -100,7 +100,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
 
          using var reader = factory.Create(ctx, entities, properties);
 
-         await ctx.Database.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
+         await ctx.Database.OpenConnectionAsync(cancellationToken);
 
          try
          {
@@ -137,7 +137,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
                   paramInfo.Parameter.Value = value ?? DBNull.Value;
                }
 
-               await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+               await command.ExecuteNonQueryAsync(cancellationToken);
             }
 
             stopwatch.Stop();
@@ -237,11 +237,11 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
             options = sqliteOptions;
          }
 
-         var tempTableReference = await tempTableCreator.CreateTempTableAsync(ctx, entityType, options.TempTableCreationOptions, cancellationToken).ConfigureAwait(false);
+         var tempTableReference = await tempTableCreator.CreateTempTableAsync(ctx, entityType, options.TempTableCreationOptions, cancellationToken);
 
          try
          {
-            await bulkInsertExecutor.BulkInsertAsync(ctx, entityType, entities, null, tempTableReference.Name, options.BulkInsertOptions, cancellationToken).ConfigureAwait(false);
+            await bulkInsertExecutor.BulkInsertAsync(ctx, entityType, entities, null, tempTableReference.Name, options.BulkInsertOptions, cancellationToken);
 
             var query = ctx.Set<T>().FromSqlRaw($"SELECT * FROM {_sqlGenerationHelper.DelimitIdentifier(tempTableReference.Name)}");
 

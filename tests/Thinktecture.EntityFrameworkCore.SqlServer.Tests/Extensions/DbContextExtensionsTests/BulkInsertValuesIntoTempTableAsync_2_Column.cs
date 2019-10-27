@@ -25,9 +25,9 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
          ConfigureModel = builder => builder.ConfigureTempTable<int, int?>();
 
          var values = new List<(int, int?)> { (1, null) };
-         var query = await ActDbContext.BulkInsertValuesIntoTempTableAsync(values, new SqlServerTempTableBulkInsertOptions { PrimaryKeyCreation = SqlServerPrimaryKeyCreation.None }).ConfigureAwait(false);
+         var query = await ActDbContext.BulkInsertValuesIntoTempTableAsync(values, new SqlServerTempTableBulkInsertOptions { PrimaryKeyCreation = SqlServerPrimaryKeyCreation.None });
 
-         var tempTable = await query.Query.ToListAsync().ConfigureAwait(false);
+         var tempTable = await query.Query.ToListAsync();
          tempTable.Should()
                   .HaveCount(1).And
                   .BeEquivalentTo(new TempTable<int, int?>(1, null));
@@ -39,9 +39,9 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
          ConfigureModel = builder => builder.ConfigureTempTable<string, string>().Property(t => t.Column2).IsRequired(false);
 
          var values = new List<(string, string?)> { ("value1", null) };
-         var query = await ActDbContext.BulkInsertValuesIntoTempTableAsync(values, new SqlServerTempTableBulkInsertOptions { PrimaryKeyCreation = SqlServerPrimaryKeyCreation.None }).ConfigureAwait(false);
+         var query = await ActDbContext.BulkInsertValuesIntoTempTableAsync(values, new SqlServerTempTableBulkInsertOptions { PrimaryKeyCreation = SqlServerPrimaryKeyCreation.None });
 
-         var tempTable = await query.Query.ToListAsync().ConfigureAwait(false);
+         var tempTable = await query.Query.ToListAsync();
          tempTable.Should()
                   .HaveCount(1).And
                   .BeEquivalentTo(new TempTable<string, string?>("value1", null));
@@ -52,7 +52,7 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
       {
          ConfigureModel = builder => builder.ConfigureTempTable<int, int>();
 
-         await ActDbContext.BulkInsertValuesIntoTempTableAsync(new List<(int, int)> { (1, 2) }, new SqlServerTempTableBulkInsertOptions { MakeTableNameUnique = false }).ConfigureAwait(false);
+         await ActDbContext.BulkInsertValuesIntoTempTableAsync(new List<(int, int)> { (1, 2) }, new SqlServerTempTableBulkInsertOptions { MakeTableNameUnique = false });
 
          var keys = AssertDbContext.GetTempTableKeyColumns<int, int>().ToList();
          keys.Should().HaveCount(2);

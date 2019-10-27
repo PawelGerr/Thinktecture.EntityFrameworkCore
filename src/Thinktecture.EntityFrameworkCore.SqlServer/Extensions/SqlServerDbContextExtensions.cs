@@ -52,11 +52,11 @@ namespace Thinktecture
          command.Transaction = ctx.Database.CurrentTransaction?.GetDbTransaction();
          command.CommandText = $"SELECT {dbFunction};";
 
-         await ctx.Database.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
+         await ctx.Database.OpenConnectionAsync(cancellationToken);
 
          try
          {
-            var bytes = (byte[])await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
+            var bytes = (byte[])await command.ExecuteScalarAsync(cancellationToken);
 
             return (long)_rowVersionConverter.ConvertFromProvider(bytes);
          }

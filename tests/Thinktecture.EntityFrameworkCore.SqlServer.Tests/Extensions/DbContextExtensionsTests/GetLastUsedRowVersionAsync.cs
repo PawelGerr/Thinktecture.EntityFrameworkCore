@@ -18,7 +18,7 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
       [Fact]
       public async Task Should_fetch_last_used_rowversion()
       {
-         var rowVersion = await ActDbContext.GetLastUsedRowVersionAsync(CancellationToken.None).ConfigureAwait(false);
+         var rowVersion = await ActDbContext.GetLastUsedRowVersionAsync(CancellationToken.None);
          rowVersion.Should().NotBe(0);
       }
    }
