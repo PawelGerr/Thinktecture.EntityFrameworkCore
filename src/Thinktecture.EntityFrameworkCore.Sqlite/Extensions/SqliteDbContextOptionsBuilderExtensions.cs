@@ -49,6 +49,9 @@ namespace Thinktecture
       private static SqliteDbContextOptionsBuilder AddOrUpdateExtensions(this SqliteDbContextOptionsBuilder sqliteOptionsBuilder,
                                                                          Action<SqliteDbContextOptionsExtension> callback)
       {
+         if (sqliteOptionsBuilder == null)
+            throw new ArgumentNullException(nameof(sqliteOptionsBuilder));
+
          var infrastructure = (IRelationalDbContextOptionsBuilderInfrastructure)sqliteOptionsBuilder;
          infrastructure.OptionsBuilder.AddOrUpdateExtension(callback);
 

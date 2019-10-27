@@ -20,10 +20,12 @@ namespace Thinktecture
       /// <typeparam name="TOut">Return type of the <paramref name="lambda"/>.</typeparam>
       /// <exception cref="InvalidOperationException">The method is called directly instead being used with <see cref="ExpressionBodyExtractingVisitor"/>.</exception>
       // ReSharper disable UnusedParameter.Global
+#pragma warning disable CA1801
       public static TOut ExtractBody<TIn, TOut>(this Expression<Func<TIn, TOut>> lambda, TIn parameter)
       {
          throw new InvalidOperationException($"This method is not intended to be used directly but with the '{nameof(ExpressionBodyExtractingVisitor)}' only.");
       }
+#pragma warning restore CA1801
       // ReSharper restore UnusedParameter.Global
    }
 }

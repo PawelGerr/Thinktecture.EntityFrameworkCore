@@ -44,8 +44,11 @@ namespace Thinktecture.Linq.Expressions
       /// <inheritdoc />
       protected override Expression VisitUnary(UnaryExpression node)
       {
+         if (node == null)
+            throw new ArgumentNullException(nameof(node));
+
          if (node.NodeType == ExpressionType.Convert || node.NodeType == ExpressionType.Quote)
-            return Visit(node.Operand);
+            return Visit(node.Operand) ?? throw NotSupported(node);
 
          throw NotSupported(node);
       }
@@ -53,6 +56,9 @@ namespace Thinktecture.Linq.Expressions
       /// <inheritdoc />
       protected override Expression VisitMember(MemberExpression node)
       {
+         if (node == null)
+            throw new ArgumentNullException(nameof(node));
+
          var instanceExpression = node.Expression;
 
          if (instanceExpression.NodeType != ExpressionType.Constant)
@@ -74,6 +80,9 @@ namespace Thinktecture.Linq.Expressions
       /// <inheritdoc />
       protected override Expression VisitMethodCall(MethodCallExpression node)
       {
+         if (node == null)
+            throw new ArgumentNullException(nameof(node));
+
          var instanceExpression = Visit(node.Object);
 
          if (instanceExpression != null && instanceExpression.NodeType != ExpressionType.Constant)

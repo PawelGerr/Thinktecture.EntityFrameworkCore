@@ -38,6 +38,9 @@ namespace Thinktecture.Linq.Expressions
       /// <inheritdoc />
       protected override Expression VisitMethodCall(MethodCallExpression node)
       {
+         if (node == null)
+            throw new ArgumentNullException(nameof(node));
+
          if (!node.Method.IsGenericMethod || node.Method.GetGenericMethodDefinition() != _extractBodyMethod)
             return base.VisitMethodCall(node);
 

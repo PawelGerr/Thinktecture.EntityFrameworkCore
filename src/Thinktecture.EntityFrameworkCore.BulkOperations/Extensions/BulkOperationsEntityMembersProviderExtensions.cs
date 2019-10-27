@@ -23,6 +23,9 @@ namespace Thinktecture
       public static IReadOnlyList<IProperty> GetPropertiesForTempTable(this IEntityMembersProvider? entityMembersProvider,
                                                                        IEntityType entityType)
       {
+         if (entityType == null)
+            throw new ArgumentNullException(nameof(entityType));
+
          if (entityMembersProvider == null)
             return entityType.GetProperties().ToList();
 
@@ -38,6 +41,9 @@ namespace Thinktecture
       public static IReadOnlyList<IProperty> GetPropertiesForInsert(this IEntityMembersProvider? entityMembersProvider,
                                                                     IEntityType entityType)
       {
+         if (entityType == null)
+            throw new ArgumentNullException(nameof(entityType));
+
          if (entityMembersProvider == null)
             return entityType.GetProperties().Where(p => p.GetBeforeSaveBehavior() != PropertySaveBehavior.Ignore).ToList();
 

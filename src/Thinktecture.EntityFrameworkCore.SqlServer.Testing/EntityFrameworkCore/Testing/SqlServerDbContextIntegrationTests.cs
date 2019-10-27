@@ -166,6 +166,9 @@ namespace Thinktecture.EntityFrameworkCore.Testing
       /// <returns>An instance of <see cref="IDbContextTransaction"/>.</returns>
       protected virtual IDbContextTransaction BeginTransaction(T ctx)
       {
+         if (ctx == null)
+            throw new ArgumentNullException(nameof(ctx));
+
          return ctx.Database.BeginTransaction(IsolationLevel.ReadCommitted);
       }
 

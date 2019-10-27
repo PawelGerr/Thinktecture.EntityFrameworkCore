@@ -14,6 +14,8 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       /// <inheritdoc />
       public void RegisterDecorator<TService>(IServiceCollection services, Type genericDecoratorTypeDefinition)
       {
+         if (services == null)
+            throw new ArgumentNullException(nameof(services));
          if (genericDecoratorTypeDefinition == null)
             throw new ArgumentNullException(nameof(genericDecoratorTypeDefinition));
 

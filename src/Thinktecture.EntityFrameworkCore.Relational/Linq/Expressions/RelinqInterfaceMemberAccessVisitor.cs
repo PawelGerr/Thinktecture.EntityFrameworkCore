@@ -42,6 +42,9 @@ namespace Thinktecture.Linq.Expressions
       /// <inheritdoc />
       protected override Expression VisitMember(MemberExpression node)
       {
+         if (node == null)
+            throw new ArgumentNullException(nameof(node));
+
          if (node.Expression.NodeType == ExpressionType.Convert)
          {
             var conversion = (UnaryExpression)node.Expression;

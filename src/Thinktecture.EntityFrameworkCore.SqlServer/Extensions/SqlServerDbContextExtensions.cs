@@ -50,7 +50,9 @@ namespace Thinktecture
          await using var command = ctx.Database.GetDbConnection().CreateCommand();
 
          command.Transaction = ctx.Database.CurrentTransaction?.GetDbTransaction();
+#pragma warning disable CA2100
          command.CommandText = $"SELECT {dbFunction};";
+#pragma warning restore CA2100
 
          await ctx.Database.OpenConnectionAsync(cancellationToken);
 

@@ -1,7 +1,6 @@
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
-using JetBrains.Annotations;
 using Xunit;
 using Xunit.Abstractions;
 

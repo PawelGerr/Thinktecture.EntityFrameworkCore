@@ -59,6 +59,9 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       /// <inheritdoc />
       public void ApplyServices(IServiceCollection services)
       {
+         if (services == null)
+            throw new ArgumentNullException(nameof(services));
+
          services.TryAddSingleton(this);
 
          if (_evaluatableExpressionFilterPlugins.Count > 0)

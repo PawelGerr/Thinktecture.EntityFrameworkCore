@@ -24,6 +24,9 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
       /// <inheritdoc />
       protected override void Generate(CreateTableOperation operation, IModel model, MigrationCommandListBuilder builder, bool terminate = true)
       {
+         if (builder == null)
+            throw new ArgumentNullException(nameof(builder));
+
          if (!operation.IfNotExistsCheckRequired())
          {
             base.Generate(operation, model, builder, terminate);
@@ -46,6 +49,9 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
       /// <inheritdoc />
       protected override void Generate(AddColumnOperation operation, IModel model, MigrationCommandListBuilder builder, bool terminate)
       {
+         if (builder == null)
+            throw new ArgumentNullException(nameof(builder));
+
          if (!operation.IfNotExistsCheckRequired())
          {
             base.Generate(operation, model, builder, terminate);
@@ -75,6 +81,9 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
       /// <inheritdoc />
       protected override void Generate(DropColumnOperation operation, IModel model, MigrationCommandListBuilder builder, bool terminate = true)
       {
+         if (builder == null)
+            throw new ArgumentNullException(nameof(builder));
+
          if (!operation.IfExistsCheckRequired())
          {
             base.Generate(operation, model, builder, terminate);
@@ -101,6 +110,9 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
       /// <inheritdoc />
       protected override void Generate(DropIndexOperation operation, IModel model, MigrationCommandListBuilder builder, bool terminate)
       {
+         if (builder == null)
+            throw new ArgumentNullException(nameof(builder));
+
          if (!operation.IfExistsCheckRequired())
          {
             base.Generate(operation, model, builder, terminate);
@@ -127,6 +139,9 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
       /// <inheritdoc />
       protected override void Generate(CreateIndexOperation operation, IModel model, MigrationCommandListBuilder builder, bool terminate = true)
       {
+         if (builder == null)
+            throw new ArgumentNullException(nameof(builder));
+
          if (!operation.IfNotExistsCheckRequired())
          {
             base.Generate(operation, model, builder, terminate);
