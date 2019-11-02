@@ -13,30 +13,6 @@ namespace Thinktecture
    public static class SqlServerDbContextOptionsBuilderExtensions
    {
       /// <summary>
-      /// Adds custom factory required for translation of custom methods like <see cref="RelationalQueryableExtensions.AsSubQuery{TEntity}"/>.
-      /// </summary>
-      /// <param name="sqlServerOptionsBuilder">SQL Server options builder.</param>
-      /// <param name="addCustomQueryableMethodTranslatingExpressionVisitorFactory">Indication whether to add a custom factory.</param>
-      /// <returns>Provided <paramref name="sqlServerOptionsBuilder"/>.</returns>
-      public static SqlServerDbContextOptionsBuilder AddCustomQueryableMethodTranslatingExpressionVisitorFactory(this SqlServerDbContextOptionsBuilder sqlServerOptionsBuilder,
-                                                                                                                 bool addCustomQueryableMethodTranslatingExpressionVisitorFactory = true)
-      {
-         return AddOrUpdateExtensions(sqlServerOptionsBuilder, extension => extension.AddCustomQueryableMethodTranslatingExpressionVisitorFactory = addCustomQueryableMethodTranslatingExpressionVisitorFactory);
-      }
-
-      /// <summary>
-      /// Adds support for "RowNumber" and "Descending".
-      /// </summary>
-      /// <param name="sqlServerOptionsBuilder">SQL Server options builder.</param>
-      /// <param name="addRowNumberSupport">Indication whether to enable or disable the feature.</param>
-      /// <returns>Provided <paramref name="sqlServerOptionsBuilder"/>.</returns>
-      public static SqlServerDbContextOptionsBuilder AddRowNumberSupport(this SqlServerDbContextOptionsBuilder sqlServerOptionsBuilder,
-                                                                         bool addRowNumberSupport = true)
-      {
-         return AddOrUpdateExtensions(sqlServerOptionsBuilder, extension => extension.AddRowNumberSupport = addRowNumberSupport);
-      }
-
-      /// <summary>
       /// Adds support for temp tables.
       /// </summary>
       /// <param name="sqlServerOptionsBuilder">SQL Server options builder.</param>

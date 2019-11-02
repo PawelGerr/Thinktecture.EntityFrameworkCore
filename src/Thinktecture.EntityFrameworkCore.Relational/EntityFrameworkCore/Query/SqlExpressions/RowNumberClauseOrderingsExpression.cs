@@ -29,7 +29,7 @@ namespace Thinktecture.EntityFrameworkCore.Query.SqlExpressions
       protected override Expression Accept(ExpressionVisitor visitor)
       {
          if (visitor is QuerySqlGenerator)
-            throw new NotSupportedException($"The EF function '{nameof(SqlServerDbFunctionsExtensions.RowNumber)}' contains some expressions not supported by the Entity Framework. One of the reason is the creation of new objects like: 'new {{ e.MyProperty, e.MyOtherProperty }}'.");
+            throw new NotSupportedException($"The EF function '{nameof(RelationalDbFunctionsExtensions.RowNumber)}' contains some expressions not supported by the Entity Framework. One of the reason is the creation of new objects like: 'new {{ e.MyProperty, e.MyOtherProperty }}'.");
 
          return base.Accept(visitor);
       }

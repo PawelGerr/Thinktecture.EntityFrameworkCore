@@ -102,6 +102,60 @@ namespace Thinktecture
       }
 
       /// <summary>
+      /// Adds custom factory required for translation of custom methods like <see cref="RelationalQueryableExtensions.AsSubQuery{TEntity}"/>.
+      /// </summary>
+      /// <param name="builder">Options builder.</param>
+      /// <param name="addCustomQueryableMethodTranslatingExpressionVisitorFactory">Indication whether to add a custom factory.</param>
+      /// <returns>Provided <paramref name="builder"/>.</returns>
+      public static DbContextOptionsBuilder<T> AddCustomQueryableMethodTranslatingExpressionVisitorFactory<T>(this DbContextOptionsBuilder<T> builder,
+                                                                                                              bool addCustomQueryableMethodTranslatingExpressionVisitorFactory = true)
+         where T : DbContext
+      {
+         ((DbContextOptionsBuilder)builder).AddCustomQueryableMethodTranslatingExpressionVisitorFactory(addCustomQueryableMethodTranslatingExpressionVisitorFactory);
+         return builder;
+      }
+
+      /// <summary>
+      /// Adds custom factory required for translation of custom methods like <see cref="RelationalQueryableExtensions.AsSubQuery{TEntity}"/>.
+      /// </summary>
+      /// <param name="builder">Options builder.</param>
+      /// <param name="addCustomQueryableMethodTranslatingExpressionVisitorFactory">Indication whether to add a custom factory.</param>
+      /// <returns>Provided <paramref name="builder"/>.</returns>
+      public static DbContextOptionsBuilder AddCustomQueryableMethodTranslatingExpressionVisitorFactory(this DbContextOptionsBuilder builder,
+                                                                                                        bool addCustomQueryableMethodTranslatingExpressionVisitorFactory = true)
+      {
+         builder.AddOrUpdateExtension<RelationalDbContextOptionsExtension>(extension => extension.AddCustomQueryableMethodTranslatingExpressionVisitorFactory = addCustomQueryableMethodTranslatingExpressionVisitorFactory);
+         return builder;
+      }
+
+      /// <summary>
+      /// Adds support for "RowNumber".
+      /// </summary>
+      /// <param name="builder">Options builder.</param>
+      /// <param name="addRowNumberSupport">Indication whether to enable or disable the feature.</param>
+      /// <returns>Provided <paramref name="builder"/>.</returns>
+      public static DbContextOptionsBuilder<T> AddRowNumberSupport<T>(this DbContextOptionsBuilder<T> builder,
+                                                                      bool addRowNumberSupport = true)
+         where T : DbContext
+      {
+         ((DbContextOptionsBuilder)builder).AddRowNumberSupport(addRowNumberSupport);
+         return builder;
+      }
+
+      /// <summary>
+      /// Adds support for "RowNumber".
+      /// </summary>
+      /// <param name="builder">Options builder.</param>
+      /// <param name="addRowNumberSupport">Indication whether to enable or disable the feature.</param>
+      /// <returns>Provided <paramref name="builder"/>.</returns>
+      public static DbContextOptionsBuilder AddRowNumberSupport(this DbContextOptionsBuilder builder,
+                                                                bool addRowNumberSupport = true)
+      {
+         builder.AddOrUpdateExtension<RelationalDbContextOptionsExtension>(extension => extension.AddRowNumberSupport = addRowNumberSupport);
+         return builder;
+      }
+
+      /// <summary>
       /// Adds or updates an extension of type <typeparamref name="TExtension"/>.
       /// </summary>
       /// <param name="optionsBuilder">Options builder.</param>

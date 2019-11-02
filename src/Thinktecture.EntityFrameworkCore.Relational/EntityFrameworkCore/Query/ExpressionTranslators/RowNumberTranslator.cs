@@ -12,7 +12,7 @@ namespace Thinktecture.EntityFrameworkCore.Query.ExpressionTranslators
    /// <summary>
    /// Translated extension method "RowNumber"
    /// </summary>
-   public sealed class SqlServerRowNumberTranslator : IMethodCallTranslator
+   public sealed class RowNumberTranslator : IMethodCallTranslator
    {
       /// <inheritdoc />
       public SqlExpression? Translate(SqlExpression instance, MethodInfo method, IReadOnlyList<SqlExpression> arguments)
@@ -22,39 +22,39 @@ namespace Thinktecture.EntityFrameworkCore.Query.ExpressionTranslators
          if (arguments == null)
             throw new ArgumentNullException(nameof(arguments));
 
-         if (method.DeclaringType != typeof(SqlServerDbFunctionsExtensions))
+         if (method.DeclaringType != typeof(RelationalDbFunctionsExtensions))
             return null;
 
          switch (method.Name)
          {
-            case nameof(SqlServerDbFunctionsExtensions.OrderBy):
+            case nameof(RelationalDbFunctionsExtensions.OrderBy):
             {
                var orderBy = arguments.Skip(1).Select(e => new OrderingExpression(e, true)).ToList();
                return new RowNumberClauseOrderingsExpression(orderBy);
             }
-            case nameof(SqlServerDbFunctionsExtensions.OrderByDescending):
+            case nameof(RelationalDbFunctionsExtensions.OrderByDescending):
             {
                var orderBy = arguments.Skip(1).Select(e => new OrderingExpression(e, false)).ToList();
                return new RowNumberClauseOrderingsExpression(orderBy);
             }
-            case nameof(SqlServerDbFunctionsExtensions.ThenBy):
+            case nameof(RelationalDbFunctionsExtensions.ThenBy):
             {
                var orderBy = arguments.Skip(1).Select(e => new OrderingExpression(e, true));
                return ((RowNumberClauseOrderingsExpression)arguments[0]).AddColumns(orderBy);
             }
-            case nameof(SqlServerDbFunctionsExtensions.ThenByDescending):
+            case nameof(RelationalDbFunctionsExtensions.ThenByDescending):
             {
                var orderBy = arguments.Skip(1).Select(e => new OrderingExpression(e, false));
                return ((RowNumberClauseOrderingsExpression)arguments[0]).AddColumns(orderBy);
             }
-            case nameof(SqlServerDbFunctionsExtensions.RowNumber):
+            case nameof(RelationalDbFunctionsExtensions.RowNumber):
             {
                var partitionBy = arguments.Skip(1).Take(arguments.Count - 2).ToList();
                var orderings = (RowNumberClauseOrderingsExpression)arguments[^1];
                return new RowNumberExpression(partitionBy, orderings.Orderings, RelationalTypeMapping.NullMapping);
             }
             default:
-               throw new InvalidOperationException($"Unexpected method '{method.Name}' in '{nameof(SqlServerDbFunctionsExtensions)}'.");
+               throw new InvalidOperationException($"Unexpected method '{method.Name}' in '{nameof(RelationalDbFunctionsExtensions)}'.");
          }
       }
    }

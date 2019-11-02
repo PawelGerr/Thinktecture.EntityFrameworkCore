@@ -48,6 +48,23 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       }
 
       /// <summary>
+      /// Enables and disables support for "RowNumber".
+      /// </summary>
+      public bool AddRowNumberSupport { get; set; }
+
+      private bool _addCustomQueryableMethodTranslatingExpressionVisitorFactory;
+
+      /// <summary>
+      /// A custom factory is registered if <c>true</c>.
+      /// The factory is required to be able to translate custom methods like <see cref="RelationalQueryableExtensions.AsSubQuery{TEntity}"/>.
+      /// </summary>
+      public bool AddCustomQueryableMethodTranslatingExpressionVisitorFactory
+      {
+         get => _addCustomQueryableMethodTranslatingExpressionVisitorFactory || AddRowNumberSupport;
+         set => _addCustomQueryableMethodTranslatingExpressionVisitorFactory = value;
+      }
+
+      /// <summary>
       /// Initializes new instance of <see cref="RelationalDbContextOptionsExtension"/>.
       /// </summary>
       public RelationalDbContextOptionsExtension()
@@ -63,6 +80,9 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
             throw new ArgumentNullException(nameof(services));
 
          services.TryAddSingleton(this);
+
+         if (AddCustomQueryableMethodTranslatingExpressionVisitorFactory)
+            services.AddSingleton<IQueryableMethodTranslatingExpressionVisitorFactory, RelationalQueryableMethodTranslatingExpressionVisitorFactory>();
 
          if (_evaluatableExpressionFilterPlugins.Count > 0)
          {
@@ -151,7 +171,8 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
 {{
    'Number of custom services'={_extension._serviceDescriptors.Count},
    'Number of evaluatable expression filter plugins'={_extension._evaluatableExpressionFilterPlugins.Count},
-   'Default schema respecting components added'={_extension.AddSchemaRespectingComponents}
+   'Default schema respecting components added'={_extension.AddSchemaRespectingComponents},
+   'RowNumberSupport'={_extension.AddRowNumberSupport}
 }}";
 
          public RelationalDbContextOptionsExtensionInfo(RelationalDbContextOptionsExtension extension)
@@ -170,6 +191,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
             debugInfo["Thinktecture:AddSchemaRespectingComponents"] = _extension.AddSchemaRespectingComponents.ToString(CultureInfo.InvariantCulture);
             debugInfo["Thinktecture:EvaluatableExpressionFilterPlugins"] = String.Join(", ", _extension._evaluatableExpressionFilterPlugins.Select(t => t.DisplayName()));
             debugInfo["Thinktecture:ServiceDescriptors"] = String.Join(", ", _extension._serviceDescriptors);
+            debugInfo["Thinktecture:RowNumberSupport"] = _extension.AddRowNumberSupport.ToString(CultureInfo.InvariantCulture);
          }
       }
    }

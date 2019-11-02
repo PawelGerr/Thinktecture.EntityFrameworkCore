@@ -11,7 +11,6 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Thinktecture.EntityFrameworkCore.BulkOperations;
 using Thinktecture.EntityFrameworkCore.Data;
 using Thinktecture.EntityFrameworkCore.Migrations;
-using Thinktecture.EntityFrameworkCore.Query;
 using Thinktecture.EntityFrameworkCore.Query.ExpressionTranslators;
 using Thinktecture.EntityFrameworkCore.TempTables;
 
@@ -29,11 +28,6 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       public DbContextOptionsExtensionInfo Info => _info ??= new SqlServerDbContextOptionsExtensionInfo(this);
 
       /// <summary>
-      /// Enables and disables support for "RowNumber".
-      /// </summary>
-      public bool AddRowNumberSupport { get; set; }
-
-      /// <summary>
       /// Enables and disables support for temp tables.
       /// </summary>
       public bool AddTempTableSupport { get; set; }
@@ -49,17 +43,6 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
          set => _addBulkOperationSupport = value;
       }
 
-      private bool _addCustomQueryableMethodTranslatingExpressionVisitorFactory;
-
-      /// <summary>
-      /// A custom factory is registered if <c>true</c>.
-      /// The factory is required to be able to translate custom methods like <see cref="RelationalQueryableExtensions.AsSubQuery{TEntity}"/>.
-      /// </summary>
-      public bool AddCustomQueryableMethodTranslatingExpressionVisitorFactory
-      {
-         get => _addCustomQueryableMethodTranslatingExpressionVisitorFactory || AddRowNumberSupport;
-         set => _addCustomQueryableMethodTranslatingExpressionVisitorFactory = value;
-      }
 
       /// <summary>
       /// Changes the implementation of <see cref="IMigrationsSqlGenerator"/> to <see cref="ThinktectureSqlServerMigrationsSqlGenerator"/>.
@@ -70,10 +53,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       public void ApplyServices(IServiceCollection services)
       {
          services.TryAddSingleton(this);
-         services.Add<IMethodCallTranslatorPlugin, SqlServerMethodCallTranslatorPlugin>(GetLifetime<IMethodCallTranslatorPlugin>());
-
-         if (AddCustomQueryableMethodTranslatingExpressionVisitorFactory)
-            services.AddSingleton<IQueryableMethodTranslatingExpressionVisitorFactory, SqlServerQueryableMethodTranslatingExpressionVisitorFactory>();
+         services.Add<IMethodCallTranslatorPlugin, RelationalMethodCallTranslatorPlugin>(GetLifetime<IMethodCallTranslatorPlugin>());
 
          if (AddTempTableSupport)
          {
@@ -114,7 +94,6 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
 
          public override string LogFragment => _logFragment ??= $@"
 {{
-   'RowNumberSupport'={_extension.AddRowNumberSupport},
    'BulkOperationSupport'={_extension.AddBulkOperationSupport},
    'TempTableSupport'={_extension.AddTempTableSupport},
    'UseThinktectureSqlServerMigrationsSqlGenerator'={_extension.UseThinktectureSqlServerMigrationsSqlGenerator}
@@ -136,7 +115,6 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
          /// <inheritdoc />
          public override void PopulateDebugInfo(IDictionary<string, string> debugInfo)
          {
-            debugInfo["Thinktecture:RowNumberSupport"] = _extension.AddRowNumberSupport.ToString(CultureInfo.InvariantCulture);
             debugInfo["Thinktecture:BulkOperationSupport"] = _extension.AddBulkOperationSupport.ToString(CultureInfo.InvariantCulture);
             debugInfo["Thinktecture:TempTableSupport"] = _extension.AddTempTableSupport.ToString(CultureInfo.InvariantCulture);
             debugInfo["Thinktecture:UseThinktectureSqlServerMigrationsSqlGenerator"] = _extension.UseThinktectureSqlServerMigrationsSqlGenerator.ToString(CultureInfo.InvariantCulture);

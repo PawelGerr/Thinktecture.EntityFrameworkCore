@@ -8,15 +8,15 @@ namespace Thinktecture.EntityFrameworkCore.Query.ExpressionTranslators
    /// <summary>
    /// Plugin registering method translators.
    /// </summary>
-   public sealed class SqlServerMethodCallTranslatorPlugin : IMethodCallTranslatorPlugin
+   public sealed class RelationalMethodCallTranslatorPlugin : IMethodCallTranslatorPlugin
    {
       /// <inheritdoc />
       public IEnumerable<IMethodCallTranslator> Translators { get; }
 
       /// <summary>
-      /// Initializes new instance of <see cref="SqlServerMethodCallTranslatorPlugin"/>.
+      /// Initializes new instance of <see cref="RelationalMethodCallTranslatorPlugin"/>.
       /// </summary>
-      public SqlServerMethodCallTranslatorPlugin(SqlServerDbContextOptionsExtension extension)
+      public RelationalMethodCallTranslatorPlugin(RelationalDbContextOptionsExtension extension)
       {
          if (extension == null)
             throw new ArgumentNullException(nameof(extension));
@@ -24,7 +24,7 @@ namespace Thinktecture.EntityFrameworkCore.Query.ExpressionTranslators
          var translators = new List<IMethodCallTranslator>();
 
          if (extension.AddRowNumberSupport)
-            translators.Add(new SqlServerRowNumberTranslator());
+            translators.Add(new RowNumberTranslator());
 
          Translators = translators;
       }

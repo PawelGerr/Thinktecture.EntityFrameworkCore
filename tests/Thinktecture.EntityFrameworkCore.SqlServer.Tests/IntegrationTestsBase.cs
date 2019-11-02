@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.Data.Common;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
@@ -65,12 +66,18 @@ namespace Thinktecture
       }
 
       /// <inheritdoc />
+      protected override DbContextOptionsBuilder<TestDbContext> CreateOptionsBuilder(DbConnection connection)
+      {
+         return base.CreateOptionsBuilder(connection)
+                    .AddRowNumberSupport();
+      }
+
+      /// <inheritdoc />
       protected override void ConfigureSqlServer(SqlServerDbContextOptionsBuilder builder)
       {
          base.ConfigureSqlServer(builder);
 
-         builder.AddRowNumberSupport()
-                .AddTempTableSupport();
+         builder.AddTempTableSupport();
       }
 
       /// <inheritdoc />

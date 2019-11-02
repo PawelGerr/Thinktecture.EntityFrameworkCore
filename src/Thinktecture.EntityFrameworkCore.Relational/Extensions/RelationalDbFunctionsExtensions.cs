@@ -10,7 +10,7 @@ namespace Thinktecture
    /// <summary>
    /// Extension methods for <see cref="DbFunctions"/>.
    /// </summary>
-   public static class SqlServerDbFunctionsExtensions
+   public static class RelationalDbFunctionsExtensions
    {
       // ReSharper disable UnusedParameter.Global
 

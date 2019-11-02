@@ -7,17 +7,17 @@ namespace Thinktecture.EntityFrameworkCore.Query
    /// <summary>
    /// Factory for creation of the <see cref="RelationalQueryableMethodTranslatingExpressionVisitor"/>.
    /// </summary>
-   public sealed class SqlServerQueryableMethodTranslatingExpressionVisitorFactory : IQueryableMethodTranslatingExpressionVisitorFactory
+   public sealed class RelationalQueryableMethodTranslatingExpressionVisitorFactory : IQueryableMethodTranslatingExpressionVisitorFactory
    {
       private readonly QueryableMethodTranslatingExpressionVisitorDependencies _dependencies;
       private readonly RelationalQueryableMethodTranslatingExpressionVisitorDependencies _relationalDependencies;
 
       /// <summary>
-      /// Initializes new instance of <see cref="SqlServerQueryableMethodTranslatingExpressionVisitorFactory"/>.
+      /// Initializes new instance of <see cref="RelationalQueryableMethodTranslatingExpressionVisitorFactory"/>.
       /// </summary>
       /// <param name="dependencies">Dependencies.</param>
       /// <param name="relationalDependencies">Relational dependencies.</param>
-      public SqlServerQueryableMethodTranslatingExpressionVisitorFactory(QueryableMethodTranslatingExpressionVisitorDependencies dependencies,
+      public RelationalQueryableMethodTranslatingExpressionVisitorFactory(QueryableMethodTranslatingExpressionVisitorDependencies dependencies,
                                                                          RelationalQueryableMethodTranslatingExpressionVisitorDependencies relationalDependencies)
       {
          _dependencies = dependencies ?? throw new ArgumentNullException(nameof(dependencies));
