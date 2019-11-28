@@ -36,6 +36,16 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
       }
 
       [Fact]
+      public void Should_throw_if_inserting_duplicates()
+      {
+         ConfigureModel = builder => builder.ConfigureTempTable<int>();
+
+         var values = new List<int> { 1, 1 };
+         ActDbContext.Awaiting(ctx => ctx.BulkInsertValuesIntoTempTableAsync(values))
+                     .Should().Throw<SqlException>().Where(ex => ex.Message.StartsWith("The CREATE UNIQUE INDEX statement terminated because a duplicate key was found"));
+      }
+
+      [Fact]
       public async Task Should_insert_int_with_streaming_disabled()
       {
          ConfigureModel = builder => builder.ConfigureTempTable<int>();

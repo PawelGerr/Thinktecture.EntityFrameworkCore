@@ -46,7 +46,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
             if (_database.GetDbConnection().State != ConnectionState.Open)
                return;
 
-            _database.ExecuteSqlRaw($"DROP TABLE {_sqlGenerationHelper.DelimitIdentifier(Name, "temp")}");
+            _database.ExecuteSqlRaw($"DROP TABLE IF EXISTS {_sqlGenerationHelper.DelimitIdentifier(Name, "temp")}");
             _database.CloseConnection();
          }
          catch (ObjectDisposedException ex)
