@@ -48,7 +48,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
          if (options == null)
             throw new ArgumentNullException(nameof(options));
 
-         var tableName = GetTableName(entityType, options.MakeTableNameUnique);
+         var tableName = GetTableName(ctx, entityType, options.TableNameProvider);
          var sql = GetTempTableCreationSql(entityType, tableName, options);
 
          await ctx.Database.OpenConnectionAsync(cancellationToken);
@@ -68,15 +68,15 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
          return new SqlServerTempTableReference(logger, _sqlGenerationHelper, tableName, ctx.Database);
       }
 
-      private static string GetTableName(IEntityType entityType, bool makeTableNameUnique)
+      private static string GetTableName(DbContext ctx, IEntityType entityType, ITempTableNameProvider nameProvider)
       {
-         var tableName = entityType.GetTableName();
+         if (nameProvider == null)
+            throw new ArgumentNullException(nameof(nameProvider));
+
+         var tableName = nameProvider.GetName(ctx, entityType);
 
          if (!tableName.StartsWith("#", StringComparison.Ordinal))
             tableName = $"#{tableName}";
-
-         if (makeTableNameUnique)
-            tableName = $"{tableName}_{Guid.NewGuid():N}";
 
          return tableName;
       }
@@ -127,7 +127,7 @@ END
 {GetColumnsDefinitions(entityType, options)}
       );";
 
-         if (options.MakeTableNameUnique)
+         if (!options.DropTempTableIfExists)
             return sql;
 
          return $@"

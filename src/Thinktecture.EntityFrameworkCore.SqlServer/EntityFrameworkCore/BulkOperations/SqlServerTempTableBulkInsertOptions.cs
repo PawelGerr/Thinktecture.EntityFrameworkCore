@@ -34,13 +34,23 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       }
 
       /// <summary>
-      /// Indication whether the table name should be unique.
-      /// Default is <c>true</c>.
+      /// Drops/truncates the temp table if the table exists already.
+      /// Default is <c>false</c>.
       /// </summary>
-      public bool MakeTableNameUnique
+      public bool DropTempTableIfExists
       {
-         get => _tempTableCreationOptions.MakeTableNameUnique;
-         set => _tempTableCreationOptions.MakeTableNameUnique = value;
+         get => _tempTableCreationOptions.DropTempTableIfExists;
+         set => _tempTableCreationOptions.DropTempTableIfExists = value;
+      }
+
+      /// <summary>
+      /// Provides the name to create a temp table with.
+      /// </summary>
+
+      public ITempTableNameProvider TableNameProvider
+      {
+         get => _tempTableCreationOptions.TableNameProvider;
+         set => _tempTableCreationOptions.TableNameProvider = value;
       }
 
       /// <summary>
@@ -110,7 +120,8 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
 
       private void InitializeFrom(ITempTableBulkInsertOptions options)
       {
-         MakeTableNameUnique = options.TempTableCreationOptions.MakeTableNameUnique;
+         DropTempTableIfExists = options.TempTableCreationOptions.DropTempTableIfExists;
+         TableNameProvider = options.TempTableCreationOptions.TableNameProvider;
          MembersToInsert = options.BulkInsertOptions.MembersToInsert;
 
          if (options is SqlServerTempTableBulkInsertOptions sqlServerOptions)

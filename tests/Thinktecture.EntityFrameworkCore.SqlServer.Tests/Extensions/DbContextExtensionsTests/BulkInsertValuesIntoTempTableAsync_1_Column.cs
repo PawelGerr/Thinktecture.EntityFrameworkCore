@@ -112,7 +112,7 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
       {
          ConfigureModel = builder => builder.ConfigureTempTable<string>().Property(t => t.Column1).HasMaxLength(100).IsRequired();
 
-         await ActDbContext.BulkInsertValuesIntoTempTableAsync(new List<string> { "value" }, new SqlServerTempTableBulkInsertOptions { MakeTableNameUnique = false });
+         await ActDbContext.BulkInsertValuesIntoTempTableAsync(new List<string> { "value" }, new SqlServerTempTableBulkInsertOptions { TableNameProvider = DefaultTempTableNameProvider.Instance });
 
          var keys = AssertDbContext.GetTempTableKeyColumns<TempTable<string>>().ToList();
          keys.Should().HaveCount(1);
@@ -133,7 +133,7 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
       {
          ConfigureModel = builder => builder.ConfigureTempTable<int>();
 
-         await ActDbContext.BulkInsertValuesIntoTempTableAsync(new List<int> { 1 }, new SqlServerTempTableBulkInsertOptions { MakeTableNameUnique = false });
+         await ActDbContext.BulkInsertValuesIntoTempTableAsync(new List<int> { 1 }, new SqlServerTempTableBulkInsertOptions { TableNameProvider = DefaultTempTableNameProvider.Instance });
 
          var keys = ArrangeDbContext.GetTempTableKeyColumns<TempTable<int>>().ToList();
          keys.Should().HaveCount(1);

@@ -30,7 +30,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqliteTempTableCreatorTest
          sqlGenerationHelperMock.Setup(h => h.DelimitIdentifier(It.IsAny<string>()))
                                 .Returns<string>(name => $"\"{name}\"");
          _sut = new SqliteTempTableCreator(sqlGenerationHelperMock.Object, relationalTypeMappingSourceMock.Object);
-         _optionsWithNonUniqueName = new TempTableCreationOptions { MakeTableNameUnique = false, CreatePrimaryKey = false };
+         _optionsWithNonUniqueName = new TempTableCreationOptions { TableNameProvider = DefaultTempTableNameProvider.Instance, CreatePrimaryKey = false };
       }
 
       [Fact]

@@ -24,13 +24,23 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       }
 
       /// <summary>
-      /// Indication whether the table name should be unique.
-      /// Default is <c>true</c>.
+      /// Drops/truncates the temp table if the table exists already.
+      /// Default is <c>false</c>.
       /// </summary>
-      public bool MakeTableNameUnique
+      public bool DropTempTableIfExists
       {
-         get => _tempTableCreationOptions.MakeTableNameUnique;
-         set => _tempTableCreationOptions.MakeTableNameUnique = value;
+         get => _tempTableCreationOptions.DropTempTableIfExists;
+         set => _tempTableCreationOptions.DropTempTableIfExists = value;
+      }
+
+      /// <summary>
+      /// Provides the name to create a temp table with.
+      /// </summary>
+
+      public ITempTableNameProvider TableNameProvider
+      {
+         get => _tempTableCreationOptions.TableNameProvider;
+         set => _tempTableCreationOptions.TableNameProvider = value;
       }
 
       /// <summary>
@@ -72,8 +82,9 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       private void InitializeFrom(ITempTableBulkInsertOptions options)
       {
          MembersToInsert = options.BulkInsertOptions.MembersToInsert;
-         MakeTableNameUnique = options.TempTableCreationOptions.MakeTableNameUnique;
+         TableNameProvider = options.TempTableCreationOptions.TableNameProvider;
          CreatePrimaryKey = options.TempTableCreationOptions.CreatePrimaryKey;
+         DropTempTableIfExists = options.TempTableCreationOptions.DropTempTableIfExists;
 
          if (options is SqliteTempTableBulkInsertOptions sqliteOptions)
             AutoIncrementBehavior = sqliteOptions.AutoIncrementBehavior;

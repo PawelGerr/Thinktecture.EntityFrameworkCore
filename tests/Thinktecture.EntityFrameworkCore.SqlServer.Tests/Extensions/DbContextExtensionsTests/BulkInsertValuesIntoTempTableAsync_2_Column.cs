@@ -52,7 +52,7 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
       {
          ConfigureModel = builder => builder.ConfigureTempTable<int, int>();
 
-         await ActDbContext.BulkInsertValuesIntoTempTableAsync(new List<(int, int)> { (1, 2) }, new SqlServerTempTableBulkInsertOptions { MakeTableNameUnique = false });
+         await ActDbContext.BulkInsertValuesIntoTempTableAsync(new List<(int, int)> { (1, 2) }, new SqlServerTempTableBulkInsertOptions { TableNameProvider = DefaultTempTableNameProvider.Instance });
 
          var keys = AssertDbContext.GetTempTableKeyColumns<int, int>().ToList();
          keys.Should().HaveCount(2);

@@ -199,7 +199,7 @@ INSERT BULK {table} ({columns})", (long)duration.TotalMilliseconds,
          var tempTableOptions = options.TempTableCreationOptions;
 
          if (sqlServerOptions.PrimaryKeyCreation == SqlServerPrimaryKeyCreation.AfterBulkInsert && tempTableOptions.CreatePrimaryKey)
-            tempTableOptions = new TempTableCreationOptions { CreatePrimaryKey = false, MakeTableNameUnique = tempTableOptions.MakeTableNameUnique };
+            tempTableOptions = new TempTableCreationOptions(tempTableOptions) { CreatePrimaryKey = false };
 
          var tempTableReference = await tempTableCreator.CreateTempTableAsync(ctx, entityType, tempTableOptions, cancellationToken);
 
@@ -208,7 +208,7 @@ INSERT BULK {table} ({columns})", (long)duration.TotalMilliseconds,
             await BulkInsertAsync(ctx, entityType, entities, null, tempTableReference.Name, options.BulkInsertOptions, cancellationToken);
 
             if (sqlServerOptions.PrimaryKeyCreation == SqlServerPrimaryKeyCreation.AfterBulkInsert)
-               await tempTableCreator.CreatePrimaryKeyAsync(ctx, entityType, tempTableReference.Name, !options.TempTableCreationOptions.MakeTableNameUnique, cancellationToken);
+               await tempTableCreator.CreatePrimaryKeyAsync(ctx, entityType, tempTableReference.Name, options.TempTableCreationOptions.DropTempTableIfExists, cancellationToken);
 
             var query = ctx.Set<T>().FromSqlRaw($"SELECT * FROM {_sqlGenerationHelper.DelimitIdentifier(tempTableReference.Name)}");
 

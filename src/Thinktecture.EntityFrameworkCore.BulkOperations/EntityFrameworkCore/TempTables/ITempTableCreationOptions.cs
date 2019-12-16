@@ -8,10 +8,15 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
    public interface ITempTableCreationOptions
    {
       /// <summary>
-      /// Indication whether the table name should be unique.
-      /// Default is <c>true</c>.
+      /// Drops/truncates the temp table if the table exists already.
+      /// Default is <c>false</c>.
       /// </summary>
-      bool MakeTableNameUnique { get; }
+      bool DropTempTableIfExists { get; }
+
+      /// <summary>
+      /// Provides the name to create a temp table with.
+      /// </summary>
+      ITempTableNameProvider TableNameProvider { get; }
 
       /// <summary>
       /// Indication whether to create the primary key along with the creation of the temp table.
