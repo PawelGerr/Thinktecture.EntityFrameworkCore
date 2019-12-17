@@ -28,7 +28,6 @@ namespace Thinktecture.EntityFrameworkCore.Data.EntityDataReaderFactoryTests
       [Fact]
       public void Should_throw_if_context_is_null()
       {
-         // ReSharper disable once AssignNullToNotNullAttribute
          SUT.Invoking(sut => sut.Create(null!, Array.Empty<TestEntity>(), Array.Empty<IProperty>()))
             .Should().Throw<ArgumentNullException>();
       }
@@ -36,7 +35,6 @@ namespace Thinktecture.EntityFrameworkCore.Data.EntityDataReaderFactoryTests
       [Fact]
       public void Should_throw_if_entities_is_null()
       {
-         // ReSharper disable once AssignNullToNotNullAttribute
          SUT.Invoking(sut => sut.Create<TestEntity>(ActDbContext, null!, Array.Empty<IProperty>()))
             .Should().Throw<ArgumentNullException>();
       }
@@ -44,7 +42,6 @@ namespace Thinktecture.EntityFrameworkCore.Data.EntityDataReaderFactoryTests
       [Fact]
       public void Should_throw_if_properties_is_null()
       {
-         // ReSharper disable once AssignNullToNotNullAttribute
          SUT.Invoking(sut => sut.Create(ActDbContext, Array.Empty<TestEntity>(), null!))
             .Should().Throw<ArgumentNullException>();
       }

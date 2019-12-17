@@ -16,6 +16,8 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
       private readonly IDiagnosticsLogger<DbLoggerCategory.Query> _logger;
       private readonly ISqlGenerationHelper _sqlGenerationHelper;
       private readonly DatabaseFacade _database;
+      private readonly ITempTableNameLease _nameLease;
+      private readonly bool _dropTableOnDispose;
 
       private bool _isDisposed;
 
@@ -29,15 +31,21 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
       /// <param name="sqlGenerationHelper">SQL generation helper.</param>
       /// <param name="tableName">The name of the temp table.</param>
       /// <param name="database">Database facade.</param>
+      /// <param name="nameLease">Leased table name that will be disposed along with the temp table.</param>
+      /// <param name="dropTableOnDispose">Indication whether to drop the temp table on dispose or not.</param>
       public SqlServerTempTableReference(IDiagnosticsLogger<DbLoggerCategory.Query> logger,
                                          ISqlGenerationHelper sqlGenerationHelper,
                                          string tableName,
-                                         DatabaseFacade database)
+                                         DatabaseFacade database,
+                                         ITempTableNameLease nameLease,
+                                         bool dropTableOnDispose)
       {
          Name = tableName ?? throw new ArgumentNullException(nameof(tableName));
          _logger = logger ?? throw new ArgumentNullException(nameof(logger));
          _sqlGenerationHelper = sqlGenerationHelper ?? throw new ArgumentNullException(nameof(sqlGenerationHelper));
          _database = database ?? throw new ArgumentNullException(nameof(database));
+         _nameLease = nameLease ?? throw new ArgumentNullException(nameof(nameLease));
+         _dropTableOnDispose = dropTableOnDispose;
       }
 
       /// <inheritdoc />
@@ -50,7 +58,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
 
          try
          {
-            if (_database.GetDbConnection().State != ConnectionState.Open)
+            if (!_dropTableOnDispose || _database.GetDbConnection().State != ConnectionState.Open)
                return;
 
             _database.ExecuteSqlRaw($"DROP TABLE IF EXISTS {_sqlGenerationHelper.DelimitIdentifier(Name)}");
@@ -59,6 +67,10 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
          catch (ObjectDisposedException ex)
          {
             _logger.Logger.LogWarning(ex, $"Trying to dispose of the temp table reference '{Name}' after the corresponding DbContext has been disposed.");
+         }
+         finally
+         {
+            _nameLease.Dispose();
          }
       }
    }

@@ -58,6 +58,14 @@ namespace Thinktecture.TestDatabaseContext
          var type = typeof(T);
          var tableName = Model.GetEntityType(type).GetTableName();
 
+         return GetTempTableColumns(tableName);
+      }
+
+      public IQueryable<InformationSchemaColumn> GetTempTableColumns(string tableName)
+      {
+         if (tableName == null)
+            throw new ArgumentNullException(nameof(tableName));
+
          if (!tableName.StartsWith("#", StringComparison.Ordinal))
             tableName = $"#{tableName}";
 

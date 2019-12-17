@@ -33,7 +33,9 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
       /// <inheritdoc />
       public Assembly Assembly => _innerMigrationsAssembly.Assembly;
 
-      /// <inheritdoc />
+      /// <summary>
+      /// Initializes new instance of <see cref="DefaultSchemaRespectingMigrationAssembly{TMigrationsAssembly}"/>.
+      /// </summary>
       public DefaultSchemaRespectingMigrationAssembly(TMigrationsAssembly migrationsAssembly,
                                                       IMigrationOperationSchemaSetter schemaSetter,
                                                       ICurrentDbContext currentContext,

@@ -17,14 +17,15 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
       public static readonly ITempTableNameProvider Instance = new NewGuidTempTableNameProvider();
 
       /// <inheritdoc />
-      public string GetName(DbContext ctx, IEntityType entityType)
+      public ITempTableNameLease LeaseName(DbContext ctx, IEntityType entityType)
       {
          if (entityType == null)
             throw new ArgumentNullException(nameof(entityType));
 
          var tableName = entityType.GetTableName();
+         tableName = $"{tableName}_{Guid.NewGuid():N}";
 
-         return $"{tableName}_{Guid.NewGuid():N}";
+         return new TempTableName(tableName);
       }
    }
 }

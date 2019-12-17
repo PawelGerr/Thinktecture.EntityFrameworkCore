@@ -10,7 +10,6 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.PropertiesProviderTest
       [Fact]
       public void Should_throw_if_expression_is_null()
       {
-         // ReSharper disable once AssignNullToNotNullAttribute
          Action action = () => EntityMembersProvider.From<TestEntity>(null!);
          action.Should().Throw<ArgumentNullException>();
       }

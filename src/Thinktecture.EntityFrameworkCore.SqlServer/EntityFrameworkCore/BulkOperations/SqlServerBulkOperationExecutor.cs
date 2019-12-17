@@ -208,7 +208,7 @@ INSERT BULK {table} ({columns})", (long)duration.TotalMilliseconds,
             await BulkInsertAsync(ctx, entityType, entities, null, tempTableReference.Name, options.BulkInsertOptions, cancellationToken);
 
             if (sqlServerOptions.PrimaryKeyCreation == SqlServerPrimaryKeyCreation.AfterBulkInsert)
-               await tempTableCreator.CreatePrimaryKeyAsync(ctx, entityType, tempTableReference.Name, options.TempTableCreationOptions.DropTempTableIfExists, cancellationToken);
+               await tempTableCreator.CreatePrimaryKeyAsync(ctx, entityType, tempTableReference.Name, options.TempTableCreationOptions.TruncateTableIfExists, cancellationToken);
 
             var query = ctx.Set<T>().FromSqlRaw($"SELECT * FROM {_sqlGenerationHelper.DelimitIdentifier(tempTableReference.Name)}");
 

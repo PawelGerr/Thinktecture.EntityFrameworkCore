@@ -15,7 +15,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
       /// </summary>
       public IQueryable<T> Query { get; }
 
-      private readonly ITempTableReference _tempTableReference;
+      private ITempTableReference? _tempTableReference;
 
       /// <summary>
       /// Initializes new instance of <see cref="TempTableQuery{T}"/>.
@@ -31,7 +31,8 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
       /// <inheritdoc />
       public void Dispose()
       {
-         _tempTableReference.Dispose();
+         _tempTableReference?.Dispose();
+         _tempTableReference = null;
       }
    }
 }

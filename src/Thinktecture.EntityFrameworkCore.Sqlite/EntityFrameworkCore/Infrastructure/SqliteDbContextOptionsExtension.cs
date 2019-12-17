@@ -56,7 +56,10 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
             services.AddSingleton<IQueryableMethodTranslatingExpressionVisitorFactory, SqliteQueryableMethodTranslatingExpressionVisitorFactory>();
 
          if (AddTempTableSupport)
+         {
             services.TryAdd<ITempTableCreator, SqliteTempTableCreator>(GetLifetime<ISqlGenerationHelper>());
+            services.AddTempTableSuffixComponents();
+         }
 
          if (AddBulkOperationSupport)
          {

@@ -45,7 +45,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
          if (options == null)
             throw new ArgumentNullException(nameof(options));
 
-         var tableName = GetTableName(ctx, entityType, options.TableNameProvider);
+         var (nameLease, tableName) = GetTableName(ctx, entityType, options.TableNameProvider);
          var sql = GetTempTableCreationSql(entityType, tableName, options);
 
          await ctx.Database.OpenConnectionAsync(cancellationToken);
@@ -62,7 +62,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
 
          var logger = ctx.GetService<IDiagnosticsLogger<DbLoggerCategory.Query>>();
 
-         return new SqliteTempTableReference(logger, _sqlGenerationHelper, tableName, ctx.Database);
+         return new SqliteTempTableReference(logger, _sqlGenerationHelper, tableName, ctx.Database, nameLease, options.DropTableOnDispose);
       }
 
       private string GetTempTableCreationSql(IEntityType entityType, string tableName, ITempTableCreationOptions options)
@@ -76,7 +76,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
 {GetColumnsDefinitions(entityType, options)}
       );";
 
-         if (!options.DropTempTableIfExists)
+         if (!options.TruncateTableIfExists)
             return sql;
 
          return $@"
@@ -161,14 +161,18 @@ DROP TABLE IF EXISTS {_sqlGenerationHelper.DelimitIdentifier(tableName, "temp")}
          }
       }
 
-      private static string GetTableName(DbContext ctx, IEntityType entityType, ITempTableNameProvider nameProvider)
+      private static (ITempTableNameLease nameLease, string tableName) GetTableName(
+         DbContext ctx,
+         IEntityType entityType,
+         ITempTableNameProvider nameProvider)
       {
          if (nameProvider == null)
             throw new ArgumentNullException(nameof(nameProvider));
 
-         var tableName = nameProvider.GetName(ctx, entityType);
+         var nameLease = nameProvider.LeaseName(ctx, entityType);
+         var name = nameLease.Name;
 
-         return tableName;
+         return (nameLease, name);
       }
    }
 }

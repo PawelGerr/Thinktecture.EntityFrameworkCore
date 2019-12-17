@@ -60,6 +60,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
             var lifetime = GetLifetime<ISqlGenerationHelper>();
             services.TryAdd<ISqlServerTempTableCreator, SqlServerTempTableCreator>(lifetime);
             services.TryAdd(ServiceDescriptor.Describe(typeof(ITempTableCreator), provider => provider.GetRequiredService<ISqlServerTempTableCreator>(), lifetime));
+            services.AddTempTableSuffixComponents();
          }
 
          if (AddBulkOperationSupport)

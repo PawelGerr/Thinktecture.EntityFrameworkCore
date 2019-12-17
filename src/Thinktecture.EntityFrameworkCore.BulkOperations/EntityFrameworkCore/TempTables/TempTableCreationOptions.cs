@@ -9,28 +9,34 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
    public sealed class TempTableCreationOptions : ITempTableCreationOptions
    {
       /// <inheritdoc />
-      public bool DropTempTableIfExists { get; set; }
+      public bool TruncateTableIfExists { get; set; }
 
       private ITempTableNameProvider _tableNameProvider;
 
       /// <inheritdoc />
       public ITempTableNameProvider TableNameProvider
       {
-         get => _tableNameProvider ?? NewGuidTempTableNameProvider.Instance; // TODO
+         get => _tableNameProvider;
          set => _tableNameProvider = value ?? throw new ArgumentNullException(nameof(value), "The table name provider cannot be null.");
       }
 
       /// <inheritdoc />
-      public bool CreatePrimaryKey { get; set; } = true;
+      public bool CreatePrimaryKey { get; set; }
 
       /// <inheritdoc />
       public IEntityMembersProvider? MembersToInclude { get; set; }
+
+      /// <inheritdoc />
+      public bool DropTableOnDispose { get; set; }
 
       /// <summary>
       /// Initializes a new instance of <see cref="TempTableCreationOptions"/>.
       /// </summary>
       public TempTableCreationOptions()
       {
+         _tableNameProvider = ReusingTempTableNameProvider.Instance;
+         CreatePrimaryKey = true;
+         DropTableOnDispose = true;
       }
 
       /// <summary>
@@ -47,9 +53,10 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
             throw new ArgumentNullException(nameof(options));
 
          CreatePrimaryKey = options.CreatePrimaryKey;
-         TableNameProvider = options.TableNameProvider;
-         DropTempTableIfExists = options.DropTempTableIfExists;
+         _tableNameProvider = options.TableNameProvider;
+         TruncateTableIfExists = options.TruncateTableIfExists;
          MembersToInclude = options.MembersToInclude;
+         DropTableOnDispose = options.DropTableOnDispose;
       }
    }
 }

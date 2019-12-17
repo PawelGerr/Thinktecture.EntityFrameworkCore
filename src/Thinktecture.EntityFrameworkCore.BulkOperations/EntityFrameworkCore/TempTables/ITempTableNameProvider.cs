@@ -10,11 +10,12 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
    public interface ITempTableNameProvider
    {
       /// <summary>
-      /// Gets the name for a temp table of provided <paramref name="entityType"/>.
+      /// Leases the name for a temp table for provided <paramref name="entityType"/>.
+      /// The instance of <see cref="ITempTableNameLease"/> should be disposed of to free the name for re-use.
       /// </summary>
       /// <param name="ctx">Database context.</param>
       /// <param name="entityType">Entity type to get the name of temp table for.</param>
       /// <returns>The name of the temp table.</returns>
-      string GetName(DbContext ctx, IEntityType entityType);
+      ITempTableNameLease LeaseName(DbContext ctx, IEntityType entityType);
    }
 }

@@ -37,10 +37,24 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       /// Drops/truncates the temp table if the table exists already.
       /// Default is <c>false</c>.
       /// </summary>
-      public bool DropTempTableIfExists
+      public bool TruncateTableIfExists
       {
-         get => _tempTableCreationOptions.DropTempTableIfExists;
-         set => _tempTableCreationOptions.DropTempTableIfExists = value;
+         get => _tempTableCreationOptions.TruncateTableIfExists;
+         set => _tempTableCreationOptions.TruncateTableIfExists = value;
+      }
+
+      /// <summary>
+      /// Indication whether to drop the temp table on dispose of <see cref="ITempTableQuery{T}"/>.
+      /// Default is <c>true</c>.
+      /// </summary>
+      /// <remarks>
+      /// Set to <c>false</c> for more performance if the same temp table is re-used very often.
+      /// Set <see cref="TruncateTableIfExists"/> to <c>true</c> on re-use.
+      /// </remarks>
+      public bool DropTableOnDispose
+      {
+         get => _tempTableCreationOptions.DropTableOnDispose;
+         set => _tempTableCreationOptions.DropTableOnDispose = value;
       }
 
       /// <summary>
@@ -120,7 +134,8 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
 
       private void InitializeFrom(ITempTableBulkInsertOptions options)
       {
-         DropTempTableIfExists = options.TempTableCreationOptions.DropTempTableIfExists;
+         TruncateTableIfExists = options.TempTableCreationOptions.TruncateTableIfExists;
+         DropTableOnDispose = options.TempTableCreationOptions.DropTableOnDispose;
          TableNameProvider = options.TempTableCreationOptions.TableNameProvider;
          MembersToInsert = options.BulkInsertOptions.MembersToInsert;
 

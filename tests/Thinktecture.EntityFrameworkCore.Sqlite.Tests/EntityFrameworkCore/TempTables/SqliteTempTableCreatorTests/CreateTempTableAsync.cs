@@ -49,6 +49,152 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqliteTempTableCreatorTest
       }
 
       [Fact]
+      public async Task Should_delete_temp_table_on_dispose_if_DropTableOnDispose_is_true()
+      {
+         ConfigureModel = builder => builder.ConfigureTempTableEntity<CustomTempTable>();
+
+         _optionsWithNonUniqueName.DropTableOnDispose = true;
+
+         using (await _sut.CreateTempTableAsync(ActDbContext, ActDbContext.GetEntityType<CustomTempTable>(), _optionsWithNonUniqueName).ConfigureAwait(false))
+         {
+         }
+
+         AssertDbContext.GetTempTableColumns<CustomTempTable>().ToList()
+                        .Should().HaveCount(0);
+      }
+
+      [Fact]
+      public async Task Should_not_delete_temp_table_on_dispose_if_DropTableOnDispose_is_false()
+      {
+         ConfigureModel = builder => builder.ConfigureTempTableEntity<CustomTempTable>();
+
+         _optionsWithNonUniqueName.DropTableOnDispose = false;
+
+         using (await _sut.CreateTempTableAsync(ActDbContext, ActDbContext.GetEntityType<CustomTempTable>(), _optionsWithNonUniqueName).ConfigureAwait(false))
+         {
+         }
+
+         var columns = AssertDbContext.GetTempTableColumns<CustomTempTable>().ToList();
+         columns.Should().HaveCount(2);
+
+         ValidateColumn(columns[0], nameof(CustomTempTable.Column1), "INTEGER", false);
+         ValidateColumn(columns[1], nameof(CustomTempTable.Column2), "TEXT", true);
+      }
+
+      [Fact]
+      public async Task Should_create_temp_table_with_reusable_name()
+      {
+         ConfigureModel = builder => builder.ConfigureTempTableEntity<CustomTempTable>();
+
+         var options = new TempTableCreationOptions { TableNameProvider = ReusingTempTableNameProvider.Instance };
+
+         // ReSharper disable once RedundantArgumentDefaultValue
+         await _sut.CreateTempTableAsync(ActDbContext, ActDbContext.GetEntityType<CustomTempTable>(), options).ConfigureAwait(false);
+
+         var columns = AssertDbContext.GetTempTableColumns("#CustomTempTable_1").ToList();
+         columns.Should().HaveCount(2);
+
+         ValidateColumn(columns[0], nameof(CustomTempTable.Column1), "INTEGER", false);
+         ValidateColumn(columns[1], nameof(CustomTempTable.Column2), "TEXT", true);
+      }
+
+      [Fact]
+      public async Task Should_reuse_name_after_it_is_freed()
+      {
+         ConfigureModel = builder => builder.ConfigureTempTableEntity<CustomTempTable>();
+
+         var options = new TempTableCreationOptions { TableNameProvider = ReusingTempTableNameProvider.Instance };
+
+         // ReSharper disable once RedundantArgumentDefaultValue
+         using (await _sut.CreateTempTableAsync(ActDbContext, ActDbContext.GetEntityType<CustomTempTable>(), options).ConfigureAwait(false))
+         {
+         }
+
+         await _sut.CreateTempTableAsync(ActDbContext, ActDbContext.GetEntityType<CustomTempTable>(), options).ConfigureAwait(false);
+
+         var columns = AssertDbContext.GetTempTableColumns("#CustomTempTable_1").ToList();
+         columns.Should().HaveCount(2);
+
+         ValidateColumn(columns[0], nameof(CustomTempTable.Column1), "INTEGER", false);
+         ValidateColumn(columns[1], nameof(CustomTempTable.Column2), "TEXT", true);
+      }
+
+      [Fact]
+      public async Task Should_reuse_name_after_it_is_freed_although_previously_not_dropped()
+      {
+         ConfigureModel = builder => builder.ConfigureTempTableEntity<CustomTempTable>();
+
+         var options = new TempTableCreationOptions
+                       {
+                          TableNameProvider = ReusingTempTableNameProvider.Instance,
+                          DropTableOnDispose = false
+                       };
+
+         // ReSharper disable once RedundantArgumentDefaultValue
+         using (await _sut.CreateTempTableAsync(ActDbContext, ActDbContext.GetEntityType<CustomTempTable>(), options).ConfigureAwait(false))
+         {
+         }
+
+         options.TruncateTableIfExists = true;
+         await _sut.CreateTempTableAsync(ActDbContext, ActDbContext.GetEntityType<CustomTempTable>(), options).ConfigureAwait(false);
+
+         var columns = AssertDbContext.GetTempTableColumns("#CustomTempTable_1").ToList();
+         columns.Should().HaveCount(2);
+
+         ValidateColumn(columns[0], nameof(CustomTempTable.Column1), "INTEGER", false);
+         ValidateColumn(columns[1], nameof(CustomTempTable.Column2), "TEXT", true);
+
+         AssertDbContext.GetTempTableColumns("#CustomTempTable_2").ToList()
+                        .Should().HaveCount(0);
+      }
+
+      [Fact]
+      public async Task Should_not_reuse_name_before_it_is_freed()
+      {
+         ConfigureModel = builder => builder.ConfigureTempTableEntity<CustomTempTable>();
+
+         var options = new TempTableCreationOptions { TableNameProvider = ReusingTempTableNameProvider.Instance };
+
+         // ReSharper disable once RedundantArgumentDefaultValue
+         using (await _sut.CreateTempTableAsync(ActDbContext, ActDbContext.GetEntityType<CustomTempTable>(), options).ConfigureAwait(false))
+         {
+            await _sut.CreateTempTableAsync(ActDbContext, ActDbContext.GetEntityType<CustomTempTable>(), options).ConfigureAwait(false);
+         }
+
+         var columns = AssertDbContext.GetTempTableColumns("#CustomTempTable_2").ToList();
+         columns.Should().HaveCount(2);
+
+         ValidateColumn(columns[0], nameof(CustomTempTable.Column1), "INTEGER", false);
+         ValidateColumn(columns[1], nameof(CustomTempTable.Column2), "TEXT", true);
+      }
+
+      [Fact]
+      public async Task Should_reuse_name_in_sorted_order()
+      {
+         ConfigureModel = builder => builder.ConfigureTempTableEntity<CustomTempTable>();
+
+         var options = new TempTableCreationOptions { TableNameProvider = ReusingTempTableNameProvider.Instance };
+
+         // #CustomTempTable_1
+         using (await _sut.CreateTempTableAsync(ActDbContext, ActDbContext.GetEntityType<CustomTempTable>(), options).ConfigureAwait(false))
+         {
+            // #CustomTempTable_2
+            using (await _sut.CreateTempTableAsync(ActDbContext, ActDbContext.GetEntityType<CustomTempTable>(), options).ConfigureAwait(false))
+            {
+            }
+         }
+
+         // #CustomTempTable_1
+         await _sut.CreateTempTableAsync(ActDbContext, ActDbContext.GetEntityType<CustomTempTable>(), options).ConfigureAwait(false);
+
+         var columns = AssertDbContext.GetTempTableColumns("#CustomTempTable_1").ToList();
+         columns.Should().HaveCount(2);
+
+         ValidateColumn(columns[0], nameof(CustomTempTable.Column1), "INTEGER", false);
+         ValidateColumn(columns[1], nameof(CustomTempTable.Column2), "TEXT", true);
+      }
+
+      [Fact]
       public async Task Should_create_temp_table_with_provided_column_only()
       {
          ConfigureModel = builder => builder.ConfigureTempTableEntity<CustomTempTable>();

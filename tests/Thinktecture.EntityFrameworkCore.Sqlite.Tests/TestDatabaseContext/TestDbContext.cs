@@ -43,6 +43,15 @@ namespace Thinktecture.TestDatabaseContext
       public IQueryable<SqliteTableInfo> GetTempTableColumns<T>()
       {
          var tableName = Model.GetEntityType(typeof(T)).GetTableName();
+
+         return GetTempTableColumns(tableName);
+      }
+
+      public IQueryable<SqliteTableInfo> GetTempTableColumns(string tableName)
+      {
+         if (tableName == null)
+            throw new ArgumentNullException(nameof(tableName));
+
          var helper = this.GetService<ISqlGenerationHelper>();
 
          return Set<SqliteTableInfo>()
