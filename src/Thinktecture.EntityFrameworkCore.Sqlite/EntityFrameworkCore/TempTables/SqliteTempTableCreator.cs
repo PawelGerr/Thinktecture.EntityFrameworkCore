@@ -48,11 +48,11 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
          var (nameLease, tableName) = GetTableName(ctx, entityType, options.TableNameProvider);
          var sql = GetTempTableCreationSql(entityType, tableName, options);
 
-         await ctx.Database.OpenConnectionAsync(cancellationToken);
+         await ctx.Database.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
 
          try
          {
-            await ctx.Database.ExecuteSqlRawAsync(sql, cancellationToken);
+            await ctx.Database.ExecuteSqlRawAsync(sql, cancellationToken).ConfigureAwait(false);
          }
          catch (Exception)
          {

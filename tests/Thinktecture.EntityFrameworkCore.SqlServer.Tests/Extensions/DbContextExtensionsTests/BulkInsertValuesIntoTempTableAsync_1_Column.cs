@@ -42,7 +42,7 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
 
          var values = new List<int> { 1, 1 };
          ActDbContext.Awaiting(ctx => ctx.BulkInsertValuesIntoTempTableAsync(values))
-                     .Should().Throw<SqlException>().Where(ex => ex.Message.StartsWith("The CREATE UNIQUE INDEX statement terminated because a duplicate key was found"));
+                     .Should().Throw<SqlException>().Where(ex => ex.Message.StartsWith("The CREATE UNIQUE INDEX statement terminated because a duplicate key was found", StringComparison.Ordinal));
       }
 
       [Fact]

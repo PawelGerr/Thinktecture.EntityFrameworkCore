@@ -125,7 +125,7 @@ namespace Thinktecture
 
          var entityType = ctx.Model.GetEntityType(typeof(T));
 
-         await bulkInsertExecutor.BulkInsertAsync(ctx, entityType, entities, options, cancellationToken);
+         await bulkInsertExecutor.BulkInsertAsync(ctx, entityType, entities, options, cancellationToken).ConfigureAwait(false);
       }
 
       /// <summary>

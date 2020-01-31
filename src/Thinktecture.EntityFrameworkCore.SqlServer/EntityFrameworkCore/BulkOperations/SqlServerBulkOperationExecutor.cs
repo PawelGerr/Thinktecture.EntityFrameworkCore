@@ -103,14 +103,14 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
 
          var columns = SetColumnMappings(bulkCopy, reader);
 
-         await ctx.Database.OpenConnectionAsync(cancellationToken);
+         await ctx.Database.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
 
          try
          {
             LogInserting(sqlServerOptions.SqlBulkCopyOptions, bulkCopy, columns);
             var stopwatch = Stopwatch.StartNew();
 
-            await bulkCopy.WriteToServerAsync(reader, cancellationToken);
+            await bulkCopy.WriteToServerAsync(reader, cancellationToken).ConfigureAwait(false);
 
             LogInserted(sqlServerOptions.SqlBulkCopyOptions, stopwatch.Elapsed, bulkCopy, columns);
          }
@@ -201,14 +201,14 @@ INSERT BULK {table} ({columns})", (long)duration.TotalMilliseconds,
          if (sqlServerOptions.PrimaryKeyCreation == SqlServerPrimaryKeyCreation.AfterBulkInsert && tempTableOptions.CreatePrimaryKey)
             tempTableOptions = new TempTableCreationOptions(tempTableOptions) { CreatePrimaryKey = false };
 
-         var tempTableReference = await tempTableCreator.CreateTempTableAsync(ctx, entityType, tempTableOptions, cancellationToken);
+         var tempTableReference = await tempTableCreator.CreateTempTableAsync(ctx, entityType, tempTableOptions, cancellationToken).ConfigureAwait(false);
 
          try
          {
-            await BulkInsertAsync(ctx, entityType, entities, null, tempTableReference.Name, options.BulkInsertOptions, cancellationToken);
+            await BulkInsertAsync(ctx, entityType, entities, null, tempTableReference.Name, options.BulkInsertOptions, cancellationToken).ConfigureAwait(false);
 
             if (sqlServerOptions.PrimaryKeyCreation == SqlServerPrimaryKeyCreation.AfterBulkInsert)
-               await tempTableCreator.CreatePrimaryKeyAsync(ctx, entityType, tempTableReference.Name, options.TempTableCreationOptions.TruncateTableIfExists, cancellationToken);
+               await tempTableCreator.CreatePrimaryKeyAsync(ctx, entityType, tempTableReference.Name, options.TempTableCreationOptions.TruncateTableIfExists, cancellationToken).ConfigureAwait(false);
 
             var query = ctx.Set<T>().FromSqlRaw($"SELECT * FROM {_sqlGenerationHelper.DelimitIdentifier(tempTableReference.Name)}");
 

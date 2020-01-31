@@ -71,7 +71,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
          var entityType = ArrangeDbContext.GetEntityType<TestEntity>();
          await _sut.CreatePrimaryKeyAsync(ArrangeDbContext, entityType, tempTableReference.Name);
 
-         _sut.Awaiting(async sut => await sut.CreatePrimaryKeyAsync(ActDbContext, entityType, tempTableReference.Name, true))
+         _sut.Awaiting(sut => sut.CreatePrimaryKeyAsync(ActDbContext, entityType, tempTableReference.Name, true))
              .Should().NotThrow();
       }
 
@@ -84,7 +84,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
          await _sut.CreatePrimaryKeyAsync(ArrangeDbContext, entityType, tempTableReference.Name);
 
          // ReSharper disable once RedundantArgumentDefaultValue
-         _sut.Awaiting(async sut => await sut.CreatePrimaryKeyAsync(ActDbContext, entityType, tempTableReference.Name, false))
+         _sut.Awaiting(sut => sut.CreatePrimaryKeyAsync(ActDbContext, entityType, tempTableReference.Name, false))
              .Should()
              .Throw<SqlException>();
       }

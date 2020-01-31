@@ -372,7 +372,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
       [Fact]
       public void Should_throw_if_temp_table_is_not_introduced()
       {
-         _sut.Awaiting(async c => await c.CreateTempTableAsync(ActDbContext, ActDbContext.GetEntityType<TempTable<int>>(), _optionsWithNonUniqueName))
+         _sut.Awaiting(c => c.CreateTempTableAsync(ActDbContext, ActDbContext.GetEntityType<TempTable<int>>(), _optionsWithNonUniqueName))
              .Should().Throw<ArgumentException>();
       }
 

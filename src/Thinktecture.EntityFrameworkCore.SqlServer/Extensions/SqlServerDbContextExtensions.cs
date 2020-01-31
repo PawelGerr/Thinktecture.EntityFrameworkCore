@@ -47,18 +47,18 @@ namespace Thinktecture
          if (ctx == null)
             throw new ArgumentNullException(nameof(ctx));
 
-         await using var command = ctx.Database.GetDbConnection().CreateCommand();
+         using var command = ctx.Database.GetDbConnection().CreateCommand();
 
          command.Transaction = ctx.Database.CurrentTransaction?.GetDbTransaction();
 #pragma warning disable CA2100
          command.CommandText = $"SELECT {dbFunction};";
 #pragma warning restore CA2100
 
-         await ctx.Database.OpenConnectionAsync(cancellationToken);
+         await ctx.Database.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
 
          try
          {
-            var bytes = (byte[])await command.ExecuteScalarAsync(cancellationToken);
+            var bytes = (byte[])await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
 
             return (long)_rowVersionConverter.ConvertFromProvider(bytes);
          }

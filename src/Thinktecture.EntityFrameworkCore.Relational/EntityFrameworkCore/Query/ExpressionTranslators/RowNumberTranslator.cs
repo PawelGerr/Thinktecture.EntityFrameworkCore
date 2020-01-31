@@ -50,7 +50,7 @@ namespace Thinktecture.EntityFrameworkCore.Query.ExpressionTranslators
             case nameof(RelationalDbFunctionsExtensions.RowNumber):
             {
                var partitionBy = arguments.Skip(1).Take(arguments.Count - 2).ToList();
-               var orderings = (RowNumberClauseOrderingsExpression)arguments[^1];
+               var orderings = (RowNumberClauseOrderingsExpression)arguments[arguments.Count - 1];
                return new RowNumberExpression(partitionBy, orderings.Orderings, RelationalTypeMapping.NullMapping);
             }
             default:
