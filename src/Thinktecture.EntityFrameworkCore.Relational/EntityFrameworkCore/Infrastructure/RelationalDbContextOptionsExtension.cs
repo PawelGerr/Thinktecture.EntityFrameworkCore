@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.Migrations;
@@ -12,6 +13,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Thinktecture.EntityFrameworkCore.Migrations;
 using Thinktecture.EntityFrameworkCore.Query;
+using Thinktecture.EntityFrameworkCore.Storage;
 
 namespace Thinktecture.EntityFrameworkCore.Infrastructure
 {
@@ -46,6 +48,11 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
          get => _componentDecorator ?? _defaultDecorator;
          set => _componentDecorator = value;
       }
+
+      /// <summary>
+      /// Adds support for nested transactions.
+      /// </summary>
+      public bool AddNestedTransactionsSupport { get; set; }
 
       /// <summary>
       /// Enables and disables support for "RowNumber".
@@ -97,10 +104,26 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
          if (AddSchemaRespectingComponents)
             RegisterDefaultSchemaRespectingComponents(services);
 
+         if (AddNestedTransactionsSupport)
+            RegisterNestedTransactionManager(services);
+
          foreach (var descriptor in _serviceDescriptors)
          {
             services.Add(descriptor);
          }
+      }
+
+      private void RegisterNestedTransactionManager([NotNull] IServiceCollection services)
+      {
+         var lifetime = ComponentDecorator.GetLifetime<IRelationalConnection>(services);
+
+         services.Add(ServiceDescriptor.Describe(typeof(NestedRelationalTransactionManager),
+                                                 provider => new NestedRelationalTransactionManager(
+                                                                                                    provider.GetRequiredService<IDiagnosticsLogger<RelationalDbLoggerCategory.NestedTransaction>>(),
+                                                                                                    provider.GetRequiredService<IRelationalConnection>()),
+                                                 lifetime));
+         services.Add(ServiceDescriptor.Describe(typeof(IDbContextTransactionManager), provider => provider.GetRequiredService<NestedRelationalTransactionManager>(), lifetime));
+         services.Add(ServiceDescriptor.Describe(typeof(IRelationalTransactionManager), provider => provider.GetRequiredService<NestedRelationalTransactionManager>(), lifetime));
       }
 
       private void RegisterDefaultSchemaRespectingComponents(IServiceCollection services)
@@ -172,6 +195,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
    'Number of custom services'={_extension._serviceDescriptors.Count},
    'Number of evaluatable expression filter plugins'={_extension._evaluatableExpressionFilterPlugins.Count},
    'Default schema respecting components added'={_extension.AddSchemaRespectingComponents},
+   'NestedTransactionsSupport'={_extension.AddNestedTransactionsSupport}
    'RowNumberSupport'={_extension.AddRowNumberSupport}
 }}";
 
@@ -191,6 +215,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
             debugInfo["Thinktecture:AddSchemaRespectingComponents"] = _extension.AddSchemaRespectingComponents.ToString(CultureInfo.InvariantCulture);
             debugInfo["Thinktecture:EvaluatableExpressionFilterPlugins"] = String.Join(", ", _extension._evaluatableExpressionFilterPlugins.Select(t => t.DisplayName()));
             debugInfo["Thinktecture:ServiceDescriptors"] = String.Join(", ", _extension._serviceDescriptors);
+            debugInfo["Thinktecture:NestedTransactionsSupport"] = _extension.AddNestedTransactionsSupport.ToString(CultureInfo.InvariantCulture);
             debugInfo["Thinktecture:RowNumberSupport"] = _extension.AddRowNumberSupport.ToString(CultureInfo.InvariantCulture);
          }
       }

@@ -30,7 +30,7 @@ namespace Thinktecture.TestDatabaseContext
       {
          base.OnModelCreating(modelBuilder);
 
-         modelBuilder.Entity<TestQuery>().HasNoKey();
+         modelBuilder.Entity<TestQuery>().HasNoKey().ToView("TestQuery");
 
          modelBuilder.HasDbFunction(() => TestDbFunction());
 
