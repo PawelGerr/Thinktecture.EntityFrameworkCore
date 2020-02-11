@@ -55,7 +55,8 @@ namespace Thinktecture
                                                     .EnableSensitiveDataLogging()
                                                     .UseLoggerFactory(_loggerFactory)
                                                     .AddSchemaRespectingComponents()
-                                                    .AddRowNumberSupport());
+                                                    .AddRowNumberSupport()
+                                                    .AddNestedTransactionSupport());
 
          if (schema != null)
             services.AddSingleton<IDbDefaultSchema>(new DbDefaultSchema(schema));

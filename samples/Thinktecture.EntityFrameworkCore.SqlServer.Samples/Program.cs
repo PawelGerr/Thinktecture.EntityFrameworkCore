@@ -47,9 +47,28 @@ namespace Thinktecture
 
             // ROWNUMBER
             await DoRowNumberAsync(ctx);
+
+            // Nested transactions
+            await DoNestedTransactionsAsync(ctx, orderId);
          }
 
          Console.WriteLine("Exiting samples...");
+      }
+
+      private static async Task DoNestedTransactionsAsync(DemoDbContext ctx, Guid orderId)
+      {
+         await using var tx = await ctx.Database.BeginTransactionAsync();
+
+         await using var innerTx = await ctx.Database.BeginTransactionAsync();
+
+         var order = await ctx.Orders.FirstAsync(c => c.Id == orderId);
+         order.Text = $"Changed ({DateTime.Now})";
+
+         await ctx.SaveChangesAsync();
+
+         innerTx.Commit();
+
+         tx.Commit();
       }
 
       private static async Task FetchRowVersionsAsync(DemoDbContext ctx)
