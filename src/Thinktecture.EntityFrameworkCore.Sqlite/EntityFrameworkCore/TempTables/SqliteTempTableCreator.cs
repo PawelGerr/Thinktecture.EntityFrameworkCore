@@ -131,7 +131,7 @@ DROP TABLE IF EXISTS {_sqlGenerationHelper.DelimitIdentifier(tableName, "temp")}
          return sb.ToString();
       }
 
-      private static void CreatePkClause(IEntityType entityType, IReadOnlyList<IProperty> properties, StringBuilder sb)
+      private void CreatePkClause(IEntityType entityType, IReadOnlyList<IProperty> properties, StringBuilder sb)
       {
          var keyProperties = entityType.FindPrimaryKey()?.Properties ?? entityType.GetProperties();
 
@@ -153,7 +153,7 @@ DROP TABLE IF EXISTS {_sqlGenerationHelper.DelimitIdentifier(tableName, "temp")}
                if (!isFirst)
                   sb.Append(", ");
 
-               sb.Append(columnName);
+               sb.Append(_sqlGenerationHelper.DelimitIdentifier(columnName));
                isFirst = false;
             }
 

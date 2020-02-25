@@ -109,7 +109,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
          {
          }
 
-         await _sut.CreateTempTableAsync(ActDbContext, ActDbContext.GetEntityType<CustomTempTable>(), options).ConfigureAwait(false);
+         using var tempTable = await _sut.CreateTempTableAsync(ActDbContext, ActDbContext.GetEntityType<CustomTempTable>(), options).ConfigureAwait(false);
 
          var columns = AssertDbContext.GetTempTableColumns("#CustomTempTable_1").ToList();
          columns.Should().HaveCount(2);
@@ -136,7 +136,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
          }
 
          options.TruncateTableIfExists = true;
-         await _sut.CreateTempTableAsync(ActDbContext, ActDbContext.GetEntityType<CustomTempTable>(), options).ConfigureAwait(false);
+         using var tempTable = await _sut.CreateTempTableAsync(ActDbContext, ActDbContext.GetEntityType<CustomTempTable>(), options).ConfigureAwait(false);
 
          var columns = AssertDbContext.GetTempTableColumns("#CustomTempTable_1").ToList();
          columns.Should().HaveCount(2);
