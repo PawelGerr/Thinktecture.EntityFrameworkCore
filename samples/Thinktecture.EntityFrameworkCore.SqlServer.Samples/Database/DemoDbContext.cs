@@ -32,10 +32,15 @@ namespace Thinktecture.Database
          modelBuilder.ConfigureTempTable<Guid>();
          modelBuilder.ConfigureTempTable<Guid, Guid>();
 
-         modelBuilder.Entity<Customer>()
-                     .Property(c => c.RowVersion)
-                     .IsRowVersion()
-                     .HasConversion(new NumberToBytesConverter<long>());
+         modelBuilder.Entity<Customer>(builder =>
+                                       {
+                                          builder.Property(c => c.FirstName).HasMaxLength(100);
+                                          builder.Property(c => c.LastName).HasMaxLength(100);
+
+                                          builder.Property(c => c.RowVersion)
+                                                 .IsRowVersion()
+                                                 .HasConversion(new NumberToBytesConverter<long>());
+                                       });
 
          modelBuilder.Entity<OrderItem>().HasKey(i => new { i.OrderId, i.ProductId });
       }

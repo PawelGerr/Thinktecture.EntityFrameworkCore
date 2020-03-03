@@ -86,11 +86,17 @@ namespace Thinktecture
                                   .Select(c => new
                                                {
                                                   c.Id,
-                                                  RowNumber = EF.Functions.RowNumber(EF.Functions.OrderBy(c.Id))
+                                                  FirstName_RowNumber = EF.Functions.RowNumber(EF.Functions.OrderBy(c.FirstName)),
+                                                  LastName_RowNumber = EF.Functions.RowNumber(EF.Functions.OrderBy(c.LastName)),
+                                                  FirstAndLastName1_RowNumber = EF.Functions.RowNumber(EF.Functions.OrderBy(c.FirstName + " " + c.LastName)),
+                                                  FirstAndLastName2_RowNumber = EF.Functions.RowNumber(EF.Functions.OrderBy(c.FirstName).ThenBy(c.LastName))
                                                })
+                                  .AsSubQuery()
+                                  .OrderBy(c => c.FirstName_RowNumber)
+                                  .ThenBy(c => c.LastName_RowNumber)
                                   .ToListAsync();
 
-         Console.WriteLine($"Found customers: {String.Join(", ", customers.Select(c => $"{{ CustomerId={c.Id}, RowNumber={c.RowNumber} }}"))}");
+         Console.WriteLine($"Found customers: {String.Join(", ", customers.Select(c => $"{{ CustomerId={c.Id}, FirstName_RowNumber={c.FirstName_RowNumber}, LastName_RowNumber={c.LastName_RowNumber}, FirstAndLastName1_RowNumber={c.FirstAndLastName1_RowNumber}, FirstAndLastName2_RowNumber={c.FirstAndLastName2_RowNumber} }}"))}");
 
          var latestOrders = await ctx.Orders
                                      .Select(o => new
@@ -120,7 +126,13 @@ namespace Thinktecture
 
       private static async Task DoBulkInsertIntoRealTableAsync(DemoDbContext ctx)
       {
-         var customersToInsert = new Customer { Id = Guid.NewGuid() };
+         var id = Guid.NewGuid();
+         var customersToInsert = new Customer
+                                 {
+                                    Id = id,
+                                    FirstName = $"First name of '{id}'",
+                                    LastName = $"Last name of '{id}'"
+                                 };
          await ctx.BulkInsertAsync(new[] { customersToInsert });
 
          var insertedCustomer = await ctx.Customers.FirstAsync(c => c.Id == customersToInsert.Id);
@@ -167,7 +179,16 @@ namespace Thinktecture
 
       private static async Task DoBulkInsertEntitiesIntoTempTableAsync(DemoDbContext ctx)
       {
-         var customersToInsert = new[] { new Customer { Id = Guid.NewGuid() } };
+         var id = Guid.NewGuid();
+         var customersToInsert = new[]
+                                 {
+                                    new Customer
+                                    {
+                                       Id = id,
+                                       FirstName = $"First name of '{id}'",
+                                       LastName = $"Last name of '{id}'"
+                                    }
+                                 };
 
          using var tempTableQuery = await ctx.BulkInsertIntoTempTableAsync(customersToInsert);
 

@@ -15,7 +15,12 @@ namespace Thinktecture
 
          if (!await ctx.Customers.AnyAsync(c => c.Id == id))
          {
-            ctx.Customers.Add(new Customer { Id = id });
+            ctx.Customers.Add(new Customer
+                              {
+                                 Id = id,
+                                 FirstName = $"First name of '{id}'",
+                                 LastName = $"Last name of '{id}'"
+                              });
             await ctx.SaveChangesAsync();
          }
 
