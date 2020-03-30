@@ -53,6 +53,7 @@ namespace Thinktecture
             throw new ArgumentNullException(nameof(sqliteOptionsBuilder));
 
          var infrastructure = (IRelationalDbContextOptionsBuilderInfrastructure)sqliteOptionsBuilder;
+         infrastructure.OptionsBuilder.TryAddExtension<RelationalDbContextOptionsExtension>();
          infrastructure.OptionsBuilder.AddOrUpdateExtension(callback);
 
          return sqliteOptionsBuilder;

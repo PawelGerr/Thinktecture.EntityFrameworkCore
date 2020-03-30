@@ -55,6 +55,7 @@ namespace Thinktecture
             throw new ArgumentNullException(nameof(sqlServerOptionsBuilder));
 
          var infrastructure = (IRelationalDbContextOptionsBuilderInfrastructure)sqlServerOptionsBuilder;
+         infrastructure.OptionsBuilder.TryAddExtension<RelationalDbContextOptionsExtension>();
          infrastructure.OptionsBuilder.AddOrUpdateExtension(callback);
 
          return sqlServerOptionsBuilder;

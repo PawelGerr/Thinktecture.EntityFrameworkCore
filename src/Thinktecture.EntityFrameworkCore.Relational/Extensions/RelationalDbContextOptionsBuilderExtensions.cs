@@ -187,6 +187,23 @@ namespace Thinktecture
       }
 
       /// <summary>
+      /// Adds an extension of type <typeparamref name="TExtension"/> if it is not added yet.
+      /// </summary>
+      /// <param name="optionsBuilder">Options builder.</param>
+      /// <typeparam name="TExtension">Type of the extension.</typeparam>
+      /// <exception cref="ArgumentNullException"><paramref name="optionsBuilder"/> is null.</exception>
+      public static void TryAddExtension<TExtension>(this DbContextOptionsBuilder optionsBuilder)
+         where TExtension : class, IDbContextOptionsExtension, new()
+      {
+         if (optionsBuilder == null)
+            throw new ArgumentNullException(nameof(optionsBuilder));
+
+         var extension = optionsBuilder.Options.FindExtension<TExtension>() ?? new TExtension();
+         var builder = (IDbContextOptionsBuilderInfrastructure)optionsBuilder;
+         builder.AddOrUpdateExtension(extension);
+      }
+
+      /// <summary>
       /// Adds or updates an extension of type <typeparamref name="TExtension"/>.
       /// </summary>
       /// <param name="optionsBuilder">Options builder.</param>
