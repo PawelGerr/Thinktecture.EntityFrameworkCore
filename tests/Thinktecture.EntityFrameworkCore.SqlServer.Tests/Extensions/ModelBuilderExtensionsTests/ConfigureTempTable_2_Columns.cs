@@ -9,6 +9,7 @@ using Xunit.Abstractions;
 namespace Thinktecture.Extensions.ModelBuilderExtensionsTests
 {
    // ReSharper disable once InconsistentNaming
+   [Collection("BulkInsertTempTableAsync")]
    public class ConfigureTempTable_2_Columns : IntegrationTestsBase
    {
       public ConfigureTempTable_2_Columns(ITestOutputHelper testOutputHelper)

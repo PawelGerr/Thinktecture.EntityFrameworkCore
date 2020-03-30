@@ -26,7 +26,7 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
          ConfigureModel = builder => builder.ConfigureTempTableEntity<CustomTempTable>().Property(t => t.Column2).HasMaxLength(100).IsRequired();
 
          var entities = new List<CustomTempTable> { new CustomTempTable(1, "value") };
-         var query = await ActDbContext.BulkInsertIntoTempTableAsync(entities);
+         await using var query = await ActDbContext.BulkInsertIntoTempTableAsync(entities);
 
          var tempTable = await query.Query.ToListAsync();
          tempTable.Should()
@@ -48,7 +48,7 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
          await ArrangeDbContext.SaveChangesAsync();
 
          var entities = new List<TestEntity> { entity };
-         var query = await ActDbContext.BulkInsertIntoTempTableAsync(entities);
+         await using var query = await ActDbContext.BulkInsertIntoTempTableAsync(entities);
 
          var tempTable = await query.Query.ToListAsync();
          tempTable.Should()
@@ -65,7 +65,7 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
       [Fact]
       public async Task Should_return_disposable_query()
       {
-         var tempTableQuery = await ActDbContext.BulkInsertIntoTempTableAsync(Array.Empty<TestEntity>());
+         await using var tempTableQuery = await ActDbContext.BulkInsertIntoTempTableAsync(Array.Empty<TestEntity>());
          tempTableQuery.Dispose();
 
          tempTableQuery.Awaiting(t => t.Query.ToListAsync())

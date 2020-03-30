@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace Thinktecture.EntityFrameworkCore.TempTables
 {
@@ -33,6 +34,18 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
       {
          _tempTableReference?.Dispose();
          _tempTableReference = null;
+      }
+
+      /// <inheritdoc />
+      public async ValueTask DisposeAsync()
+      {
+         var tableRef = _tempTableReference;
+
+         if (tableRef != null)
+         {
+            await tableRef.DisposeAsync().ConfigureAwait(false);
+            _tempTableReference = null;
+         }
       }
    }
 }

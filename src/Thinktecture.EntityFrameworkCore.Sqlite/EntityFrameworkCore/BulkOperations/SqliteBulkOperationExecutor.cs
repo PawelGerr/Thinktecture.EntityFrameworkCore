@@ -249,7 +249,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
          }
          catch (Exception)
          {
-            tempTableReference.Dispose();
+            await tempTableReference.DisposeAsync().ConfigureAwait(false);
             throw;
          }
       }

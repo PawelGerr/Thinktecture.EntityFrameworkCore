@@ -69,7 +69,7 @@ namespace Thinktecture
       private static async Task DoBulkInsertIntoTempTableAsync(DemoDbContext ctx)
       {
          var customersToInsert = new Customer { Id = Guid.NewGuid() };
-         using var tempTable = await ctx.BulkInsertIntoTempTableAsync(new[] { customersToInsert });
+         await using var tempTable = await ctx.BulkInsertIntoTempTableAsync(new[] { customersToInsert });
 
          var insertedCustomer = await tempTable.Query.FirstAsync(c => c.Id == customersToInsert.Id);
 

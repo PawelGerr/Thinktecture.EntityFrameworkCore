@@ -216,7 +216,7 @@ INSERT BULK {table} ({columns})", (long)duration.TotalMilliseconds,
          }
          catch (Exception)
          {
-            tempTableReference.Dispose();
+            await tempTableReference.DisposeAsync().ConfigureAwait(false);
             throw;
          }
       }

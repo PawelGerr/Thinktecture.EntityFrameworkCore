@@ -8,7 +8,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
    /// Disposal of this query will delete the corresponding temp table.
    /// </summary>
    /// <typeparam name="T">Type of the query item.</typeparam>
-   public interface ITempTableQuery<out T> : IDisposable
+   public interface ITempTableQuery<out T> : IAsyncDisposable, IDisposable
    {
       /// <summary>
       /// The query itself.

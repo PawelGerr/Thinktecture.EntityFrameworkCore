@@ -1,5 +1,6 @@
 using System;
 using System.Data;
+using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
@@ -63,6 +64,32 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
 
             _database.ExecuteSqlRaw($"DROP TABLE IF EXISTS {_sqlGenerationHelper.DelimitIdentifier(Name)}");
             _database.CloseConnection();
+         }
+         catch (ObjectDisposedException ex)
+         {
+            _logger.Logger.LogWarning(ex, $"Trying to dispose of the temp table reference '{Name}' after the corresponding DbContext has been disposed.");
+         }
+         finally
+         {
+            _nameLease.Dispose();
+         }
+      }
+
+      /// <inheritdoc />
+      public async ValueTask DisposeAsync()
+      {
+         if (_isDisposed)
+            return;
+
+         _isDisposed = true;
+
+         try
+         {
+            if (!_dropTableOnDispose || _database.GetDbConnection().State != ConnectionState.Open)
+               return;
+
+            await _database.ExecuteSqlRawAsync($"DROP TABLE IF EXISTS {_sqlGenerationHelper.DelimitIdentifier(Name)}").ConfigureAwait(false);
+            await _database.CloseConnectionAsync().ConfigureAwait(false);
          }
          catch (ObjectDisposedException ex)
          {

@@ -158,7 +158,7 @@ namespace Thinktecture
 
       private static async Task DoBulkInsertIntoTempTableAsync(DemoDbContext ctx, List<Guid> customerIds)
       {
-         using var tempTableQuery = await ctx.BulkInsertValuesIntoTempTableAsync(customerIds);
+         await using var tempTableQuery = await ctx.BulkInsertValuesIntoTempTableAsync(customerIds);
 
          var customers = await ctx.Customers.Join(tempTableQuery.Query, c => c.Id, t => t.Column1, (c, t) => c).ToListAsync();
          Console.WriteLine($"Found customers: {String.Join(", ", customers.Select(c => c.Id))}");
@@ -166,7 +166,7 @@ namespace Thinktecture
 
       private static async Task DoBulkInsertIntoTempTableAsync(DemoDbContext ctx, List<(Guid customerId, Guid productId)> tuples)
       {
-         using var tempTableQuery = await ctx.BulkInsertValuesIntoTempTableAsync(tuples);
+         await using var tempTableQuery = await ctx.BulkInsertValuesIntoTempTableAsync(tuples);
 
          var orderItems = await ctx.OrderItems.Join(tempTableQuery.Query,
                                                     i => new { i.Order.CustomerId, i.ProductId },
@@ -190,7 +190,7 @@ namespace Thinktecture
                                     }
                                  };
 
-         using var tempTableQuery = await ctx.BulkInsertIntoTempTableAsync(customersToInsert);
+         await using var tempTableQuery = await ctx.BulkInsertIntoTempTableAsync(customersToInsert);
 
          var tempCustomers = await tempTableQuery.Query.ToListAsync();
 
