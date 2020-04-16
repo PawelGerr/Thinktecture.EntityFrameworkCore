@@ -127,12 +127,7 @@ namespace Thinktecture
       private static async Task DoBulkInsertIntoRealTableAsync(DemoDbContext ctx)
       {
          var id = Guid.NewGuid();
-         var customersToInsert = new Customer
-                                 {
-                                    Id = id,
-                                    FirstName = $"First name of '{id}'",
-                                    LastName = $"Last name of '{id}'"
-                                 };
+         var customersToInsert = new Customer(id, $"First name of '{id}'", $"Last name of '{id}'");
          await ctx.BulkInsertAsync(new[] { customersToInsert });
 
          var insertedCustomer = await ctx.Customers.FirstAsync(c => c.Id == customersToInsert.Id);
@@ -142,7 +137,7 @@ namespace Thinktecture
 
       private static async Task DoBulkInsertSpecifiedColumnsIntoRealTableAsync(DemoDbContext ctx)
       {
-         var customersToInsert = new Customer { Id = Guid.NewGuid() };
+         var customersToInsert = new Customer(Guid.NewGuid(), "First name", "Last name");
 
          // only "Id" is sent to the DB
          // alternative ways to specify the column:
@@ -182,12 +177,7 @@ namespace Thinktecture
          var id = Guid.NewGuid();
          var customersToInsert = new[]
                                  {
-                                    new Customer
-                                    {
-                                       Id = id,
-                                       FirstName = $"First name of '{id}'",
-                                       LastName = $"Last name of '{id}'"
-                                    }
+                                    new Customer(id, $"First name of '{id}'", $"Last name of '{id}'")
                                  };
 
          await using var tempTableQuery = await ctx.BulkInsertIntoTempTableAsync(customersToInsert);
