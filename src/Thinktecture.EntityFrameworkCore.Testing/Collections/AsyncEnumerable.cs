@@ -1,9 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.Query.Internal;
 
 namespace Thinktecture.Collections
@@ -55,8 +58,12 @@ namespace Thinktecture.Collections
          }
       }
 
+      [SuppressMessage("ReSharper", "EF1001")]
       private sealed class AsyncQueryProvider : IAsyncQueryProvider
       {
+         private static readonly MethodInfo _genericCreateQuery = typeof(AsyncQueryProvider).GetMethods(BindingFlags.Instance | BindingFlags.Public)
+                                                                                            .First(m => m.Name == nameof(CreateQuery) && m.IsGenericMethod);
+
          private readonly IQueryProvider _queryProvider;
 
          internal AsyncQueryProvider(IQueryProvider queryProvider)
@@ -66,6 +73,14 @@ namespace Thinktecture.Collections
 
          public IQueryable CreateQuery(Expression expression)
          {
+            if (expression.Type.IsQueryableType())
+            {
+               var entityType = expression.Type.GetGenericArguments()[0];
+
+               if (entityType != typeof(T))
+                  return (IQueryable)_genericCreateQuery.MakeGenericMethod(entityType).Invoke(this, new object[] { expression });
+            }
+
             return new AsyncEnumerable<T>(expression);
          }
 
