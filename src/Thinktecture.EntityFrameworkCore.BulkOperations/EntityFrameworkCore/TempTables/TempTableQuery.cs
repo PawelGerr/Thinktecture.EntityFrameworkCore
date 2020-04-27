@@ -11,12 +11,18 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
    /// <typeparam name="T">Type of the query item.</typeparam>
    public sealed class TempTableQuery<T> : ITempTableQuery<T>
    {
+      private ITempTableReference? _tempTableReference;
+      private IQueryable<T>? _query;
+
       /// <summary>
       /// The query itself.
       /// </summary>
-      public IQueryable<T> Query { get; }
+      public IQueryable<T> Query => _query ?? throw new ObjectDisposedException(nameof(TempTableQuery<T>));
 
-      private ITempTableReference? _tempTableReference;
+      /// <summary>
+      /// The name of the temp table.
+      /// </summary>
+      public string Name => _tempTableReference?.Name ?? throw new ObjectDisposedException(nameof(TempTableQuery<T>));
 
       /// <summary>
       /// Initializes new instance of <see cref="TempTableQuery{T}"/>.
@@ -25,7 +31,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
       /// <param name="tempTableReference">Reference to a temp table.</param>
       public TempTableQuery(IQueryable<T> query, ITempTableReference tempTableReference)
       {
-         Query = query ?? throw new ArgumentNullException(nameof(query));
+         _query = query ?? throw new ArgumentNullException(nameof(query));
          _tempTableReference = tempTableReference ?? throw new ArgumentNullException(nameof(tempTableReference));
       }
 
@@ -45,6 +51,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
          {
             await tableRef.DisposeAsync().ConfigureAwait(false);
             _tempTableReference = null;
+            _query = null;
          }
       }
    }

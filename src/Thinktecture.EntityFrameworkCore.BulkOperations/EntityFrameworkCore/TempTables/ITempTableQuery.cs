@@ -14,5 +14,10 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
       /// The query itself.
       /// </summary>
       IQueryable<T> Query { get; }
+
+      /// <summary>
+      /// The name of the temp table.
+      /// </summary>
+      string Name { get; }
    }
 }
