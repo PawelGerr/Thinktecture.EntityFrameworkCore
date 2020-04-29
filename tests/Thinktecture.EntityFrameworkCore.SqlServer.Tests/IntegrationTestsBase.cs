@@ -21,7 +21,6 @@ namespace Thinktecture
    [SuppressMessage("ReSharper", "EF1001")]
    public class IntegrationTestsBase : SqlServerDbContextIntegrationTests<TestDbContext>
    {
-      private static readonly ConcurrentDictionary<ITestOutputHelper, ILoggerFactory> _loggerFactoryCache = new ConcurrentDictionary<ITestOutputHelper, ILoggerFactory>();
 
       protected ILoggerFactory LoggerFactory { get; }
 
@@ -31,7 +30,7 @@ namespace Thinktecture
          : base(TestContext.Instance.ConnectionString, useSharedTables)
       {
          DisableModelCache = true;
-         LoggerFactory = CreateLoggerFactory(testOutputHelper);
+         LoggerFactory = TestContext.Instance.GetLoggerFactory(testOutputHelper);
          UseLoggerFactory(LoggerFactory);
       }
 
@@ -50,20 +49,7 @@ namespace Thinktecture
          return ctx;
       }
 
-      private ILoggerFactory CreateLoggerFactory(ITestOutputHelper testOutputHelper)
-      {
-         if (testOutputHelper == null)
-            throw new ArgumentNullException(nameof(testOutputHelper));
 
-         return _loggerFactoryCache.GetOrAdd(testOutputHelper, helper =>
-                                                               {
-                                                                  var loggerConfig = new LoggerConfiguration()
-                                                                                     .WriteTo.TestOutput(testOutputHelper, outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}");
-
-                                                                  return new LoggerFactory()
-                                                                     .AddSerilog(loggerConfig.CreateLogger());
-                                                               });
-      }
 
       /// <inheritdoc />
       protected override DbContextOptionsBuilder<TestDbContext> CreateOptionsBuilder(DbConnection connection)

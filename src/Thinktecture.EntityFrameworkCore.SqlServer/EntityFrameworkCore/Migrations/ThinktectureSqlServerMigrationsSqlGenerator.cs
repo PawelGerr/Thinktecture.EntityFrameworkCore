@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Migrations.Operations;
@@ -11,6 +13,8 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
    /// </summary>
    public class ThinktectureSqlServerMigrationsSqlGenerator : SqlServerMigrationsSqlGenerator
    {
+      private bool _closeScopeBeforeEndingStatement;
+
       /// <summary>
       /// Initializes <see cref="ThinktectureSqlServerMigrationsSqlGenerator"/>.
       /// </summary>
@@ -27,6 +31,9 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
          if (builder == null)
             throw new ArgumentNullException(nameof(builder));
 
+         if (operation.IfExistsCheckRequired())
+            throw new InvalidOperationException($"The check '{nameof(SqlServerOperationBuilderExtensions.IfExists)}()' is not allowed with '{operation.GetType().Name}'");
+
          if (!operation.IfNotExistsCheckRequired())
          {
             base.Generate(operation, model, builder, terminate);
@@ -36,14 +43,48 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
          builder.AppendLine($"IF(OBJECT_ID('{DelimitIdentifier(operation.Name, operation.Schema)}') IS NULL)")
                 .AppendLine("BEGIN");
 
+         var unterminatingBuilder = new UnterminatingMigrationCommandListBuilder(builder, Dependencies);
+
+         using (builder.Indent())
+         {
+            base.Generate(operation, model, unterminatingBuilder, false);
+            builder.AppendLine(Dependencies.SqlGenerationHelper.StatementTerminator);
+         }
+
+         builder.AppendLine("END");
+
+         if (terminate || unterminatingBuilder.SuppressTransaction.HasValue)
+            builder.EndCommand(unterminatingBuilder.SuppressTransaction ?? false);
+      }
+
+      /// <inheritdoc />
+      protected override void Generate(DropTableOperation operation, IModel model, MigrationCommandListBuilder builder, bool terminate = true)
+      {
+         if (builder == null)
+            throw new ArgumentNullException(nameof(builder));
+
+         if (operation.IfNotExistsCheckRequired())
+            throw new InvalidOperationException($"The check '{nameof(SqlServerOperationBuilderExtensions.IfNotExists)}()' is not allowed with '{operation.GetType().Name}'");
+
+         if (!operation.IfExistsCheckRequired())
+         {
+            base.Generate(operation, model, builder, terminate);
+            return;
+         }
+
+         builder.AppendLine($"IF(OBJECT_ID('{DelimitIdentifier(operation.Name, operation.Schema)}') IS NOT NULL)")
+                .AppendLine("BEGIN");
+
          using (builder.Indent())
          {
             base.Generate(operation, model, builder, false);
             builder.AppendLine(Dependencies.SqlGenerationHelper.StatementTerminator);
          }
 
-         builder.AppendLine("END")
-                .EndCommand();
+         builder.AppendLine("END");
+
+         if (terminate)
+            builder.EndCommand();
       }
 
       /// <inheritdoc />
@@ -51,6 +92,9 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
       {
          if (builder == null)
             throw new ArgumentNullException(nameof(builder));
+
+         if (operation.IfExistsCheckRequired())
+            throw new InvalidOperationException($"The check '{nameof(SqlServerOperationBuilderExtensions.IfExists)}()' is not allowed with '{operation.GetType().Name}'");
 
          if (!operation.IfNotExistsCheckRequired())
          {
@@ -84,6 +128,9 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
          if (builder == null)
             throw new ArgumentNullException(nameof(builder));
 
+         if (operation.IfNotExistsCheckRequired())
+            throw new InvalidOperationException($"The check '{nameof(SqlServerOperationBuilderExtensions.IfNotExists)}()' is not allowed with '{operation.GetType().Name}'");
+
          if (!operation.IfExistsCheckRequired())
          {
             base.Generate(operation, model, builder, terminate);
@@ -101,39 +148,8 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
 
          builder.AppendLine("END");
 
-         if (!terminate)
-            return;
-
-         builder.EndCommand();
-      }
-
-      /// <inheritdoc />
-      protected override void Generate(DropIndexOperation operation, IModel model, MigrationCommandListBuilder builder, bool terminate)
-      {
-         if (builder == null)
-            throw new ArgumentNullException(nameof(builder));
-
-         if (!operation.IfExistsCheckRequired())
-         {
-            base.Generate(operation, model, builder, terminate);
-            return;
-         }
-
-         builder.AppendLine($"IF(IndexProperty(OBJECT_ID('{DelimitIdentifier(operation.Table, operation.Schema)}'), {GenerateSqlLiteral(operation.Name)}, 'IndexId') IS NOT NULL)")
-                .AppendLine("BEGIN");
-
-         using (builder.Indent())
-         {
-            base.Generate(operation, model, builder, false);
-            builder.AppendLine(Dependencies.SqlGenerationHelper.StatementTerminator);
-         }
-
-         builder.AppendLine("END");
-
-         if (!terminate)
-            return;
-
-         builder.EndCommand();
+         if (terminate)
+            builder.EndCommand();
       }
 
       /// <inheritdoc />
@@ -141,6 +157,9 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
       {
          if (builder == null)
             throw new ArgumentNullException(nameof(builder));
+
+         if (operation.IfExistsCheckRequired())
+            throw new InvalidOperationException($"The check '{nameof(SqlServerOperationBuilderExtensions.IfExists)}()' is not allowed with '{operation.GetType().Name}'");
 
          if (!operation.IfNotExistsCheckRequired())
          {
@@ -159,10 +178,103 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
 
          builder.AppendLine("END");
 
-         if (!terminate)
-            return;
+         if (terminate)
+            builder.EndCommand();
+      }
 
-         builder.EndCommand();
+      /// <inheritdoc />
+      protected override void Generate(DropIndexOperation operation, IModel model, MigrationCommandListBuilder builder, bool terminate)
+      {
+         if (builder == null)
+            throw new ArgumentNullException(nameof(builder));
+
+         if (operation.IfNotExistsCheckRequired())
+            throw new InvalidOperationException($"The check '{nameof(SqlServerOperationBuilderExtensions.IfNotExists)}()' is not allowed with '{operation.GetType().Name}'");
+
+         if (!operation.IfExistsCheckRequired())
+         {
+            base.Generate(operation, model, builder, terminate);
+            return;
+         }
+
+         builder.AppendLine($"IF(IndexProperty(OBJECT_ID('{DelimitIdentifier(operation.Table, operation.Schema)}'), {GenerateSqlLiteral(operation.Name)}, 'IndexId') IS NOT NULL)")
+                .AppendLine("BEGIN");
+
+         using (builder.Indent())
+         {
+            base.Generate(operation, model, builder, false);
+            builder.AppendLine(Dependencies.SqlGenerationHelper.StatementTerminator);
+         }
+
+         builder.AppendLine("END");
+
+         if (terminate)
+            builder.EndCommand();
+      }
+
+      /// <inheritdoc />
+      protected override void Generate(AddUniqueConstraintOperation operation, IModel model, MigrationCommandListBuilder builder)
+      {
+         if (builder == null)
+            throw new ArgumentNullException(nameof(builder));
+
+         if (operation.IfExistsCheckRequired())
+            throw new InvalidOperationException($"The check '{nameof(SqlServerOperationBuilderExtensions.IfExists)}()' is not allowed with '{operation.GetType().Name}'");
+
+         if (!operation.IfNotExistsCheckRequired())
+         {
+            base.Generate(operation, model, builder);
+            return;
+         }
+
+         builder.AppendLine($"IF(OBJECT_ID('{DelimitIdentifier(operation.Name)}') IS NULL)")
+                .AppendLine("BEGIN");
+
+         _closeScopeBeforeEndingStatement = true;
+         builder.IncrementIndent();
+
+         base.Generate(operation, model, builder);
+      }
+
+      /// <inheritdoc />
+      protected override void Generate(DropUniqueConstraintOperation operation, IModel model, MigrationCommandListBuilder builder)
+      {
+         if (builder == null)
+            throw new ArgumentNullException(nameof(builder));
+
+         if (operation.IfNotExistsCheckRequired())
+            throw new InvalidOperationException($"The check '{nameof(SqlServerOperationBuilderExtensions.IfNotExists)}()' is not allowed with '{operation.GetType().Name}'");
+
+         if (!operation.IfExistsCheckRequired())
+         {
+            base.Generate(operation, model, builder);
+            return;
+         }
+
+         builder.AppendLine($"IF(OBJECT_ID('{DelimitIdentifier(operation.Name)}') IS NOT NULL)")
+                .AppendLine("BEGIN");
+
+         _closeScopeBeforeEndingStatement = true;
+         builder.IncrementIndent();
+
+         base.Generate(operation, model, builder);
+      }
+
+      /// <inheritdoc />
+      protected override void EndStatement(MigrationCommandListBuilder builder, bool suppressTransaction = false)
+      {
+         if (builder == null)
+            throw new ArgumentNullException(nameof(builder));
+
+         if (_closeScopeBeforeEndingStatement)
+         {
+            _closeScopeBeforeEndingStatement = false;
+
+            builder.DecrementIndent();
+            builder.AppendLine("END");
+         }
+
+         base.EndStatement(builder, suppressTransaction);
       }
 
       private string GenerateSqlLiteral(string text)
@@ -170,7 +282,7 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
          return Dependencies.TypeMappingSource.GetMapping(typeof(string)).GenerateSqlLiteral(text);
       }
 
-      private string DelimitIdentifier(string name, string schema)
+      private string DelimitIdentifier(string name, string? schema = null)
       {
          return Dependencies.SqlGenerationHelper.DelimitIdentifier(name, schema);
       }
