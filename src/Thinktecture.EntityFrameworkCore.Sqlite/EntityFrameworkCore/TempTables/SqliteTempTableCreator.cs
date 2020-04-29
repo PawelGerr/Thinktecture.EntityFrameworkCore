@@ -56,7 +56,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
          }
          catch (Exception)
          {
-            ctx.Database.CloseConnection();
+            await ctx.Database.CloseConnectionAsync().ConfigureAwait(false);
             throw;
          }
 

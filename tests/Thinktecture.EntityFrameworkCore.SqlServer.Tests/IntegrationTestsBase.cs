@@ -14,11 +14,13 @@ using Serilog;
 using Thinktecture.EntityFrameworkCore;
 using Thinktecture.EntityFrameworkCore.Testing;
 using Thinktecture.TestDatabaseContext;
+using Xunit;
 using Xunit.Abstractions;
 
 namespace Thinktecture
 {
    [SuppressMessage("ReSharper", "EF1001")]
+   [Collection("SqlServerTests")]
    public class IntegrationTestsBase : SqlServerDbContextIntegrationTests<TestDbContext>
    {
 

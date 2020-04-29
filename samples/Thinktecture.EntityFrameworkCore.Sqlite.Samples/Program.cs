@@ -47,7 +47,7 @@ namespace Thinktecture
             }
             finally
             {
-               ctx.Database.CloseConnection();
+               await ctx.Database.CloseConnectionAsync();
             }
          }
 

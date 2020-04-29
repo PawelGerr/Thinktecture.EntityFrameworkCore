@@ -145,7 +145,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
          }
          finally
          {
-            ctx.Database.CloseConnection();
+            await ctx.Database.CloseConnectionAsync().ConfigureAwait(false);
          }
       }
 
