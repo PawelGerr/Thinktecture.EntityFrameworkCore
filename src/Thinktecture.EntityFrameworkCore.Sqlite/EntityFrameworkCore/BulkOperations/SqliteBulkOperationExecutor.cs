@@ -131,7 +131,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
                   var paramInfo = parameterInfos[i];
                   object? value = reader.GetValue(i);
 
-                  if (sqliteOptions.AutoIncrementBehavior == SqliteAutoIncrementBehavior.SetZeroToNull && paramInfo.IsAutoIncrementColumn && value.Equals(0))
+                  if (sqliteOptions.AutoIncrementBehavior == SqliteAutoIncrementBehavior.SetZeroToNull && paramInfo.IsAutoIncrementColumn && 0.Equals(value))
                      value = null;
 
                   paramInfo.Parameter.Value = value ?? DBNull.Value;

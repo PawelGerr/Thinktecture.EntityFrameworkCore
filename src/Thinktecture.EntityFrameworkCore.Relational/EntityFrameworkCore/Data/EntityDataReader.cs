@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using Microsoft.Extensions.Logging;
 
 namespace Thinktecture.EntityFrameworkCore.Data
 {
@@ -19,6 +20,7 @@ namespace Thinktecture.EntityFrameworkCore.Data
    public sealed class EntityDataReader<T> : IEntityDataReader
       where T : class
    {
+      private readonly ILogger _logger;
       private readonly DbContext _ctx;
       private readonly IEnumerator<T> _enumerator;
       private readonly Dictionary<int, Func<T, object?>> _propertyGetterLookup;
@@ -32,12 +34,15 @@ namespace Thinktecture.EntityFrameworkCore.Data
       /// <summary>
       /// Initializes <see cref="EntityDataReader{T}"/>
       /// </summary>
+      /// <param name="logger">Logger.</param>
       /// <param name="ctx">Database context.</param>
       /// <param name="entities">Entities to read.</param>
       /// <param name="properties">Properties to read.</param>
-      public EntityDataReader(DbContext ctx,
-                              IEnumerable<T> entities,
-                              IReadOnlyList<IProperty> properties)
+      public EntityDataReader(
+         ILogger logger,
+         DbContext ctx,
+         IEnumerable<T> entities,
+         IReadOnlyList<IProperty> properties)
       {
          if (entities == null)
             throw new ArgumentNullException(nameof(entities));
@@ -46,6 +51,7 @@ namespace Thinktecture.EntityFrameworkCore.Data
          if (properties.Count == 0)
             throw new ArgumentException("The properties collection cannot be empty.", nameof(properties));
 
+         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
          _ctx = ctx ?? throw new ArgumentNullException(nameof(ctx));
          Properties = properties;
          _propertyGetterLookup = BuildPropertyGetterLookup(properties);
@@ -59,9 +65,27 @@ namespace Thinktecture.EntityFrameworkCore.Data
          for (var i = 0; i < properties.Count; i++)
          {
             var property = properties[i];
+            var hasSqlDefaultValue = property.GetDefaultValueSql() != null;
+            var hasDefaultValue = property.GetDefaultValue() != null;
+
+            if ((hasSqlDefaultValue || hasDefaultValue) && !property.IsNullable)
+            {
+               if (property.ClrType.IsClass)
+               {
+                  _logger.LogWarning("The corresponding column of '{Entity}.{Property}' has a DEFAULT value constraint in the database and is NOT NULL. Dependending on the database vendor the .NET value `null` may lead to an exception because the tool for bulk insert of data may prevent sending `null`s for NOT NULL columns. Use 'MembersToInsert' on 'IBulkInsertOptions' to specify properties to insert and skip '{Entity}.{Property}' so database uses the DEFAULT value.",
+                                     property.DeclaringEntityType.ClrType.Name, property.Name, property.DeclaringEntityType.ClrType.Name, property.Name);
+               }
+               else if (!property.ClrType.IsGenericType ||
+                        !property.ClrType.IsGenericTypeDefinition &&
+                        property.ClrType.GetGenericTypeDefinition() != typeof(Nullable<>))
+               {
+                  _logger.LogWarning("The corresponding column of '{Entity}.{Property}' has a DEFAULT value constraint in the database and is NOT NULL. Dependending on the database vendor the \".NET default values\" (`false`, `0`, `00000000-0000-0000-0000-000000000000` etc.) may lead to unexpected results because these values are sent to the database as-is, i.e. the DEFAULT value constraint will NOT be used by database. Use 'MembersToInsert' on 'IBulkInsertOptions' to specify properties to insert and skip '{Entity}.{Property}' so database uses the DEFAULT value.",
+                                     property.DeclaringEntityType.ClrType.Name, property.Name, property.DeclaringEntityType.ClrType.Name, property.Name);
+               }
+            }
+
             var getter = BuildGetter(property);
             var converter = property.GetValueConverter();
-
             if (converter != null)
                getter = UseConverter(getter, converter);
 

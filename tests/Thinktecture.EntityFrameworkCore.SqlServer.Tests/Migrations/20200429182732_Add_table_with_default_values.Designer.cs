@@ -3,15 +3,17 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Thinktecture.TestDatabaseContext;
 
 namespace Thinktecture.Migrations
 {
     [DbContext(typeof(TestDbContext))]
-    partial class TestDbContextModelSnapshot : ModelSnapshot
+    [Migration("20200429182732_Add_table_with_default_values")]
+    partial class Add_table_with_default_values
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -62,37 +64,37 @@ namespace Thinktecture.Migrations
                     b.ToTable("TestEntitiesWithAutoIncrement");
                 });
 
-            modelBuilder.Entity("Thinktecture.TestDatabaseContext.TestEntityWithDotnetDefaultValues", b =>
+            modelBuilder.Entity("Thinktecture.TestDatabaseContext.TestEntityWithDefaultValues", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier")
-                        .HasDefaultValue(new Guid("0b151271-79bb-4f6c-b85f-e8f61300ff1b"));
+                        .HasDefaultValueSql("newid()");
 
                     b.Property<int>("Int")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int")
-                        .HasDefaultValue(1);
+                        .HasDefaultValueSql("1");
 
                     b.Property<int?>("NullableInt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int")
-                        .HasDefaultValue(2);
+                        .HasDefaultValueSql("2");
 
                     b.Property<string>("NullableString")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("nvarchar(max)")
-                        .HasDefaultValue("4");
+                        .HasDefaultValueSql("'4'");
 
                     b.Property<string>("String")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
                         .HasColumnType("nvarchar(max)")
-                        .HasDefaultValue("3");
+                        .HasDefaultValueSql("'3'");
 
                     b.HasKey("Id");
 
-                    b.ToTable("TestEntitiesWithDotnetDefaultValues");
+                    b.ToTable("TestEntitiesWithDefaultValues");
                 });
 
             modelBuilder.Entity("Thinktecture.TestDatabaseContext.TestEntityWithRowVersion", b =>
@@ -134,39 +136,6 @@ namespace Thinktecture.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("TestEntitiesWithShadowProperties");
-                });
-
-            modelBuilder.Entity("Thinktecture.TestDatabaseContext.TestEntityWithSqlDefaultValues", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier")
-                        .HasDefaultValueSql("newid()");
-
-                    b.Property<int>("Int")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValueSql("1");
-
-                    b.Property<int?>("NullableInt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValueSql("2");
-
-                    b.Property<string>("NullableString")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("nvarchar(max)")
-                        .HasDefaultValueSql("'4'");
-
-                    b.Property<string>("String")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("nvarchar(max)")
-                        .HasDefaultValueSql("'3'");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("TestEntitiesWithDefaultValues");
                 });
 #pragma warning restore 612, 618
         }

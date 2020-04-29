@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Concurrent;
 using System.Data.Common;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -9,8 +8,6 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.SqlServer.Diagnostics.Internal;
-using Microsoft.Extensions.Logging;
-using Serilog;
 using Thinktecture.EntityFrameworkCore;
 using Thinktecture.EntityFrameworkCore.Testing;
 using Thinktecture.TestDatabaseContext;
@@ -23,17 +20,15 @@ namespace Thinktecture
    [Collection("SqlServerTests")]
    public class IntegrationTestsBase : SqlServerDbContextIntegrationTests<TestDbContext>
    {
-
-      protected ILoggerFactory LoggerFactory { get; }
-
       public Action<ModelBuilder>? ConfigureModel { get; set; }
 
       protected IntegrationTestsBase(ITestOutputHelper testOutputHelper, bool useSharedTables)
          : base(TestContext.Instance.ConnectionString, useSharedTables)
       {
          DisableModelCache = true;
-         LoggerFactory = TestContext.Instance.GetLoggerFactory(testOutputHelper);
-         UseLoggerFactory(LoggerFactory);
+
+         var loggerFactory = TestContext.Instance.GetLoggerFactory(testOutputHelper);
+         UseLoggerFactory(loggerFactory);
       }
 
       protected IDiagnosticsLogger<TCategory> CreateDiagnosticsLogger<TCategory>(ILoggingOptions? options = null, DiagnosticSource? diagnosticSource = null)
@@ -50,8 +45,6 @@ namespace Thinktecture
 
          return ctx;
       }
-
-
 
       /// <inheritdoc />
       protected override DbContextOptionsBuilder<TestDbContext> CreateOptionsBuilder(DbConnection connection)

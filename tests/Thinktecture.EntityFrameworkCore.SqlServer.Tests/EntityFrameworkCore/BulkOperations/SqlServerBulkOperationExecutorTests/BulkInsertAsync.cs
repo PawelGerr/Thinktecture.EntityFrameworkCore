@@ -110,6 +110,104 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
       }
 
       [Fact]
+      public void Should_throw_because_sqlbulkcopy_dont_support_null_for_NOT_NULL_despite_sql_default_value()
+      {
+         var testEntity = new TestEntityWithSqlDefaultValues { String = null! };
+         var testEntities = new[] { testEntity };
+
+         _sut.Awaiting(sut => sut.BulkInsertAsync(ActDbContext, ActDbContext.GetEntityType<TestEntityWithSqlDefaultValues>(), testEntities, new SqlServerBulkInsertOptions()))
+             .Should().Throw<InvalidOperationException>()
+             .WithMessage("Column 'String' does not allow DBNull.Value.");
+      }
+
+      [Fact]
+      public async Task Should_write_not_nullable_structs_as_is_despite_sql_default_value()
+      {
+         var testEntity = new TestEntityWithSqlDefaultValues
+                          {
+                             Id = Guid.Empty,
+                             Int = 0,
+                             String = null!,
+                             NullableInt = null,
+                             NullableString = null
+                          };
+         var testEntities = new[] { testEntity };
+
+         var options = new SqlServerBulkInsertOptions
+                       {
+                          // we skip TestEntityWithSqlDefaultValues.String
+                          MembersToInsert = EntityMembersProvider.From<TestEntityWithSqlDefaultValues>(e => new
+                                                                                                            {
+                                                                                                               e.Id,
+                                                                                                               e.Int,
+                                                                                                               e.NullableInt,
+                                                                                                               e.NullableString
+                                                                                                            })
+                       };
+
+         await _sut.BulkInsertAsync(ActDbContext, ActDbContext.GetEntityType<TestEntityWithSqlDefaultValues>(), testEntities, options);
+
+         var loadedEntity = await AssertDbContext.TestEntitiesWithDefaultValues.FirstOrDefaultAsync();
+         loadedEntity.Should().BeEquivalentTo(new TestEntityWithSqlDefaultValues
+                                              {
+                                                 Id = Guid.Empty,     // persisted as-is
+                                                 Int = 0,             // persisted as-is
+                                                 NullableInt = 2,     // DEFAULT value constraint
+                                                 String = "3",        // DEFAULT value constraint
+                                                 NullableString = "4" // DEFAULT value constraint
+                                              });
+      }
+
+      [Fact]
+      public void Should_throw_because_sqlbulkcopy_dont_support_null_for_NOT_NULL_despite_dotnet_default_value()
+      {
+         var testEntity = new TestEntityWithDotnetDefaultValues { String = null! };
+         var testEntities = new[] { testEntity };
+
+         _sut.Awaiting(sut => sut.BulkInsertAsync(ActDbContext, ActDbContext.GetEntityType<TestEntityWithDotnetDefaultValues>(), testEntities, new SqlServerBulkInsertOptions()))
+             .Should().Throw<InvalidOperationException>()
+             .WithMessage("Column 'String' does not allow DBNull.Value.");
+      }
+
+      [Fact]
+      public async Task Should_write_not_nullable_structs_as_is_despite_dotnet_default_value()
+      {
+         var testEntity = new TestEntityWithDotnetDefaultValues
+                          {
+                             Id = Guid.Empty,
+                             Int = 0,
+                             String = null!,
+                             NullableInt = null,
+                             NullableString = null
+                          };
+         var testEntities = new[] { testEntity };
+
+         var options = new SqlServerBulkInsertOptions
+                       {
+                          // we skip TestEntityWithDefaultValues.String
+                          MembersToInsert = EntityMembersProvider.From<TestEntityWithDotnetDefaultValues>(e => new
+                                                                                                               {
+                                                                                                                  e.Id,
+                                                                                                                  e.Int,
+                                                                                                                  e.NullableInt,
+                                                                                                                  e.NullableString
+                                                                                                               })
+                       };
+
+         await _sut.BulkInsertAsync(ActDbContext, ActDbContext.GetEntityType<TestEntityWithDotnetDefaultValues>(), testEntities, options);
+
+         var loadedEntity = await AssertDbContext.TestEntitiesWithDotnetDefaultValues.FirstOrDefaultAsync();
+         loadedEntity.Should().BeEquivalentTo(new TestEntityWithDotnetDefaultValues
+                                              {
+                                                 Id = Guid.Empty,     // persisted as-is
+                                                 Int = 0,             // persisted as-is
+                                                 NullableInt = 2,     // DEFAULT value constraint
+                                                 String = "3",        // DEFAULT value constraint
+                                                 NullableString = "4" // DEFAULT value constraint
+                                              });
+      }
+
+      [Fact]
       public async Task Should_insert_auto_increment_column_with_KeepIdentity()
       {
          var testEntity = new TestEntityWithAutoIncrement { Id = 42 };
@@ -171,12 +269,12 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
                                     new SqlServerBulkInsertOptions
                                     {
                                        MembersToInsert = new EntityMembersProvider(new MemberInfo[]
-                                                                                         {
-                                                                                            idProperty,
-                                                                                            countProperty,
-                                                                                            propertyWithBackingField,
-                                                                                            privateField
-                                                                                         })
+                                                                                   {
+                                                                                      idProperty,
+                                                                                      countProperty,
+                                                                                      propertyWithBackingField,
+                                                                                      privateField
+                                                                                   })
                                     });
 
          var loadedEntities = await AssertDbContext.TestEntities.ToListAsync();

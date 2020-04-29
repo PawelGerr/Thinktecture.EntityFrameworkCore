@@ -26,7 +26,6 @@ namespace Thinktecture
    {
       private static readonly ConcurrentDictionary<ITestOutputHelper, ILoggerFactory> _loggerFactoryCache = new ConcurrentDictionary<ITestOutputHelper, ILoggerFactory>();
 
-      protected ILoggerFactory LoggerFactory { get; }
       protected Action<DbContextOptionsBuilder<TestDbContext>>? ConfigureOptionsBuilder { get; set; }
       protected Action<ModelBuilder>? ConfigureModel { get; set; }
 
@@ -36,8 +35,8 @@ namespace Thinktecture
       {
          DisableModelCache = true;
 
-         LoggerFactory = CreateLoggerFactory(testOutputHelper);
-         UseLoggerFactory(LoggerFactory);
+         var loggerFactory = CreateLoggerFactory(testOutputHelper);
+         UseLoggerFactory(loggerFactory);
       }
 
       protected IDiagnosticsLogger<TCategory> CreateDiagnosticsLogger<TCategory>(ILoggingOptions? options = null, DiagnosticSource? diagnosticSource = null)

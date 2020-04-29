@@ -38,7 +38,11 @@ namespace Thinktecture.EntityFrameworkCore.Testing
       private DbConnection? _dbConnection;
       private DbContextOptionsBuilder<T>? _optionsBuilder;
       private IDbContextTransaction? _tx;
-      private ILoggerFactory? _loggerFactory;
+
+      /// <summary>
+      /// Logger factory.
+      /// </summary>
+      protected ILoggerFactory? LoggerFactory { get; private set; }
 
       /// <summary>
       /// Database schema in use.
@@ -122,7 +126,7 @@ namespace Thinktecture.EntityFrameworkCore.Testing
       // ReSharper disable once UnusedMember.Global
       protected void UseLoggerFactory(ILoggerFactory? loggerFactory)
       {
-         _loggerFactory = loggerFactory;
+         LoggerFactory = loggerFactory;
       }
 
       private T CreateContext()
@@ -210,8 +214,8 @@ namespace Thinktecture.EntityFrameworkCore.Testing
          if (EnableSensitiveDataLogging)
             builder.EnableSensitiveDataLogging();
 
-         if (_loggerFactory != null)
-            builder.UseLoggerFactory(_loggerFactory);
+         if (LoggerFactory != null)
+            builder.UseLoggerFactory(LoggerFactory);
 
          return builder;
       }

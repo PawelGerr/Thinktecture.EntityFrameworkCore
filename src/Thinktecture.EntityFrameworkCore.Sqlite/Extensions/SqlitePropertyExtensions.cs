@@ -17,7 +17,8 @@ namespace Thinktecture
 
          return property.ValueGenerated == ValueGenerated.OnAdd
                 && (property.ClrType == typeof(int) || property.ClrType == typeof(int?))
-                && property.FindTypeMapping()?.Converter == null;
+                && property.FindTypeMapping()?.Converter == null
+                && property.GetAfterSaveBehavior() != PropertySaveBehavior.Save;
       }
    }
 }

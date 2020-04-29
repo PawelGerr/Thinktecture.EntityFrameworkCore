@@ -17,6 +17,8 @@ namespace Thinktecture.TestDatabaseContext
       public DbSet<TestEntityWithAutoIncrement> TestEntitiesWithAutoIncrement { get; set; }
       public DbSet<TestEntityWithRowVersion> TestEntitiesWithRowVersion { get; set; }
       public DbSet<TestEntityWithShadowProperties> TestEntitiesWithShadowProperties { get; set; }
+      public DbSet<TestEntityWithSqlDefaultValues> TestEntitiesWithDefaultValues { get; set; }
+      public DbSet<TestEntityWithDotnetDefaultValues> TestEntitiesWithDotnetDefaultValues { get; set; }
 #nullable enable
 
       public Action<ModelBuilder>? ConfigureModel { get; set; }
@@ -31,8 +33,11 @@ namespace Thinktecture.TestDatabaseContext
       {
          base.OnModelCreating(modelBuilder);
 
-         modelBuilder.Entity<TestEntity>().Property("_privateField");
-         modelBuilder.Entity<TestEntity>().Property(e => e.ConvertibleClass).HasConversion(c => c!.Key, k => new ConvertibleClass(k));
+         modelBuilder.Entity<TestEntity>(builder =>
+                                         {
+                                            builder.Property("_privateField");
+                                            builder.Property(e => e.ConvertibleClass).HasConversion(c => c!.Key, k => new ConvertibleClass(k));
+                                         });
 
          modelBuilder.Entity<TestEntityWithAutoIncrement>().Property(e => e.Id).UseIdentityColumn();
 
@@ -41,15 +46,36 @@ namespace Thinktecture.TestDatabaseContext
                      .IsRowVersion()
                      .HasConversion(new NumberToBytesConverter<long>());
 
-         modelBuilder.Entity<TestEntityWithShadowProperties>().Property<string>("ShadowStringProperty").HasMaxLength(50);
-         modelBuilder.Entity<TestEntityWithShadowProperties>().Property<int?>("ShadowIntProperty");
+         modelBuilder.Entity<TestEntityWithShadowProperties>(builder =>
+                                                             {
+                                                                builder.Property<string>("ShadowStringProperty").HasMaxLength(50);
+                                                                builder.Property<int?>("ShadowIntProperty");
+                                                             });
+
+         modelBuilder.Entity<TestEntityWithSqlDefaultValues>(builder =>
+                                                             {
+                                                                builder.Property(e => e.Id).HasDefaultValueSql("newid()");
+                                                                builder.Property(e => e.Int).HasDefaultValueSql("1");
+                                                                builder.Property(e => e.NullableInt).HasDefaultValueSql("2");
+                                                                builder.Property(e => e.String).HasDefaultValueSql("'3'");
+                                                                builder.Property(e => e.NullableString).HasDefaultValueSql("'4'");
+                                                             });
+
+         modelBuilder.Entity<TestEntityWithDotnetDefaultValues>(builder =>
+                                                                {
+                                                                   builder.Property(e => e.Id).HasDefaultValue(new Guid("0B151271-79BB-4F6C-B85F-E8F61300FF1B"));
+                                                                   builder.Property(e => e.Int).HasDefaultValue(1);
+                                                                   builder.Property(e => e.NullableInt).HasDefaultValue(2);
+                                                                   builder.Property(e => e.String).HasDefaultValue("3");
+                                                                   builder.Property(e => e.NullableString).HasDefaultValue("4");
+                                                                });
 
          ConfigureModel?.Invoke(modelBuilder);
 
-         modelBuilder.Entity<InformationSchemaColumn>().HasNoKey();
-         modelBuilder.Entity<InformationSchemaTableConstraint>().HasNoKey();
-         modelBuilder.Entity<InformationSchemaConstraintColumn>().HasNoKey();
-         modelBuilder.Entity<InformationSchemaKeyColumn>().HasNoKey();
+         modelBuilder.Entity<InformationSchemaColumn>().HasNoKey().ToView("<<InformationSchemaColumn>>");
+         modelBuilder.Entity<InformationSchemaTableConstraint>().HasNoKey().ToView("<<InformationSchemaTableConstraint>>");
+         modelBuilder.Entity<InformationSchemaConstraintColumn>().HasNoKey().ToView("<<InformationSchemaConstraintColumn>>");
+         modelBuilder.Entity<InformationSchemaKeyColumn>().HasNoKey().ToView("<<InformationSchemaKeyColumn>>");
       }
 
       public IQueryable<InformationSchemaColumn> GetTempTableColumns<T>()

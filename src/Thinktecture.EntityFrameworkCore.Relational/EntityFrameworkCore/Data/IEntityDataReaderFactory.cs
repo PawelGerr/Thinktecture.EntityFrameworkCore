@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.Extensions.Logging;
 
 namespace Thinktecture.EntityFrameworkCore.Data
 {
@@ -20,7 +21,10 @@ namespace Thinktecture.EntityFrameworkCore.Data
       /// <param name="properties">Properties of the entity of type <typeparamref name="T"/> to generate the data reader for.</param>
       /// <typeparam name="T">Type of the entity.</typeparam>
       /// <returns>An instance of <see cref="IEntityDataReader"/>.</returns>
-      IEntityDataReader Create<T>(DbContext ctx, IEnumerable<T> entities, IReadOnlyList<IProperty> properties)
+      IEntityDataReader Create<T>(
+         DbContext ctx,
+         IEnumerable<T> entities,
+         IReadOnlyList<IProperty> properties)
          where T : class;
    }
 }
