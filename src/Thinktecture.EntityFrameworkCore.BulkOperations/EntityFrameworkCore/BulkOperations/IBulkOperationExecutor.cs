@@ -20,24 +20,22 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       /// <summary>
       /// Performs bulk insert.
       /// </summary>
-      /// <param name="ctx">Database context to use.</param>
       /// <param name="entityType">Entity type.</param>
       /// <param name="entities">Entities to insert.</param>
       /// <param name="options">Options.</param>
       /// <param name="cancellationToken">Cancellation token.</param>
       /// <typeparam name="T">Entity/query type.</typeparam>
       /// <returns></returns>
-      Task BulkInsertAsync<T>(DbContext ctx,
-                              IEntityType entityType,
-                              IEnumerable<T> entities,
-                              IBulkInsertOptions options,
-                              CancellationToken cancellationToken = default)
+      Task BulkInsertAsync<T>(
+         IEntityType entityType,
+         IEnumerable<T> entities,
+         IBulkInsertOptions options,
+         CancellationToken cancellationToken = default)
          where T : class;
 
       /// <summary>
       /// Performs bulk insert on table with the name <paramref name="tableName"/>.
       /// </summary>
-      /// <param name="ctx">Database context to use.</param>
       /// <param name="entityType">Entity type.</param>
       /// <param name="entities">Entities to insert.</param>
       /// <param name="schema">Schema of the table.</param>
@@ -46,13 +44,13 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       /// <param name="cancellationToken">Cancellation token.</param>
       /// <typeparam name="T">Entity/query type.</typeparam>
       /// <returns></returns>
-      Task BulkInsertAsync<T>(DbContext ctx,
-                              IEntityType entityType,
-                              IEnumerable<T> entities,
-                              string? schema,
-                              string tableName,
-                              IBulkInsertOptions options,
-                              CancellationToken cancellationToken = default)
+      Task BulkInsertAsync<T>(
+         IEntityType entityType,
+         IEnumerable<T> entities,
+         string? schema,
+         string tableName,
+         IBulkInsertOptions options,
+         CancellationToken cancellationToken = default)
          where T : class;
    }
 }

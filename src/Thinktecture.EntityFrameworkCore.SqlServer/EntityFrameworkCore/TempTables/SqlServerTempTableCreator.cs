@@ -20,63 +20,67 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
    [SuppressMessage("ReSharper", "EF1001")]
    public sealed class SqlServerTempTableCreator : ISqlServerTempTableCreator
    {
+      private readonly DbContext _ctx;
+      private readonly IDiagnosticsLogger<DbLoggerCategory.Query> _logger;
       private readonly ISqlGenerationHelper _sqlGenerationHelper;
       private readonly IRelationalTypeMappingSource _typeMappingSource;
 
       /// <summary>
       /// Initializes <see cref="SqlServerTempTableCreator"/>.
       /// </summary>
+      /// <param name="ctx">Current database context.</param>
+      /// <param name="logger">Logger.</param>
       /// <param name="sqlGenerationHelper">SQL generation helper.</param>
       /// <param name="typeMappingSource">Type mappings.</param>
-      public SqlServerTempTableCreator(ISqlGenerationHelper sqlGenerationHelper,
-                                       IRelationalTypeMappingSource typeMappingSource)
+      public SqlServerTempTableCreator(
+         ICurrentDbContext ctx,
+         IDiagnosticsLogger<DbLoggerCategory.Query> logger,
+         ISqlGenerationHelper sqlGenerationHelper,
+         IRelationalTypeMappingSource typeMappingSource)
       {
+         _ctx = ctx?.Context ?? throw new ArgumentNullException(nameof(sqlGenerationHelper));
+         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
          _sqlGenerationHelper = sqlGenerationHelper ?? throw new ArgumentNullException(nameof(sqlGenerationHelper));
          _typeMappingSource = typeMappingSource ?? throw new ArgumentNullException(nameof(typeMappingSource));
       }
 
       /// <inheritdoc />
-      public async Task<ITempTableReference> CreateTempTableAsync(DbContext ctx,
-                                                                  IEntityType entityType,
-                                                                  ITempTableCreationOptions options,
-                                                                  CancellationToken cancellationToken = default)
+      public async Task<ITempTableReference> CreateTempTableAsync(
+         IEntityType entityType,
+         ITempTableCreationOptions options,
+         CancellationToken cancellationToken = default)
       {
-         if (ctx == null)
-            throw new ArgumentNullException(nameof(ctx));
          if (entityType == null)
             throw new ArgumentNullException(nameof(entityType));
          if (options == null)
             throw new ArgumentNullException(nameof(options));
 
-         var (nameLease, tableName) = GetTableName(ctx, entityType, options.TableNameProvider);
+         var (nameLease, tableName) = GetTableName(entityType, options.TableNameProvider);
          var sql = GetTempTableCreationSql(entityType, tableName, options);
 
-         await ctx.Database.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
+         await _ctx.Database.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
 
          try
          {
-            await ctx.Database.ExecuteSqlRawAsync(sql, cancellationToken).ConfigureAwait(false);
+            await _ctx.Database.ExecuteSqlRawAsync(sql, cancellationToken).ConfigureAwait(false);
          }
          catch (Exception)
          {
-            await ctx.Database.CloseConnectionAsync().ConfigureAwait(false);
+            await _ctx.Database.CloseConnectionAsync().ConfigureAwait(false);
             throw;
          }
 
-         var logger = ctx.GetService<IDiagnosticsLogger<DbLoggerCategory.Query>>();
-
-         return new SqlServerTempTableReference(logger, _sqlGenerationHelper, tableName, ctx.Database, nameLease, options.DropTableOnDispose);
+         return new SqlServerTempTableReference(_logger, _sqlGenerationHelper, tableName, _ctx.Database, nameLease, options.DropTableOnDispose);
       }
 
-      private static (ITempTableNameLease nameLease, string tableName) GetTableName(
-         DbContext ctx,
+      private (ITempTableNameLease nameLease, string tableName) GetTableName(
          IEntityType entityType,
          ITempTableNameProvider nameProvider)
       {
          if (nameProvider == null)
             throw new ArgumentNullException(nameof(nameProvider));
 
-         var nameLease = nameProvider.LeaseName(ctx, entityType);
+         var nameLease = nameProvider.LeaseName(_ctx, entityType);
          var name = nameLease.Name;
 
          if (!name.StartsWith("#", StringComparison.Ordinal))

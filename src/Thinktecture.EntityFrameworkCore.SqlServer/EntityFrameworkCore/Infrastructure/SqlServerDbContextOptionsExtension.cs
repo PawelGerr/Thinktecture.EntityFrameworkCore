@@ -5,7 +5,6 @@ using System.Globalization;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Query;
-using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Thinktecture.EntityFrameworkCore.BulkOperations;
@@ -43,7 +42,6 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
          set => _addBulkOperationSupport = value;
       }
 
-
       /// <summary>
       /// Changes the implementation of <see cref="IMigrationsSqlGenerator"/> to <see cref="ThinktectureSqlServerMigrationsSqlGenerator"/>.
       /// </summary>
@@ -57,19 +55,17 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
 
          if (AddTempTableSupport)
          {
-            var lifetime = GetLifetime<ISqlGenerationHelper>();
-            services.TryAdd<ISqlServerTempTableCreator, SqlServerTempTableCreator>(lifetime);
-            services.TryAdd(ServiceDescriptor.Describe(typeof(ITempTableCreator), provider => provider.GetRequiredService<ISqlServerTempTableCreator>(), lifetime));
+            services.TryAddScoped<ISqlServerTempTableCreator, SqlServerTempTableCreator>();
+            services.TryAddScoped<ITempTableCreator>(provider => provider.GetRequiredService<ISqlServerTempTableCreator>());
             services.AddTempTableSuffixComponents();
          }
 
          if (AddBulkOperationSupport)
          {
             services.TryAddSingleton<IEntityDataReaderFactory, EntityDataReaderFactory>();
-            var lifetime = GetLifetime<ISqlGenerationHelper>();
-            services.TryAdd<SqlServerBulkOperationExecutor, SqlServerBulkOperationExecutor>(lifetime);
-            services.TryAdd(ServiceDescriptor.Describe(typeof(IBulkOperationExecutor), provider => provider.GetRequiredService<SqlServerBulkOperationExecutor>(), lifetime));
-            services.TryAdd(ServiceDescriptor.Describe(typeof(ITempTableBulkOperationExecutor), provider => provider.GetRequiredService<SqlServerBulkOperationExecutor>(), lifetime));
+            services.TryAddScoped<SqlServerBulkOperationExecutor, SqlServerBulkOperationExecutor>();
+            services.TryAddScoped<IBulkOperationExecutor>(provider => provider.GetRequiredService<SqlServerBulkOperationExecutor>());
+            services.TryAddScoped<ITempTableBulkOperationExecutor>(provider => provider.GetRequiredService<SqlServerBulkOperationExecutor>());
          }
 
          if (UseThinktectureSqlServerMigrationsSqlGenerator)

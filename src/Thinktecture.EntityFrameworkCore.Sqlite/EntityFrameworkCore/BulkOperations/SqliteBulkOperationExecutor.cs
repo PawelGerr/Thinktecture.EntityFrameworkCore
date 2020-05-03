@@ -25,8 +25,9 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
    [SuppressMessage("ReSharper", "EF1001")]
    public sealed class SqliteBulkOperationExecutor : IBulkOperationExecutor, ITempTableBulkOperationExecutor
    {
-      private readonly ISqlGenerationHelper _sqlGenerationHelper;
+      private readonly DbContext _ctx;
       private readonly IDiagnosticsLogger<SqliteDbLoggerCategory.BulkOperation> _logger;
+      private readonly ISqlGenerationHelper _sqlGenerationHelper;
 
       private static class EventIds
       {
@@ -37,13 +38,17 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       /// <summary>
       /// Initializes new instance of <see cref="SqliteBulkOperationExecutor"/>.
       /// </summary>
+      /// <param name="ctx">Current database context.</param>
+      /// <param name="logger">Logger.</param>
       /// <param name="sqlGenerationHelper">SQL generation helper.</param>
-      /// <param name="logger"></param>
-      public SqliteBulkOperationExecutor(ISqlGenerationHelper sqlGenerationHelper,
-                                         IDiagnosticsLogger<SqliteDbLoggerCategory.BulkOperation> logger)
+      public SqliteBulkOperationExecutor(
+         ICurrentDbContext ctx,
+         IDiagnosticsLogger<SqliteDbLoggerCategory.BulkOperation> logger,
+         ISqlGenerationHelper sqlGenerationHelper)
       {
-         _sqlGenerationHelper = sqlGenerationHelper ?? throw new ArgumentNullException(nameof(sqlGenerationHelper));
+         _ctx = ctx?.Context ?? throw new ArgumentNullException(nameof(ctx));
          _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+         _sqlGenerationHelper = sqlGenerationHelper ?? throw new ArgumentNullException(nameof(sqlGenerationHelper));
       }
 
       /// <inheritdoc />
@@ -59,31 +64,29 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       }
 
       /// <inheritdoc />
-      public Task BulkInsertAsync<T>(DbContext ctx,
-                                     IEntityType entityType,
-                                     IEnumerable<T> entities,
-                                     IBulkInsertOptions options,
-                                     CancellationToken cancellationToken = default)
+      public Task BulkInsertAsync<T>(
+         IEntityType entityType,
+         IEnumerable<T> entities,
+         IBulkInsertOptions options,
+         CancellationToken cancellationToken = default)
          where T : class
       {
          if (entityType == null)
             throw new ArgumentNullException(nameof(entityType));
 
-         return BulkInsertAsync(ctx, entityType, entities, entityType.GetSchema(), entityType.GetTableName(), options, cancellationToken);
+         return BulkInsertAsync(entityType, entities, entityType.GetSchema(), entityType.GetTableName(), options, cancellationToken);
       }
 
       /// <inheritdoc />
-      public async Task BulkInsertAsync<T>(DbContext ctx,
-                                           IEntityType entityType,
-                                           IEnumerable<T> entities,
-                                           string? schema,
-                                           string tableName,
-                                           IBulkInsertOptions options,
-                                           CancellationToken cancellationToken = default)
+      public async Task BulkInsertAsync<T>(
+         IEntityType entityType,
+         IEnumerable<T> entities,
+         string? schema,
+         string tableName,
+         IBulkInsertOptions options,
+         CancellationToken cancellationToken = default)
          where T : class
       {
-         if (ctx == null)
-            throw new ArgumentNullException(nameof(ctx));
          if (entities == null)
             throw new ArgumentNullException(nameof(entities));
          if (tableName == null)
@@ -94,13 +97,13 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
          if (!(options is SqliteBulkInsertOptions sqliteOptions))
             sqliteOptions = new SqliteBulkInsertOptions(options);
 
-         var factory = ctx.GetService<IEntityDataReaderFactory>();
+         var factory = _ctx.GetService<IEntityDataReaderFactory>();
          var properties = sqliteOptions.MembersToInsert.GetPropertiesForInsert(entityType);
-         var sqlCon = (SqliteConnection)ctx.Database.GetDbConnection();
+         var sqlCon = (SqliteConnection)_ctx.Database.GetDbConnection();
 
-         using var reader = factory.Create(ctx, entities, properties);
+         using var reader = factory.Create(_ctx, entities, properties);
 
-         await ctx.Database.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
+         await _ctx.Database.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
 
          try
          {
@@ -145,7 +148,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
          }
          finally
          {
-            await ctx.Database.CloseConnectionAsync().ConfigureAwait(false);
+            await _ctx.Database.CloseConnectionAsync().ConfigureAwait(false);
          }
       }
 
@@ -214,22 +217,19 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       }
 
       /// <inheritdoc />
-      public async Task<ITempTableQuery<T>> BulkInsertIntoTempTableAsync<T>(DbContext ctx,
-                                                                            IEnumerable<T> entities,
-                                                                            ITempTableBulkInsertOptions options,
-                                                                            CancellationToken cancellationToken = default)
+      public async Task<ITempTableQuery<T>> BulkInsertIntoTempTableAsync<T>(
+         IEnumerable<T> entities,
+         ITempTableBulkInsertOptions options,
+         CancellationToken cancellationToken = default)
          where T : class
       {
-         if (ctx == null)
-            throw new ArgumentNullException(nameof(ctx));
          if (entities == null)
             throw new ArgumentNullException(nameof(entities));
          if (options == null)
             throw new ArgumentNullException(nameof(options));
 
-         var entityType = ctx.Model.GetEntityType(typeof(T));
-         var tempTableCreator = ctx.GetService<ITempTableCreator>();
-         var bulkInsertExecutor = ctx.GetService<IBulkOperationExecutor>();
+         var entityType = _ctx.Model.GetEntityType(typeof(T));
+         var tempTableCreator = _ctx.GetService<ITempTableCreator>();
 
          if (!(options is SqliteTempTableBulkInsertOptions))
          {
@@ -237,13 +237,13 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
             options = sqliteOptions;
          }
 
-         var tempTableReference = await tempTableCreator.CreateTempTableAsync(ctx, entityType, options.TempTableCreationOptions, cancellationToken).ConfigureAwait(false);
+         var tempTableReference = await tempTableCreator.CreateTempTableAsync(entityType, options.TempTableCreationOptions, cancellationToken).ConfigureAwait(false);
 
          try
          {
-            await bulkInsertExecutor.BulkInsertAsync(ctx, entityType, entities, null, tempTableReference.Name, options.BulkInsertOptions, cancellationToken).ConfigureAwait(false);
+            await BulkInsertAsync(entityType, entities, null, tempTableReference.Name, options.BulkInsertOptions, cancellationToken).ConfigureAwait(false);
 
-            var query = ctx.Set<T>().FromSqlRaw($"SELECT * FROM {_sqlGenerationHelper.DelimitIdentifier(tempTableReference.Name)}");
+            var query = _ctx.Set<T>().FromSqlRaw($"SELECT * FROM {_sqlGenerationHelper.DelimitIdentifier(tempTableReference.Name)}");
 
             return new TempTableQuery<T>(query, tempTableReference);
          }

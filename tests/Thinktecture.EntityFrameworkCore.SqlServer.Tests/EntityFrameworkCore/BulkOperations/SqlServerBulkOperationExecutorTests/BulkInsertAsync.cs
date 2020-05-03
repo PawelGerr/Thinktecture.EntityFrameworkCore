@@ -6,8 +6,7 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage;
-using Moq;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Thinktecture.EntityFrameworkCore.TempTables;
 using Thinktecture.TestDatabaseContext;
 using Xunit;
@@ -18,17 +17,13 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
    // ReSharper disable once InconsistentNaming
    public class BulkInsertAsync : IntegrationTestsBase
    {
-      private readonly SqlServerBulkOperationExecutor _sut;
+      private SqlServerBulkOperationExecutor? _sut;
+
+      private SqlServerBulkOperationExecutor SUT => _sut ??= ActDbContext.GetService<SqlServerBulkOperationExecutor>();
 
       public BulkInsertAsync(ITestOutputHelper testOutputHelper)
          : base(testOutputHelper, true)
       {
-         var sqlGenerationHelperMock = new Mock<ISqlGenerationHelper>();
-         sqlGenerationHelperMock.Setup(h => h.DelimitIdentifier(It.IsAny<string>(), It.IsAny<string>()))
-                                .Returns<string, string>((name, schema) => schema == null ? $"[{name}]" : $"[{schema}].[{name}]");
-
-         var logger = CreateDiagnosticsLogger<SqlServerDbLoggerCategory.BulkOperation>();
-         _sut = new SqlServerBulkOperationExecutor(sqlGenerationHelperMock.Object, logger);
       }
 
       [Fact]
@@ -36,9 +31,9 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
       {
          ConfigureModel = builder => builder.ConfigureTempTable<int>();
 
-         _sut.Invoking(sut => sut.BulkInsertAsync(ActDbContext, ActDbContext.GetEntityType<TempTable<int>>(), new List<TempTable<int>> { new TempTable<int>() }, new SqlServerBulkInsertOptions()))
-             .Should().Throw<InvalidOperationException>()
-             .WithMessage("Cannot access destination table '[*].[#TempTable<int>]'.");
+         SUT.Invoking(sut => sut.BulkInsertAsync(ActDbContext.GetEntityType<TempTable<int>>(), new List<TempTable<int>> { new TempTable<int>() }, new SqlServerBulkInsertOptions()))
+            .Should().Throw<InvalidOperationException>()
+            .WithMessage("Cannot access destination table '[*].[#TempTable<int>]'.");
       }
 
       [Fact]
@@ -46,7 +41,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
       {
          var entities = new List<TestEntity> { new TestEntity { ConvertibleClass = new ConvertibleClass(42) } };
 
-         await _sut.BulkInsertAsync(ActDbContext, ActDbContext.GetEntityType<TestEntity>(), entities, new SqlServerBulkInsertOptions());
+         await SUT.BulkInsertAsync(ActDbContext.GetEntityType<TestEntity>(), entities, new SqlServerBulkInsertOptions());
 
          var entity = AssertDbContext.TestEntities.Single();
 
@@ -66,7 +61,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
 
          var testEntities = new[] { testEntity };
 
-         await _sut.BulkInsertAsync(ActDbContext, ActDbContext.GetEntityType<TestEntity>(), testEntities, new SqlServerBulkInsertOptions());
+         await SUT.BulkInsertAsync(ActDbContext.GetEntityType<TestEntity>(), testEntities, new SqlServerBulkInsertOptions());
 
          var loadedEntities = await AssertDbContext.TestEntities.ToListAsync();
          loadedEntities.Should().HaveCount(1)
@@ -87,7 +82,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
 
          var testEntities = new[] { testEntity };
 
-         await _sut.BulkInsertAsync(ActDbContext, ActDbContext.GetEntityType<TestEntity>(), testEntities, new SqlServerBulkInsertOptions());
+         await SUT.BulkInsertAsync(ActDbContext.GetEntityType<TestEntity>(), testEntities, new SqlServerBulkInsertOptions());
 
          var loadedEntity = await AssertDbContext.TestEntities.FirstOrDefaultAsync();
          loadedEntity.GetPrivateField().Should().Be(3);
@@ -102,7 +97,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
 
          var testEntities = new[] { testEntity };
 
-         await _sut.BulkInsertAsync(ActDbContext, ActDbContext.GetEntityType<TestEntityWithShadowProperties>(), testEntities, new SqlServerBulkInsertOptions());
+         await SUT.BulkInsertAsync(ActDbContext.GetEntityType<TestEntityWithShadowProperties>(), testEntities, new SqlServerBulkInsertOptions());
 
          var loadedEntity = await AssertDbContext.TestEntitiesWithShadowProperties.FirstOrDefaultAsync();
          AssertDbContext.Entry(loadedEntity).Property("ShadowStringProperty").CurrentValue.Should().Be("value");
@@ -115,9 +110,9 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
          var testEntity = new TestEntityWithSqlDefaultValues { String = null! };
          var testEntities = new[] { testEntity };
 
-         _sut.Awaiting(sut => sut.BulkInsertAsync(ActDbContext, ActDbContext.GetEntityType<TestEntityWithSqlDefaultValues>(), testEntities, new SqlServerBulkInsertOptions()))
-             .Should().Throw<InvalidOperationException>()
-             .WithMessage("Column 'String' does not allow DBNull.Value.");
+         SUT.Awaiting(sut => sut.BulkInsertAsync(ActDbContext.GetEntityType<TestEntityWithSqlDefaultValues>(), testEntities, new SqlServerBulkInsertOptions()))
+            .Should().Throw<InvalidOperationException>()
+            .WithMessage("Column 'String' does not allow DBNull.Value.");
       }
 
       [Fact]
@@ -145,7 +140,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
                                                                                                             })
                        };
 
-         await _sut.BulkInsertAsync(ActDbContext, ActDbContext.GetEntityType<TestEntityWithSqlDefaultValues>(), testEntities, options);
+         await SUT.BulkInsertAsync(ActDbContext.GetEntityType<TestEntityWithSqlDefaultValues>(), testEntities, options);
 
          var loadedEntity = await AssertDbContext.TestEntitiesWithDefaultValues.FirstOrDefaultAsync();
          loadedEntity.Should().BeEquivalentTo(new TestEntityWithSqlDefaultValues
@@ -164,9 +159,9 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
          var testEntity = new TestEntityWithDotnetDefaultValues { String = null! };
          var testEntities = new[] { testEntity };
 
-         _sut.Awaiting(sut => sut.BulkInsertAsync(ActDbContext, ActDbContext.GetEntityType<TestEntityWithDotnetDefaultValues>(), testEntities, new SqlServerBulkInsertOptions()))
-             .Should().Throw<InvalidOperationException>()
-             .WithMessage("Column 'String' does not allow DBNull.Value.");
+         SUT.Awaiting(sut => sut.BulkInsertAsync(ActDbContext.GetEntityType<TestEntityWithDotnetDefaultValues>(), testEntities, new SqlServerBulkInsertOptions()))
+            .Should().Throw<InvalidOperationException>()
+            .WithMessage("Column 'String' does not allow DBNull.Value.");
       }
 
       [Fact]
@@ -194,7 +189,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
                                                                                                                })
                        };
 
-         await _sut.BulkInsertAsync(ActDbContext, ActDbContext.GetEntityType<TestEntityWithDotnetDefaultValues>(), testEntities, options);
+         await SUT.BulkInsertAsync(ActDbContext.GetEntityType<TestEntityWithDotnetDefaultValues>(), testEntities, options);
 
          var loadedEntity = await AssertDbContext.TestEntitiesWithDotnetDefaultValues.FirstOrDefaultAsync();
          loadedEntity.Should().BeEquivalentTo(new TestEntityWithDotnetDefaultValues
@@ -214,7 +209,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
          var testEntities = new[] { testEntity };
 
          var options = new SqlServerBulkInsertOptions { SqlBulkCopyOptions = SqlBulkCopyOptions.KeepIdentity };
-         await _sut.BulkInsertAsync(ActDbContext, ActDbContext.GetEntityType<TestEntityWithAutoIncrement>(), testEntities, options);
+         await SUT.BulkInsertAsync(ActDbContext.GetEntityType<TestEntityWithAutoIncrement>(), testEntities, options);
 
          var loadedEntity = await AssertDbContext.TestEntitiesWithAutoIncrement.FirstOrDefaultAsync();
          loadedEntity.Id.Should().Be(42);
@@ -226,7 +221,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
          var testEntity = new TestEntityWithAutoIncrement { Id = 42, Name = "value" };
          var testEntities = new[] { testEntity };
 
-         await _sut.BulkInsertAsync(ActDbContext, ActDbContext.GetEntityType<TestEntityWithAutoIncrement>(), testEntities, new SqlServerBulkInsertOptions());
+         await SUT.BulkInsertAsync(ActDbContext.GetEntityType<TestEntityWithAutoIncrement>(), testEntities, new SqlServerBulkInsertOptions());
 
          var loadedEntity = await AssertDbContext.TestEntitiesWithAutoIncrement.FirstOrDefaultAsync();
          loadedEntity.Id.Should().NotBe(0);
@@ -239,7 +234,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
          var testEntity = new TestEntityWithRowVersion { Id = new Guid("EBC95620-4D80-4318-9B92-AD7528B2965C"), RowVersion = Int32.MaxValue };
          var testEntities = new[] { testEntity };
 
-         await _sut.BulkInsertAsync(ActDbContext, ActDbContext.GetEntityType<TestEntityWithRowVersion>(), testEntities, new SqlServerBulkInsertOptions());
+         await SUT.BulkInsertAsync(ActDbContext.GetEntityType<TestEntityWithRowVersion>(), testEntities, new SqlServerBulkInsertOptions());
 
          var loadedEntity = await AssertDbContext.TestEntitiesWithRowVersion.FirstOrDefaultAsync();
          loadedEntity.Id.Should().Be(new Guid("EBC95620-4D80-4318-9B92-AD7528B2965C"));
@@ -263,19 +258,18 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
          var propertyWithBackingField = typeof(TestEntity).GetProperty(nameof(TestEntity.PropertyWithBackingField)) ?? throw new Exception($"Property {nameof(TestEntity.PropertyWithBackingField)} not found.");
          var privateField = typeof(TestEntity).GetField("_privateField", BindingFlags.Instance | BindingFlags.NonPublic) ?? throw new Exception($"Field _privateField not found.");
 
-         await _sut.BulkInsertAsync(ActDbContext,
-                                    ActDbContext.GetEntityType<TestEntity>(),
-                                    testEntities,
-                                    new SqlServerBulkInsertOptions
-                                    {
-                                       MembersToInsert = new EntityMembersProvider(new MemberInfo[]
-                                                                                   {
-                                                                                      idProperty,
-                                                                                      countProperty,
-                                                                                      propertyWithBackingField,
-                                                                                      privateField
-                                                                                   })
-                                    });
+         await SUT.BulkInsertAsync(ActDbContext.GetEntityType<TestEntity>(),
+                                   testEntities,
+                                   new SqlServerBulkInsertOptions
+                                   {
+                                      MembersToInsert = new EntityMembersProvider(new MemberInfo[]
+                                                                                  {
+                                                                                     idProperty,
+                                                                                     countProperty,
+                                                                                     propertyWithBackingField,
+                                                                                     privateField
+                                                                                  })
+                                   });
 
          var loadedEntities = await AssertDbContext.TestEntities.ToListAsync();
          loadedEntities.Should().HaveCount(1);

@@ -64,7 +64,7 @@ namespace Thinktecture
             throw new ArgumentNullException(nameof(ctx));
 
          var entityType = ctx.Model.GetEntityType(type);
-         return ctx.GetService<ITempTableCreator>().CreateTempTableAsync(ctx, entityType, options, cancellationToken);
+         return ctx.GetService<ITempTableCreator>().CreateTempTableAsync(entityType, options, cancellationToken);
       }
 
       /// <summary>
@@ -125,7 +125,7 @@ namespace Thinktecture
 
          var entityType = ctx.Model.GetEntityType(typeof(T));
 
-         await bulkInsertExecutor.BulkInsertAsync(ctx, entityType, entities, options, cancellationToken).ConfigureAwait(false);
+         await bulkInsertExecutor.BulkInsertAsync(entityType, entities, options, cancellationToken).ConfigureAwait(false);
       }
 
       /// <summary>
@@ -193,7 +193,7 @@ namespace Thinktecture
       {
          var executor = ctx.GetService<ITempTableBulkOperationExecutor>();
          options ??= executor.CreateOptions();
-         return executor.BulkInsertIntoTempTableAsync(ctx, entities, options, cancellationToken);
+         return executor.BulkInsertIntoTempTableAsync(entities, options, cancellationToken);
       }
    }
 }

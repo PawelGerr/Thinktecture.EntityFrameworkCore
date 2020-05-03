@@ -5,8 +5,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage;
-using Moq;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Thinktecture.TestDatabaseContext;
 using Xunit;
 using Xunit.Abstractions;
@@ -16,18 +15,12 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqliteBulkOperationExe
    // ReSharper disable once InconsistentNaming
    public class BulkInsertAsync : IntegrationTestsBase
    {
-      private readonly SqliteBulkOperationExecutor _sut;
+      private SqliteBulkOperationExecutor? _sut;
+      private SqliteBulkOperationExecutor SUT => _sut ??= ActDbContext.GetService<SqliteBulkOperationExecutor>();
 
       public BulkInsertAsync(ITestOutputHelper testOutputHelper)
          : base(testOutputHelper)
       {
-         var sqlGenerationHelperMock = new Mock<ISqlGenerationHelper>();
-         sqlGenerationHelperMock.Setup(h => h.DelimitIdentifier(It.IsAny<string>(), It.IsAny<string>()))
-                                .Returns<string, string>((name, schema) => schema == null ? $"\"{name}\"" : $"\"{schema}\".\"{name}\"");
-         sqlGenerationHelperMock.Setup(h => h.DelimitIdentifier(It.IsAny<string>())).Returns<string>(name => $"\"{name}\"");
-
-         var logger = CreateDiagnosticsLogger<SqliteDbLoggerCategory.BulkOperation>();
-         _sut = new SqliteBulkOperationExecutor(sqlGenerationHelperMock.Object, logger);
       }
 
       [Fact]
@@ -35,8 +28,8 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqliteBulkOperationExe
       {
          ConfigureModel = builder => builder.Entity<CustomTempTable>().HasNoKey();
 
-         _sut.Awaiting(sut => sut.BulkInsertAsync(ActDbContext, ActDbContext.GetEntityType<CustomTempTable>(), new List<CustomTempTable>(), new SqliteBulkInsertOptions()))
-             .Should().Throw<InvalidOperationException>().WithMessage("Cannot access destination table '\"CustomTempTable\"'.");
+         SUT.Awaiting(sut => sut.BulkInsertAsync(ActDbContext.GetEntityType<CustomTempTable>(), new List<CustomTempTable>(), new SqliteBulkInsertOptions()))
+            .Should().Throw<InvalidOperationException>().WithMessage("Cannot access destination table '\"CustomTempTable\"'.");
       }
 
       [Fact]
@@ -51,7 +44,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqliteBulkOperationExe
 
          var testEntities = new[] { testEntity };
 
-         await _sut.BulkInsertAsync(ActDbContext, ActDbContext.GetEntityType<TestEntity>(), testEntities, new SqliteBulkInsertOptions());
+         await SUT.BulkInsertAsync(ActDbContext.GetEntityType<TestEntity>(), testEntities, new SqliteBulkInsertOptions());
 
          var loadedEntities = await AssertDbContext.TestEntities.ToListAsync();
          loadedEntities.Should().HaveCount(1)
@@ -72,7 +65,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqliteBulkOperationExe
 
          var testEntities = new[] { testEntity };
 
-         await _sut.BulkInsertAsync(ActDbContext, ActDbContext.GetEntityType<TestEntity>(), testEntities, new SqliteBulkInsertOptions());
+         await SUT.BulkInsertAsync(ActDbContext.GetEntityType<TestEntity>(), testEntities, new SqliteBulkInsertOptions());
 
          var loadedEntity = await AssertDbContext.TestEntities.FirstOrDefaultAsync();
          loadedEntity.GetPrivateField().Should().Be(3);
@@ -87,7 +80,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqliteBulkOperationExe
 
          var testEntities = new[] { testEntity };
 
-         await _sut.BulkInsertAsync(ActDbContext, ActDbContext.GetEntityType<TestEntityWithShadowProperties>(), testEntities, new SqliteBulkInsertOptions());
+         await SUT.BulkInsertAsync(ActDbContext.GetEntityType<TestEntityWithShadowProperties>(), testEntities, new SqliteBulkInsertOptions());
 
          var loadedEntity = await AssertDbContext.TestEntitiesWithShadowProperties.FirstOrDefaultAsync();
          AssertDbContext.Entry(loadedEntity).Property("ShadowStringProperty").CurrentValue.Should().Be("value");
@@ -100,9 +93,9 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqliteBulkOperationExe
          var testEntity = new TestEntityWithSqlDefaultValues { String = null! };
          var testEntities = new[] { testEntity };
 
-         _sut.Awaiting(sut => sut.BulkInsertAsync(ActDbContext, ActDbContext.GetEntityType<TestEntityWithSqlDefaultValues>(), testEntities, new SqliteBulkInsertOptions()))
-             .Should().Throw<Microsoft.Data.Sqlite.SqliteException>()
-             .WithMessage("SQLite Error 19: 'NOT NULL constraint failed: TestEntitiesWithDefaultValues.String'.");
+         SUT.Awaiting(sut => sut.BulkInsertAsync(ActDbContext.GetEntityType<TestEntityWithSqlDefaultValues>(), testEntities, new SqliteBulkInsertOptions()))
+            .Should().Throw<Microsoft.Data.Sqlite.SqliteException>()
+            .WithMessage("SQLite Error 19: 'NOT NULL constraint failed: TestEntitiesWithDefaultValues.String'.");
       }
 
       [Fact]
@@ -130,7 +123,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqliteBulkOperationExe
                                                                                                             })
                        };
 
-         await _sut.BulkInsertAsync(ActDbContext, ActDbContext.GetEntityType<TestEntityWithSqlDefaultValues>(), testEntities, options);
+         await SUT.BulkInsertAsync(ActDbContext.GetEntityType<TestEntityWithSqlDefaultValues>(), testEntities, options);
 
          var loadedEntity = await AssertDbContext.TestEntitiesWithDefaultValues.FirstOrDefaultAsync();
          loadedEntity.Should().BeEquivalentTo(new TestEntityWithSqlDefaultValues
@@ -149,9 +142,9 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqliteBulkOperationExe
          var testEntity = new TestEntityWithDotnetDefaultValues { String = null! };
          var testEntities = new[] { testEntity };
 
-         _sut.Awaiting(sut => sut.BulkInsertAsync(ActDbContext, ActDbContext.GetEntityType<TestEntityWithDotnetDefaultValues>(), testEntities, new SqliteBulkInsertOptions()))
-             .Should().Throw<Microsoft.Data.Sqlite.SqliteException>()
-             .WithMessage("SQLite Error 19: 'NOT NULL constraint failed: TestEntitiesWithDotnetDefaultValues.String'.");
+         SUT.Awaiting(sut => sut.BulkInsertAsync(ActDbContext.GetEntityType<TestEntityWithDotnetDefaultValues>(), testEntities, new SqliteBulkInsertOptions()))
+            .Should().Throw<Microsoft.Data.Sqlite.SqliteException>()
+            .WithMessage("SQLite Error 19: 'NOT NULL constraint failed: TestEntitiesWithDotnetDefaultValues.String'.");
       }
 
       [Fact]
@@ -179,7 +172,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqliteBulkOperationExe
                                                                                                                })
                        };
 
-         await _sut.BulkInsertAsync(ActDbContext, ActDbContext.GetEntityType<TestEntityWithDotnetDefaultValues>(), testEntities, options);
+         await SUT.BulkInsertAsync(ActDbContext.GetEntityType<TestEntityWithDotnetDefaultValues>(), testEntities, options);
 
          var loadedEntity = await AssertDbContext.TestEntitiesWithDotnetDefaultValues.FirstOrDefaultAsync();
          loadedEntity.Should().BeEquivalentTo(new TestEntityWithSqlDefaultValues
@@ -203,7 +196,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqliteBulkOperationExe
          var testEntities = new[] { testEntity };
 
          var options = new SqliteBulkInsertOptions { AutoIncrementBehavior = behavior };
-         await _sut.BulkInsertAsync(ActDbContext, ActDbContext.GetEntityType<TestEntityWithAutoIncrement>(), testEntities, options);
+         await SUT.BulkInsertAsync(ActDbContext.GetEntityType<TestEntityWithAutoIncrement>(), testEntities, options);
 
          var loadedEntity = await AssertDbContext.TestEntitiesWithAutoIncrement.FirstOrDefaultAsync();
          loadedEntity.Id.Should().Be(expectedId);
@@ -227,19 +220,18 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqliteBulkOperationExe
          var propertyWithBackingField = typeof(TestEntity).GetProperty(nameof(TestEntity.PropertyWithBackingField)) ?? throw new Exception($"Property {nameof(TestEntity.PropertyWithBackingField)} not found.");
          var privateField = typeof(TestEntity).GetField("_privateField", BindingFlags.Instance | BindingFlags.NonPublic) ?? throw new Exception("Field _privateField not found.");
 
-         await _sut.BulkInsertAsync(ActDbContext,
-                                    ActDbContext.GetEntityType<TestEntity>(),
-                                    testEntities,
-                                    new SqliteBulkInsertOptions
-                                    {
-                                       MembersToInsert = new EntityMembersProvider(new MemberInfo[]
-                                                                                   {
-                                                                                      idProperty,
-                                                                                      countProperty,
-                                                                                      propertyWithBackingField,
-                                                                                      privateField
-                                                                                   })
-                                    });
+         await SUT.BulkInsertAsync(ActDbContext.GetEntityType<TestEntity>(),
+                                   testEntities,
+                                   new SqliteBulkInsertOptions
+                                   {
+                                      MembersToInsert = new EntityMembersProvider(new MemberInfo[]
+                                                                                  {
+                                                                                     idProperty,
+                                                                                     countProperty,
+                                                                                     propertyWithBackingField,
+                                                                                     privateField
+                                                                                  })
+                                   });
 
          var loadedEntities = await AssertDbContext.TestEntities.ToListAsync();
          loadedEntities.Should().HaveCount(1);
