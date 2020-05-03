@@ -65,20 +65,17 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
 
       /// <inheritdoc />
       public Task BulkInsertAsync<T>(
-         IEntityType entityType,
          IEnumerable<T> entities,
          IBulkInsertOptions options,
          CancellationToken cancellationToken = default)
          where T : class
       {
-         if (entityType == null)
-            throw new ArgumentNullException(nameof(entityType));
+         var entityType = _ctx.Model.GetEntityType(typeof(T));
 
          return BulkInsertAsync(entityType, entities, entityType.GetSchema(), entityType.GetTableName(), options, cancellationToken);
       }
 
-      /// <inheritdoc />
-      public async Task BulkInsertAsync<T>(
+      private async Task BulkInsertAsync<T>(
          IEntityType entityType,
          IEnumerable<T> entities,
          string? schema,
