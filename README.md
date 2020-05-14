@@ -3,4 +3,4 @@ These libraries extend Entity Framework Core  by a few features to make it easie
 
 The code and the documentation can be found on [Thinktecture.EntityFrameworkCore](https://dev.azure.com/pawelgerr/Thinktecture.EntityFrameworkCore)
 
-Issue this repos to create issues and feature requests.
+Use this repo to create issues and feature requests.
