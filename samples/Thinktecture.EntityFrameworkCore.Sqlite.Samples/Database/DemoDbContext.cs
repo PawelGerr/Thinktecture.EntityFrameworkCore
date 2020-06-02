@@ -23,6 +23,12 @@ namespace Thinktecture.Database
       {
          base.OnModelCreating(modelBuilder);
 
+         modelBuilder.Entity<Customer>(builder =>
+                                       {
+                                          builder.Property(c => c.FirstName).HasMaxLength(100);
+                                          builder.Property(c => c.LastName).HasMaxLength(100);
+                                       });
+
          modelBuilder.Entity<OrderItem>().HasKey(i => new { i.OrderId, i.ProductId });
       }
    }

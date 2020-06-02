@@ -49,13 +49,13 @@ namespace Thinktecture
                                                                                        if (schema != null)
                                                                                           sqlOptions.MigrationsHistoryTable("__EFMigrationsHistory", schema);
 
-                                                                                       sqlOptions.AddTempTableSupport()
+                                                                                       sqlOptions.AddRowNumberSupport()
+                                                                                                 .AddTempTableSupport()
                                                                                                  .UseThinktectureSqlServerMigrationsSqlGenerator();
                                                                                     })
                                                     .EnableSensitiveDataLogging()
                                                     .UseLoggerFactory(_loggerFactory)
                                                     .AddSchemaRespectingComponents()
-                                                    .AddRowNumberSupport()
                                                     .AddNestedTransactionSupport());
 
          if (schema != null)

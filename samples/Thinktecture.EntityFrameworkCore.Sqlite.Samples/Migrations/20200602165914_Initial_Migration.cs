@@ -12,24 +12,26 @@ namespace Thinktecture.Migrations
          migrationBuilder.CreateTable("Customers",
                                       table => new
                                                {
-                                                  Id = table.Column<Guid>()
+                                                  Id = table.Column<Guid>(nullable: false),
+                                                  FirstName = table.Column<string>(maxLength: 100, nullable: false),
+                                                  LastName = table.Column<string>(maxLength: 100, nullable: false)
                                                },
                                       constraints: table => table.PrimaryKey("PK_Customers", x => x.Id));
 
          migrationBuilder.CreateTable("Products",
                                       table => new
                                                {
-                                                  Id = table.Column<Guid>()
+                                                  Id = table.Column<Guid>(nullable: false)
                                                },
                                       constraints: table => table.PrimaryKey("PK_Products", x => x.Id));
 
          migrationBuilder.CreateTable("Orders",
                                       table => new
                                                {
-                                                  Id = table.Column<Guid>(),
-                                                  Date = table.Column<DateTime>(),
+                                                  Id = table.Column<Guid>(nullable: false),
+                                                  Date = table.Column<DateTime>(nullable: false),
                                                   Text = table.Column<string>(nullable: true),
-                                                  CustomerId = table.Column<Guid>()
+                                                  CustomerId = table.Column<Guid>(nullable: false)
                                                },
                                       constraints: table =>
                                                    {
@@ -45,9 +47,9 @@ namespace Thinktecture.Migrations
          migrationBuilder.CreateTable("OrderItems",
                                       table => new
                                                {
-                                                  OrderId = table.Column<Guid>(),
-                                                  ProductId = table.Column<Guid>(),
-                                                  Count = table.Column<int>()
+                                                  OrderId = table.Column<Guid>(nullable: false),
+                                                  ProductId = table.Column<Guid>(nullable: false),
+                                                  Count = table.Column<int>(nullable: false)
                                                },
                                       constraints: table =>
                                                    {

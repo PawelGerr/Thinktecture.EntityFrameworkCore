@@ -2,23 +2,35 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Thinktecture.Database;
 
 namespace Thinktecture.Migrations
 {
     [DbContext(typeof(DemoDbContext))]
-    class DemoDbContextModelSnapshot : ModelSnapshot
+    partial class DemoDbContextModelSnapshot : ModelSnapshot
     {
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "2.2.6-servicing-10079");
+                .HasAnnotation("ProductVersion", "3.1.3");
 
             modelBuilder.Entity("Thinktecture.Database.Customer", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd();
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("FirstName")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasMaxLength(100);
+
+                    b.Property<string>("LastName")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasMaxLength(100);
 
                     b.HasKey("Id");
 
@@ -28,13 +40,17 @@ namespace Thinktecture.Migrations
             modelBuilder.Entity("Thinktecture.Database.Order", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd();
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
 
-                    b.Property<Guid>("CustomerId");
+                    b.Property<Guid>("CustomerId")
+                        .HasColumnType("TEXT");
 
-                    b.Property<DateTime>("Date");
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("TEXT");
 
-                    b.Property<string>("Text");
+                    b.Property<string>("Text")
+                        .HasColumnType("TEXT");
 
                     b.HasKey("Id");
 
@@ -45,11 +61,14 @@ namespace Thinktecture.Migrations
 
             modelBuilder.Entity("Thinktecture.Database.OrderItem", b =>
                 {
-                    b.Property<Guid>("OrderId");
+                    b.Property<Guid>("OrderId")
+                        .HasColumnType("TEXT");
 
-                    b.Property<Guid>("ProductId");
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("TEXT");
 
-                    b.Property<int>("Count");
+                    b.Property<int>("Count")
+                        .HasColumnType("INTEGER");
 
                     b.HasKey("OrderId", "ProductId");
 
@@ -61,7 +80,8 @@ namespace Thinktecture.Migrations
             modelBuilder.Entity("Thinktecture.Database.Product", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd();
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
 
                     b.HasKey("Id");
 
@@ -73,7 +93,8 @@ namespace Thinktecture.Migrations
                     b.HasOne("Thinktecture.Database.Customer", "Customer")
                         .WithMany("Orders")
                         .HasForeignKey("CustomerId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Thinktecture.Database.OrderItem", b =>
@@ -81,12 +102,14 @@ namespace Thinktecture.Migrations
                     b.HasOne("Thinktecture.Database.Order", "Order")
                         .WithMany("OrderItems")
                         .HasForeignKey("OrderId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("Thinktecture.Database.Product", "Product")
                         .WithMany("OrderItems")
                         .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 #pragma warning restore 612, 618
         }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -44,6 +44,9 @@ namespace Thinktecture
 
                // LEFT JOIN
                await DoLeftJoinAsync(ctx);
+
+               // ROWNUMBER
+               await DoRowNumberAsync(ctx);
             }
             finally
             {
@@ -52,6 +55,38 @@ namespace Thinktecture
          }
 
          Console.WriteLine("Exiting samples...");
+      }
+
+      private static async Task DoRowNumberAsync(DemoDbContext ctx)
+      {
+         var customers = await ctx.Customers
+                                  .Select(c => new
+                                               {
+                                                  c.Id,
+                                                  FirstName_RowNumber = EF.Functions.RowNumber(EF.Functions.OrderBy(c.FirstName)),
+                                                  LastName_RowNumber = EF.Functions.RowNumber(EF.Functions.OrderBy(c.LastName)),
+                                                  FirstAndLastName1_RowNumber = EF.Functions.RowNumber(EF.Functions.OrderBy(c.FirstName + " " + c.LastName)),
+                                                  FirstAndLastName2_RowNumber = EF.Functions.RowNumber(EF.Functions.OrderBy(c.FirstName).ThenBy(c.LastName))
+                                               })
+                                  .AsSubQuery()
+                                  .OrderBy(c => c.FirstName_RowNumber)
+                                  .ThenBy(c => c.LastName_RowNumber)
+                                  .ToListAsync();
+
+         Console.WriteLine($"Found customers: {String.Join(", ", customers.Select(c => $"{{ CustomerId={c.Id}, FirstName_RowNumber={c.FirstName_RowNumber}, LastName_RowNumber={c.LastName_RowNumber}, FirstAndLastName1_RowNumber={c.FirstAndLastName1_RowNumber}, FirstAndLastName2_RowNumber={c.FirstAndLastName2_RowNumber} }}"))}");
+
+         var latestOrders = await ctx.Orders
+                                     .Select(o => new
+                                                  {
+                                                     o.Id,
+                                                     o.CustomerId,
+                                                     RowNumber = EF.Functions.RowNumber(EF.Functions.OrderBy(o.Date))
+                                                  })
+                                     // Previous query must be a sub query to access "RowNumber"
+                                     .AsSubQuery()
+                                     .Where(i => i.RowNumber == 1)
+                                     .ToListAsync();
+         Console.WriteLine($"Latest orders: {String.Join(", ", latestOrders.Select(o => $"{{ CustomerId={o.CustomerId}, OrderId={o.Id} }}"))}");
       }
 
       private static async Task DoLeftJoinAsync(DemoDbContext ctx)
@@ -68,7 +103,7 @@ namespace Thinktecture
 
       private static async Task DoBulkInsertIntoTempTableAsync(DemoDbContext ctx)
       {
-         var customersToInsert = new Customer { Id = Guid.NewGuid() };
+         var customersToInsert = new Customer(Guid.NewGuid(), "First name", "Last name");
          await using var tempTable = await ctx.BulkInsertIntoTempTableAsync(new[] { customersToInsert });
 
          var insertedCustomer = await tempTable.Query.FirstAsync(c => c.Id == customersToInsert.Id);
@@ -78,7 +113,7 @@ namespace Thinktecture
 
       private static async Task DoBulkInsertIntoRealTableAsync(DemoDbContext ctx)
       {
-         var customersToInsert = new Customer { Id = Guid.NewGuid() };
+         var customersToInsert = new Customer(Guid.NewGuid(), "First name", "Last name");
          await ctx.BulkInsertAsync(new[] { customersToInsert });
 
          var insertedCustomer = await ctx.Customers.FirstAsync(c => c.Id == customersToInsert.Id);
@@ -88,14 +123,14 @@ namespace Thinktecture
 
       private static async Task DoBulkInsertSpecifiedColumnsIntoRealTableAsync(DemoDbContext ctx)
       {
-         var customersToInsert = new Customer { Id = Guid.NewGuid() };
+         var customersToInsert = new Customer(Guid.NewGuid(), "First name", "Last name");
 
          // only "Id" is sent to the DB
          // alternative ways to specify the column:
          // * c => new { c.Id }
          // * c => c.Id
          // * new SqlBulkInsertOptions { PropertiesProvider = PropertiesProvider.From<Customer>(c => new { c.Id })}
-         await ctx.BulkInsertAsync(new[] { customersToInsert }, c => new { c.Id });
+         await ctx.BulkInsertAsync(new[] { customersToInsert }, c => new { c.Id, c.FirstName, c.LastName });
 
          var insertedCustomer = await ctx.Customers.FirstAsync(c => c.Id == customersToInsert.Id);
 

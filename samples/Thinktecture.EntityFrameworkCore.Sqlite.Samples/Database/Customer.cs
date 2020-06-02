@@ -5,7 +5,9 @@ namespace Thinktecture.Database
 {
    public class Customer
    {
-      public Guid Id { get; set; }
+      public Guid Id { get; private set; }
+      public string FirstName { get; private set; }
+      public string LastName { get; private set; }
 
       private List<Order>? _orders;
 
@@ -14,6 +16,19 @@ namespace Thinktecture.Database
       {
          get => _orders ??= new List<Order>();
          set => _orders = value;
+      }
+
+#nullable disable
+      private Customer()
+      {
+      }
+#nullable enable
+
+      public Customer(Guid id, string firstName, string lastName)
+      {
+         Id = id;
+         FirstName = firstName;
+         LastName = lastName;
       }
    }
 }
