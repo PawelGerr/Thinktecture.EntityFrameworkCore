@@ -50,7 +50,6 @@ namespace Thinktecture
       protected override DbContextOptionsBuilder<TestDbContext> CreateOptionsBuilder(DbConnection connection)
       {
          return base.CreateOptionsBuilder(connection)
-                    .AddRowNumberSupport()
                     .AddNestedTransactionSupport();
       }
 
@@ -59,7 +58,8 @@ namespace Thinktecture
       {
          base.ConfigureSqlServer(builder);
 
-         builder.AddTempTableSupport();
+         builder.AddTempTableSupport()
+                .AddRowNumberSupport();
       }
 
       /// <inheritdoc />

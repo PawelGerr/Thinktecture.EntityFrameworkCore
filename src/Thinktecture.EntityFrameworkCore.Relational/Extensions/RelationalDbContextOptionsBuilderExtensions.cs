@@ -49,8 +49,9 @@ namespace Thinktecture
       /// <param name="addDefaultSchemaRespectingComponents">Indication whether to enable or disable the feature.</param>
       /// <returns>The provided <paramref name="builder"/>.</returns>
       /// <exception cref="ArgumentNullException"><paramref name="builder"/> is <c>null</c>.</exception>
-      public static DbContextOptionsBuilder<T> AddSchemaRespectingComponents<T>(this DbContextOptionsBuilder<T> builder,
-                                                                                bool addDefaultSchemaRespectingComponents = true)
+      public static DbContextOptionsBuilder<T> AddSchemaRespectingComponents<T>(
+         this DbContextOptionsBuilder<T> builder,
+         bool addDefaultSchemaRespectingComponents = true)
          where T : DbContext
       {
          ((DbContextOptionsBuilder)builder).AddSchemaRespectingComponents(addDefaultSchemaRespectingComponents);
@@ -64,8 +65,9 @@ namespace Thinktecture
       /// <param name="addDefaultSchemaRespectingComponents">Indication whether to enable or disable the feature.</param>
       /// <returns>The provided <paramref name="builder"/>.</returns>
       /// <exception cref="ArgumentNullException"><paramref name="builder"/> is <c>null</c>.</exception>
-      public static DbContextOptionsBuilder AddSchemaRespectingComponents(this DbContextOptionsBuilder builder,
-                                                                          bool addDefaultSchemaRespectingComponents = true)
+      public static DbContextOptionsBuilder AddSchemaRespectingComponents(
+         this DbContextOptionsBuilder builder,
+         bool addDefaultSchemaRespectingComponents = true)
       {
          builder.AddOrUpdateExtension<RelationalDbContextOptionsExtension>(extension => extension.AddSchemaRespectingComponents = addDefaultSchemaRespectingComponents);
          return builder;
@@ -98,60 +100,6 @@ namespace Thinktecture
          where T : IEvaluatableExpressionFilterPlugin
       {
          builder.AddOrUpdateExtension<RelationalDbContextOptionsExtension>(extension => extension.AddEvaluatableExpressionFilterPlugin<T>());
-         return builder;
-      }
-
-      /// <summary>
-      /// Adds custom factory required for translation of custom methods like <see cref="RelationalQueryableExtensions.AsSubQuery{TEntity}"/>.
-      /// </summary>
-      /// <param name="builder">Options builder.</param>
-      /// <param name="addCustomQueryableMethodTranslatingExpressionVisitorFactory">Indication whether to add a custom factory.</param>
-      /// <returns>Provided <paramref name="builder"/>.</returns>
-      public static DbContextOptionsBuilder<T> AddCustomQueryableMethodTranslatingExpressionVisitorFactory<T>(this DbContextOptionsBuilder<T> builder,
-                                                                                                              bool addCustomQueryableMethodTranslatingExpressionVisitorFactory = true)
-         where T : DbContext
-      {
-         ((DbContextOptionsBuilder)builder).AddCustomQueryableMethodTranslatingExpressionVisitorFactory(addCustomQueryableMethodTranslatingExpressionVisitorFactory);
-         return builder;
-      }
-
-      /// <summary>
-      /// Adds custom factory required for translation of custom methods like <see cref="RelationalQueryableExtensions.AsSubQuery{TEntity}"/>.
-      /// </summary>
-      /// <param name="builder">Options builder.</param>
-      /// <param name="addCustomQueryableMethodTranslatingExpressionVisitorFactory">Indication whether to add a custom factory.</param>
-      /// <returns>Provided <paramref name="builder"/>.</returns>
-      public static DbContextOptionsBuilder AddCustomQueryableMethodTranslatingExpressionVisitorFactory(this DbContextOptionsBuilder builder,
-                                                                                                        bool addCustomQueryableMethodTranslatingExpressionVisitorFactory = true)
-      {
-         builder.AddOrUpdateExtension<RelationalDbContextOptionsExtension>(extension => extension.AddCustomQueryableMethodTranslatingExpressionVisitorFactory = addCustomQueryableMethodTranslatingExpressionVisitorFactory);
-         return builder;
-      }
-
-      /// <summary>
-      /// Adds support for "RowNumber".
-      /// </summary>
-      /// <param name="builder">Options builder.</param>
-      /// <param name="addRowNumberSupport">Indication whether to enable or disable the feature.</param>
-      /// <returns>Provided <paramref name="builder"/>.</returns>
-      public static DbContextOptionsBuilder<T> AddRowNumberSupport<T>(this DbContextOptionsBuilder<T> builder,
-                                                                      bool addRowNumberSupport = true)
-         where T : DbContext
-      {
-         ((DbContextOptionsBuilder)builder).AddRowNumberSupport(addRowNumberSupport);
-         return builder;
-      }
-
-      /// <summary>
-      /// Adds support for "RowNumber".
-      /// </summary>
-      /// <param name="builder">Options builder.</param>
-      /// <param name="addRowNumberSupport">Indication whether to enable or disable the feature.</param>
-      /// <returns>Provided <paramref name="builder"/>.</returns>
-      public static DbContextOptionsBuilder AddRowNumberSupport(this DbContextOptionsBuilder builder,
-                                                                bool addRowNumberSupport = true)
-      {
-         builder.AddOrUpdateExtension<RelationalDbContextOptionsExtension>(extension => extension.AddRowNumberSupport = addRowNumberSupport);
          return builder;
       }
 
@@ -192,7 +140,7 @@ namespace Thinktecture
       /// <param name="optionsBuilder">Options builder.</param>
       /// <typeparam name="TExtension">Type of the extension.</typeparam>
       /// <exception cref="ArgumentNullException"><paramref name="optionsBuilder"/> is null.</exception>
-      public static void TryAddExtension<TExtension>(this DbContextOptionsBuilder optionsBuilder)
+      public static TExtension TryAddExtension<TExtension>(this DbContextOptionsBuilder optionsBuilder)
          where TExtension : class, IDbContextOptionsExtension, new()
       {
          if (optionsBuilder == null)
@@ -201,6 +149,8 @@ namespace Thinktecture
          var extension = optionsBuilder.Options.FindExtension<TExtension>() ?? new TExtension();
          var builder = (IDbContextOptionsBuilderInfrastructure)optionsBuilder;
          builder.AddOrUpdateExtension(extension);
+
+         return extension;
       }
 
       /// <summary>
@@ -214,21 +164,48 @@ namespace Thinktecture
       /// - or
       /// <paramref name="callback"/> is null.
       /// </exception>
-      public static void AddOrUpdateExtension<TExtension>(this DbContextOptionsBuilder optionsBuilder,
-                                                          Action<TExtension> callback)
+      public static TExtension AddOrUpdateExtension<TExtension>(
+         this DbContextOptionsBuilder optionsBuilder,
+         Action<TExtension> callback)
          where TExtension : class, IDbContextOptionsExtension, new()
+      {
+         return AddOrUpdateExtension(optionsBuilder, callback, () => new TExtension());
+      }
+
+      /// <summary>
+      /// Adds or updates an extension of type <typeparamref name="TExtension"/>.
+      /// </summary>
+      /// <param name="optionsBuilder">Options builder.</param>
+      /// <param name="callback">Callback that updates the extension.</param>
+      /// <param name="extensionFactry">Factory for creation of new instances of <typeparamref name="TExtension"/>.</param>
+      /// <typeparam name="TExtension">Type of the extension.</typeparam>
+      /// <exception cref="ArgumentNullException">
+      /// <paramref name="optionsBuilder"/> is null
+      /// - or
+      /// <paramref name="callback"/> is null.
+      /// </exception>
+      public static TExtension AddOrUpdateExtension<TExtension>(
+         this DbContextOptionsBuilder optionsBuilder,
+         Action<TExtension> callback,
+         Func<TExtension> extensionFactry
+      )
+         where TExtension : class, IDbContextOptionsExtension
       {
          if (optionsBuilder == null)
             throw new ArgumentNullException(nameof(optionsBuilder));
          if (callback == null)
             throw new ArgumentNullException(nameof(callback));
+         if (extensionFactry == null)
+            throw new ArgumentNullException(nameof(extensionFactry));
 
-         var extension = optionsBuilder.Options.FindExtension<TExtension>() ?? new TExtension();
+         var extension = optionsBuilder.Options.FindExtension<TExtension>() ?? extensionFactry();
 
          callback(extension);
 
          var builder = (IDbContextOptionsBuilderInfrastructure)optionsBuilder;
          builder.AddOrUpdateExtension(extension);
+
+         return extension;
       }
    }
 }

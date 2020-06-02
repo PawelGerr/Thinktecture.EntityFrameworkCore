@@ -4,7 +4,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Query;
-using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Thinktecture.EntityFrameworkCore.BulkOperations;
@@ -20,10 +19,31 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
    [SuppressMessage("ReSharper", "EF1001")]
    public sealed class SqliteDbContextOptionsExtension : IDbContextOptionsExtension
    {
+      private readonly RelationalDbContextOptionsExtension _relationalOptions;
+
       private SqliteDbContextOptionsExtensionInfo? _info;
 
       /// <inheritdoc />
       public DbContextOptionsExtensionInfo Info => _info ??= new SqliteDbContextOptionsExtensionInfo(this);
+
+      /// <summary>
+      /// Enables and disables support for "RowNumber".
+      /// </summary>
+      public bool AddRowNumberSupport
+      {
+         get => _relationalOptions.AddRowNumberSupport;
+         set => _relationalOptions.AddRowNumberSupport = value;
+      }
+
+      /// <summary>
+      /// A custom factory is registered if <c>true</c>.
+      /// The factory is required to be able to translate custom methods like <see cref="RelationalQueryableExtensions.AsSubQuery{TEntity}"/>.
+      /// </summary>
+      public bool AddCustomQueryableMethodTranslatingExpressionVisitorFactory
+      {
+         get => _relationalOptions.AddCustomQueryableMethodTranslatingExpressionVisitorFactory;
+         set => _relationalOptions.AddCustomQueryableMethodTranslatingExpressionVisitorFactory = value;
+      }
 
       /// <summary>
       /// Enables and disables support for temp tables.
@@ -42,17 +62,20 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       }
 
       /// <summary>
-      /// A custom factory is registered if <c>true</c>.
-      /// The factory is required to be able to translate custom methods like <see cref="RelationalQueryableExtensions.AsSubQuery{TEntity}"/>.
+      /// Initializes new instance of <see cref="SqliteDbContextOptionsExtension"/>.
       /// </summary>
-      public bool AddCustomQueryableMethodTranslatingExpressionVisitorFactory { get; set; }
+      /// <param name="relationalOptions">An instance of <see cref="RelationalDbContextOptionsExtension"/>.</param>
+      public SqliteDbContextOptionsExtension(RelationalDbContextOptionsExtension relationalOptions)
+      {
+         _relationalOptions = relationalOptions ?? throw new ArgumentNullException(nameof(relationalOptions));
+      }
 
       /// <inheritdoc />
       public void ApplyServices(IServiceCollection services)
       {
          services.TryAddSingleton(this);
 
-         if (AddCustomQueryableMethodTranslatingExpressionVisitorFactory)
+         if (_relationalOptions.AddCustomQueryableMethodTranslatingExpressionVisitorFactory)
             services.AddSingleton<IQueryableMethodTranslatingExpressionVisitorFactory, SqliteQueryableMethodTranslatingExpressionVisitorFactory>();
 
          if (AddTempTableSupport)
@@ -90,8 +113,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
          public override string LogFragment => _logFragment ??= $@"
 {{
    'BulkOperationSupport'={_extension.AddBulkOperationSupport},
-   'TempTableSupport'={_extension.AddTempTableSupport},
-   'CustomQueryableMethodTranslatingExpressionVisitorFactory'={_extension.AddCustomQueryableMethodTranslatingExpressionVisitorFactory}
+   'TempTableSupport'={_extension.AddTempTableSupport}
 }}";
 
          /// <inheritdoc />
@@ -112,7 +134,6 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
          {
             debugInfo["Thinktecture:BulkOperationSupport"] = _extension.AddBulkOperationSupport.ToString(CultureInfo.InvariantCulture);
             debugInfo["Thinktecture:TempTableSupport"] = _extension.AddTempTableSupport.ToString(CultureInfo.InvariantCulture);
-            debugInfo["Thinktecture:CustomQueryableMethodTranslatingExpressionVisitorFactory"] = _extension.AddCustomQueryableMethodTranslatingExpressionVisitorFactory.ToString(CultureInfo.InvariantCulture);
          }
       }
    }

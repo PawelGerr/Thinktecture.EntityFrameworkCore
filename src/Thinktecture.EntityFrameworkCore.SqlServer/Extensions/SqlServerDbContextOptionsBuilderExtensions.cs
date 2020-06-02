@@ -21,7 +21,7 @@ namespace Thinktecture
       public static SqlServerDbContextOptionsBuilder AddTempTableSupport(this SqlServerDbContextOptionsBuilder sqlServerOptionsBuilder,
                                                                          bool addTempTableSupport = true)
       {
-         return AddOrUpdateExtensions(sqlServerOptionsBuilder, extension => extension.AddTempTableSupport = addTempTableSupport);
+         return AddOrUpdateExtension(sqlServerOptionsBuilder, extension => extension.AddTempTableSupport = addTempTableSupport);
       }
 
       /// <summary>
@@ -33,7 +33,35 @@ namespace Thinktecture
       public static SqlServerDbContextOptionsBuilder AddBulkOperationSupport(this SqlServerDbContextOptionsBuilder sqlServerOptionsBuilder,
                                                                              bool addBulkOperationSupport = true)
       {
-         return AddOrUpdateExtensions(sqlServerOptionsBuilder, extension => extension.AddBulkOperationSupport = addBulkOperationSupport);
+         return AddOrUpdateExtension(sqlServerOptionsBuilder, extension => extension.AddBulkOperationSupport = addBulkOperationSupport);
+      }
+
+      /// <summary>
+      /// Adds custom factory required for translation of custom methods like <see cref="RelationalQueryableExtensions.AsSubQuery{TEntity}"/>.
+      /// </summary>
+      /// <param name="builder">Options builder.</param>
+      /// <param name="addCustomQueryableMethodTranslatingExpressionVisitorFactory">Indication whether to add a custom factory.</param>
+      /// <returns>Provided <paramref name="builder"/>.</returns>
+      public static SqlServerDbContextOptionsBuilder AddCustomQueryableMethodTranslatingExpressionVisitorFactory(
+         this SqlServerDbContextOptionsBuilder builder,
+         bool addCustomQueryableMethodTranslatingExpressionVisitorFactory = true)
+      {
+         builder.AddOrUpdateExtension(extension => extension.AddCustomQueryableMethodTranslatingExpressionVisitorFactory = addCustomQueryableMethodTranslatingExpressionVisitorFactory);
+         return builder;
+      }
+
+      /// <summary>
+      /// Adds support for "RowNumber".
+      /// </summary>
+      /// <param name="builder">Options builder.</param>
+      /// <param name="addRowNumberSupport">Indication whether to enable or disable the feature.</param>
+      /// <returns>Provided <paramref name="builder"/>.</returns>
+      public static SqlServerDbContextOptionsBuilder AddRowNumberSupport(
+         this SqlServerDbContextOptionsBuilder builder,
+         bool addRowNumberSupport = true)
+      {
+         builder.AddOrUpdateExtension(extension => extension.AddRowNumberSupport = addRowNumberSupport);
+         return builder;
       }
 
       /// <summary>
@@ -42,21 +70,22 @@ namespace Thinktecture
       /// <param name="sqlServerOptionsBuilder">SQL Server options builder.</param>
       /// <param name="useSqlGenerator">Indication whether to enable or disable the feature.</param>
       /// <returns>Provided <paramref name="sqlServerOptionsBuilder"/>.</returns>
-      public static SqlServerDbContextOptionsBuilder UseThinktectureSqlServerMigrationsSqlGenerator(this SqlServerDbContextOptionsBuilder sqlServerOptionsBuilder,
-                                                                                                    bool useSqlGenerator = true)
+      public static SqlServerDbContextOptionsBuilder UseThinktectureSqlServerMigrationsSqlGenerator(
+         this SqlServerDbContextOptionsBuilder sqlServerOptionsBuilder,
+         bool useSqlGenerator = true)
       {
-         return AddOrUpdateExtensions(sqlServerOptionsBuilder, extension => extension.UseThinktectureSqlServerMigrationsSqlGenerator = useSqlGenerator);
+         return AddOrUpdateExtension(sqlServerOptionsBuilder, extension => extension.UseThinktectureSqlServerMigrationsSqlGenerator = useSqlGenerator);
       }
 
-      private static SqlServerDbContextOptionsBuilder AddOrUpdateExtensions(this SqlServerDbContextOptionsBuilder sqlServerOptionsBuilder,
+      private static SqlServerDbContextOptionsBuilder AddOrUpdateExtension(this SqlServerDbContextOptionsBuilder sqlServerOptionsBuilder,
                                                                             Action<SqlServerDbContextOptionsExtension> callback)
       {
          if (sqlServerOptionsBuilder == null)
             throw new ArgumentNullException(nameof(sqlServerOptionsBuilder));
 
          var infrastructure = (IRelationalDbContextOptionsBuilderInfrastructure)sqlServerOptionsBuilder;
-         infrastructure.OptionsBuilder.TryAddExtension<RelationalDbContextOptionsExtension>();
-         infrastructure.OptionsBuilder.AddOrUpdateExtension(callback);
+         var relationalOptions = infrastructure.OptionsBuilder.TryAddExtension<RelationalDbContextOptionsExtension>();
+         infrastructure.OptionsBuilder.AddOrUpdateExtension(callback, () => new SqlServerDbContextOptionsExtension(relationalOptions));
 
          return sqlServerOptionsBuilder;
       }

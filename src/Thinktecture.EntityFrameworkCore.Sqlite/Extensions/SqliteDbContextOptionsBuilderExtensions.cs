@@ -11,18 +11,6 @@ namespace Thinktecture
    public static class SqliteDbContextOptionsBuilderExtensions
    {
       /// <summary>
-      /// Adds custom factory required for translation of custom methods like <see cref="RelationalQueryableExtensions.AsSubQuery{TEntity}"/>.
-      /// </summary>
-      /// <param name="sqliteOptionsBuilder">SQLite options builder.</param>
-      /// <param name="addCustomQueryableMethodTranslatingExpressionVisitorFactory">Indication whether to add a custom factory.</param>
-      /// <returns>Provided <paramref name="sqliteOptionsBuilder"/>.</returns>
-      public static SqliteDbContextOptionsBuilder AddCustomQueryableMethodTranslatingExpressionVisitorFactory(this SqliteDbContextOptionsBuilder sqliteOptionsBuilder,
-                                                                                                              bool addCustomQueryableMethodTranslatingExpressionVisitorFactory = true)
-      {
-         return AddOrUpdateExtensions(sqliteOptionsBuilder, extension => extension.AddCustomQueryableMethodTranslatingExpressionVisitorFactory = addCustomQueryableMethodTranslatingExpressionVisitorFactory);
-      }
-
-      /// <summary>
       /// Adds support for temp tables.
       /// </summary>
       /// <param name="sqliteOptionsBuilder">SQLite options builder.</param>
@@ -31,7 +19,7 @@ namespace Thinktecture
       public static SqliteDbContextOptionsBuilder AddTempTableSupport(this SqliteDbContextOptionsBuilder sqliteOptionsBuilder,
                                                                       bool addTempTableSupport = true)
       {
-         return AddOrUpdateExtensions(sqliteOptionsBuilder, extension => extension.AddTempTableSupport = addTempTableSupport);
+         return AddOrUpdateExtension(sqliteOptionsBuilder, extension => extension.AddTempTableSupport = addTempTableSupport);
       }
 
       /// <summary>
@@ -43,18 +31,46 @@ namespace Thinktecture
       public static SqliteDbContextOptionsBuilder AddBulkOperationSupport(this SqliteDbContextOptionsBuilder sqliteOptionsBuilder,
                                                                           bool addBulkOperationSupport = true)
       {
-         return AddOrUpdateExtensions(sqliteOptionsBuilder, extension => extension.AddBulkOperationSupport = addBulkOperationSupport);
+         return AddOrUpdateExtension(sqliteOptionsBuilder, extension => extension.AddBulkOperationSupport = addBulkOperationSupport);
       }
 
-      private static SqliteDbContextOptionsBuilder AddOrUpdateExtensions(this SqliteDbContextOptionsBuilder sqliteOptionsBuilder,
+      /// <summary>
+      /// Adds custom factory required for translation of custom methods like <see cref="RelationalQueryableExtensions.AsSubQuery{TEntity}"/>.
+      /// </summary>
+      /// <param name="builder">Options builder.</param>
+      /// <param name="addCustomQueryableMethodTranslatingExpressionVisitorFactory">Indication whether to add a custom factory.</param>
+      /// <returns>Provided <paramref name="builder"/>.</returns>
+      public static SqliteDbContextOptionsBuilder AddCustomQueryableMethodTranslatingExpressionVisitorFactory(
+         this SqliteDbContextOptionsBuilder builder,
+         bool addCustomQueryableMethodTranslatingExpressionVisitorFactory = true)
+      {
+         builder.AddOrUpdateExtension(extension => extension.AddCustomQueryableMethodTranslatingExpressionVisitorFactory = addCustomQueryableMethodTranslatingExpressionVisitorFactory);
+         return builder;
+      }
+
+      /// <summary>
+      /// Adds support for "RowNumber".
+      /// </summary>
+      /// <param name="builder">Options builder.</param>
+      /// <param name="addRowNumberSupport">Indication whether to enable or disable the feature.</param>
+      /// <returns>Provided <paramref name="builder"/>.</returns>
+      public static SqliteDbContextOptionsBuilder AddRowNumberSupport(
+         this SqliteDbContextOptionsBuilder builder,
+         bool addRowNumberSupport = true)
+      {
+         builder.AddOrUpdateExtension(extension => extension.AddRowNumberSupport = addRowNumberSupport);
+         return builder;
+      }
+
+      private static SqliteDbContextOptionsBuilder AddOrUpdateExtension(this SqliteDbContextOptionsBuilder sqliteOptionsBuilder,
                                                                          Action<SqliteDbContextOptionsExtension> callback)
       {
          if (sqliteOptionsBuilder == null)
             throw new ArgumentNullException(nameof(sqliteOptionsBuilder));
 
          var infrastructure = (IRelationalDbContextOptionsBuilderInfrastructure)sqliteOptionsBuilder;
-         infrastructure.OptionsBuilder.TryAddExtension<RelationalDbContextOptionsExtension>();
-         infrastructure.OptionsBuilder.AddOrUpdateExtension(callback);
+         var relationalOptions = infrastructure.OptionsBuilder.TryAddExtension<RelationalDbContextOptionsExtension>();
+         infrastructure.OptionsBuilder.AddOrUpdateExtension(callback, () => new SqliteDbContextOptionsExtension(relationalOptions));
 
          return sqliteOptionsBuilder;
       }
