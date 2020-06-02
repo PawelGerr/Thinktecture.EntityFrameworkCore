@@ -13,6 +13,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Thinktecture.EntityFrameworkCore.Migrations;
 using Thinktecture.EntityFrameworkCore.Query;
+using Thinktecture.EntityFrameworkCore.Query.ExpressionTranslators;
 using Thinktecture.EntityFrameworkCore.Storage;
 
 namespace Thinktecture.EntityFrameworkCore.Infrastructure
@@ -88,6 +89,8 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
 
          services.TryAddSingleton(this);
 
+         services.Add<IMethodCallTranslatorPlugin, RelationalMethodCallTranslatorPlugin>(GetLifetime<IMethodCallTranslatorPlugin>());
+
          if (AddCustomQueryableMethodTranslatingExpressionVisitorFactory)
             services.AddSingleton<IQueryableMethodTranslatingExpressionVisitorFactory, RelationalQueryableMethodTranslatingExpressionVisitorFactory>();
 
@@ -111,6 +114,11 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
          {
             services.Add(descriptor);
          }
+      }
+
+      private static ServiceLifetime GetLifetime<TService>()
+      {
+         return EntityFrameworkRelationalServicesBuilder.RelationalServices[typeof(TService)].Lifetime;
       }
 
       private void RegisterNestedTransactionManager([NotNull] IServiceCollection services)

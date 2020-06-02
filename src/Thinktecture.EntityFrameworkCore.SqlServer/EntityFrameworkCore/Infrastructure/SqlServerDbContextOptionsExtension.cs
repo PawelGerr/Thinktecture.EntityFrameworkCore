@@ -4,13 +4,11 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
-using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Thinktecture.EntityFrameworkCore.BulkOperations;
 using Thinktecture.EntityFrameworkCore.Data;
 using Thinktecture.EntityFrameworkCore.Migrations;
-using Thinktecture.EntityFrameworkCore.Query.ExpressionTranslators;
 using Thinktecture.EntityFrameworkCore.TempTables;
 
 namespace Thinktecture.EntityFrameworkCore.Infrastructure
@@ -51,7 +49,6 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       public void ApplyServices(IServiceCollection services)
       {
          services.TryAddSingleton(this);
-         services.Add<IMethodCallTranslatorPlugin, RelationalMethodCallTranslatorPlugin>(GetLifetime<IMethodCallTranslatorPlugin>());
 
          if (AddTempTableSupport)
          {
