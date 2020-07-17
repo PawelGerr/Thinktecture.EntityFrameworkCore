@@ -177,7 +177,7 @@ namespace Thinktecture
       /// </summary>
       /// <param name="optionsBuilder">Options builder.</param>
       /// <param name="callback">Callback that updates the extension.</param>
-      /// <param name="extensionFactry">Factory for creation of new instances of <typeparamref name="TExtension"/>.</param>
+      /// <param name="extensionFactory">Factory for creation of new instances of <typeparamref name="TExtension"/>.</param>
       /// <typeparam name="TExtension">Type of the extension.</typeparam>
       /// <exception cref="ArgumentNullException">
       /// <paramref name="optionsBuilder"/> is null
@@ -187,7 +187,7 @@ namespace Thinktecture
       public static TExtension AddOrUpdateExtension<TExtension>(
          this DbContextOptionsBuilder optionsBuilder,
          Action<TExtension> callback,
-         Func<TExtension> extensionFactry
+         Func<TExtension> extensionFactory
       )
          where TExtension : class, IDbContextOptionsExtension
       {
@@ -195,10 +195,10 @@ namespace Thinktecture
             throw new ArgumentNullException(nameof(optionsBuilder));
          if (callback == null)
             throw new ArgumentNullException(nameof(callback));
-         if (extensionFactry == null)
-            throw new ArgumentNullException(nameof(extensionFactry));
+         if (extensionFactory == null)
+            throw new ArgumentNullException(nameof(extensionFactory));
 
-         var extension = optionsBuilder.Options.FindExtension<TExtension>() ?? extensionFactry();
+         var extension = optionsBuilder.Options.FindExtension<TExtension>() ?? extensionFactory();
 
          callback(extension);
 
