@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Linq.Expressions;
 using FluentAssertions;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
@@ -34,6 +35,49 @@ namespace Thinktecture.Extensions.SqlServerDbFunctionsExtensionsTests
 
          result.First(t => t.Name == "1").RowNumber.Should().Be(1);
          result.First(t => t.Name == "2").RowNumber.Should().Be(2);
+      }
+
+      [Fact]
+      public void Generates_RowNumber_with_orderby_and_one_column_generic_approach()
+      {
+         ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("4883F7E0-FC8C-45FF-A579-DF351A3E79BF"), Name = "1" });
+         ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("18C13F68-0981-4853-92FC-FB7B2551F70A"), Name = "2" });
+         ArrangeDbContext.SaveChanges();
+
+         var propertyName = nameof(TestEntity.Name);
+
+         var query = ActDbContext.TestEntities;
+         var result = AppendSelect(query, propertyName, new { Name = String.Empty, RowNumber = 0L }).ToList();
+
+         result.First(t => t.Name == "1").RowNumber.Should().Be(1);
+         result.First(t => t.Name == "2").RowNumber.Should().Be(2);
+      }
+
+      private static IQueryable<TResult> AppendSelect<T, TResult>(IQueryable<T> query, string propertyName, TResult anonymousTypeSample)
+      {
+         var testEntityType = typeof(T);
+         var propertyInfo = testEntityType.GetProperty(propertyName) ?? throw new Exception($"Property '{propertyName}' not found.");
+
+         var returnType = new { Name = String.Empty, RowNumber = 0L }.GetType();
+         var returnTypeCtor = returnType.GetConstructor(new[] { typeof(string), typeof(long) });
+
+         var efFunctions = Expression.Constant(EF.Functions); // EF.Functions
+         var extensionsType = typeof(RelationalDbFunctionsExtensions);
+         var orderByMethod = extensionsType.GetMethod(nameof(RelationalDbFunctionsExtensions.OrderBy)) // EF.Functions.OrderBy<T>
+                                           ?.MakeGenericMethod(propertyInfo.PropertyType)              // EF.Functions.OrderBy<string>
+                             ?? throw new Exception("Method 'OrderBy' not found.");
+         var rowNumberMethod = extensionsType.GetMethods()
+                                             .Single(m => m.Name == nameof(RelationalDbFunctionsExtensions.RowNumber) && !m.IsGenericMethod); // EF.Functions.RowNumber
+
+         var param = Expression.Parameter(testEntityType);                                     // e
+         var nameAccessor = Expression.MakeMemberAccess(param, propertyInfo);                  // e.Name
+         var orderByCall = Expression.Call(null, orderByMethod, efFunctions, nameAccessor);    // EF.Functions.OrderBy(e.Name)
+         var rowNumberCall = Expression.Call(null, rowNumberMethod, efFunctions, orderByCall); // EF.Functions.RowNumber(EF.Functions.OrderBy(e.Name))
+         var returnTypeCtorCall = Expression.New(returnTypeCtor, nameAccessor, rowNumberCall); // new { ... }
+
+         var projection = Expression.Lambda<Func<T, TResult>>(returnTypeCtorCall, param);
+
+         return query.Select(projection);
       }
 
       [Fact]
