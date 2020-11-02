@@ -58,7 +58,9 @@ namespace Thinktecture
       {
          base.ConfigureSqlite(builder);
 
-         builder.AddTempTableSupport();
+         builder.AddTempTableSupport()
+                .AddRowNumberSupport()
+                .AddCountDistinctSupport();
       }
 
       protected override TestDbContext CreateContext(DbContextOptions<TestDbContext> options)

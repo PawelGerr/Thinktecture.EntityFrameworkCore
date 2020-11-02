@@ -59,7 +59,8 @@ namespace Thinktecture
          base.ConfigureSqlServer(builder);
 
          builder.AddTempTableSupport()
-                .AddRowNumberSupport();
+                .AddRowNumberSupport()
+                .AddCountDistinctSupport();
       }
 
       /// <inheritdoc />

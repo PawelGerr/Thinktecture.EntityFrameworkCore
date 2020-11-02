@@ -62,6 +62,20 @@ namespace Thinktecture
          return builder;
       }
 
+      /// <summary>
+      /// Adds support for "COUNT(DISTINCT column)".
+      /// </summary>
+      /// <param name="builder">Options builder.</param>
+      /// <param name="addCountDistinctSupport">Indication whether to enable or disable the feature.</param>
+      /// <returns>Provided <paramref name="builder"/>.</returns>
+      public static SqliteDbContextOptionsBuilder AddCountDistinctSupport(
+         this SqliteDbContextOptionsBuilder builder,
+         bool addCountDistinctSupport = true)
+      {
+         builder.AddOrUpdateExtension(extension => extension.AddCountDistinctSupport = addCountDistinctSupport);
+         return builder;
+      }
+
       private static SqliteDbContextOptionsBuilder AddOrUpdateExtension(this SqliteDbContextOptionsBuilder sqliteOptionsBuilder,
                                                                          Action<SqliteDbContextOptionsExtension> callback)
       {

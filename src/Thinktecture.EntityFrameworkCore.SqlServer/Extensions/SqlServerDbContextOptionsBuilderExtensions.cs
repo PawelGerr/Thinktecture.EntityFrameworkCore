@@ -65,6 +65,20 @@ namespace Thinktecture
       }
 
       /// <summary>
+      /// Adds support for "COUNT(DISTINCT column)".
+      /// </summary>
+      /// <param name="builder">Options builder.</param>
+      /// <param name="addCountDistinctSupport">Indication whether to enable or disable the feature.</param>
+      /// <returns>Provided <paramref name="builder"/>.</returns>
+      public static SqlServerDbContextOptionsBuilder AddCountDistinctSupport(
+         this SqlServerDbContextOptionsBuilder builder,
+         bool addCountDistinctSupport = true)
+      {
+         builder.AddOrUpdateExtension(extension => extension.AddCountDistinctSupport = addCountDistinctSupport);
+         return builder;
+      }
+
+      /// <summary>
       /// Changes the implementation of <see cref="IMigrationsSqlGenerator"/> to <see cref="ThinktectureSqlServerMigrationsSqlGenerator"/>.
       /// </summary>
       /// <param name="sqlServerOptionsBuilder">SQL Server options builder.</param>

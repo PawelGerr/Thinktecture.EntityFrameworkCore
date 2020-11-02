@@ -60,6 +60,11 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       /// </summary>
       public bool AddRowNumberSupport { get; set; }
 
+      /// <summary>
+      /// Enables and disables support for "COUNT(DISTINCT column)".
+      /// </summary>
+      public bool AddCountDistinctSupport { get; set; }
+
       private bool _addCustomQueryableMethodTranslatingExpressionVisitorFactory;
 
       /// <summary>
@@ -70,6 +75,18 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       {
          get => _addCustomQueryableMethodTranslatingExpressionVisitorFactory || AddRowNumberSupport;
          set => _addCustomQueryableMethodTranslatingExpressionVisitorFactory = value;
+      }
+
+      private bool _addCustomRelationalSqlTranslatingExpressionVisitorFactory;
+
+      /// <summary>
+      /// A custom factory is registered if <c>true</c>.
+      /// The factory is required to be able to translate custom methods like <see cref="GroupingExtensions.CountDistinct{T,TKey,TProp}"/>.
+      /// </summary>
+      public bool AddCustomRelationalSqlTranslatingExpressionVisitorFactory
+      {
+         get => _addCustomRelationalSqlTranslatingExpressionVisitorFactory || AddCountDistinctSupport;
+         set => _addCustomRelationalSqlTranslatingExpressionVisitorFactory = value;
       }
 
       /// <summary>
@@ -203,8 +220,9 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
    'Number of custom services'={_extension._serviceDescriptors.Count},
    'Number of evaluatable expression filter plugins'={_extension._evaluatableExpressionFilterPlugins.Count},
    'Default schema respecting components added'={_extension.AddSchemaRespectingComponents},
-   'NestedTransactionsSupport'={_extension.AddNestedTransactionsSupport}
-   'RowNumberSupport'={_extension.AddRowNumberSupport}
+   'NestedTransactionsSupport'={_extension.AddNestedTransactionsSupport},
+   'RowNumberSupport'={_extension.AddRowNumberSupport},
+   'CountDistinctSupport'={_extension.AddCountDistinctSupport}
 }}";
 
          public RelationalDbContextOptionsExtensionInfo(RelationalDbContextOptionsExtension extension)
@@ -225,6 +243,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
             debugInfo["Thinktecture:ServiceDescriptors"] = String.Join(", ", _extension._serviceDescriptors);
             debugInfo["Thinktecture:NestedTransactionsSupport"] = _extension.AddNestedTransactionsSupport.ToString(CultureInfo.InvariantCulture);
             debugInfo["Thinktecture:RowNumberSupport"] = _extension.AddRowNumberSupport.ToString(CultureInfo.InvariantCulture);
+            debugInfo["Thinktecture:CountDistinctSupport"] = _extension.AddCountDistinctSupport.ToString(CultureInfo.InvariantCulture);
          }
       }
    }

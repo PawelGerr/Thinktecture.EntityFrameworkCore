@@ -5,19 +5,19 @@ using Microsoft.EntityFrameworkCore.Query;
 namespace Thinktecture.EntityFrameworkCore.Query
 {
    /// <summary>
-   /// Factory for creation of the <see cref="SqliteRelationalQueryableMethodTranslatingExpressionVisitor"/>.
+   /// Factory for creation of the <see cref="ThinktectureSqliteRelationalQueryableMethodTranslatingExpressionVisitor"/>.
    /// </summary>
-   public sealed class SqliteQueryableMethodTranslatingExpressionVisitorFactory : IQueryableMethodTranslatingExpressionVisitorFactory
+   public sealed class ThinktectureSqliteQueryableMethodTranslatingExpressionVisitorFactory : IQueryableMethodTranslatingExpressionVisitorFactory
    {
       private readonly QueryableMethodTranslatingExpressionVisitorDependencies _dependencies;
       private readonly RelationalQueryableMethodTranslatingExpressionVisitorDependencies _relationalDependencies;
 
       /// <summary>
-      /// Initializes new instance of <see cref="SqliteQueryableMethodTranslatingExpressionVisitorFactory"/>.
+      /// Initializes new instance of <see cref="ThinktectureSqliteQueryableMethodTranslatingExpressionVisitorFactory"/>.
       /// </summary>
       /// <param name="dependencies">Dependencies.</param>
       /// <param name="relationalDependencies">Relational dependencies.</param>
-      public SqliteQueryableMethodTranslatingExpressionVisitorFactory(QueryableMethodTranslatingExpressionVisitorDependencies dependencies,
+      public ThinktectureSqliteQueryableMethodTranslatingExpressionVisitorFactory(QueryableMethodTranslatingExpressionVisitorDependencies dependencies,
                                                                       RelationalQueryableMethodTranslatingExpressionVisitorDependencies relationalDependencies)
       {
          _dependencies = dependencies ?? throw new ArgumentNullException(nameof(dependencies));
@@ -27,7 +27,7 @@ namespace Thinktecture.EntityFrameworkCore.Query
       /// <inheritdoc />
       public QueryableMethodTranslatingExpressionVisitor Create(IModel model)
       {
-         return new SqliteRelationalQueryableMethodTranslatingExpressionVisitor(_dependencies, _relationalDependencies, model);
+         return new ThinktectureSqliteRelationalQueryableMethodTranslatingExpressionVisitor(_dependencies, _relationalDependencies, model);
       }
    }
 }

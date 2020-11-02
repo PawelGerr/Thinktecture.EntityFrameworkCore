@@ -4,11 +4,13 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Thinktecture.EntityFrameworkCore.BulkOperations;
 using Thinktecture.EntityFrameworkCore.Data;
 using Thinktecture.EntityFrameworkCore.Migrations;
+using Thinktecture.EntityFrameworkCore.Query;
 using Thinktecture.EntityFrameworkCore.TempTables;
 
 namespace Thinktecture.EntityFrameworkCore.Infrastructure
@@ -36,6 +38,15 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       }
 
       /// <summary>
+      /// Enables and disables support for "COUNT(DISTINCT column)".
+      /// </summary>
+      public bool AddCountDistinctSupport
+      {
+         get => _relationalOptions.AddCountDistinctSupport;
+         set => _relationalOptions.AddCountDistinctSupport = value;
+      }
+
+      /// <summary>
       /// A custom factory is registered if <c>true</c>.
       /// The factory is required to be able to translate custom methods like <see cref="RelationalQueryableExtensions.AsSubQuery{TEntity}"/>.
       /// </summary>
@@ -43,6 +54,16 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       {
          get => _relationalOptions.AddCustomQueryableMethodTranslatingExpressionVisitorFactory;
          set => _relationalOptions.AddCustomQueryableMethodTranslatingExpressionVisitorFactory = value;
+      }
+
+      /// <summary>
+      /// A custom factory is registered if <c>true</c>.
+      /// The factory is required to be able to translate custom methods like <see cref="GroupingExtensions.CountDistinct{T,TKey,TProp}"/>.
+      /// </summary>
+      public bool AddCustomRelationalSqlTranslatingExpressionVisitorFactory
+      {
+         get => _relationalOptions.AddCustomRelationalSqlTranslatingExpressionVisitorFactory;
+         set => _relationalOptions.AddCustomRelationalSqlTranslatingExpressionVisitorFactory = value;
       }
 
       /// <summary>
@@ -79,6 +100,9 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       public void ApplyServices(IServiceCollection services)
       {
          services.TryAddSingleton(this);
+
+         if (AddCustomRelationalSqlTranslatingExpressionVisitorFactory)
+            services.Add<IRelationalSqlTranslatingExpressionVisitorFactory, ThinktectureSqlServerSqlTranslatingExpressionVisitorFactory>(GetLifetime<IRelationalSqlTranslatingExpressionVisitorFactory>());
 
          if (AddTempTableSupport)
          {

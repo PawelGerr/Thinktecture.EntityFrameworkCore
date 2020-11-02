@@ -46,7 +46,8 @@ namespace Thinktecture
                                                     .UseSqlite(ConnectionString, sqlOptions =>
                                                                                  {
                                                                                     sqlOptions.AddTempTableSupport()
-                                                                                              .AddRowNumberSupport();
+                                                                                              .AddRowNumberSupport()
+                                                                                              .AddCountDistinctSupport();
                                                                                  })
                                                     .EnableSensitiveDataLogging()
                                                     .UseLoggerFactory(_loggerFactory));

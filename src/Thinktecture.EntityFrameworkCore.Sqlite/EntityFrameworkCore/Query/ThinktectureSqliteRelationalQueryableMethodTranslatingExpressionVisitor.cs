@@ -2,6 +2,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Query;
+using Microsoft.EntityFrameworkCore.Sqlite.Query.Internal;
 
 namespace Thinktecture.EntityFrameworkCore.Query
 {
@@ -9,10 +10,11 @@ namespace Thinktecture.EntityFrameworkCore.Query
    /// Extends the capabilities of <see cref="Microsoft.EntityFrameworkCore.Sqlite.Query.Internal.SqliteQueryableMethodTranslatingExpressionVisitor"/>.
    /// </summary>
    [SuppressMessage("ReSharper", "EF1001")]
-   public class SqliteRelationalQueryableMethodTranslatingExpressionVisitor : Microsoft.EntityFrameworkCore.Sqlite.Query.Internal.SqliteQueryableMethodTranslatingExpressionVisitor
+   public class ThinktectureSqliteRelationalQueryableMethodTranslatingExpressionVisitor
+      : SqliteQueryableMethodTranslatingExpressionVisitor
    {
       /// <inheritdoc />
-      public SqliteRelationalQueryableMethodTranslatingExpressionVisitor(QueryableMethodTranslatingExpressionVisitorDependencies dependencies,
+      public ThinktectureSqliteRelationalQueryableMethodTranslatingExpressionVisitor(QueryableMethodTranslatingExpressionVisitorDependencies dependencies,
                                                                          RelationalQueryableMethodTranslatingExpressionVisitorDependencies relationalDependencies,
                                                                          IModel model)
          : base(dependencies, relationalDependencies, model)
@@ -20,7 +22,7 @@ namespace Thinktecture.EntityFrameworkCore.Query
       }
 
       /// <inheritdoc />
-      protected SqliteRelationalQueryableMethodTranslatingExpressionVisitor(SqliteRelationalQueryableMethodTranslatingExpressionVisitor parentVisitor)
+      protected ThinktectureSqliteRelationalQueryableMethodTranslatingExpressionVisitor(ThinktectureSqliteRelationalQueryableMethodTranslatingExpressionVisitor parentVisitor)
          : base(parentVisitor)
       {
       }
@@ -28,7 +30,7 @@ namespace Thinktecture.EntityFrameworkCore.Query
       /// <inheritdoc />
       protected override QueryableMethodTranslatingExpressionVisitor CreateSubqueryVisitor()
       {
-         return new SqliteRelationalQueryableMethodTranslatingExpressionVisitor(this);
+         return new ThinktectureSqliteRelationalQueryableMethodTranslatingExpressionVisitor(this);
       }
 
       /// <inheritdoc />

@@ -50,6 +50,7 @@ namespace Thinktecture
                                                                                           sqlOptions.MigrationsHistoryTable("__EFMigrationsHistory", schema);
 
                                                                                        sqlOptions.AddRowNumberSupport()
+                                                                                                 .AddCountDistinctSupport()
                                                                                                  .AddTempTableSupport()
                                                                                                  .UseThinktectureSqlServerMigrationsSqlGenerator();
                                                                                     })
