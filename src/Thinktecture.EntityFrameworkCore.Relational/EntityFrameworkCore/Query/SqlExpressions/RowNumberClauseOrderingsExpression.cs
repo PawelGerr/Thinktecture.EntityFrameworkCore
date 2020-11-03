@@ -63,5 +63,30 @@ namespace Thinktecture.EntityFrameworkCore.Query.SqlExpressions
 
          return new RowNumberClauseOrderingsExpression(Orderings.Concat(orderings).ToList());
       }
+
+      /// <inheritdoc />
+      public override bool Equals(object obj)
+      {
+         return obj != null && (ReferenceEquals(this, obj) || Equals(obj as RowNumberClauseOrderingsExpression));
+      }
+
+      private bool Equals(RowNumberClauseOrderingsExpression? expression)
+      {
+         return base.Equals(expression) && Orderings.SequenceEqual(expression.Orderings);
+      }
+
+      /// <inheritdoc />
+      public override int GetHashCode()
+      {
+         var hash = new HashCode();
+         hash.Add(base.GetHashCode());
+
+         for (var i = 0; i < Orderings.Count; i++)
+         {
+            hash.Add(Orderings[i]);
+         }
+
+         return hash.ToHashCode();
+      }
    }
 }
