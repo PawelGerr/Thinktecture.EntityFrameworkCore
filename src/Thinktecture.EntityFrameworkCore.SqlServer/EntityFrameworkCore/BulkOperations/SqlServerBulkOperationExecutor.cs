@@ -135,7 +135,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
             if (columnsSb.Length > 0)
                columnsSb.Append(", ");
 
-            columnsSb.Append(columnName).Append(" ").Append(property.GetColumnType());
+            columnsSb.Append(columnName).Append(' ').Append(property.GetColumnType());
          }
 
          return columnsSb.ToString();

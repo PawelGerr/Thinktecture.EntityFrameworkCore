@@ -103,7 +103,7 @@ DROP TABLE IF EXISTS {_sqlGenerationHelper.DelimitIdentifier(tableName, "temp")}
                sb.AppendLine(",");
 
             sb.Append("\t\t")
-              .Append(_sqlGenerationHelper.DelimitIdentifier(property.GetColumnName())).Append(" ")
+              .Append(_sqlGenerationHelper.DelimitIdentifier(property.GetColumnName())).Append(' ')
               .Append(property.GetColumnType())
               .Append(property.IsNullable ? " NULL" : " NOT NULL");
 
@@ -114,7 +114,7 @@ DROP TABLE IF EXISTS {_sqlGenerationHelper.DelimitIdentifier(tableName, "temp")}
 
             if (!String.IsNullOrWhiteSpace(defaultValueSql))
             {
-               sb.Append(" DEFAULT (").Append(defaultValueSql).Append(")");
+               sb.Append(" DEFAULT (").Append(defaultValueSql).Append(')');
             }
             else
             {
@@ -162,7 +162,7 @@ DROP TABLE IF EXISTS {_sqlGenerationHelper.DelimitIdentifier(tableName, "temp")}
                isFirst = false;
             }
 
-            sb.Append(")");
+            sb.Append(')');
          }
       }
 

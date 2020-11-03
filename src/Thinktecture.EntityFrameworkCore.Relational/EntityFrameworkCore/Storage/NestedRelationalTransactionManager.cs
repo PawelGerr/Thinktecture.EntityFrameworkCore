@@ -41,7 +41,7 @@ namespace Thinktecture.EntityFrameworkCore.Storage
 
       /// <inheritdoc />
       public IDbContextTransaction? UseTransaction(
-         DbTransaction transaction)
+         DbTransaction? transaction)
       {
          if (transaction == null)
          {
@@ -61,7 +61,9 @@ namespace Thinktecture.EntityFrameworkCore.Storage
             }
             else
             {
+#pragma warning disable CA2000
                _transactions.Push(new RootNestedDbContextTransaction(_logger, this, _innerManager, tx));
+#pragma warning restore CA2000
             }
          }
 
@@ -91,7 +93,9 @@ namespace Thinktecture.EntityFrameworkCore.Storage
             }
             else
             {
+#pragma warning disable CA2000
                _transactions.Push(new RootNestedDbContextTransaction(_logger, this, _innerManager, tx));
+#pragma warning restore CA2000
             }
          }
 
@@ -101,7 +105,7 @@ namespace Thinktecture.EntityFrameworkCore.Storage
       /// <inheritdoc />
       public void ResetState()
       {
-         _logger.Logger.LogInformation($"Resetting inner state.");
+         _logger.Logger.LogInformation("Resetting inner state.");
          _innerManager.ResetState();
 
          while (_transactions.Count > 0)

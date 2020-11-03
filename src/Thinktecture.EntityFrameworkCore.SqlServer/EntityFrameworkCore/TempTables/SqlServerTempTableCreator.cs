@@ -163,7 +163,7 @@ END
                sb.AppendLine(",");
 
             sb.Append("\t\t")
-              .Append(_sqlGenerationHelper.DelimitIdentifier(property.GetColumnName())).Append(" ")
+              .Append(_sqlGenerationHelper.DelimitIdentifier(property.GetColumnName())).Append(' ')
               .Append(property.GetColumnType())
               .Append(property.IsNullable ? " NULL" : " NOT NULL");
 
@@ -174,7 +174,7 @@ END
 
             if (!String.IsNullOrWhiteSpace(defaultValueSql))
             {
-               sb.Append(" DEFAULT (").Append(defaultValueSql).Append(")");
+               sb.Append(" DEFAULT (").Append(defaultValueSql).Append(')');
             }
             else
             {
@@ -222,7 +222,7 @@ END
                isFirst = false;
             }
 
-            sb.Append(")");
+            sb.Append(')');
          }
       }
 

@@ -171,7 +171,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
                                         string tableIdentifier)
       {
          var sb = new StringBuilder();
-         sb.Append("INSERT INTO ").Append(tableIdentifier).Append("(");
+         sb.Append("INSERT INTO ").Append(tableIdentifier).Append('(');
 
          for (var i = 0; i < reader.Properties.Count; i++)
          {
