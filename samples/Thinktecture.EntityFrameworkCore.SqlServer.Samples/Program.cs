@@ -51,11 +51,40 @@ namespace Thinktecture
             // COUNT DISTINCT
             await DoCountDistinctAsync(ctx);
 
+            // Tenant
+            await DoTenantQueriesAsync(ctx);
+
             // Nested transactions
             await DoNestedTransactionsAsync(ctx, orderId);
          }
 
          Console.WriteLine("Exiting samples...");
+      }
+
+      private static async Task DoTenantQueriesAsync(DemoDbContext ctx)
+      {
+         var customers = await ctx.Customers
+                                  .Include(c => c.Orders)
+                                  .ToListAsync();
+
+         try
+         {
+            CurrentTenant.Value = "1";
+
+            customers = await ctx.Customers
+                                 .Include(c => c.Orders)
+                                 .ToListAsync();
+
+            CurrentTenant.Value = "2";
+
+            customers = await ctx.Customers
+                                 .Include(c => c.Orders)
+                                 .ToListAsync();
+         }
+         finally
+         {
+            CurrentTenant.Value = null;
+         }
       }
 
       private static async Task DoNestedTransactionsAsync(DemoDbContext ctx, Guid orderId)

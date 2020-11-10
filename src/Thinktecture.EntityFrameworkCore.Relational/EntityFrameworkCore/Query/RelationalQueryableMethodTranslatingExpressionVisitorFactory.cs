@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore.Query;
 namespace Thinktecture.EntityFrameworkCore.Query
 {
    /// <summary>
-   /// Factory for creation of the <see cref="RelationalQueryableMethodTranslatingExpressionVisitor"/>.
+   /// Factory for creation of the <see cref="ThinktectureRelationalQueryableMethodTranslatingExpressionVisitor"/>.
    /// </summary>
    public sealed class RelationalQueryableMethodTranslatingExpressionVisitorFactory : IQueryableMethodTranslatingExpressionVisitorFactory
    {
@@ -27,7 +27,7 @@ namespace Thinktecture.EntityFrameworkCore.Query
       /// <inheritdoc />
       public QueryableMethodTranslatingExpressionVisitor Create(IModel model)
       {
-         return new RelationalQueryableMethodTranslatingExpressionVisitor(_dependencies, _relationalDependencies, model);
+         return new ThinktectureRelationalQueryableMethodTranslatingExpressionVisitor(_dependencies, _relationalDependencies, model);
       }
    }
 }

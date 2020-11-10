@@ -51,6 +51,7 @@ namespace Thinktecture
 
                                                                                        sqlOptions.AddRowNumberSupport()
                                                                                                  .AddCountDistinctSupport()
+                                                                                                 .AddTenantDatabaseSupport<DemoTenantDatabaseProviderFactory>()
                                                                                                  .AddTempTableSupport()
                                                                                                  .UseThinktectureSqlServerMigrationsSqlGenerator();
                                                                                     })

@@ -65,6 +65,11 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       /// </summary>
       public bool AddCountDistinctSupport { get; set; }
 
+      /// <summary>
+      /// Enables and disables support for 'tenant database support'.
+      /// </summary>
+      public bool AddTenantDatabaseSupport { get; set; }
+
       private bool _addCustomQueryableMethodTranslatingExpressionVisitorFactory;
 
       /// <summary>
@@ -89,6 +94,30 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
          set => _addCustomRelationalSqlTranslatingExpressionVisitorFactory = value;
       }
 
+      private bool _addCustomQuerySqlGeneratorFactory;
+
+      /// <summary>
+      /// A custom factory is registered if <c>true</c>.
+      /// The factory is required for some features.
+      /// </summary>
+      public bool AddCustomQuerySqlGeneratorFactory
+      {
+         get => _addCustomQuerySqlGeneratorFactory || AddTenantDatabaseSupport;
+         set => _addCustomQuerySqlGeneratorFactory = value;
+      }
+
+      private bool _addCustomRelationalQueryContextFactory;
+
+      /// <summary>
+      /// A custom factory is registered if <c>true</c>.
+      /// The factory is required for some features.
+      /// </summary>
+      public bool AddCustomRelationalQueryContextFactory
+      {
+         get => _addCustomRelationalQueryContextFactory || AddTenantDatabaseSupport;
+         set => _addCustomRelationalQueryContextFactory = value;
+      }
+
       /// <summary>
       /// Initializes new instance of <see cref="RelationalDbContextOptionsExtension"/>.
       /// </summary>
@@ -107,6 +136,9 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
          services.TryAddSingleton(this);
 
          services.Add<IMethodCallTranslatorPlugin, RelationalMethodCallTranslatorPlugin>(GetLifetime<IMethodCallTranslatorPlugin>());
+
+         if (AddCustomRelationalQueryContextFactory)
+            services.Add<IQueryContextFactory, ThinktectureRelationalQueryContextFactory>(GetLifetime<IQueryContextFactory>());
 
          if (AddCustomQueryableMethodTranslatingExpressionVisitorFactory)
             services.AddSingleton<IQueryableMethodTranslatingExpressionVisitorFactory, RelationalQueryableMethodTranslatingExpressionVisitorFactory>();
@@ -133,9 +165,21 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
          }
       }
 
-      private static ServiceLifetime GetLifetime<TService>()
+      /// <summary>
+      /// Gets the lifetime of a Entity Framework Core service.
+      /// </summary>
+      /// <typeparam name="TService">Service to fetch lifetime for.</typeparam>
+      /// <returns>Lifetime of the provided service.</returns>
+      /// <exception cref="InvalidOperationException">If service is not found.</exception>
+      public static ServiceLifetime GetLifetime<TService>()
       {
-         return EntityFrameworkRelationalServicesBuilder.RelationalServices[typeof(TService)].Lifetime;
+         var serviceType = typeof(TService);
+
+         if (EntityFrameworkRelationalServicesBuilder.RelationalServices.TryGetValue(serviceType, out var serviceCharacteristics) ||
+             EntityFrameworkServicesBuilder.CoreServices.TryGetValue(serviceType, out serviceCharacteristics))
+            return serviceCharacteristics.Lifetime;
+
+         throw new InvalidOperationException($"No service characteristics for service '{serviceType.Name}' found.");
       }
 
       private void RegisterNestedTransactionManager([NotNull] IServiceCollection services)

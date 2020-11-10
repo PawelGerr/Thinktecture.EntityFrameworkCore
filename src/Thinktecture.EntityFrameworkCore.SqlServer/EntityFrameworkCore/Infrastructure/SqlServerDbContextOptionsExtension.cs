@@ -47,6 +47,15 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       }
 
       /// <summary>
+      /// Enables and disables support for tenant support.
+      /// </summary>
+      public bool AddTenantDatabaseSupport
+      {
+         get => _relationalOptions.AddTenantDatabaseSupport;
+         set => _relationalOptions.AddTenantDatabaseSupport = value;
+      }
+
+      /// <summary>
       /// A custom factory is registered if <c>true</c>.
       /// The factory is required to be able to translate custom methods like <see cref="RelationalQueryableExtensions.AsSubQuery{TEntity}"/>.
       /// </summary>
@@ -64,6 +73,16 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       {
          get => _relationalOptions.AddCustomRelationalSqlTranslatingExpressionVisitorFactory;
          set => _relationalOptions.AddCustomRelationalSqlTranslatingExpressionVisitorFactory = value;
+      }
+
+      /// <summary>
+      /// A custom factory is registered if <c>true</c>.
+      /// The factory is required for some features like 'tenant database support'.
+      /// </summary>
+      public bool AddCustomQuerySqlGeneratorFactory
+      {
+         get => _relationalOptions.AddCustomQuerySqlGeneratorFactory;
+         set => _relationalOptions.AddCustomQuerySqlGeneratorFactory = value;
       }
 
       /// <summary>
@@ -101,8 +120,14 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       {
          services.TryAddSingleton(this);
 
+         if (AddCustomQuerySqlGeneratorFactory)
+         {
+            services.Add<IQuerySqlGeneratorFactory, ThinktectureSqlServerQuerySqlGeneratorFactory>(RelationalDbContextOptionsExtension.GetLifetime<IQuerySqlGeneratorFactory>());
+            services.TryAdd<ITenantDatabaseProviderFactory, DummyTenantDatabaseProviderFactory>(ServiceLifetime.Singleton);
+         }
+
          if (AddCustomRelationalSqlTranslatingExpressionVisitorFactory)
-            services.Add<IRelationalSqlTranslatingExpressionVisitorFactory, ThinktectureSqlServerSqlTranslatingExpressionVisitorFactory>(GetLifetime<IRelationalSqlTranslatingExpressionVisitorFactory>());
+            services.Add<IRelationalSqlTranslatingExpressionVisitorFactory, ThinktectureSqlServerSqlTranslatingExpressionVisitorFactory>(RelationalDbContextOptionsExtension.GetLifetime<IRelationalSqlTranslatingExpressionVisitorFactory>());
 
          if (AddTempTableSupport)
          {
@@ -120,12 +145,17 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
          }
 
          if (UseThinktectureSqlServerMigrationsSqlGenerator)
-            services.Add<IMigrationsSqlGenerator, ThinktectureSqlServerMigrationsSqlGenerator>(GetLifetime<IMigrationsSqlGenerator>());
+            services.Add<IMigrationsSqlGenerator, ThinktectureSqlServerMigrationsSqlGenerator>(RelationalDbContextOptionsExtension.GetLifetime<IMigrationsSqlGenerator>());
       }
 
-      private static ServiceLifetime GetLifetime<TService>()
+      /// <summary>
+      /// Adds a service descriptor for registration of custom services with internal dependency injection container of Entity Framework Core.
+      /// </summary>
+      /// <param name="serviceDescriptor">Service descriptor to add.</param>
+      /// <exception cref="ArgumentNullException"><paramref name="serviceDescriptor"/> is <c>null</c>.</exception>
+      public void Add(ServiceDescriptor serviceDescriptor)
       {
-         return EntityFrameworkRelationalServicesBuilder.RelationalServices[typeof(TService)].Lifetime;
+         _relationalOptions.Add(serviceDescriptor);
       }
 
       /// <inheritdoc />

@@ -1,8 +1,10 @@
 using System;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.Extensions.DependencyInjection;
 using Thinktecture.EntityFrameworkCore.Infrastructure;
 using Thinktecture.EntityFrameworkCore.Migrations;
+using Thinktecture.EntityFrameworkCore.Query;
 
 // ReSharper disable once CheckNamespace
 namespace Thinktecture
@@ -79,6 +81,27 @@ namespace Thinktecture
       }
 
       /// <summary>
+      /// Adds 'tenant database support'.
+      /// </summary>
+      /// <param name="builder">Options builder.</param>
+      /// <param name="addTenantSupport">Indication whether to enable or disable the feature.</param>
+      /// <param name="databaseProviderLifetime">The lifetime of the provided <typeparamref name="TTenantDatabaseProviderFactory"/>.</param>
+      /// <returns>Provided <paramref name="builder"/>.</returns>
+      public static SqlServerDbContextOptionsBuilder AddTenantDatabaseSupport<TTenantDatabaseProviderFactory>(
+         this SqlServerDbContextOptionsBuilder builder,
+         bool addTenantSupport = true,
+         ServiceLifetime databaseProviderLifetime = ServiceLifetime.Scoped)
+         where TTenantDatabaseProviderFactory : ITenantDatabaseProviderFactory
+      {
+         builder.AddOrUpdateExtension(extension =>
+                                      {
+                                         extension.AddTenantDatabaseSupport = addTenantSupport;
+                                         extension.Add(ServiceDescriptor.Describe(typeof(ITenantDatabaseProviderFactory), typeof(TTenantDatabaseProviderFactory), databaseProviderLifetime));
+                                      });
+         return builder;
+      }
+
+      /// <summary>
       /// Changes the implementation of <see cref="IMigrationsSqlGenerator"/> to <see cref="ThinktectureSqlServerMigrationsSqlGenerator"/>.
       /// </summary>
       /// <param name="sqlServerOptionsBuilder">SQL Server options builder.</param>
@@ -92,7 +115,7 @@ namespace Thinktecture
       }
 
       private static SqlServerDbContextOptionsBuilder AddOrUpdateExtension(this SqlServerDbContextOptionsBuilder sqlServerOptionsBuilder,
-                                                                            Action<SqlServerDbContextOptionsExtension> callback)
+                                                                           Action<SqlServerDbContextOptionsExtension> callback)
       {
          if (sqlServerOptionsBuilder == null)
             throw new ArgumentNullException(nameof(sqlServerOptionsBuilder));

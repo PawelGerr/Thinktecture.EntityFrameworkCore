@@ -7,18 +7,19 @@ namespace Thinktecture.EntityFrameworkCore.Query
    /// <summary>
    /// Extends the capabilities of <see cref="Microsoft.EntityFrameworkCore.Query.RelationalQueryableMethodTranslatingExpressionVisitor"/>.
    /// </summary>
-   public class RelationalQueryableMethodTranslatingExpressionVisitor : Microsoft.EntityFrameworkCore.Query.RelationalQueryableMethodTranslatingExpressionVisitor
+   public class ThinktectureRelationalQueryableMethodTranslatingExpressionVisitor : RelationalQueryableMethodTranslatingExpressionVisitor
    {
       /// <inheritdoc />
-      public RelationalQueryableMethodTranslatingExpressionVisitor(QueryableMethodTranslatingExpressionVisitorDependencies dependencies,
-                                                                   RelationalQueryableMethodTranslatingExpressionVisitorDependencies relationalDependencies,
-                                                                   IModel model)
+      public ThinktectureRelationalQueryableMethodTranslatingExpressionVisitor(
+         QueryableMethodTranslatingExpressionVisitorDependencies dependencies,
+         RelationalQueryableMethodTranslatingExpressionVisitorDependencies relationalDependencies,
+         IModel model)
          : base(dependencies, relationalDependencies, model)
       {
       }
 
       /// <inheritdoc />
-      protected RelationalQueryableMethodTranslatingExpressionVisitor(RelationalQueryableMethodTranslatingExpressionVisitor parentVisitor)
+      protected ThinktectureRelationalQueryableMethodTranslatingExpressionVisitor(ThinktectureRelationalQueryableMethodTranslatingExpressionVisitor parentVisitor)
          : base(parentVisitor)
       {
       }
@@ -26,7 +27,7 @@ namespace Thinktecture.EntityFrameworkCore.Query
       /// <inheritdoc />
       protected override QueryableMethodTranslatingExpressionVisitor CreateSubqueryVisitor()
       {
-         return new RelationalQueryableMethodTranslatingExpressionVisitor(this);
+         return new ThinktectureRelationalQueryableMethodTranslatingExpressionVisitor(this);
       }
 
       /// <inheritdoc />
