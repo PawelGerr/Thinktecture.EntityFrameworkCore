@@ -141,15 +141,15 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
             services.Add<IQueryContextFactory, ThinktectureRelationalQueryContextFactory>(GetLifetime<IQueryContextFactory>());
 
          if (AddCustomQueryableMethodTranslatingExpressionVisitorFactory)
-            services.AddSingleton<IQueryableMethodTranslatingExpressionVisitorFactory, RelationalQueryableMethodTranslatingExpressionVisitorFactory>();
+            services.Add<IQueryableMethodTranslatingExpressionVisitorFactory, RelationalQueryableMethodTranslatingExpressionVisitorFactory>(GetLifetime<IQueryableMethodTranslatingExpressionVisitorFactory>());
 
          if (_evaluatableExpressionFilterPlugins.Count > 0)
          {
-            ComponentDecorator.RegisterDecorator<IEvaluatableExpressionFilter>(services, typeof(CompositeEvaluatableExpressionFilter<>));
+            var lifetime = GetLifetime<IEvaluatableExpressionFilterPlugin>();
 
             foreach (var plugin in _evaluatableExpressionFilterPlugins)
             {
-               services.AddSingleton(typeof(IEvaluatableExpressionFilterPlugin), plugin);
+               services.Add(ServiceDescriptor.Describe(typeof(IEvaluatableExpressionFilterPlugin), plugin, lifetime));
             }
          }
 
