@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Thinktecture.EntityFrameworkCore.TempTables;
@@ -78,7 +79,7 @@ namespace Thinktecture
          if (modelBuilder == null)
             throw new ArgumentNullException(nameof(modelBuilder));
 
-         var tableName = "#" + typeof(T).DisplayName(false);
+         var tableName = "#" + typeof(T).ShortDisplayName();
 
          var builder = modelBuilder.Entity<T>().ToView(tableName);
 

@@ -141,10 +141,11 @@ namespace Thinktecture.EntityFrameworkCore.Data
          if (entityProperty == null)
             throw new ArgumentNullException(nameof(entityProperty));
 
-         var index = Properties.IndexOf(entityProperty);
-
-         if (index >= 0)
-            return index;
+         for (var i = 0; i < Properties.Count; i++)
+         {
+            if (entityProperty.Equals(Properties[i]))
+               return i;
+         }
 
          throw new ArgumentException($"The property '{entityProperty.Name}' of type '{entityProperty.ClrType.ShortDisplayName()}' cannot be read by current reader.");
       }

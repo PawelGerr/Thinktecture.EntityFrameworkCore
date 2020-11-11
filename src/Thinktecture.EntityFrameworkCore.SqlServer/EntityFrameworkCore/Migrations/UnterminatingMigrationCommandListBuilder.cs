@@ -30,7 +30,7 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
          return this;
       }
 
-      public override MigrationCommandListBuilder Append(object o)
+      public override MigrationCommandListBuilder Append(string o)
       {
          _builder.Append(o);
          return this;
@@ -47,13 +47,13 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
          return this;
       }
 
-      public override MigrationCommandListBuilder AppendLine(object o)
+      public override MigrationCommandListBuilder AppendLine(string o)
       {
          _builder.AppendLine(o);
          return this;
       }
 
-      public override MigrationCommandListBuilder AppendLines(object o)
+      public override MigrationCommandListBuilder AppendLines(string o)
       {
          _builder.AppendLines(o);
          return this;

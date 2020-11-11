@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
-using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.SqlServer.Query.Internal;
 
@@ -18,9 +17,9 @@ namespace Thinktecture.EntityFrameworkCore.Query
       /// <inheritdoc />
       public ThinktectureSqlServerSqlTranslatingExpressionVisitor(
          RelationalSqlTranslatingExpressionVisitorDependencies dependencies,
-         IModel model,
+         QueryCompilationContext queryCompilationContext,
          QueryableMethodTranslatingExpressionVisitor queryableMethodTranslatingExpressionVisitor)
-         : base(dependencies, model, queryableMethodTranslatingExpressionVisitor)
+         : base(dependencies, queryCompilationContext, queryableMethodTranslatingExpressionVisitor)
       {
       }
 

@@ -23,10 +23,10 @@ namespace Thinktecture.EntityFrameworkCore.Query
 
       /// <inheritdoc />
       public RelationalSqlTranslatingExpressionVisitor Create(
-         IModel model,
+         QueryCompilationContext queryCompilationContext,
          QueryableMethodTranslatingExpressionVisitor queryableMethodTranslatingExpressionVisitor)
       {
-         return new ThinktectureSqlServerSqlTranslatingExpressionVisitor(_dependencies, model, queryableMethodTranslatingExpressionVisitor);
+         return new ThinktectureSqlServerSqlTranslatingExpressionVisitor(_dependencies, queryCompilationContext, queryableMethodTranslatingExpressionVisitor);
       }
    }
 }

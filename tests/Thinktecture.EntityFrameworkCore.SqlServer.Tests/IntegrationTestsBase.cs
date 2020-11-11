@@ -5,9 +5,8 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Design;
-using Microsoft.EntityFrameworkCore.Design.Internal;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.EntityFrameworkCore.Diagnostics.Internal;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.SqlServer.Diagnostics.Internal;
@@ -49,7 +48,10 @@ namespace Thinktecture
       protected IDiagnosticsLogger<TCategory> CreateDiagnosticsLogger<TCategory>(ILoggingOptions? options = null, DiagnosticSource? diagnosticSource = null)
          where TCategory : LoggerCategory<TCategory>, new()
       {
-         return new DiagnosticsLogger<TCategory>(LoggerFactory, options ?? new LoggingOptions(), diagnosticSource ?? new DiagnosticListener(typeof(TCategory).ShortDisplayName()), new SqlServerLoggingDefinitions());
+         return new DiagnosticsLogger<TCategory>(LoggerFactory, options ?? new LoggingOptions(),
+                                                 diagnosticSource ?? new DiagnosticListener(typeof(TCategory).ShortDisplayName()),
+                                                 new SqlServerLoggingDefinitions(),
+                                                 new NullDbContextLogger());
       }
 
       /// <inheritdoc />

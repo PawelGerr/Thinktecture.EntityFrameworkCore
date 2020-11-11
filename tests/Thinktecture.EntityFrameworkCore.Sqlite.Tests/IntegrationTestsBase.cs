@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.EntityFrameworkCore.Diagnostics.Internal;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.Sqlite.Diagnostics.Internal;
@@ -42,7 +43,10 @@ namespace Thinktecture
       protected IDiagnosticsLogger<TCategory> CreateDiagnosticsLogger<TCategory>(ILoggingOptions? options = null, DiagnosticSource? diagnosticSource = null)
          where TCategory : LoggerCategory<TCategory>, new()
       {
-         return new DiagnosticsLogger<TCategory>(LoggerFactory, options ?? new LoggingOptions(), diagnosticSource ?? new DiagnosticListener(typeof(TCategory).ShortDisplayName()), new SqliteLoggingDefinitions());
+         return new DiagnosticsLogger<TCategory>(LoggerFactory, options ?? new LoggingOptions(),
+                                                 diagnosticSource ?? new DiagnosticListener(typeof(TCategory).ShortDisplayName()),
+                                                 new SqliteLoggingDefinitions(),
+                                                 new NullDbContextLogger());
       }
 
       protected override DbContextOptionsBuilder<TestDbContext> CreateOptionsBuilder(DbConnection connection)

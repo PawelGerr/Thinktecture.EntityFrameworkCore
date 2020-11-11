@@ -14,10 +14,11 @@ namespace Thinktecture.EntityFrameworkCore.Query
       : SqliteQueryableMethodTranslatingExpressionVisitor
    {
       /// <inheritdoc />
-      public ThinktectureSqliteRelationalQueryableMethodTranslatingExpressionVisitor(QueryableMethodTranslatingExpressionVisitorDependencies dependencies,
-                                                                         RelationalQueryableMethodTranslatingExpressionVisitorDependencies relationalDependencies,
-                                                                         IModel model)
-         : base(dependencies, relationalDependencies, model)
+      public ThinktectureSqliteRelationalQueryableMethodTranslatingExpressionVisitor(
+         QueryableMethodTranslatingExpressionVisitorDependencies dependencies,
+         RelationalQueryableMethodTranslatingExpressionVisitorDependencies relationalDependencies,
+         QueryCompilationContext queryCompilationContext)
+         : base(dependencies, relationalDependencies, queryCompilationContext)
       {
       }
 

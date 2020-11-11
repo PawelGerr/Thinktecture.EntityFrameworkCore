@@ -20,7 +20,9 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
       /// </summary>
       /// <param name="dependencies">Dependencies.</param>
       /// <param name="migrationsAnnotations">Migration annotations.</param>
-      public ThinktectureSqlServerMigrationsSqlGenerator(MigrationsSqlGeneratorDependencies dependencies, IMigrationsAnnotationProvider migrationsAnnotations)
+      public ThinktectureSqlServerMigrationsSqlGenerator(
+         MigrationsSqlGeneratorDependencies dependencies,
+         IRelationalAnnotationProvider migrationsAnnotations)
          : base(dependencies, migrationsAnnotations)
       {
       }

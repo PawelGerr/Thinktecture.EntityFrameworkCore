@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore.Internal;
+using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.Internal;
 
 namespace Thinktecture.Collections
@@ -73,7 +74,7 @@ namespace Thinktecture.Collections
 
          public IQueryable CreateQuery(Expression expression)
          {
-            if (expression.Type.IsQueryableType())
+            if (IsQueryableType(expression.Type))
             {
                var entityType = expression.Type.GetGenericArguments()[0];
 
@@ -82,6 +83,14 @@ namespace Thinktecture.Collections
             }
 
             return new AsyncEnumerable<T>(expression);
+         }
+
+         private static bool IsQueryableType(Type type)
+         {
+            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IQueryable<>))
+               return true;
+
+            return type.GetInterfaces().Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IQueryable<>));
          }
 
          public IQueryable<TElement> CreateQuery<TElement>(Expression expression)
