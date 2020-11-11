@@ -12,7 +12,7 @@ namespace Thinktecture.EntityFrameworkCore.Query.SqlExpressions
    /// </summary>
    public class CountDistinctExpression : SqlExpression
    {
-      private readonly SqlExpression _column;
+      public SqlExpression Column { get; }
 
       /// <summary>
       /// Initializes new instance of <see cref="CountDistinctExpression"/>.
@@ -22,7 +22,7 @@ namespace Thinktecture.EntityFrameworkCore.Query.SqlExpressions
       public CountDistinctExpression(SqlExpression column, RelationalTypeMapping typeMapping)
          : base(typeof(int), typeMapping)
       {
-         _column = column ?? throw new ArgumentNullException(nameof(column));
+         Column = column ?? throw new ArgumentNullException(nameof(column));
       }
 
       /// <inheritdoc />
@@ -32,7 +32,7 @@ namespace Thinktecture.EntityFrameworkCore.Query.SqlExpressions
             throw new ArgumentNullException(nameof(expressionPrinter));
 
          expressionPrinter.Append("COUNT(DISTINCT ");
-         expressionPrinter.Visit(_column);
+         expressionPrinter.Visit(Column);
          expressionPrinter.Append(")");
       }
 
@@ -40,12 +40,10 @@ namespace Thinktecture.EntityFrameworkCore.Query.SqlExpressions
       protected override Expression VisitChildren(ExpressionVisitor visitor)
       {
 #pragma warning disable CA1062
-         var visitedColumn = visitor.Visit(_column);
+         var visitedColumn = visitor.Visit(Column);
 #pragma warning restore CA1062
 
-         return ReferenceEquals(_column, visitedColumn)
-                   ? this
-                   : new CountDistinctExpression((SqlExpression)visitedColumn, TypeMapping);
+         return Update((SqlExpression)visitedColumn);
       }
 
       /// <inheritdoc />
@@ -55,7 +53,7 @@ namespace Thinktecture.EntityFrameworkCore.Query.SqlExpressions
             return base.Accept(visitor);
 
          sqlGenerator.Visit(new SqlFragmentExpression("COUNT(DISTINCT "));
-         sqlGenerator.Visit(_column);
+         sqlGenerator.Visit(Column);
          sqlGenerator.Visit(new SqlFragmentExpression(")"));
 
          return this;
@@ -69,13 +67,20 @@ namespace Thinktecture.EntityFrameworkCore.Query.SqlExpressions
 
       private bool Equals(CountDistinctExpression? expression)
       {
-         return base.Equals(expression) && _column.Equals(expression._column);
+         return base.Equals(expression) && Column.Equals(expression.Column);
       }
 
       /// <inheritdoc />
       public override int GetHashCode()
       {
-         return HashCode.Combine(base.GetHashCode(), _column);
+         return HashCode.Combine(base.GetHashCode(), Column);
+      }
+
+      public CountDistinctExpression Update(SqlExpression column)
+      {
+         return ReferenceEquals(Column, column)
+                   ? this
+                   : new CountDistinctExpression(column, TypeMapping);
       }
    }
 }

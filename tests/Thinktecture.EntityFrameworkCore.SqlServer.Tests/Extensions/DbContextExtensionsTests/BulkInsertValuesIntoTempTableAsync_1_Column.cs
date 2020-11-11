@@ -71,7 +71,7 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
          var tempTable = await query.Query.ToListAsync();
          tempTable.Should()
                   .HaveCount(2).And
-                  .BeEquivalentTo(new TempTable<int?>(1), null);
+                  .BeEquivalentTo(new TempTable<int?>(1), new TempTable<int?>(null));
       }
 
       [Fact]
@@ -96,7 +96,7 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
       [Fact]
       public async Task Should_insert_string()
       {
-         ConfigureModel = builder => builder.ConfigureTempTable<string>().Property(t => t.Column1).IsRequired(false);
+         ConfigureModel = builder => builder.ConfigureTempTable<string?>().Property(t => t.Column1).IsRequired(false);
 
          var values = new List<string?> { "value1", null };
          await using var query = await ActDbContext.BulkInsertValuesIntoTempTableAsync(values, new SqlServerTempTableBulkInsertOptions { PrimaryKeyCreation = SqlServerPrimaryKeyCreation.None });
@@ -104,7 +104,7 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
          var tempTable = await query.Query.ToListAsync();
          tempTable.Should()
                   .HaveCount(2).And
-                  .BeEquivalentTo(new TempTable<string>("value1"), null);
+                  .BeEquivalentTo(new TempTable<string?>("value1"), new TempTable<string?>(null));
       }
 
       [Fact]

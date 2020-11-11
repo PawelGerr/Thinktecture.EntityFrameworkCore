@@ -12,7 +12,7 @@
     <RepositoryUrl>https://pawelgerr@dev.azure.com/pawelgerr/Thinktecture.EntityFrameworkCore/_git/Thinktecture.EntityFrameworkCore</RepositoryUrl>
     <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
     <RootNamespace>Thinktecture</RootNamespace>
-    <LangVersion>8.0</LangVersion>
+    <LangVersion>9.0</LangVersion>
     <Nullable>enable</Nullable>
     <NoWarn>$(NoWarn);CA1303</NoWarn>
   </PropertyGroup>

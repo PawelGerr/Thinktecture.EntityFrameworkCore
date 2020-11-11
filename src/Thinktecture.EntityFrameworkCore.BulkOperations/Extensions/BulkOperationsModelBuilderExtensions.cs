@@ -81,7 +81,7 @@ namespace Thinktecture
 
          var tableName = "#" + typeof(T).ShortDisplayName();
 
-         var builder = modelBuilder.Entity<T>().ToView(tableName);
+         var builder = modelBuilder.Entity<T>().ToTable(tableName);
 
          if (isKeyless)
             builder.HasNoKey();

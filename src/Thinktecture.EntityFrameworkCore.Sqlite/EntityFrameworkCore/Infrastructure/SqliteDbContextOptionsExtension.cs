@@ -65,6 +65,16 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       }
 
       /// <summary>
+      /// A custom factory is registered if <c>true</c>.
+      /// The factory is required for some features.
+      /// </summary>
+      public bool AddCustomRelationalParameterBasedSqlProcessorFactory
+      {
+         get => _relationalOptions.AddCustomRelationalParameterBasedSqlProcessorFactory;
+         set => _relationalOptions.AddCustomRelationalParameterBasedSqlProcessorFactory = value;
+      }
+
+      /// <summary>
       /// Enables and disables support for temp tables.
       /// </summary>
       public bool AddTempTableSupport { get; set; }
@@ -99,6 +109,9 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
 
          if (AddCustomRelationalSqlTranslatingExpressionVisitorFactory)
             services.Add<IRelationalSqlTranslatingExpressionVisitorFactory, ThinktectureSqliteSqlTranslatingExpressionVisitorFactory>(GetLifetime<IRelationalSqlTranslatingExpressionVisitorFactory>());
+
+         if(AddCustomRelationalParameterBasedSqlProcessorFactory)
+            services.Add<IRelationalParameterBasedSqlProcessorFactory, ThinktectureRelationalParameterBasedSqlProcessorFactory>(GetLifetime<IRelationalParameterBasedSqlProcessorFactory>());
 
          if (AddTempTableSupport)
          {
@@ -150,6 +163,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
          {
             return HashCode.Combine(_extension.AddCustomQueryableMethodTranslatingExpressionVisitorFactory,
                                     _extension.AddCustomRelationalSqlTranslatingExpressionVisitorFactory,
+                                    _extension.AddCustomRelationalParameterBasedSqlProcessorFactory,
                                     _extension.AddBulkOperationSupport,
                                     _extension.AddTempTableSupport);
          }
