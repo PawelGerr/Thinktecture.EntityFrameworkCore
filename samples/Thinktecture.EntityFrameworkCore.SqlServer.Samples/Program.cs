@@ -69,12 +69,14 @@ namespace Thinktecture
 
          try
          {
+            // requires a database with the name "demo"
             CurrentTenant.Value = "1";
 
             customers = await ctx.Customers
                                  .Include(c => c.Orders)
                                  .ToListAsync();
 
+            // requires a database with the name "demo2"
             CurrentTenant.Value = "2";
 
             customers = await ctx.Customers
