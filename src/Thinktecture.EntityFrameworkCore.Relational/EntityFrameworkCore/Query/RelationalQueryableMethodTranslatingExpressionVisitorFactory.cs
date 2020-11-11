@@ -25,9 +25,9 @@ namespace Thinktecture.EntityFrameworkCore.Query
       }
 
       /// <inheritdoc />
-      public QueryableMethodTranslatingExpressionVisitor Create(IModel model)
+      public QueryableMethodTranslatingExpressionVisitor Create(QueryCompilationContext queryCompilationContext)
       {
-         return new ThinktectureRelationalQueryableMethodTranslatingExpressionVisitor(_dependencies, _relationalDependencies, model);
+         return new ThinktectureRelationalQueryableMethodTranslatingExpressionVisitor(_dependencies, _relationalDependencies, queryCompilationContext);
       }
    }
 }

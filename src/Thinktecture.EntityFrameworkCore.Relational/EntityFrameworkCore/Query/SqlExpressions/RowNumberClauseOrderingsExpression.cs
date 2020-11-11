@@ -43,12 +43,12 @@ namespace Thinktecture.EntityFrameworkCore.Query.SqlExpressions
       }
 
       /// <inheritdoc />
-      public override void Print(ExpressionPrinter expressionPrinter)
+      protected override void Print(ExpressionPrinter expressionPrinter)
       {
          if (expressionPrinter == null)
             throw new ArgumentNullException(nameof(expressionPrinter));
 
-         expressionPrinter.VisitList(Orderings);
+         expressionPrinter.VisitCollection(Orderings);
       }
 
       /// <summary>

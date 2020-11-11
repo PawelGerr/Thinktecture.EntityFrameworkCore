@@ -13,8 +13,8 @@ namespace Thinktecture.EntityFrameworkCore.Query
       public ThinktectureRelationalQueryableMethodTranslatingExpressionVisitor(
          QueryableMethodTranslatingExpressionVisitorDependencies dependencies,
          RelationalQueryableMethodTranslatingExpressionVisitorDependencies relationalDependencies,
-         IModel model)
-         : base(dependencies, relationalDependencies, model)
+         QueryCompilationContext queryCompilationContext)
+         : base(dependencies, relationalDependencies, queryCompilationContext)
       {
       }
 
