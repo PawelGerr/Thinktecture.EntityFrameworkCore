@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -58,7 +59,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
                   throw new NotSupportedException($@"The registration of the Entity Framework Core service '{typeof(TService).FullName}' found but the service is not registered 'by type'.");
 
                if (service.ImplementationType == typeof(TService))
-                  throw new NotSupportedException($@"The implementation type '{service.ImplementationType.DisplayName()}' cannot be the same as the service type '{typeof(TService).DisplayName()}'.");
+                  throw new NotSupportedException($@"The implementation type '{service.ImplementationType.ShortDisplayName()}' cannot be the same as the service type '{typeof(TService).ShortDisplayName()}'.");
 
                return (service.ImplementationType, service.Lifetime, i);
             }

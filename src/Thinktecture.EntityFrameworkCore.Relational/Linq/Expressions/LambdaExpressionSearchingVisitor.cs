@@ -3,6 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Internal;
 
 namespace Thinktecture.Linq.Expressions
@@ -74,7 +75,7 @@ namespace Thinktecture.Linq.Expressions
             return Expression.Constant(value);
          }
 
-         throw new NotSupportedException($"The value of most inner expression must be of type '{ExpressionType.Constant}'. Found expression: {node.GetType().DisplayName()}");
+         throw new NotSupportedException($"The value of most inner expression must be of type '{ExpressionType.Constant}'. Found expression: {node.GetType().ShortDisplayName()}");
       }
 
       /// <inheritdoc />
@@ -86,7 +87,7 @@ namespace Thinktecture.Linq.Expressions
          var instanceExpression = Visit(node.Object);
 
          if (instanceExpression != null && instanceExpression.NodeType != ExpressionType.Constant)
-            throw new NotSupportedException($"The expression representing the instance to call the method on must be of type '{ExpressionType.Constant}'. Found expression: {instanceExpression.GetType().DisplayName()}");
+            throw new NotSupportedException($"The expression representing the instance to call the method on must be of type '{ExpressionType.Constant}'. Found expression: {instanceExpression.GetType().ShortDisplayName()}");
 
          var arguments = node.Arguments.Select(a =>
                                                {
@@ -96,7 +97,7 @@ namespace Thinktecture.Linq.Expressions
                                                      throw new NotSupportedException($"The expressions representing the arguments of the method call could not be translated. Found expression: {a}");
 
                                                   if (visitedArgument.NodeType != ExpressionType.Constant)
-                                                     throw new NotSupportedException($"All expressions representing the arguments of the method call must be of type '{ExpressionType.Constant}'. Found expression: {visitedArgument.GetType().DisplayName()}");
+                                                     throw new NotSupportedException($"All expressions representing the arguments of the method call must be of type '{ExpressionType.Constant}'. Found expression: {visitedArgument.GetType().ShortDisplayName()}");
 
                                                   return ((ConstantExpression)a).Value;
                                                })
@@ -132,7 +133,7 @@ namespace Thinktecture.Linq.Expressions
 
       private static Exception NotSupported(Expression node)
       {
-         return new NotSupportedException($"Node of type '{node.GetType().DisplayName()}' is not supported.");
+         return new NotSupportedException($"Node of type '{node.GetType().ShortDisplayName()}' is not supported.");
       }
    }
 }

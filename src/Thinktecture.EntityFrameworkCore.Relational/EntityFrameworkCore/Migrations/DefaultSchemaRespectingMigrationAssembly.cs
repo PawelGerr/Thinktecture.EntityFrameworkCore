@@ -77,7 +77,7 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
          if (!hasCtorWithDefaultSchema)
             return CreateInstance(migrationClass, activeProvider);
 
-         throw new ArgumentException($"For instantiation of default schema respecting migration of type '{migrationClass.Name}' the database context of type '{_context.GetType().DisplayName()}' has to implement the interface '{nameof(IDbDefaultSchema)}'.", nameof(migrationClass));
+         throw new ArgumentException($"For instantiation of default schema respecting migration of type '{migrationClass.Name}' the database context of type '{_context.GetType().ShortDisplayName()}' has to implement the interface '{nameof(IDbDefaultSchema)}'.", nameof(migrationClass));
       }
 
       private Migration CreateInstance(TypeInfo migrationClass, IDbDefaultSchema schema, string activeProvider)

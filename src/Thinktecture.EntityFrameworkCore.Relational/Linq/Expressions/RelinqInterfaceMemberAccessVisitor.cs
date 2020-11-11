@@ -3,6 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Internal;
 
 namespace Thinktecture.Linq.Expressions
@@ -57,7 +58,7 @@ namespace Thinktecture.Linq.Expressions
                   member = FindProperty(conversion.Operand.Type, conversion.Type, (PropertyInfo)node.Member);
 
                if (member == null)
-                  throw new MissingMemberException(conversion.Operand.Type.DisplayName(), node.Member.Name);
+                  throw new MissingMemberException(conversion.Operand.Type.ShortDisplayName(), node.Member.Name);
 
                var operand = Visit(conversion.Operand);
                return Expression.MakeMemberAccess(operand, member);

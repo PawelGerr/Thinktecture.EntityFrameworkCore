@@ -4,6 +4,7 @@ using System.Data;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
@@ -145,7 +146,7 @@ namespace Thinktecture.EntityFrameworkCore.Data
          if (index >= 0)
             return index;
 
-         throw new ArgumentException($"The property '{entityProperty.Name}' of type '{entityProperty.ClrType.DisplayName()}' cannot be read by current reader.");
+         throw new ArgumentException($"The property '{entityProperty.Name}' of type '{entityProperty.ClrType.ShortDisplayName()}' cannot be read by current reader.");
       }
 
       /// <inheritdoc />

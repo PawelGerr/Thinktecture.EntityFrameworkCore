@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.Metadata;
 
@@ -36,7 +37,7 @@ namespace Thinktecture
          var entityType = model.FindEntityType(type);
 
          if (entityType == null)
-            throw new ArgumentException($"The provided type '{type.DisplayName()}' is not part of the provided Entity Framework model.", nameof(type));
+            throw new ArgumentException($"The provided type '{type.ShortDisplayName()}' is not part of the provided Entity Framework model.", nameof(type));
 
          return entityType;
       }

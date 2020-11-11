@@ -220,7 +220,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
             throw new ArgumentNullException(nameof(type));
 
          if (!typeof(IRelationalTypeMappingSourcePlugin).IsAssignableFrom(type))
-            throw new ArgumentException($"The provided type '{type.DisplayName()}' must implement '{nameof(IRelationalTypeMappingSourcePlugin)}'.", nameof(type));
+            throw new ArgumentException($"The provided type '{type.ShortDisplayName()}' must implement '{nameof(IRelationalTypeMappingSourcePlugin)}'.", nameof(type));
 
          Add(ServiceDescriptor.Singleton(typeof(IRelationalTypeMappingSourcePlugin), type));
       }
@@ -331,7 +331,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
             debugInfo["Thinktecture:RowNumberSupport"] = _extension.AddRowNumberSupport.ToString(CultureInfo.InvariantCulture);
             debugInfo["Thinktecture:CountDistinctSupport"] = _extension.AddCountDistinctSupport.ToString(CultureInfo.InvariantCulture);
             debugInfo["Thinktecture:TenantDatabaseSupport"] = _extension.AddTenantDatabaseSupport.ToString(CultureInfo.InvariantCulture);
-            debugInfo["Thinktecture:EvaluatableExpressionFilterPlugins"] = String.Join(", ", _extension._evaluatableExpressionFilterPlugins.Select(t => t.DisplayName()));
+            debugInfo["Thinktecture:EvaluatableExpressionFilterPlugins"] = String.Join(", ", _extension._evaluatableExpressionFilterPlugins.Select(t => t.ShortDisplayName()));
             debugInfo["Thinktecture:ServiceDescriptors"] = String.Join(", ", _extension._serviceDescriptors);
          }
       }
