@@ -30,7 +30,7 @@ namespace Thinktecture.EntityFrameworkCore.Storage.NestedRelationalTransactionMa
          }
          catch (InvalidOperationException ex)
          {
-            if (ex.Message == "The transaction object is not associated with the connection object.")
+            if (ex.Message == "The transaction object is not associated with the same connection object as this command.")
                return false;
          }
 
