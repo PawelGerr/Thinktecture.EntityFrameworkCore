@@ -90,7 +90,7 @@ namespace Thinktecture
       public static SqlServerDbContextOptionsBuilder AddTenantDatabaseSupport<TTenantDatabaseProviderFactory>(
          this SqlServerDbContextOptionsBuilder builder,
          bool addTenantSupport = true,
-         ServiceLifetime databaseProviderLifetime = ServiceLifetime.Scoped)
+         ServiceLifetime databaseProviderLifetime = ServiceLifetime.Singleton)
          where TTenantDatabaseProviderFactory : ITenantDatabaseProviderFactory
       {
          builder.AddOrUpdateExtension(extension =>

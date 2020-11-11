@@ -19,6 +19,7 @@ namespace Thinktecture.TestDatabaseContext
       public DbSet<TestEntityWithShadowProperties> TestEntitiesWithShadowProperties { get; set; }
       public DbSet<TestEntityWithSqlDefaultValues> TestEntitiesWithDefaultValues { get; set; }
       public DbSet<TestEntityWithDotnetDefaultValues> TestEntitiesWithDotnetDefaultValues { get; set; }
+      public IQueryable<TestViewEntity> TestView => Set<TestViewEntity>();
 #nullable enable
 
       public Action<ModelBuilder>? ConfigureModel { get; set; }
@@ -38,6 +39,8 @@ namespace Thinktecture.TestDatabaseContext
                                             builder.Property("_privateField");
                                             builder.Property(e => e.ConvertibleClass).HasConversion(c => c!.Key, k => new ConvertibleClass(k));
                                          });
+
+         modelBuilder.Entity<TestViewEntity>(builder => builder.ToView("TestView"));
 
          modelBuilder.Entity<TestEntityWithAutoIncrement>().Property(e => e.Id).UseIdentityColumn();
 

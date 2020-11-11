@@ -1,14 +1,21 @@
 using System;
+using System.Collections.Generic;
 using System.Data.Common;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Design;
+using Microsoft.EntityFrameworkCore.Design.Internal;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.SqlServer.Diagnostics.Internal;
+using Microsoft.Extensions.DependencyInjection;
+using Moq;
 using Thinktecture.EntityFrameworkCore;
+using Thinktecture.EntityFrameworkCore.Infrastructure;
+using Thinktecture.EntityFrameworkCore.Query;
 using Thinktecture.EntityFrameworkCore.Testing;
 using Thinktecture.TestDatabaseContext;
 using Xunit;
@@ -20,7 +27,11 @@ namespace Thinktecture
    [Collection("SqlServerTests")]
    public class IntegrationTestsBase : SqlServerDbContextIntegrationTests<TestDbContext>
    {
-      public Action<ModelBuilder>? ConfigureModel { get; set; }
+      protected Action<ModelBuilder>? ConfigureModel { get; set; }
+      protected IReadOnlyCollection<string> SqlStatements { get; }
+
+      protected bool IsTenantDatabaseSupportEnabled { get; set; }
+      protected Mock<ITenantDatabaseProvider> TenantDatabaseProviderMock { get; }
 
       protected IntegrationTestsBase(ITestOutputHelper testOutputHelper, bool useSharedTables)
          : base(TestContext.Instance.ConnectionString, useSharedTables)
@@ -28,7 +39,11 @@ namespace Thinktecture
          DisableModelCache = true;
 
          var loggerFactory = TestContext.Instance.GetLoggerFactory(testOutputHelper);
+         SqlStatements = loggerFactory.CollectExecutedCommands();
+
          UseLoggerFactory(loggerFactory);
+
+         TenantDatabaseProviderMock = new Mock<ITenantDatabaseProvider>(MockBehavior.Strict);
       }
 
       protected IDiagnosticsLogger<TCategory> CreateDiagnosticsLogger<TCategory>(ILoggingOptions? options = null, DiagnosticSource? diagnosticSource = null)
@@ -49,8 +64,13 @@ namespace Thinktecture
       /// <inheritdoc />
       protected override DbContextOptionsBuilder<TestDbContext> CreateOptionsBuilder(DbConnection connection)
       {
-         return base.CreateOptionsBuilder(connection)
-                    .AddNestedTransactionSupport();
+         var builder = base.CreateOptionsBuilder(connection)
+                           .AddNestedTransactionSupport()
+                           .ConfigureWarnings(warningsBuilder => warningsBuilder.Ignore(CoreEventId.ManyServiceProvidersCreatedWarning));
+
+         builder.AddOrUpdateExtension<RelationalDbContextOptionsExtension>(extension => extension.Add(ServiceDescriptor.Singleton(TenantDatabaseProviderMock)));
+
+         return builder;
       }
 
       /// <inheritdoc />
@@ -61,6 +81,9 @@ namespace Thinktecture
          builder.AddTempTableSupport()
                 .AddRowNumberSupport()
                 .AddCountDistinctSupport();
+
+         if (IsTenantDatabaseSupportEnabled)
+            builder.AddTenantDatabaseSupport<TestTenantDatabaseProviderFactory>();
       }
 
       /// <inheritdoc />

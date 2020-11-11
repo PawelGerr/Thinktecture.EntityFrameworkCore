@@ -411,14 +411,15 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
          await using var tempTable = await SUT.CreateTempTableAsync(ActDbContext.GetEntityType<TestEntity>(), _optionsWithNonUniqueName);
 
          var columns = AssertDbContext.GetTempTableColumns<TestEntity>().OrderBy(c => c.COLUMN_NAME).ToList();
-         columns.Should().HaveCount(6);
+         columns.Should().HaveCount(7);
 
          ValidateColumn(columns[0], "_privateField", "int", false);
          ValidateColumn(columns[1], nameof(TestEntity.ConvertibleClass), "int", true);
          ValidateColumn(columns[2], nameof(TestEntity.Count), "int", false);
          ValidateColumn(columns[3], nameof(TestEntity.Id), "uniqueidentifier", false);
          ValidateColumn(columns[4], nameof(TestEntity.Name), "nvarchar", true);
-         ValidateColumn(columns[5], nameof(TestEntity.PropertyWithBackingField), "int", false);
+         ValidateColumn(columns[5], nameof(TestEntity.ParentId), "uniqueidentifier", true);
+         ValidateColumn(columns[6], nameof(TestEntity.PropertyWithBackingField), "int", false);
       }
 
       [Fact]
