@@ -148,7 +148,10 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
          /// <inheritdoc />
          public override long GetServiceProviderHashCode()
          {
-            return 0;
+            return HashCode.Combine(_extension.AddCustomQueryableMethodTranslatingExpressionVisitorFactory,
+                                    _extension.AddCustomRelationalSqlTranslatingExpressionVisitorFactory,
+                                    _extension.AddBulkOperationSupport,
+                                    _extension.AddTempTableSupport);
          }
 
          /// <inheritdoc />

@@ -261,12 +261,17 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
 
          public override string LogFragment => _logFragment ??= $@"
 {{
-   'Number of custom services'={_extension._serviceDescriptors.Count},
-   'Number of evaluatable expression filter plugins'={_extension._evaluatableExpressionFilterPlugins.Count},
+   'Custom RelationalQueryContextFactory'={_extension.AddCustomRelationalQueryContextFactory},
+   'Custom QueryableMethodTranslatingExpressionVisitorFactory'={_extension.AddCustomQueryableMethodTranslatingExpressionVisitorFactory},
+   'Custom RelationalSqlTranslatingExpressionVisitorFactory'={_extension.AddCustomRelationalSqlTranslatingExpressionVisitorFactory},
+   'Custom QuerySqlGeneratorFactory'={_extension.AddCustomQuerySqlGeneratorFactory},
    'Default schema respecting components added'={_extension.AddSchemaRespectingComponents},
    'NestedTransactionsSupport'={_extension.AddNestedTransactionsSupport},
    'RowNumberSupport'={_extension.AddRowNumberSupport},
-   'CountDistinctSupport'={_extension.AddCountDistinctSupport}
+   'CountDistinctSupport'={_extension.AddCountDistinctSupport},
+   'TenantDatabaseSupport'={_extension.AddTenantDatabaseSupport},
+   'Number of evaluatable expression filter plugins'={_extension._evaluatableExpressionFilterPlugins.Count},
+   'Number of custom services'={_extension._serviceDescriptors.Count}
 }}";
 
          public RelationalDbContextOptionsExtensionInfo(RelationalDbContextOptionsExtension extension)
@@ -277,17 +282,57 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
 
          public override long GetServiceProviderHashCode()
          {
-            return 0;
+            var hashCode = new HashCode();
+            hashCode.Add(_extension.AddCustomRelationalQueryContextFactory);
+            hashCode.Add(_extension.AddCustomQueryableMethodTranslatingExpressionVisitorFactory);
+            hashCode.Add(_extension.AddSchemaRespectingComponents);
+            hashCode.Add(_extension.AddNestedTransactionsSupport);
+            hashCode.Add(_extension.ComponentDecorator);
+
+            _extension._evaluatableExpressionFilterPlugins.ForEach(type => hashCode.Add(type));
+            _extension._serviceDescriptors.ForEach(descriptor => hashCode.Add(GetHashCode(descriptor)));
+
+            // Following switches doesn't add any new components:
+            //    AddRowNumberSupport, AddCountDistinctSupport, AddTenantDatabaseSupport,
+            //    AddCustomRelationalSqlTranslatingExpressionVisitorFactory, AddCustomQuerySqlGeneratorFactory
+
+            return hashCode.ToHashCode();
+         }
+
+         private static int GetHashCode(ServiceDescriptor descriptor)
+         {
+            int implHashcode;
+
+            if (descriptor.ImplementationType != null)
+            {
+               implHashcode = descriptor.ImplementationType.GetHashCode();
+            }
+            else if (descriptor.ImplementationInstance != null)
+
+            {
+               implHashcode = descriptor.ImplementationInstance.GetHashCode();
+            }
+            else
+            {
+               implHashcode = descriptor.ImplementationFactory.GetHashCode();
+            }
+
+            return HashCode.Combine(descriptor.Lifetime, descriptor.ServiceType, implHashcode);
          }
 
          public override void PopulateDebugInfo(IDictionary<string, string> debugInfo)
          {
-            debugInfo["Thinktecture:AddSchemaRespectingComponents"] = _extension.AddSchemaRespectingComponents.ToString(CultureInfo.InvariantCulture);
-            debugInfo["Thinktecture:EvaluatableExpressionFilterPlugins"] = String.Join(", ", _extension._evaluatableExpressionFilterPlugins.Select(t => t.DisplayName()));
-            debugInfo["Thinktecture:ServiceDescriptors"] = String.Join(", ", _extension._serviceDescriptors);
+            debugInfo["Thinktecture:CustomRelationalQueryContextFactory"] = _extension.AddCustomRelationalQueryContextFactory.ToString(CultureInfo.InvariantCulture);
+            debugInfo["Thinktecture:CustomQueryableMethodTranslatingExpressionVisitorFactory"] = _extension.AddCustomQueryableMethodTranslatingExpressionVisitorFactory.ToString(CultureInfo.InvariantCulture);
+            debugInfo["Thinktecture:CustomRelationalSqlTranslatingExpressionVisitorFactory"] = _extension.AddCustomRelationalSqlTranslatingExpressionVisitorFactory.ToString(CultureInfo.InvariantCulture);
+            debugInfo["Thinktecture:CustomQuerySqlGeneratorFactory"] = _extension.AddCustomQuerySqlGeneratorFactory.ToString(CultureInfo.InvariantCulture);
+            debugInfo["Thinktecture:SchemaRespectingComponents"] = _extension.AddSchemaRespectingComponents.ToString(CultureInfo.InvariantCulture);
             debugInfo["Thinktecture:NestedTransactionsSupport"] = _extension.AddNestedTransactionsSupport.ToString(CultureInfo.InvariantCulture);
             debugInfo["Thinktecture:RowNumberSupport"] = _extension.AddRowNumberSupport.ToString(CultureInfo.InvariantCulture);
             debugInfo["Thinktecture:CountDistinctSupport"] = _extension.AddCountDistinctSupport.ToString(CultureInfo.InvariantCulture);
+            debugInfo["Thinktecture:TenantDatabaseSupport"] = _extension.AddTenantDatabaseSupport.ToString(CultureInfo.InvariantCulture);
+            debugInfo["Thinktecture:EvaluatableExpressionFilterPlugins"] = String.Join(", ", _extension._evaluatableExpressionFilterPlugins.Select(t => t.DisplayName()));
+            debugInfo["Thinktecture:ServiceDescriptors"] = String.Join(", ", _extension._serviceDescriptors);
          }
       }
    }
