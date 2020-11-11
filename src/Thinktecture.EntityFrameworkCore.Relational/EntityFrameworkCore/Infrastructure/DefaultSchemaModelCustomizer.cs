@@ -26,6 +26,11 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       /// <inheritdoc />
       public void Customize(ModelBuilder modelBuilder, DbContext context)
       {
+         if (modelBuilder == null)
+            throw new ArgumentNullException(nameof(modelBuilder));
+         if (context == null)
+            throw new ArgumentNullException(nameof(context));
+
          _modelCustomizer.Customize(modelBuilder, context);
 
          if (context is IDbDefaultSchema schema && schema.Schema != null)

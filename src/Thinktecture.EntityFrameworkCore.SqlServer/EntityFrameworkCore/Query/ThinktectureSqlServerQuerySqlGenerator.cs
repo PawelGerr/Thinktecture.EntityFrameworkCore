@@ -25,6 +25,9 @@ namespace Thinktecture.EntityFrameworkCore.Query
       /// <inheritdoc />
       protected override Expression VisitTable(TableExpression tableExpression)
       {
+         if (tableExpression == null)
+            throw new ArgumentNullException(nameof(tableExpression));
+
          var databaseName = _databaseProvider.GetDatabaseName(tableExpression.Schema, tableExpression.Name);
 
          if (!String.IsNullOrWhiteSpace(databaseName))

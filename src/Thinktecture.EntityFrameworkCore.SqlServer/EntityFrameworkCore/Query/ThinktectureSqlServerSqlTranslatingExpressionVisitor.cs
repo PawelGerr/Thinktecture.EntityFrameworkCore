@@ -26,7 +26,7 @@ namespace Thinktecture.EntityFrameworkCore.Query
       /// <inheritdoc />
       protected override Expression VisitMethodCall(MethodCallExpression methodCallExpression)
       {
-         return this.TryTranslateCountDistinct(methodCallExpression, Dependencies.SqlExpressionFactory, out var countDistinctExpression)
+         return this.TryTranslateCountDistinct(methodCallExpression, Dependencies.TypeMappingSource, out var countDistinctExpression)
                    ? countDistinctExpression
                    : base.VisitMethodCall(methodCallExpression);
       }

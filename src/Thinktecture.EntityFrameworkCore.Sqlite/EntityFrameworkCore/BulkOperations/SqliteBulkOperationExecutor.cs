@@ -180,7 +180,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
             if (i > 0)
                sb.Append(", ");
 
-            sb.Append(_sqlGenerationHelper.DelimitIdentifier(column.GetColumnName()));
+            sb.Append(_sqlGenerationHelper.DelimitIdentifier(column.GetColumnBaseName()));
          }
 
          sb.Append(") VALUES (");

@@ -78,8 +78,8 @@ namespace Thinktecture.Extensions.SqliteDbFunctionsExtensionsTests
                                   .ToList();
 
          result.Should().HaveCount(2);
-         result.Should().Contain(new { Name = (string?)"A", CountDistinct = 1, Count = 2 });
-         result.Should().Contain(new { Name = (string?)"B", CountDistinct = 1, Count = 1 });
+         result.Should().Contain(new { Name = "A", CountDistinct = 1, Count = 2 }!);
+         result.Should().Contain(new { Name = "B", CountDistinct = 1, Count = 1 }!);
       }
    }
 }

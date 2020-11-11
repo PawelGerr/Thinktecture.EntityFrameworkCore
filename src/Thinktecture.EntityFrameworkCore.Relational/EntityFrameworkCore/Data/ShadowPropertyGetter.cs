@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking.Internal;
 using Microsoft.EntityFrameworkCore.Infrastructure;
@@ -31,6 +32,7 @@ namespace Thinktecture.EntityFrameworkCore.Data
       }
 
       /// <inheritdoc />
+      [SuppressMessage("ReSharper", "EF1001")]
       public object? GetValue(object entity)
       {
          var entry = _ctx.Entry(entity);

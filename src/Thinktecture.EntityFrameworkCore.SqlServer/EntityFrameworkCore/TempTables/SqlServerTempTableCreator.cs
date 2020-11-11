@@ -104,7 +104,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
             throw new ArgumentNullException(nameof(tableName));
 
          var keyProperties = entityType.FindPrimaryKey()?.Properties ?? entityType.GetProperties();
-         var columnNames = keyProperties.Select(p => p.GetColumnName());
+         var columnNames = keyProperties.Select(p => p.GetColumnBaseName());
 
          var sql = $@"
 ALTER TABLE {_sqlGenerationHelper.DelimitIdentifier(tableName)}
@@ -163,7 +163,7 @@ END
                sb.AppendLine(",");
 
             sb.Append("\t\t")
-              .Append(_sqlGenerationHelper.DelimitIdentifier(property.GetColumnName())).Append(' ')
+              .Append(_sqlGenerationHelper.DelimitIdentifier(property.GetColumnBaseName())).Append(' ')
               .Append(property.GetColumnType())
               .Append(property.IsNullable ? " NULL" : " NOT NULL");
 
@@ -205,9 +205,9 @@ END
             var missingColumns = keyProperties.Except(properties);
 
             if (missingColumns.Any())
-               throw new ArgumentException($"Cannot create PRIMARY KEY because not all key columns are part of the temp table. Missing columns: {String.Join(", ", missingColumns.Select(c => c.GetColumnName()))}.");
+               throw new ArgumentException($"Cannot create PRIMARY KEY because not all key columns are part of the temp table. Missing columns: {String.Join(", ", missingColumns.Select(c => c.GetColumnBaseName()))}.");
 
-            var columnNames = keyProperties.Select(p => p.GetColumnName());
+            var columnNames = keyProperties.Select(p => p.GetColumnBaseName());
 
             sb.AppendLine(",");
             sb.Append("\t\tPRIMARY KEY (");

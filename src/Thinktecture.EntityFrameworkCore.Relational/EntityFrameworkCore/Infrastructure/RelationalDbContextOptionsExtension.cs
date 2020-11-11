@@ -328,7 +328,8 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
             }
             else
             {
-               implHashcode = descriptor.ImplementationFactory.GetHashCode();
+               implHashcode = descriptor.ImplementationFactory?.GetHashCode()
+                              ?? throw new ArgumentException("The service descriptor has no ImplementationType, ImplementationInstance and ImplementationFactory.");
             }
 
             return HashCode.Combine(descriptor.Lifetime, descriptor.ServiceType, implHashcode);

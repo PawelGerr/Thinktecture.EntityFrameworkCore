@@ -21,7 +21,7 @@ namespace Thinktecture.EntityFrameworkCore.TenantDatabase
       [Fact]
       public async Task Should_behave_the_same_if_no_tenant_and_database_provided()
       {
-         TenantDatabaseProviderMock.Setup(p => p.GetDatabaseName(Schema, "TestEntities")).Returns((string)null);
+         TenantDatabaseProviderMock.Setup(p => p.GetDatabaseName(Schema, "TestEntities")).Returns((string)null!);
          await ActDbContext.TestEntities.ToListAsync();
 
          SqlStatements.Last().Should().Contain($"FROM [{Schema}].[TestEntities]");

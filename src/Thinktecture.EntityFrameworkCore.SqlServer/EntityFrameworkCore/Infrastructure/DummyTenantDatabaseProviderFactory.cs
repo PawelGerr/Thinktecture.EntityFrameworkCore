@@ -2,6 +2,7 @@ using Thinktecture.EntityFrameworkCore.Query;
 
 namespace Thinktecture.EntityFrameworkCore.Infrastructure
 {
+#pragma warning disable CA1812
    // ReSharper disable once ClassNeverInstantiated.Global
    internal sealed class DummyTenantDatabaseProviderFactory : ITenantDatabaseProviderFactory
    {

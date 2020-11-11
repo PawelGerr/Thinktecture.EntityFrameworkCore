@@ -12,6 +12,9 @@ namespace Thinktecture.EntityFrameworkCore.Query.SqlExpressions
    /// </summary>
    public class CountDistinctExpression : SqlExpression
    {
+      /// <summary>
+      /// The column to apply "COUNT (DISTINCT )" on.
+      /// </summary>
       public SqlExpression Column { get; }
 
       /// <summary>
@@ -76,6 +79,15 @@ namespace Thinktecture.EntityFrameworkCore.Query.SqlExpressions
          return HashCode.Combine(base.GetHashCode(), Column);
       }
 
+      /// <summary>
+      /// Updates current instance if the provided <paramref name="column"/> is different
+      /// by creating new <see cref="CountDistinctExpression"/>.
+      /// </summary>
+      /// <param name="column">New column.</param>
+      /// <returns>
+      /// Current instance if the provided <paramref name="column"/> is the same as <see cref="Column"/>;
+      /// otherwise, a new instance of <see cref="CountDistinctExpression"/>.
+      /// </returns>
       public CountDistinctExpression Update(SqlExpression column)
       {
          return ReferenceEquals(Column, column)

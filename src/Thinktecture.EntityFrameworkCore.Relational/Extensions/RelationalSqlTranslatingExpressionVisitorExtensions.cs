@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
+using Microsoft.EntityFrameworkCore.Storage;
 using Thinktecture.EntityFrameworkCore.Query.SqlExpressions;
 
 // ReSharper disable once CheckNamespace
@@ -20,20 +21,20 @@ namespace Thinktecture
       /// </summary>
       /// <param name="visitor">Visitor.</param>
       /// <param name="methodCallExpression">Method call to translate.</param>
-      /// <param name="sqlExpressionFactory">SQL expression factory.</param>
+      /// <param name="typeMappingSource">Type mappings.</param>
       /// <param name="translatedExpression">Translated expression.</param>
       /// <returns><c>true</c> if <paramref name="methodCallExpression"/> has been translated; otherwise <c>false</c>.</returns>
       /// <exception cref="InvalidOperationException">If the translation failed.</exception>
       public static bool TryTranslateCountDistinct(
          this RelationalSqlTranslatingExpressionVisitor visitor,
          MethodCallExpression methodCallExpression,
-         ISqlExpressionFactory sqlExpressionFactory,
+         IRelationalTypeMappingSource typeMappingSource,
          [MaybeNullWhen(false)] out SqlExpression translatedExpression)
       {
          if (visitor == null)
             throw new ArgumentNullException(nameof(visitor));
-         if (sqlExpressionFactory == null)
-            throw new ArgumentNullException(nameof(sqlExpressionFactory));
+         if (typeMappingSource == null)
+            throw new ArgumentNullException(nameof(typeMappingSource));
 
          if (methodCallExpression is null ||
              methodCallExpression.Method.DeclaringType != typeof(GroupingExtensions) ||
@@ -53,7 +54,7 @@ namespace Thinktecture
          if (column is null)
             throw new InvalidOperationException(CoreStrings.TranslationFailed(methodCallExpression.Arguments[1].Print()));
 
-         translatedExpression = new CountDistinctExpression(column, sqlExpressionFactory.FindMapping(typeof(int)));
+         translatedExpression = new CountDistinctExpression(column, typeMappingSource.FindMapping(typeof(int)));
          return true;
       }
 

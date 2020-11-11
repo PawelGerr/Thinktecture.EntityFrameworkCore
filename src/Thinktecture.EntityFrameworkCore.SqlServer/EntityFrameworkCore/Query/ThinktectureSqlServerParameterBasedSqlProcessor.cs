@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore.SqlServer.Query.Internal;
 
 namespace Thinktecture.EntityFrameworkCore.Query
 {
+   /// <inheritdoc />
    [SuppressMessage("ReSharper", "EF1001")]
    public class ThinktectureSqlServerParameterBasedSqlProcessor : SqlServerParameterBasedSqlProcessor
    {

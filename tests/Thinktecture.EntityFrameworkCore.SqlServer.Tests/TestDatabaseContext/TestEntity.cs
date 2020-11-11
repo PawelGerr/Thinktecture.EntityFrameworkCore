@@ -13,7 +13,7 @@ namespace Thinktecture.TestDatabaseContext
       public Guid? ParentId { get; set; }
       public TestEntity? Parent { get; set; }
 
-      public List<TestEntity> Children { get; set; }
+      public List<TestEntity> Children { get; set; } = new List<TestEntity>();
 
       private int _propertyWithBackingField;
 

@@ -128,7 +128,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
          {
             var property = reader.Properties[i];
             var index = reader.GetPropertyIndex(property);
-            var columnName = property.GetColumnName();
+            var columnName = property.GetColumnBaseName();
 
             bulkCopy.ColumnMappings.Add(new SqlBulkCopyColumnMapping(index, columnName));
 

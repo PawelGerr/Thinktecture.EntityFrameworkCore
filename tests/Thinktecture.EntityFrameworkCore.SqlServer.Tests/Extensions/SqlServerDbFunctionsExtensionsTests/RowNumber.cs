@@ -59,7 +59,8 @@ namespace Thinktecture.Extensions.SqlServerDbFunctionsExtensionsTests
          var propertyInfo = testEntityType.GetProperty(propertyName) ?? throw new Exception($"Property '{propertyName}' not found.");
 
          var returnType = new { Name = String.Empty, RowNumber = 0L }.GetType();
-         var returnTypeCtor = returnType.GetConstructor(new[] { typeof(string), typeof(long) });
+         var returnTypeCtor = returnType.GetConstructor(new[] { typeof(string), typeof(long) })
+            ?? throw new Exception("Constructor not found.");
 
          var efFunctions = Expression.Constant(EF.Functions); // EF.Functions
          var extensionsType = typeof(RelationalDbFunctionsExtensions);
