@@ -22,12 +22,14 @@ namespace Thinktecture.EntityFrameworkCore.Storage
       /// <param name="nestedTransactionManager">Nested transaction manager.</param>
       /// <param name="innerManager">Inner transaction manager.</param>
       /// <param name="tx">The real transaction.</param>
+      /// <param name="transactionId">The transaction id.</param>
       public RootNestedDbContextTransaction(
          IDiagnosticsLogger<RelationalDbLoggerCategory.NestedTransaction> logger,
          NestedRelationalTransactionManager nestedTransactionManager,
          IRelationalTransactionManager innerManager,
-         IDbContextTransaction tx)
-         : base(logger, nestedTransactionManager, tx?.TransactionId ?? throw new ArgumentNullException(nameof(tx)))
+         IDbContextTransaction tx,
+         Guid? transactionId)
+         : base(logger, nestedTransactionManager, transactionId ?? tx?.TransactionId ?? throw new ArgumentNullException(nameof(tx)))
       {
          _innerManager = innerManager ?? throw new ArgumentNullException(nameof(innerManager));
          _innerTx = tx;

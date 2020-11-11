@@ -43,16 +43,40 @@ namespace Thinktecture.EntityFrameworkCore.Storage
       public IDbContextTransaction? UseTransaction(
          DbTransaction? transaction)
       {
+         return UseTransactionInternal(transaction, null);
+      }
+
+      /// <inheritdoc />
+      public IDbContextTransaction? UseTransaction(DbTransaction transaction, Guid transactionId)
+      {
+         return UseTransactionInternal(transaction, transactionId);
+      }
+
+      private IDbContextTransaction? UseTransactionInternal(
+         DbTransaction? transaction,
+         Guid? transactionId)
+      {
          if (transaction == null)
          {
             _logger.Logger.LogInformation($"Setting {nameof(DbTransaction)} to null.");
-            _innerManager.UseTransaction(null);
+
+            if (transactionId.HasValue)
+            {
+               _innerManager.UseTransaction(null, transactionId.Value);
+            }
+            else
+            {
+               _innerManager.UseTransaction(null);
+            }
+
             ClearTransactions();
          }
          else
          {
             _logger.Logger.LogInformation($"Setting {nameof(DbTransaction)} to the provided one.");
-            var tx = _innerManager.UseTransaction(transaction);
+            var tx = transactionId.HasValue
+                        ? _innerManager.UseTransaction(transaction, transactionId.Value)
+                        : _innerManager.UseTransaction(transaction);
 
             if (tx == null)
             {
@@ -62,7 +86,7 @@ namespace Thinktecture.EntityFrameworkCore.Storage
             else
             {
 #pragma warning disable CA2000
-               _transactions.Push(new RootNestedDbContextTransaction(_logger, this, _innerManager, tx));
+               _transactions.Push(new RootNestedDbContextTransaction(_logger, this, _innerManager, tx, transactionId));
 #pragma warning restore CA2000
             }
          }
@@ -71,20 +95,48 @@ namespace Thinktecture.EntityFrameworkCore.Storage
       }
 
       /// <inheritdoc />
-      public async Task<IDbContextTransaction?> UseTransactionAsync(
-         DbTransaction? transaction,
+      public Task<IDbContextTransaction?> UseTransactionAsync(
+         DbTransaction transaction,
          CancellationToken cancellationToken = default)
+      {
+         return UseTransactionInternalAsync(transaction, null, cancellationToken);
+      }
+
+      /// <inheritdoc />
+      public Task<IDbContextTransaction?> UseTransactionAsync(
+         DbTransaction? transaction,
+         Guid transactionId,
+         CancellationToken cancellationToken = default)
+      {
+         return UseTransactionInternalAsync(transaction, transactionId, cancellationToken);
+      }
+
+      private async Task<IDbContextTransaction?> UseTransactionInternalAsync(
+         DbTransaction? transaction,
+         Guid? transactionId,
+         CancellationToken cancellationToken)
       {
          if (transaction == null)
          {
             _logger.Logger.LogInformation($"Setting {nameof(DbTransaction)} to null.");
-            await _innerManager.UseTransactionAsync(null, cancellationToken).ConfigureAwait(false);
+
+            if (transactionId.HasValue)
+            {
+               await _innerManager.UseTransactionAsync(null, transactionId.Value, cancellationToken).ConfigureAwait(false);
+            }
+            else
+            {
+               await _innerManager.UseTransactionAsync(null, cancellationToken).ConfigureAwait(false);
+            }
+
             ClearTransactions();
          }
          else
          {
             _logger.Logger.LogInformation($"Setting {nameof(DbTransaction)} to the provided one.");
-            var tx = await _innerManager.UseTransactionAsync(transaction, cancellationToken).ConfigureAwait(false);
+            var tx = transactionId.HasValue
+                        ? await _innerManager.UseTransactionAsync(transaction, transactionId.Value, cancellationToken).ConfigureAwait(false)
+                        : await _innerManager.UseTransactionAsync(transaction, cancellationToken).ConfigureAwait(false);
 
             if (tx == null)
             {
@@ -94,7 +146,7 @@ namespace Thinktecture.EntityFrameworkCore.Storage
             else
             {
 #pragma warning disable CA2000
-               _transactions.Push(new RootNestedDbContextTransaction(_logger, this, _innerManager, tx));
+               _transactions.Push(new RootNestedDbContextTransaction(_logger, this, _innerManager, tx, transactionId));
 #pragma warning restore CA2000
             }
          }
@@ -162,7 +214,7 @@ namespace Thinktecture.EntityFrameworkCore.Storage
          else
          {
             var tx = isolationLevel.HasValue ? _innerManager.BeginTransaction(isolationLevel.Value) : _innerManager.BeginTransaction();
-            currentTx = new RootNestedDbContextTransaction(_logger, this, _innerManager, tx);
+            currentTx = new RootNestedDbContextTransaction(_logger, this, _innerManager, tx, null);
             _logger.Logger.LogInformation("Started a root transaction with id '{TransactionId}' using isolation level '{IsolationLevel}'.", currentTx.TransactionId, isolationLevel);
          }
 
@@ -186,7 +238,7 @@ namespace Thinktecture.EntityFrameworkCore.Storage
                                ? _innerManager.BeginTransactionAsync(isolationLevel.Value, cancellationToken)
                                : _innerManager.BeginTransactionAsync(cancellationToken))
                         .ConfigureAwait(false);
-            currentTx = new RootNestedDbContextTransaction(_logger, this, _innerManager, tx);
+            currentTx = new RootNestedDbContextTransaction(_logger, this, _innerManager, tx, null);
             _logger.Logger.LogInformation("Started a root transaction with id '{TransactionId}' using isolation level '{IsolationLevel}'.", currentTx.TransactionId, isolationLevel);
          }
 
@@ -205,12 +257,30 @@ namespace Thinktecture.EntityFrameworkCore.Storage
       }
 
       /// <inheritdoc />
+      public Task CommitTransactionAsync(CancellationToken cancellationToken = default)
+      {
+         if (_transactions.Count == 0)
+            throw new InvalidOperationException("The connection does not have any active transactions.");
+
+         return _transactions.Pop().CommitAsync(cancellationToken);
+      }
+
+      /// <inheritdoc />
       public void RollbackTransaction()
       {
          if (_transactions.Count == 0)
             throw new InvalidOperationException("The connection does not have any active transactions.");
 
          _transactions.Pop().Rollback();
+      }
+
+      /// <inheritdoc />
+      public Task RollbackTransactionAsync(CancellationToken cancellationToken = new CancellationToken())
+      {
+         if (_transactions.Count == 0)
+            throw new InvalidOperationException("The connection does not have any active transactions.");
+
+         return _transactions.Pop().RollbackAsync(cancellationToken);
       }
 
       private void ClearTransactions()
