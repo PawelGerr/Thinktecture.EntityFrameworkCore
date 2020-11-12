@@ -75,7 +75,8 @@ namespace Thinktecture.EntityFrameworkCore.Testing
       /// <returns>A new instance of the database context.</returns>
       protected virtual T CreateContext(DbContextOptions<T> options)
       {
-         return (T)Activator.CreateInstance(typeof(T), options);
+         var instance = Activator.CreateInstance(typeof(T), options) ?? throw new Exception($"Could not create an instance of type of '{typeof(T).ShortDisplayName()}'");
+         return (T)instance;
       }
 
       /// <summary>

@@ -45,7 +45,7 @@ namespace Thinktecture.Linq.Expressions
          if (node == null)
             throw new ArgumentNullException(nameof(node));
 
-         if (node.Expression.NodeType == ExpressionType.Convert)
+         if (node.Expression is { NodeType: ExpressionType.Convert })
          {
             var conversion = (UnaryExpression)node.Expression;
 

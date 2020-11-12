@@ -12,7 +12,8 @@ namespace Thinktecture.Linq.Expressions
    public class ExpressionBodyExtractingVisitor : ExpressionVisitor
    {
       private static readonly ExpressionBodyExtractingVisitor _instance = new ExpressionBodyExtractingVisitor();
-      private static readonly MethodInfo _extractBodyMethod = typeof(RelationalExpressionExtensions).GetMethod(nameof(RelationalExpressionExtensions.ExtractBody), BindingFlags.Static | BindingFlags.Public);
+      private static readonly MethodInfo _extractBodyMethod = typeof(RelationalExpressionExtensions).GetMethod(nameof(RelationalExpressionExtensions.ExtractBody), BindingFlags.Static | BindingFlags.Public)
+         ?? throw new Exception($"Method '{nameof(RelationalExpressionExtensions.ExtractBody)}' not found.");
 
       /// <summary>
       /// Rewrites the provided <paramref name="expression"/> if it contains <see cref="RelationalExpressionExtensions.ExtractBody{TIn,TOut}"/>.

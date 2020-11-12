@@ -15,7 +15,7 @@ namespace Thinktecture
    public static class RelationalQueryableExtensions
    {
       private static readonly MethodInfo _asSubQuery = typeof(RelationalQueryableExtensions).GetMethods(BindingFlags.Public | BindingFlags.Static)
-                                                                                  .Single(m => m.Name == nameof(AsSubQuery) && m.IsGenericMethod);
+                                                                                            .Single(m => m.Name == nameof(AsSubQuery) && m.IsGenericMethod);
 
       /// <summary>
       /// Performs a LEFT JOIN.
@@ -46,6 +46,8 @@ namespace Thinktecture
          Expression<Func<TLeft, TKey>> leftKeySelector,
          Expression<Func<TRight, TKey>> rightKeySelector,
          Expression<Func<LeftJoinResult<TLeft, TRight>, TResult>> resultSelector)
+         where TLeft : notnull
+         where TRight : notnull
       {
          if (left == null)
             throw new ArgumentNullException(nameof(left));
@@ -60,11 +62,7 @@ namespace Thinktecture
 
          return left
                 .GroupJoin(right, leftKeySelector, rightKeySelector, (o, i) => new { Outer = o, Inner = i })
-                .SelectMany(g => g.Inner.DefaultIfEmpty(), (o, i) => new LeftJoinResult<TLeft, TRight>
-                                                                     {
-                                                                        Left = o.Outer,
-                                                                        Right = i
-                                                                     })
+                .SelectMany(g => g.Inner.DefaultIfEmpty(), (o, i) => new LeftJoinResult<TLeft, TRight>(o.Outer, i))
                 .Select(resultSelector);
       }
 

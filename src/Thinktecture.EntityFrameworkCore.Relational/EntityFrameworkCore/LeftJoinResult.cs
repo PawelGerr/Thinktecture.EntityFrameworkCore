@@ -1,30 +1,16 @@
-using System.Diagnostics.CodeAnalysis;
-
 namespace Thinktecture.EntityFrameworkCore
 {
+#pragma warning disable CS1572,CS1573,CS1591
    /// <summary>
    /// Result of a LEFT JOIN.
    /// </summary>
+   /// <param name="Left">Entity on the left side of the JOIN.</param>
+   /// <param name="Right">Entity on the right side of the JOIN.</param>
    /// <typeparam name="TLeft">Type of the entity on the left side of the JOIN.</typeparam>
    /// <typeparam name="TRight">Type of the entity  on the right side of the JOIN.</typeparam>
-   public sealed class LeftJoinResult<TLeft, TRight>
-   {
-      /// <summary>
-      /// Entity on the left side of the JOIN.
-      /// </summary>
-      [NotNull, DisallowNull]
-      public TLeft Left { get; set; }
-
-      /// <summary>
-      /// Entity  on the right side of the JOIN.
-      /// </summary>
-      [MaybeNull, AllowNull]
-      public TRight Right { get; set; }
-
-#nullable disable
-      internal LeftJoinResult()
-      {
-      }
-#nullable enable
-   }
+   public sealed record LeftJoinResult<TLeft, TRight>(
+      TLeft Left,
+      TRight? Right)
+      where TLeft : notnull;
+#pragma warning restore CS1572,CS1573,CS1591
 }

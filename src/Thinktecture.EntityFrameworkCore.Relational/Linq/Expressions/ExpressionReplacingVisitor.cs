@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 
 namespace Thinktecture.Linq.Expressions
@@ -23,7 +24,8 @@ namespace Thinktecture.Linq.Expressions
       }
 
       /// <inheritdoc />
-      public override Expression Visit(Expression node)
+      [return: NotNullIfNotNull("node")]
+      public override Expression? Visit(Expression? node)
       {
          return node == _oldExpression ? _newExpression : base.Visit(node);
       }

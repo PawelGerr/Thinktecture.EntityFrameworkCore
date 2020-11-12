@@ -131,8 +131,10 @@ namespace Thinktecture.EntityFrameworkCore.Data
       {
          var currentValueGetter = property.GetPropertyAccessors().CurrentValueGetter;
          var shadowPropGetterType = typeof(ShadowPropertyGetter<>).MakeGenericType(property.ClrType);
+         var shadowPropGetter = Activator.CreateInstance(shadowPropGetterType, _ctx, currentValueGetter)
+                                ?? throw new Exception($"Could not create shadow property getter of type '{shadowPropGetterType.ShortDisplayName()}'.");
 
-         return (IShadowPropertyGetter)Activator.CreateInstance(shadowPropGetterType, _ctx, currentValueGetter);
+         return (IShadowPropertyGetter)shadowPropGetter;
       }
 
       /// <inheritdoc />
@@ -151,7 +153,9 @@ namespace Thinktecture.EntityFrameworkCore.Data
       }
 
       /// <inheritdoc />
+#pragma warning disable 8766
       public object? GetValue(int i)
+#pragma warning restore 8766
       {
          return _propertyGetterLookup[i](_enumerator.Current);
       }

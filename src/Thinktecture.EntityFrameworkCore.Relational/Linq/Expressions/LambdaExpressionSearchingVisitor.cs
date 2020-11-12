@@ -61,12 +61,15 @@ namespace Thinktecture.Linq.Expressions
 
          var instanceExpression = node.Expression;
 
-         if (instanceExpression.NodeType != ExpressionType.Constant)
+         if (instanceExpression is { NodeType: not ExpressionType.Constant })
             instanceExpression = Visit(instanceExpression);
 
          if (instanceExpression?.NodeType == ExpressionType.Constant)
          {
-            var value = GetMemberValue(node, ((ConstantExpression)instanceExpression).Value);
+            var instance = ((ConstantExpression)instanceExpression).Value
+               ?? throw new Exception($"Instance cannot be null. Member: {node.Member}.");
+
+            var value = GetMemberValue(node, instance);
 
             if (value is Expression exp)
                return exp;
@@ -85,7 +88,7 @@ namespace Thinktecture.Linq.Expressions
 
          var instanceExpression = Visit(node.Object);
 
-         if (instanceExpression is { NodeType: not ExpressionType.Constant})
+         if (instanceExpression is { NodeType: not ExpressionType.Constant })
             throw new NotSupportedException($"The expression representing the instance to call the method on must be of type '{ExpressionType.Constant}'. Found expression: {instanceExpression.GetType().ShortDisplayName()}");
 
          var arguments = node.Arguments.Select(a =>
@@ -110,7 +113,7 @@ namespace Thinktecture.Linq.Expressions
          return Expression.Constant(value);
       }
 
-      private static object GetMemberValue(MemberExpression memberAccess, object instance)
+      private static object? GetMemberValue(MemberExpression memberAccess, object instance)
       {
          if (memberAccess == null)
             throw new ArgumentNullException(nameof(memberAccess));
