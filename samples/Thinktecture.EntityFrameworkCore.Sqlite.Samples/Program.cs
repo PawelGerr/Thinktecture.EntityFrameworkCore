@@ -47,9 +47,6 @@ namespace Thinktecture
 
                // ROWNUMBER
                await DoRowNumberAsync(ctx);
-
-               // COUNT DISTINCT
-               await DoCountDistinctAsync(ctx);
             }
             finally
             {
@@ -58,15 +55,6 @@ namespace Thinktecture
          }
 
          Console.WriteLine("Exiting samples...");
-      }
-
-      private static async Task DoCountDistinctAsync(DemoDbContext ctx)
-      {
-         var numberOfCustomerIds = await ctx.Orders.GroupBy(o => o.Date)
-                                            .Select(g => g.CountDistinct(o => o.CustomerId))
-                                            .ToListAsync();
-
-         Console.WriteLine($"COUNT DISTINCT: [{String.Join(", ", numberOfCustomerIds)}]");
       }
 
       private static async Task DoRowNumberAsync(DemoDbContext ctx)

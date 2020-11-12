@@ -36,15 +36,6 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       }
 
       /// <summary>
-      /// Enables and disables support for "COUNT(DISTINCT column)".
-      /// </summary>
-      public bool AddCountDistinctSupport
-      {
-         get => _relationalOptions.AddCountDistinctSupport;
-         set => _relationalOptions.AddCountDistinctSupport = value;
-      }
-
-      /// <summary>
       /// A custom factory is registered if <c>true</c>.
       /// The factory is required to be able to translate custom methods like <see cref="RelationalQueryableExtensions.AsSubQuery{TEntity}"/>.
       /// </summary>
@@ -52,16 +43,6 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       {
          get => _relationalOptions.AddCustomQueryableMethodTranslatingExpressionVisitorFactory;
          set => _relationalOptions.AddCustomQueryableMethodTranslatingExpressionVisitorFactory = value;
-      }
-
-      /// <summary>
-      /// A custom factory is registered if <c>true</c>.
-      /// The factory is required to be able to translate custom methods like <see cref="GroupingExtensions.CountDistinct{T,TKey,TProp}"/>.
-      /// </summary>
-      public bool AddCustomRelationalSqlTranslatingExpressionVisitorFactory
-      {
-         get => _relationalOptions.AddCustomRelationalSqlTranslatingExpressionVisitorFactory;
-         set => _relationalOptions.AddCustomRelationalSqlTranslatingExpressionVisitorFactory = value;
       }
 
       /// <summary>
@@ -106,9 +87,6 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
 
          if (_relationalOptions.AddCustomQueryableMethodTranslatingExpressionVisitorFactory)
             services.AddSingleton<IQueryableMethodTranslatingExpressionVisitorFactory, ThinktectureSqliteQueryableMethodTranslatingExpressionVisitorFactory>();
-
-         if (AddCustomRelationalSqlTranslatingExpressionVisitorFactory)
-            services.Add<IRelationalSqlTranslatingExpressionVisitorFactory, ThinktectureSqliteSqlTranslatingExpressionVisitorFactory>(GetLifetime<IRelationalSqlTranslatingExpressionVisitorFactory>());
 
          if(AddCustomRelationalParameterBasedSqlProcessorFactory)
             services.Add<IRelationalParameterBasedSqlProcessorFactory, ThinktectureRelationalParameterBasedSqlProcessorFactory>(GetLifetime<IRelationalParameterBasedSqlProcessorFactory>());
@@ -162,7 +140,6 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
          public override long GetServiceProviderHashCode()
          {
             return HashCode.Combine(_extension.AddCustomQueryableMethodTranslatingExpressionVisitorFactory,
-                                    _extension.AddCustomRelationalSqlTranslatingExpressionVisitorFactory,
                                     _extension.AddCustomRelationalParameterBasedSqlProcessorFactory,
                                     _extension.AddBulkOperationSupport,
                                     _extension.AddTempTableSupport);

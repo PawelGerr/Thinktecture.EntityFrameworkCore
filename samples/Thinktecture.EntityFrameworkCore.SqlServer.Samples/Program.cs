@@ -48,9 +48,6 @@ namespace Thinktecture
             // ROWNUMBER
             await DoRowNumberAsync(ctx);
 
-            // COUNT DISTINCT
-            await DoCountDistinctAsync(ctx);
-
             // Tenant
             await DoTenantQueriesAsync(ctx);
 
@@ -112,15 +109,6 @@ namespace Thinktecture
 
          var lastUsedRowVersion = await ctx.GetLastUsedRowVersionAsync();
          Console.WriteLine($"Last used row version: {lastUsedRowVersion}");
-      }
-
-      private static async Task DoCountDistinctAsync(DemoDbContext ctx)
-      {
-         var numberOfCustomerIds = await ctx.Orders.GroupBy(o => o.Date)
-                                            .Select(g => g.CountDistinct(o => o.CustomerId))
-                                            .ToListAsync();
-
-         Console.WriteLine($"COUNT DISTINCT: [{String.Join(", ", numberOfCustomerIds)}]");
       }
 
       private static async Task DoRowNumberAsync(DemoDbContext ctx)

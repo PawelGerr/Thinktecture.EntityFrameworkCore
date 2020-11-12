@@ -81,8 +81,7 @@ namespace Thinktecture
          base.ConfigureSqlServer(builder);
 
          builder.AddTempTableSupport()
-                .AddRowNumberSupport()
-                .AddCountDistinctSupport();
+                .AddRowNumberSupport();
 
          if (IsTenantDatabaseSupportEnabled)
             builder.AddTenantDatabaseSupport<TestTenantDatabaseProviderFactory>();

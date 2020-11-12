@@ -67,20 +67,6 @@ namespace Thinktecture
       }
 
       /// <summary>
-      /// Adds support for "COUNT(DISTINCT column)".
-      /// </summary>
-      /// <param name="builder">Options builder.</param>
-      /// <param name="addCountDistinctSupport">Indication whether to enable or disable the feature.</param>
-      /// <returns>Provided <paramref name="builder"/>.</returns>
-      public static SqlServerDbContextOptionsBuilder AddCountDistinctSupport(
-         this SqlServerDbContextOptionsBuilder builder,
-         bool addCountDistinctSupport = true)
-      {
-         builder.AddOrUpdateExtension(extension => extension.AddCountDistinctSupport = addCountDistinctSupport);
-         return builder;
-      }
-
-      /// <summary>
       /// Adds 'tenant database support'.
       /// </summary>
       /// <param name="builder">Options builder.</param>

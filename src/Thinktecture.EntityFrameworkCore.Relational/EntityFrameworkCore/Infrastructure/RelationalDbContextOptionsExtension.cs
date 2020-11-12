@@ -5,7 +5,6 @@ using System.Globalization;
 using System.Linq;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -61,11 +60,6 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       public bool AddRowNumberSupport { get; set; }
 
       /// <summary>
-      /// Enables and disables support for "COUNT(DISTINCT column)".
-      /// </summary>
-      public bool AddCountDistinctSupport { get; set; }
-
-      /// <summary>
       /// Enables and disables support for 'tenant database support'.
       /// </summary>
       public bool AddTenantDatabaseSupport { get; set; }
@@ -80,18 +74,6 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       {
          get => _addCustomQueryableMethodTranslatingExpressionVisitorFactory || AddRowNumberSupport;
          set => _addCustomQueryableMethodTranslatingExpressionVisitorFactory = value;
-      }
-
-      private bool _addCustomRelationalSqlTranslatingExpressionVisitorFactory;
-
-      /// <summary>
-      /// A custom factory is registered if <c>true</c>.
-      /// The factory is required to be able to translate custom methods like <see cref="GroupingExtensions.CountDistinct{T,TKey,TProp}"/>.
-      /// </summary>
-      public bool AddCustomRelationalSqlTranslatingExpressionVisitorFactory
-      {
-         get => _addCustomRelationalSqlTranslatingExpressionVisitorFactory || AddCountDistinctSupport;
-         set => _addCustomRelationalSqlTranslatingExpressionVisitorFactory = value;
       }
 
       private bool _addCustomQuerySqlGeneratorFactory;
@@ -126,7 +108,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       /// </summary>
       public bool AddCustomRelationalParameterBasedSqlProcessorFactory
       {
-         get => _addCustomRelationalParameterBasedSqlProcessorFactory || AddRowNumberSupport || AddCountDistinctSupport;
+         get => _addCustomRelationalParameterBasedSqlProcessorFactory || AddRowNumberSupport;
          set => _addCustomRelationalParameterBasedSqlProcessorFactory = value;
       }
 
@@ -275,13 +257,11 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
 {{
    'Custom RelationalQueryContextFactory'={_extension.AddCustomRelationalQueryContextFactory},
    'Custom QueryableMethodTranslatingExpressionVisitorFactory'={_extension.AddCustomQueryableMethodTranslatingExpressionVisitorFactory},
-   'Custom RelationalSqlTranslatingExpressionVisitorFactory'={_extension.AddCustomRelationalSqlTranslatingExpressionVisitorFactory},
    'Custom RelationalParameterBasedSqlProcessorFactory'={_extension.AddCustomRelationalParameterBasedSqlProcessorFactory},
    'Custom QuerySqlGeneratorFactory'={_extension.AddCustomQuerySqlGeneratorFactory},
    'Default schema respecting components added'={_extension.AddSchemaRespectingComponents},
    'NestedTransactionsSupport'={_extension.AddNestedTransactionsSupport},
    'RowNumberSupport'={_extension.AddRowNumberSupport},
-   'CountDistinctSupport'={_extension.AddCountDistinctSupport},
    'TenantDatabaseSupport'={_extension.AddTenantDatabaseSupport},
    'Number of evaluatable expression filter plugins'={_extension._evaluatableExpressionFilterPlugins.Count},
    'Number of custom services'={_extension._serviceDescriptors.Count}
@@ -339,13 +319,11 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
          {
             debugInfo["Thinktecture:CustomRelationalQueryContextFactory"] = _extension.AddCustomRelationalQueryContextFactory.ToString(CultureInfo.InvariantCulture);
             debugInfo["Thinktecture:CustomQueryableMethodTranslatingExpressionVisitorFactory"] = _extension.AddCustomQueryableMethodTranslatingExpressionVisitorFactory.ToString(CultureInfo.InvariantCulture);
-            debugInfo["Thinktecture:CustomRelationalSqlTranslatingExpressionVisitorFactory"] = _extension.AddCustomRelationalSqlTranslatingExpressionVisitorFactory.ToString(CultureInfo.InvariantCulture);
             debugInfo["Thinktecture:CustomRelationalParameterBasedSqlProcessorFactory"] = _extension.AddCustomRelationalParameterBasedSqlProcessorFactory.ToString(CultureInfo.InvariantCulture);
             debugInfo["Thinktecture:CustomQuerySqlGeneratorFactory"] = _extension.AddCustomQuerySqlGeneratorFactory.ToString(CultureInfo.InvariantCulture);
             debugInfo["Thinktecture:SchemaRespectingComponents"] = _extension.AddSchemaRespectingComponents.ToString(CultureInfo.InvariantCulture);
             debugInfo["Thinktecture:NestedTransactionsSupport"] = _extension.AddNestedTransactionsSupport.ToString(CultureInfo.InvariantCulture);
             debugInfo["Thinktecture:RowNumberSupport"] = _extension.AddRowNumberSupport.ToString(CultureInfo.InvariantCulture);
-            debugInfo["Thinktecture:CountDistinctSupport"] = _extension.AddCountDistinctSupport.ToString(CultureInfo.InvariantCulture);
             debugInfo["Thinktecture:TenantDatabaseSupport"] = _extension.AddTenantDatabaseSupport.ToString(CultureInfo.InvariantCulture);
             debugInfo["Thinktecture:EvaluatableExpressionFilterPlugins"] = String.Join(", ", _extension._evaluatableExpressionFilterPlugins.Select(t => t.ShortDisplayName()));
             debugInfo["Thinktecture:ServiceDescriptors"] = String.Join(", ", _extension._serviceDescriptors);
