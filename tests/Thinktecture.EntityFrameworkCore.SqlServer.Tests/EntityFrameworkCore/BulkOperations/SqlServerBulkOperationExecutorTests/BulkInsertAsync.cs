@@ -31,7 +31,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
       {
          ConfigureModel = builder => builder.ConfigureTempTable<int>();
 
-         SUT.Invoking(sut => sut.BulkInsertAsync(new List<TempTable<int>> { new TempTable<int>() }, new SqlServerBulkInsertOptions()))
+         SUT.Invoking(sut => sut.BulkInsertAsync(new List<TempTable<int>> { new TempTable<int>(0) }, new SqlServerBulkInsertOptions()))
             .Should().Throw<InvalidOperationException>()
             .WithMessage("Cannot access destination table '[*].[#TempTable<int>]'.");
       }
