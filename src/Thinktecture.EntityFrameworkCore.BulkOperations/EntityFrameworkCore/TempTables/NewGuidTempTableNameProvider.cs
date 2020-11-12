@@ -9,6 +9,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
    /// It is NOT recommended to use this name provider because it bloats the cache of the Entity Framework Core
    /// and the Query Plan Cache of the database.
    /// </summary>
+   [Obsolete("This temp table name provider bloats the cache of the Entity Framework Core and the Query Plan Cache of the database. Use 'ReusingTempTableNameProvider' instead.")]
    public class NewGuidTempTableNameProvider : ITempTableNameProvider
    {
       /// <summary>

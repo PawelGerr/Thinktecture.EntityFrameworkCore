@@ -60,7 +60,9 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
       [Fact]
       public async Task Should_not_create_primary_key_if_key_exists_and_checkForExistence_is_true()
       {
+#pragma warning disable 618
          await using var tempTableReference = await ArrangeDbContext.CreateTempTableAsync<TestEntity>(NewGuidTempTableNameProvider.Instance, false);
+#pragma warning restore 618
          var entityType = ArrangeDbContext.GetEntityType<TestEntity>();
          await SUT.CreatePrimaryKeyAsync(ArrangeDbContext, entityType, tempTableReference.Name);
 
@@ -71,7 +73,9 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
       [Fact]
       public async Task Should_throw_if_key_exists_and_checkForExistence_is_false()
       {
+#pragma warning disable 618
          await using var tempTableReference = await ArrangeDbContext.CreateTempTableAsync<TestEntity>(NewGuidTempTableNameProvider.Instance,
+#pragma warning restore 618
                                                                                                       false);
          var entityType = ArrangeDbContext.GetEntityType<TestEntity>();
          await SUT.CreatePrimaryKeyAsync(ArrangeDbContext, entityType, tempTableReference.Name);

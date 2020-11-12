@@ -4,7 +4,6 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Internal;
 
 namespace Thinktecture.Linq.Expressions
 {
@@ -48,7 +47,7 @@ namespace Thinktecture.Linq.Expressions
          if (node == null)
             throw new ArgumentNullException(nameof(node));
 
-         if (node.NodeType == ExpressionType.Convert || node.NodeType == ExpressionType.Quote)
+         if (node.NodeType is ExpressionType.Convert or ExpressionType.Quote)
             return Visit(node.Operand) ?? throw NotSupported(node);
 
          throw NotSupported(node);
@@ -86,7 +85,7 @@ namespace Thinktecture.Linq.Expressions
 
          var instanceExpression = Visit(node.Object);
 
-         if (instanceExpression != null && instanceExpression.NodeType != ExpressionType.Constant)
+         if (instanceExpression is { NodeType: not ExpressionType.Constant})
             throw new NotSupportedException($"The expression representing the instance to call the method on must be of type '{ExpressionType.Constant}'. Found expression: {instanceExpression.GetType().ShortDisplayName()}");
 
          var arguments = node.Arguments.Select(a =>
