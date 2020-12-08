@@ -5,7 +5,6 @@ using System.Linq;
 using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Migrations.Operations;
 using Microsoft.Extensions.DependencyInjection;
@@ -36,10 +35,11 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
       /// <summary>
       /// Initializes new instance of <see cref="DefaultSchemaRespectingMigrationAssembly{TMigrationsAssembly}"/>.
       /// </summary>
-      public DefaultSchemaRespectingMigrationAssembly(TMigrationsAssembly migrationsAssembly,
-                                                      IMigrationOperationSchemaSetter schemaSetter,
-                                                      ICurrentDbContext currentContext,
-                                                      IServiceProvider serviceProvider)
+      public DefaultSchemaRespectingMigrationAssembly(
+         TMigrationsAssembly migrationsAssembly,
+         IMigrationOperationSchemaSetter schemaSetter,
+         ICurrentDbContext currentContext,
+         IServiceProvider serviceProvider)
       {
          _innerMigrationsAssembly = migrationsAssembly ?? throw new ArgumentNullException(nameof(migrationsAssembly));
          _schemaSetter = schemaSetter ?? throw new ArgumentNullException(nameof(schemaSetter));
@@ -63,7 +63,7 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
 
          var hasCtorWithDefaultSchema = migrationClass.GetConstructors().Any(c => c.GetParameters().Any(p => p.ParameterType == typeof(IDbDefaultSchema)));
 
-         // has default schema
+         // ReSharper disable once SuspiciousTypeConversion.Global
          if (_context is IDbDefaultSchema schema)
          {
             var migration = hasCtorWithDefaultSchema ? CreateInstance(migrationClass, schema, activeProvider) : CreateInstance(migrationClass, activeProvider);

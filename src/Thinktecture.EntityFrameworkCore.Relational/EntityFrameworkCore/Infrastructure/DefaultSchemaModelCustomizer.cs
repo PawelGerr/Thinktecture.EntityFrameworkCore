@@ -33,7 +33,8 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
 
          _modelCustomizer.Customize(modelBuilder, context);
 
-         if (context is IDbDefaultSchema schema && schema.Schema != null)
+         // ReSharper disable once SuspiciousTypeConversion.Global
+         if (context is IDbDefaultSchema { Schema: { } } schema)
          {
             modelBuilder.HasDefaultSchema(schema.Schema);
 

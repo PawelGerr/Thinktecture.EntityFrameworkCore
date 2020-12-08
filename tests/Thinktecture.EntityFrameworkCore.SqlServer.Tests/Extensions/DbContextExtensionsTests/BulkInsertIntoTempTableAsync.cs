@@ -25,7 +25,7 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
       {
          ConfigureModel = builder => builder.ConfigureTempTableEntity<CustomTempTable>().Property(t => t.Column2).HasMaxLength(100).IsRequired();
 
-         var entities = new List<CustomTempTable> { new CustomTempTable(1, "value") };
+         var entities = new List<CustomTempTable> { new(1, "value") };
          await using var query = await ActDbContext.BulkInsertIntoTempTableAsync(entities);
 
          var tempTable = await query.Query.ToListAsync();

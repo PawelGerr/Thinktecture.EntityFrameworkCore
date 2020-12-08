@@ -25,7 +25,7 @@ namespace Thinktecture.EntityFrameworkCore.Testing
       private const string _HISTORY_TABLE_NAME = "__EFMigrationsHistory";
 
       // ReSharper disable once StaticMemberInGenericType because the locks are all for the same database context but for different schemas.
-      private static readonly ConcurrentDictionary<string, object> _locks = new ConcurrentDictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+      private static readonly ConcurrentDictionary<string, object> _locks = new(StringComparer.OrdinalIgnoreCase);
 
       private readonly string _connectionString;
       private readonly bool _useSharedTables;
@@ -188,7 +188,7 @@ namespace Thinktecture.EntityFrameworkCore.Testing
             throw new ArgumentNullException(nameof(ctx));
 
          // concurrent execution is not supported by EF migrations
-         lock (_locks.GetOrAdd(Schema, s => new object()))
+         lock (_locks.GetOrAdd(Schema, _ => new object()))
          {
             _migrationExecutionStrategy.Migrate(ctx);
          }

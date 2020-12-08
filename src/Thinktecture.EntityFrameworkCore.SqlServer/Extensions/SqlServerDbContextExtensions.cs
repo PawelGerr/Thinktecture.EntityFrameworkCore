@@ -16,7 +16,7 @@ namespace Thinktecture
    /// </summary>
    public static class SqlServerDbContextExtensions
    {
-      private static readonly NumberToBytesConverter<long> _rowVersionConverter = new NumberToBytesConverter<long>();
+      private static readonly NumberToBytesConverter<long> _rowVersionConverter = new();
 
       /// <summary>
       /// Fetches <c>MIN_ACTIVE_ROWVERSION</c> from SQL Server.

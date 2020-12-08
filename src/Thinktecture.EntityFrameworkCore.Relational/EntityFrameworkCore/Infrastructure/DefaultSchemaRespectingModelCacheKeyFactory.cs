@@ -28,6 +28,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
             throw new ArgumentNullException(nameof(context));
 
          var key = _factory.Create(context);
+         // ReSharper disable once SuspiciousTypeConversion.Global
          var schema = context is IDbDefaultSchema dbSchema ? dbSchema.Schema : null;
 
          // compiler implements Equals and GetHashCode they way we need

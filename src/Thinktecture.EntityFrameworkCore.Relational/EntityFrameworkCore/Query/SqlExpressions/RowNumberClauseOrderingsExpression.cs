@@ -65,7 +65,7 @@ namespace Thinktecture.EntityFrameworkCore.Query.SqlExpressions
       }
 
       /// <inheritdoc />
-      public override bool Equals(object obj)
+      public override bool Equals(object? obj)
       {
          return obj != null && (ReferenceEquals(this, obj) || Equals(obj as RowNumberClauseOrderingsExpression));
       }

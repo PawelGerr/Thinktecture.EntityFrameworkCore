@@ -151,7 +151,7 @@ namespace Thinktecture.EntityFrameworkCore.Storage
          IsolationLevel newIsolationLevel,
          IsolationLevel currentIsolationLevel)
       {
-         return new InvalidOperationException($"The isolation level '{currentIsolationLevel}' of the parent transaction is not compatible to the provided isolation level '{newIsolationLevel}'.");
+         return new($"The isolation level '{currentIsolationLevel}' of the parent transaction is not compatible to the provided isolation level '{newIsolationLevel}'.");
       }
 
       /// <inheritdoc />

@@ -87,7 +87,7 @@ namespace Thinktecture
          var options = bulkInsertExecutor.CreateOptions();
          options.MembersToInsert = EntityMembersProvider.From(propertiesToInsert);
 
-         return BulkInsertAsync(bulkInsertExecutor, ctx, entities, options, cancellationToken);
+         return BulkInsertAsync(bulkInsertExecutor, entities, options, cancellationToken);
       }
 
       /// <summary>
@@ -108,11 +108,10 @@ namespace Thinktecture
          var bulkInsertExecutor = ctx.GetService<IBulkOperationExecutor>();
          options ??= bulkInsertExecutor.CreateOptions();
 
-         return BulkInsertAsync(bulkInsertExecutor, ctx, entities, options, cancellationToken);
+         return BulkInsertAsync(bulkInsertExecutor, entities, options, cancellationToken);
       }
 
       private static async Task BulkInsertAsync<T>(IBulkOperationExecutor bulkInsertExecutor,
-                                                   DbContext ctx,
                                                    IEnumerable<T> entities,
                                                    IBulkInsertOptions options,
                                                    CancellationToken cancellationToken)
@@ -120,8 +119,6 @@ namespace Thinktecture
       {
          if (bulkInsertExecutor == null)
             throw new ArgumentNullException(nameof(bulkInsertExecutor));
-         if (ctx == null)
-            throw new ArgumentNullException(nameof(ctx));
 
          await bulkInsertExecutor.BulkInsertAsync(entities, options, cancellationToken).ConfigureAwait(false);
       }

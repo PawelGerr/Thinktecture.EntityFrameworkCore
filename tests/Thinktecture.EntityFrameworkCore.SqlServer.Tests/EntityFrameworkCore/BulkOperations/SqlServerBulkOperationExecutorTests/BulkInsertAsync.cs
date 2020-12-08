@@ -31,7 +31,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
       {
          ConfigureModel = builder => builder.ConfigureTempTable<int>();
 
-         SUT.Invoking(sut => sut.BulkInsertAsync(new List<TempTable<int>> { new TempTable<int>(0) }, new SqlServerBulkInsertOptions()))
+         SUT.Invoking(sut => sut.BulkInsertAsync(new List<TempTable<int>> { new(0) }, new SqlServerBulkInsertOptions()))
             .Should().Throw<InvalidOperationException>()
             .WithMessage("Cannot access destination table '[*].[#TempTable<int>]'.");
       }
@@ -39,7 +39,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
       [Fact]
       public async Task Should_insert_column_with_converter()
       {
-         var entities = new List<TestEntity> { new TestEntity { ConvertibleClass = new ConvertibleClass(42) } };
+         var entities = new List<TestEntity> { new() { ConvertibleClass = new ConvertibleClass(42) } };
 
          await SUT.BulkInsertAsync(entities, new SqlServerBulkInsertOptions());
 

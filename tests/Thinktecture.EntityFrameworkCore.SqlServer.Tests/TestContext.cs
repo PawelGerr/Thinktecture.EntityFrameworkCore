@@ -13,11 +13,11 @@ namespace Thinktecture
 {
    public class TestContext
    {
-      private static readonly Lazy<TestContext> _lazy = new Lazy<TestContext>(CreateTestConfiguration);
+      private static readonly Lazy<TestContext> _lazy = new(CreateTestConfiguration);
 
       public static TestContext Instance => _lazy.Value;
 
-      private readonly ConcurrentDictionary<ITestOutputHelper, ILoggerFactory> _loggerFactoryCache = new ConcurrentDictionary<ITestOutputHelper, ILoggerFactory>();
+      private readonly ConcurrentDictionary<ITestOutputHelper, ILoggerFactory> _loggerFactoryCache = new();
 
       public IConfiguration Configuration { get; }
 

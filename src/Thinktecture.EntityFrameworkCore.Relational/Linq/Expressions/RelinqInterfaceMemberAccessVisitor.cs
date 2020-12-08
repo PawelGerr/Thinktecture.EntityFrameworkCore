@@ -14,7 +14,7 @@ namespace Thinktecture.Linq.Expressions
    [SuppressMessage("ReSharper", "EF1001")]
    public class RelinqInterfaceMemberAccessVisitor : ExpressionVisitor
    {
-      private static readonly RelinqInterfaceMemberAccessVisitor _instance = new RelinqInterfaceMemberAccessVisitor();
+      private static readonly RelinqInterfaceMemberAccessVisitor _instance = new();
 
       /// <summary>
       /// Rewrites the provided <paramref name="expression"/> so the property of the concrete implementation type is used instead of an interface.

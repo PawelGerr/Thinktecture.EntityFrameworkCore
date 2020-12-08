@@ -197,7 +197,7 @@ namespace Thinktecture.EntityFrameworkCore.Storage
       }
 
       /// <inheritdoc />
-      public Task<IDbContextTransaction> BeginTransactionAsync(IsolationLevel isolationLevel, CancellationToken cancellationToken = new CancellationToken())
+      public Task<IDbContextTransaction> BeginTransactionAsync(IsolationLevel isolationLevel, CancellationToken cancellationToken = default)
       {
          return BeginTransactionInternalAsync(isolationLevel, cancellationToken);
       }
@@ -275,7 +275,7 @@ namespace Thinktecture.EntityFrameworkCore.Storage
       }
 
       /// <inheritdoc />
-      public Task RollbackTransactionAsync(CancellationToken cancellationToken = new CancellationToken())
+      public Task RollbackTransactionAsync(CancellationToken cancellationToken = default)
       {
          if (_transactions.Count == 0)
             throw new InvalidOperationException("The connection does not have any active transactions.");

@@ -17,7 +17,7 @@ namespace Thinktecture.EntityFrameworkCore.Testing
       where T : DbContext
    {
       // ReSharper disable once StaticMemberInGenericType because the lock are all for the same database context.
-      private static readonly object _lock = new object();
+      private static readonly object _lock = new();
 
       private const string _CONNECTION_STRING = "DataSource=:memory:";
 

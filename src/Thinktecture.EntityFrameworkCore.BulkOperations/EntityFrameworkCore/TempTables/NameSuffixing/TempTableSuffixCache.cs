@@ -9,7 +9,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.NameSuffixing
 
    internal class TempTableSuffixCache
    {
-      private readonly object _lock = new object();
+      private readonly object _lock = new();
       private readonly Dictionary<DbConnection, CachedTempTableSuffixes> _globalCache;
 
       public TempTableSuffixCache()

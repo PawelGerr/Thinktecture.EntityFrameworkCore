@@ -25,7 +25,7 @@ namespace Thinktecture
 {
    public class IntegrationTestsBase : SqliteDbContextIntegrationTests<TestDbContext>
    {
-      private static readonly ConcurrentDictionary<ITestOutputHelper, ILoggerFactory> _loggerFactoryCache = new ConcurrentDictionary<ITestOutputHelper, ILoggerFactory>();
+      private static readonly ConcurrentDictionary<ITestOutputHelper, ILoggerFactory> _loggerFactoryCache = new();
 
       protected Action<DbContextOptionsBuilder<TestDbContext>>? ConfigureOptionsBuilder { get; set; }
       protected Action<ModelBuilder>? ConfigureModel { get; set; }

@@ -10,7 +10,7 @@ namespace Thinktecture
    public class SamplesContext
    {
       private readonly ILoggerFactory _loggerFactory;
-      private static readonly Lazy<SamplesContext> _lazy = new Lazy<SamplesContext>(CreateTestConfiguration);
+      private static readonly Lazy<SamplesContext> _lazy = new(CreateTestConfiguration);
 
       public static SamplesContext Instance => _lazy.Value;
 

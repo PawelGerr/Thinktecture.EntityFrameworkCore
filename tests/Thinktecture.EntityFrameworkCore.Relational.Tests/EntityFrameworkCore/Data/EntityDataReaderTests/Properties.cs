@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Thinktecture.TestDatabaseContext;
 using Xunit;
 using Xunit.Abstractions;
@@ -12,7 +11,7 @@ namespace Thinktecture.EntityFrameworkCore.Data.EntityDataReaderTests
 {
    public class Properties : IntegrationTestsBase
    {
-      private readonly List<IProperty> _propertiesToRead = new List<IProperty>();
+      private readonly List<IProperty> _propertiesToRead = new();
       private readonly IProperty _column1;
       private readonly IProperty _column2;
 

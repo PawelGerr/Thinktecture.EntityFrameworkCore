@@ -1,10 +1,21 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
-  <PropertyGroup>
-    <ParentPropsFile>$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))</ParentPropsFile>
-    <NoWarn>$(NoWarn);CA1062</NoWarn>
-  </PropertyGroup>
+    <PropertyGroup>
+        <ParentPropsFile>$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))</ParentPropsFile>
+        <NoWarn>$(NoWarn);CA1062</NoWarn>
+    </PropertyGroup>
 
-  <Import Condition=" exists('$(ParentPropsFile)') " Project="$(ParentPropsFile)" />
+    <Import Condition=" exists('$(ParentPropsFile)') " Project="$(ParentPropsFile)"/>
+
+
+    <ItemGroup>
+        <PackageReference Include="FluentAssertions" Version="5.10.3"/>
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.8.3"/>
+        <PackageReference Include="Moq" Version="4.15.2"/>
+        <PackageReference Include="Serilog.Extensions.Logging" Version="3.0.1"/>
+        <PackageReference Include="Serilog.Sinks.XUnit" Version="2.0.4"/>
+        <PackageReference Include="xunit" Version="2.4.1"/>
+        <PackageReference Include="xunit.runner.visualstudio" Version="2.4.3" PrivateAssets="all"/>
+    </ItemGroup>
 
 </Project>

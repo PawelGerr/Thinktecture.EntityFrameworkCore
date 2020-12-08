@@ -13,7 +13,7 @@ namespace Thinktecture.Linq.Expressions
    [SuppressMessage("ReSharper", "EF1001")]
    public class LambdaExpressionSearchingVisitor : ExpressionVisitor
    {
-      private static readonly LambdaExpressionSearchingVisitor _instance = new LambdaExpressionSearchingVisitor();
+      private static readonly LambdaExpressionSearchingVisitor _instance = new();
 
       /// <summary>
       /// Searches for <see cref="LambdaExpression"/> in provided <paramref name="expression"/>.

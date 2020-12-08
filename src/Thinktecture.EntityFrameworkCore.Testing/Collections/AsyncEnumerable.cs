@@ -6,9 +6,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.Query;
-using Microsoft.EntityFrameworkCore.Query.Internal;
 
 namespace Thinktecture.Collections
 {
@@ -48,7 +46,7 @@ namespace Thinktecture.Collections
 
          public ValueTask<bool> MoveNextAsync()
          {
-            return new ValueTask<bool>(_enumerator.MoveNext());
+            return new(_enumerator.MoveNext());
          }
 
          public ValueTask DisposeAsync()

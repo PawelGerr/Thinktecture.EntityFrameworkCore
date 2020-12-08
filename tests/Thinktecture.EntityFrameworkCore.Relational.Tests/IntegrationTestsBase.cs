@@ -19,7 +19,7 @@ namespace Thinktecture
 {
    public class IntegrationTestsBase : SqliteDbContextIntegrationTests<DbContextWithSchema>
    {
-      private static readonly ConcurrentDictionary<ITestOutputHelper, ILoggerFactory> _loggerFactoryCache = new ConcurrentDictionary<ITestOutputHelper, ILoggerFactory>();
+      private static readonly ConcurrentDictionary<ITestOutputHelper, ILoggerFactory> _loggerFactoryCache = new();
 
       protected Action<DbContextOptionsBuilder<DbContextWithSchema>>? ConfigureOptionsBuilder { get; set; }
       protected Action<ModelBuilder>? ConfigureModel { get; set; }
@@ -45,15 +45,15 @@ namespace Thinktecture
 
       protected override DbContextWithSchema CreateContext(DbContextOptions<DbContextWithSchema> options)
       {
-         return new DbContextWithSchema(options, Schema) { ConfigureModel = ConfigureModel };
+         return new(options, Schema) { ConfigureModel = ConfigureModel };
       }
 
-      private ILoggerFactory CreateLoggerFactory(ITestOutputHelper testOutputHelper)
+      private static ILoggerFactory CreateLoggerFactory(ITestOutputHelper testOutputHelper)
       {
          if (testOutputHelper == null)
             throw new ArgumentNullException(nameof(testOutputHelper));
 
-         return _loggerFactoryCache.GetOrAdd(testOutputHelper, helper =>
+         return _loggerFactoryCache.GetOrAdd(testOutputHelper, _ =>
                                                                {
                                                                   var loggerConfig = new LoggerConfiguration()
                                                                                      .WriteTo.TestOutput(testOutputHelper, outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}");

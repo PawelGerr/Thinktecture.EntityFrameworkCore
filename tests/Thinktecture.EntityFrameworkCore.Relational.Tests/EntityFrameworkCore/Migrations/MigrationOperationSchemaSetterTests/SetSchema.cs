@@ -11,7 +11,7 @@ namespace Thinktecture.EntityFrameworkCore.Migrations.MigrationOperationSchemaSe
       private IDbDefaultSchema? _schema;
       private List<MigrationOperation>? _operations;
 
-      private readonly MigrationBuilder _builder = new MigrationBuilder("provider");
+      private readonly MigrationBuilder _builder = new("provider");
 
       private List<MigrationOperation> Operations
       {
