@@ -1,7 +1,6 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Metadata;
 
 namespace Thinktecture.EntityFrameworkCore.Infrastructure
 {
@@ -35,19 +34,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
 
          // ReSharper disable once SuspiciousTypeConversion.Global
          if (context is IDbDefaultSchema { Schema: { } } schema)
-         {
             modelBuilder.HasDefaultSchema(schema.Schema);
-
-            // fix for regression: https://github.com/dotnet/efcore/issues/23274
-            foreach (var entityType in modelBuilder.Model.GetEntityTypes())
-            {
-               if (entityType.GetViewName() is not null &&
-                   entityType.FindAnnotation(RelationalAnnotationNames.ViewSchema) is { Value: null })
-               {
-                  entityType.SetViewSchema(schema.Schema);
-               }
-            }
-         }
       }
    }
 }
