@@ -196,8 +196,8 @@ INSERT BULK {table} ({columns})", (long)duration.TotalMilliseconds,
 
          var tempTableOptions = options.TempTableCreationOptions;
 
-         if (sqlServerOptions.PrimaryKeyCreation == SqlServerPrimaryKeyCreation.AfterBulkInsert && tempTableOptions.CreatePrimaryKey)
-            tempTableOptions = new TempTableCreationOptions(tempTableOptions) { CreatePrimaryKey = false };
+         if (sqlServerOptions.MomentOfPrimaryKeyCreation == MomentOfSqlServerPrimaryKeyCreation.AfterBulkInsert)
+            tempTableOptions = new TempTableCreationOptions(tempTableOptions) { PrimaryKeyCreation = PrimaryKeyPropertiesProviders.None };
 
          var tempTableReference = await tempTableCreator.CreateTempTableAsync(entityType, tempTableOptions, cancellationToken).ConfigureAwait(false);
 
@@ -205,8 +205,12 @@ INSERT BULK {table} ({columns})", (long)duration.TotalMilliseconds,
          {
             await BulkInsertAsync(entityType, entities, null, tempTableReference.Name, options.BulkInsertOptions, cancellationToken).ConfigureAwait(false);
 
-            if (sqlServerOptions.PrimaryKeyCreation == SqlServerPrimaryKeyCreation.AfterBulkInsert)
-               await tempTableCreator.CreatePrimaryKeyAsync(_ctx, entityType, tempTableReference.Name, options.TempTableCreationOptions.TruncateTableIfExists, cancellationToken).ConfigureAwait(false);
+            if (sqlServerOptions.MomentOfPrimaryKeyCreation == MomentOfSqlServerPrimaryKeyCreation.AfterBulkInsert)
+            {
+               var properties = options.TempTableCreationOptions.MembersToInclude.GetPropertiesForTempTable(entityType);
+               var keyProperties = sqlServerOptions.PrimaryKeyCreation.GetPrimaryKeyProperties(entityType, properties);
+               await tempTableCreator.CreatePrimaryKeyAsync(_ctx, keyProperties, tempTableReference.Name, options.TempTableCreationOptions.TruncateTableIfExists, cancellationToken).ConfigureAwait(false);
+            }
 
             var query = _ctx.Set<T>().FromSqlRaw($"SELECT * FROM {_sqlGenerationHelper.DelimitIdentifier(tempTableReference.Name)}");
 

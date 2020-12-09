@@ -58,13 +58,13 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       }
 
       /// <summary>
-      /// Indication whether to create the primary key along with the creation of the temp table.
-      /// Default is <c>false</c>.
+      /// Provides the corresponding columns if the primary key should be created.
+      /// The default is <see cref="PrimaryKeyPropertiesProviders.EntityTypeConfiguration"/>.
       /// </summary>
-      public bool CreatePrimaryKey
+      public IPrimaryKeyPropertiesProvider PrimaryKeyCreation
       {
-         get => _tempTableCreationOptions.CreatePrimaryKey;
-         set => _tempTableCreationOptions.CreatePrimaryKey = value;
+         get => _tempTableCreationOptions.PrimaryKeyCreation;
+         set => _tempTableCreationOptions.PrimaryKeyCreation = value;
       }
 
       /// <summary>
@@ -97,7 +97,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       {
          MembersToInsert = options.BulkInsertOptions.MembersToInsert;
          TableNameProvider = options.TempTableCreationOptions.TableNameProvider;
-         CreatePrimaryKey = options.TempTableCreationOptions.CreatePrimaryKey;
+         PrimaryKeyCreation = options.TempTableCreationOptions.PrimaryKeyCreation;
          TruncateTableIfExists = options.TempTableCreationOptions.TruncateTableIfExists;
          DropTableOnDispose = options.TempTableCreationOptions.DropTableOnDispose;
 

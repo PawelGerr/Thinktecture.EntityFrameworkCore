@@ -23,7 +23,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
       public CreateTempTableAsync(ITestOutputHelper testOutputHelper)
          : base(testOutputHelper, true)
       {
-         _optionsWithNonUniqueName = new TempTableCreationOptions { TableNameProvider = DefaultTempTableNameProvider.Instance, CreatePrimaryKey = false };
+         _optionsWithNonUniqueName = new TempTableCreationOptions { TableNameProvider = DefaultTempTableNameProvider.Instance, PrimaryKeyCreation = PrimaryKeyPropertiesProviders.None };
       }
 
       [Fact]
@@ -113,7 +113,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
       {
          ConfigureModel = builder => builder.ConfigureTempTableEntity<CustomTempTable>();
 
-         var options = new TempTableCreationOptions { TableNameProvider = ReusingTempTableNameProvider.Instance, CreatePrimaryKey = false };
+         var options = new TempTableCreationOptions { TableNameProvider = ReusingTempTableNameProvider.Instance, PrimaryKeyCreation = PrimaryKeyPropertiesProviders.None };
 
          // ReSharper disable once RedundantArgumentDefaultValue
          await using var tempTable = await SUT.CreateTempTableAsync(ActDbContext.GetEntityType<CustomTempTable>(), options).ConfigureAwait(false);
@@ -130,7 +130,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
       {
          ConfigureModel = builder => builder.ConfigureTempTableEntity<CustomTempTable>();
 
-         var options = new TempTableCreationOptions { TableNameProvider = ReusingTempTableNameProvider.Instance, CreatePrimaryKey = false };
+         var options = new TempTableCreationOptions { TableNameProvider = ReusingTempTableNameProvider.Instance, PrimaryKeyCreation = PrimaryKeyPropertiesProviders.None };
 
          // ReSharper disable once RedundantArgumentDefaultValue
          await using (await SUT.CreateTempTableAsync(ActDbContext.GetEntityType<CustomTempTable>(), options).ConfigureAwait(false))
@@ -154,7 +154,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
          var options = new TempTableCreationOptions
                        {
                           TableNameProvider = ReusingTempTableNameProvider.Instance,
-                          CreatePrimaryKey = false,
+                          PrimaryKeyCreation = PrimaryKeyPropertiesProviders.None,
                           DropTableOnDispose = false
                        };
 
@@ -181,7 +181,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
       {
          ConfigureModel = builder => builder.ConfigureTempTableEntity<CustomTempTable>();
 
-         var options = new TempTableCreationOptions { TableNameProvider = ReusingTempTableNameProvider.Instance, CreatePrimaryKey = false };
+         var options = new TempTableCreationOptions { TableNameProvider = ReusingTempTableNameProvider.Instance, PrimaryKeyCreation = PrimaryKeyPropertiesProviders.None };
 
          // ReSharper disable once RedundantArgumentDefaultValue
          await using (await SUT.CreateTempTableAsync(ActDbContext.GetEntityType<CustomTempTable>(), options).ConfigureAwait(false))
@@ -201,7 +201,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
       {
          ConfigureModel = builder => builder.ConfigureTempTableEntity<CustomTempTable>();
 
-         var options = new TempTableCreationOptions { TableNameProvider = ReusingTempTableNameProvider.Instance, CreatePrimaryKey = false };
+         var options = new TempTableCreationOptions { TableNameProvider = ReusingTempTableNameProvider.Instance, PrimaryKeyCreation = PrimaryKeyPropertiesProviders.None };
 
          // #CustomTempTable_1
          await using (await SUT.CreateTempTableAsync(ActDbContext.GetEntityType<CustomTempTable>(), options).ConfigureAwait(false))
@@ -241,7 +241,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
       [Fact]
       public async Task Should_create_pk_if_options_flag_is_set()
       {
-         _optionsWithNonUniqueName.CreatePrimaryKey = true;
+         _optionsWithNonUniqueName.PrimaryKeyCreation = PrimaryKeyPropertiesProviders.AdaptiveForced;
 
          ConfigureModel = builder => builder.ConfigureTempTable<int, string>().Property(s => s.Column2).HasMaxLength(100);
 
@@ -261,14 +261,42 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
       [Fact]
       public void Should_throw_if_some_pk_columns_are_missing()
       {
-         _optionsWithNonUniqueName.CreatePrimaryKey = true;
+         _optionsWithNonUniqueName.PrimaryKeyCreation = PrimaryKeyPropertiesProviders.EntityTypeConfiguration;
          _optionsWithNonUniqueName.MembersToInclude = EntityMembersProvider.From<CustomTempTable>(t => t.Column1);
 
-         ConfigureModel = builder => builder.ConfigureTempTableEntity<CustomTempTable>().Property(s => s.Column2).HasMaxLength(100);
+         ConfigureModel = builder =>
+                          {
+                             var entity = builder.ConfigureTempTableEntity<CustomTempTable>(false);
+                             entity.Property(s => s.Column2).HasMaxLength(100);
+                             entity.HasKey(s => new { s.Column1, s.Column2 });
+                          };
 
          // ReSharper disable once RedundantArgumentDefaultValue
          SUT.Awaiting(sut => sut.CreateTempTableAsync(ActDbContext.GetEntityType<CustomTempTable>(), _optionsWithNonUniqueName))
-            .Should().Throw<ArgumentException>().WithMessage("Cannot create PRIMARY KEY because not all key columns are part of the temp table. Missing columns: Column2.");
+            .Should().Throw<ArgumentException>().WithMessage(@"Cannot create PRIMARY KEY because not all key columns are part of the temp table.
+You may use other key properties providers like 'PrimaryKeyPropertiesProviders.AdaptiveEntityTypeConfiguration' instead of 'PrimaryKeyPropertiesProviders.EntityTypeConfiguration' to get different behaviors.
+Missing columns: Column2.");
+      }
+
+      [Fact]
+      public async Task Should_not_throw_if_some_pk_columns_are_missing_and_provider_is_Adaptive()
+      {
+         _optionsWithNonUniqueName.PrimaryKeyCreation = PrimaryKeyPropertiesProviders.AdaptiveForced;
+         _optionsWithNonUniqueName.MembersToInclude = EntityMembersProvider.From<CustomTempTable>(t => t.Column1);
+
+         ConfigureModel = builder =>
+                          {
+                             var entity = builder.ConfigureTempTableEntity<CustomTempTable>(false);
+                             entity.Property(s => s.Column2).HasMaxLength(100);
+                             entity.HasKey(s => new { s.Column1, s.Column2 });
+                          };
+
+         // ReSharper disable once RedundantArgumentDefaultValue
+         await using var tempTable = await SUT.CreateTempTableAsync(ActDbContext.GetEntityType<CustomTempTable>(), _optionsWithNonUniqueName);
+
+         var keyColumns = await AssertDbContext.GetTempTableKeyColumns<CustomTempTable>().ToListAsync();
+         keyColumns.Should().HaveCount(1);
+         keyColumns[0].COLUMN_NAME.Should().Be(nameof(CustomTempTable.Column1));
       }
 
       [Fact]

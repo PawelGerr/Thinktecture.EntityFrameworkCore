@@ -28,9 +28,14 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
       {
          ConfigureModel = builder => builder.ConfigureTempTable<int>();
 
-         await using var tempTableReference = await ArrangeDbContext.CreateTempTableAsync<TempTable<int>>(DefaultTempTableNameProvider.Instance, false);
+         await using var tempTableReference = await ArrangeDbContext.CreateTempTableAsync<TempTable<int>>(new TempTableCreationOptions
+                                                                                                          {
+                                                                                                             TableNameProvider = DefaultTempTableNameProvider.Instance,
+                                                                                                             PrimaryKeyCreation = PrimaryKeyPropertiesProviders.None
+                                                                                                          });
 
-         await SUT.CreatePrimaryKeyAsync(ActDbContext, ActDbContext.GetEntityType<TempTable<int>>(), tempTableReference.Name);
+         var entityType = ActDbContext.GetEntityType<TempTable<int>>();
+         await SUT.CreatePrimaryKeyAsync(ActDbContext, PrimaryKeyPropertiesProviders.AdaptiveForced.GetPrimaryKeyProperties(entityType, entityType.GetProperties().ToList()), tempTableReference.Name);
 
          var constraints = await AssertDbContext.GetTempTableConstraints<TempTable<int>>().ToListAsync();
          constraints.Should().HaveCount(1)
@@ -44,9 +49,14 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
       [Fact]
       public async Task Should_create_primary_key_for_entityType()
       {
-         await using var tempTableReference = await ArrangeDbContext.CreateTempTableAsync<TestEntity>(DefaultTempTableNameProvider.Instance, false);
+         await using var tempTableReference = await ArrangeDbContext.CreateTempTableAsync<TestEntity>(new TempTableCreationOptions
+                                                                                                      {
+                                                                                                         TableNameProvider = DefaultTempTableNameProvider.Instance,
+                                                                                                         PrimaryKeyCreation = PrimaryKeyPropertiesProviders.None
+                                                                                                      });
 
-         await SUT.CreatePrimaryKeyAsync(ActDbContext, ActDbContext.GetEntityType<TestEntity>(), tempTableReference.Name);
+         var entityType = ActDbContext.GetEntityType<TestEntity>();
+         await SUT.CreatePrimaryKeyAsync(ActDbContext, PrimaryKeyPropertiesProviders.AdaptiveForced.GetPrimaryKeyProperties(entityType, entityType.GetProperties().ToList()), tempTableReference.Name);
 
          var constraints = await AssertDbContext.GetTempTableConstraints<TestEntity>().ToListAsync();
          constraints.Should().HaveCount(1)
@@ -61,12 +71,17 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
       public async Task Should_not_create_primary_key_if_key_exists_and_checkForExistence_is_true()
       {
 #pragma warning disable 618
-         await using var tempTableReference = await ArrangeDbContext.CreateTempTableAsync<TestEntity>(NewGuidTempTableNameProvider.Instance, false);
+         await using var tempTableReference = await ArrangeDbContext.CreateTempTableAsync<TestEntity>(new TempTableCreationOptions
+                                                                                                      {
+                                                                                                         TableNameProvider = NewGuidTempTableNameProvider.Instance,
+                                                                                                         PrimaryKeyCreation = PrimaryKeyPropertiesProviders.None
+                                                                                                      });
 #pragma warning restore 618
          var entityType = ArrangeDbContext.GetEntityType<TestEntity>();
-         await SUT.CreatePrimaryKeyAsync(ArrangeDbContext, entityType, tempTableReference.Name);
+         var keyProperties = PrimaryKeyPropertiesProviders.AdaptiveForced.GetPrimaryKeyProperties(entityType, entityType.GetProperties().ToList());
+         await SUT.CreatePrimaryKeyAsync(ArrangeDbContext, keyProperties, tempTableReference.Name);
 
-         SUT.Awaiting(sut => sut.CreatePrimaryKeyAsync(ActDbContext, entityType, tempTableReference.Name, true))
+         SUT.Awaiting(sut => sut.CreatePrimaryKeyAsync(ActDbContext, keyProperties, tempTableReference.Name, true))
             .Should().NotThrow();
       }
 
@@ -74,14 +89,17 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
       public async Task Should_throw_if_key_exists_and_checkForExistence_is_false()
       {
 #pragma warning disable 618
-         await using var tempTableReference = await ArrangeDbContext.CreateTempTableAsync<TestEntity>(NewGuidTempTableNameProvider.Instance,
-#pragma warning restore 618
-                                                                                                      false);
+         await using var tempTableReference = await ArrangeDbContext.CreateTempTableAsync<TestEntity>(new TempTableCreationOptions
+                                                                                                      {
+                                                                                                         TableNameProvider = NewGuidTempTableNameProvider.Instance,
+                                                                                                         PrimaryKeyCreation = PrimaryKeyPropertiesProviders.None
+                                                                                                      });
          var entityType = ArrangeDbContext.GetEntityType<TestEntity>();
-         await SUT.CreatePrimaryKeyAsync(ArrangeDbContext, entityType, tempTableReference.Name);
+         var keyProperties = PrimaryKeyPropertiesProviders.AdaptiveForced.GetPrimaryKeyProperties(entityType, entityType.GetProperties().ToList());
+         await SUT.CreatePrimaryKeyAsync(ArrangeDbContext, keyProperties, tempTableReference.Name);
 
          // ReSharper disable once RedundantArgumentDefaultValue
-         SUT.Awaiting(sut => sut.CreatePrimaryKeyAsync(ActDbContext, entityType, tempTableReference.Name, false))
+         SUT.Awaiting(sut => sut.CreatePrimaryKeyAsync(ActDbContext, keyProperties, tempTableReference.Name, false))
             .Should()
             .Throw<SqlException>();
       }

@@ -41,7 +41,10 @@ namespace Thinktecture
          var builder = modelBuilder.Configure<TempTable<TColumn1>>(isKeyless);
 
          if (!isKeyless)
+         {
+            builder.HasKey(t => t.Column1);
             builder.Property(t => t.Column1).ValueGeneratedNever();
+         }
 
          return builder;
       }
@@ -64,6 +67,7 @@ namespace Thinktecture
 
          if (!isKeyless)
          {
+            builder.HasKey(t => new { t.Column1, t.Column2 });
             builder.Property(t => t.Column1).ValueGeneratedNever();
             builder.Property(t => t.Column2).ValueGeneratedNever();
          }

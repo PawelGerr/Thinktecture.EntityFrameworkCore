@@ -11,17 +11,23 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
       /// <inheritdoc />
       public bool TruncateTableIfExists { get; set; }
 
-      private ITempTableNameProvider _tableNameProvider;
+      private ITempTableNameProvider? _tableNameProvider;
 
       /// <inheritdoc />
       public ITempTableNameProvider TableNameProvider
       {
-         get => _tableNameProvider;
+         get => _tableNameProvider ?? ReusingTempTableNameProvider.Instance;
          set => _tableNameProvider = value ?? throw new ArgumentNullException(nameof(value), "The table name provider cannot be null.");
       }
 
+      private IPrimaryKeyPropertiesProvider? _primaryKeyCreation;
+
       /// <inheritdoc />
-      public bool CreatePrimaryKey { get; set; }
+      public IPrimaryKeyPropertiesProvider PrimaryKeyCreation
+      {
+         get => _primaryKeyCreation ?? PrimaryKeyPropertiesProviders.EntityTypeConfiguration;
+         set => _primaryKeyCreation = value ?? throw new ArgumentNullException(nameof(value), "The primary key column provider cannot be null.");
+      }
 
       /// <inheritdoc />
       public IEntityMembersProvider? MembersToInclude { get; set; }
@@ -34,8 +40,6 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
       /// </summary>
       public TempTableCreationOptions()
       {
-         _tableNameProvider = ReusingTempTableNameProvider.Instance;
-         CreatePrimaryKey = true;
          DropTableOnDispose = true;
       }
 
@@ -52,8 +56,8 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
          if (options == null)
             throw new ArgumentNullException(nameof(options));
 
-         CreatePrimaryKey = options.CreatePrimaryKey;
-         _tableNameProvider = options.TableNameProvider;
+         PrimaryKeyCreation = options.PrimaryKeyCreation;
+         TableNameProvider = options.TableNameProvider;
          TruncateTableIfExists = options.TruncateTableIfExists;
          MembersToInclude = options.MembersToInclude;
          DropTableOnDispose = options.DropTableOnDispose;

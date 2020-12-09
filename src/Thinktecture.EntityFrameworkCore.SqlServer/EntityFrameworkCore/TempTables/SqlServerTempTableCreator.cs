@@ -90,20 +90,23 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
       }
 
       /// <inheritdoc />
-      public async Task CreatePrimaryKeyAsync(DbContext ctx,
-                                              IEntityType entityType,
-                                              string tableName,
-                                              bool checkForExistence = false,
-                                              CancellationToken cancellationToken = default)
+      public async Task CreatePrimaryKeyAsync(
+         DbContext ctx,
+         IReadOnlyCollection<IProperty> keyProperties,
+         string tableName,
+         bool checkForExistence = false,
+         CancellationToken cancellationToken = default)
       {
          if (ctx == null)
             throw new ArgumentNullException(nameof(ctx));
-         if (entityType == null)
-            throw new ArgumentNullException(nameof(entityType));
+         if (keyProperties == null)
+            throw new ArgumentNullException(nameof(keyProperties));
          if (tableName == null)
             throw new ArgumentNullException(nameof(tableName));
 
-         var keyProperties = entityType.FindPrimaryKey()?.Properties ?? entityType.GetProperties();
+         if (keyProperties.Count == 0)
+            return;
+
          var columnNames = keyProperties.Select(p => p.GetColumnBaseName());
 
          var sql = $@"
@@ -190,23 +193,17 @@ END
             isFirst = false;
          }
 
-         if (options.CreatePrimaryKey)
-            CreatePkClause(entityType, properties, sb);
+         CreatePkClause(options.PrimaryKeyCreation.GetPrimaryKeyProperties(entityType, properties), sb);
 
          return sb.ToString();
       }
 
-      private void CreatePkClause(IEntityType entityType, IReadOnlyList<IProperty> properties, StringBuilder sb)
+      private void CreatePkClause(
+         IReadOnlyCollection<IProperty> keyProperties,
+         StringBuilder sb)
       {
-         var keyProperties = entityType.FindPrimaryKey()?.Properties ?? entityType.GetProperties();
-
-         if (keyProperties.Any())
+         if (keyProperties.Count > 0)
          {
-            var missingColumns = keyProperties.Except(properties);
-
-            if (missingColumns.Any())
-               throw new ArgumentException($"Cannot create PRIMARY KEY because not all key columns are part of the temp table. Missing columns: {String.Join(", ", missingColumns.Select(c => c.GetColumnBaseName()))}.");
-
             var columnNames = keyProperties.Select(p => p.GetColumnBaseName());
 
             sb.AppendLine(",");

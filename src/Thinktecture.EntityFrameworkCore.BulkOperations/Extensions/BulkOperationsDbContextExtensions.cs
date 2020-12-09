@@ -21,23 +21,17 @@ namespace Thinktecture
       /// Creates a temp table using custom type '<typeparamref name="T"/>'.
       /// </summary>
       /// <param name="ctx">Database context to use.</param>
-      /// <param name="tableNameProvider">Providers the name for the temp table to create.</param>
-      /// <param name="createPrimaryKey">Indication whether to create a primary key constraint.</param>
+      /// <param name="options">Options.</param>
       /// <param name="cancellationToken">Cancellation token.</param>
       /// <typeparam name="T">Type of custom temp table.</typeparam>
       /// <returns>Table name</returns>
       /// <exception cref="ArgumentNullException"><paramref name="ctx"/> is <c>null</c>.</exception>
       /// <exception cref="ArgumentException">The provided type <typeparamref name="T"/> is not known by the provided <paramref name="ctx"/>.</exception>
       public static Task<ITempTableReference> CreateTempTableAsync<T>(this DbContext ctx,
-                                                                      ITempTableNameProvider tableNameProvider,
-                                                                      bool createPrimaryKey = true,
+                                                                      ITempTableCreationOptions options,
                                                                       CancellationToken cancellationToken = default)
          where T : class
       {
-         if (tableNameProvider == null)
-            throw new ArgumentNullException(nameof(tableNameProvider));
-
-         var options = new TempTableCreationOptions { TableNameProvider = tableNameProvider, CreatePrimaryKey = createPrimaryKey };
          return ctx.CreateTempTableAsync(typeof(T), options, cancellationToken);
       }
 

@@ -17,20 +17,20 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       private readonly SqlServerBulkInsertOptions _bulkInsertOptions;
       private readonly TempTableCreationOptions _tempTableCreationOptions;
 
-      private SqlServerPrimaryKeyCreation _primaryKeyCreation;
+      /// <summary>
+      /// Defines when the primary key should be created.
+      /// Default is set to <see cref="MomentOfSqlServerPrimaryKeyCreation.AfterBulkInsert"/>.
+      /// </summary>
+      public MomentOfSqlServerPrimaryKeyCreation MomentOfPrimaryKeyCreation { get; set; }
 
       /// <summary>
-      /// Creates a clustered primary key spanning all columns of the temp table after the bulk insert.
-      /// Default is set to <c>true</c>.
+      /// Provides the corresponding columns if the primary key should be created.
+      /// The default is <see cref="PrimaryKeyPropertiesProviders.EntityTypeConfiguration"/>.
       /// </summary>
-      public SqlServerPrimaryKeyCreation PrimaryKeyCreation
+      public IPrimaryKeyPropertiesProvider PrimaryKeyCreation
       {
-         get => _primaryKeyCreation;
-         set
-         {
-            _primaryKeyCreation = value;
-            _tempTableCreationOptions.CreatePrimaryKey = value != SqlServerPrimaryKeyCreation.None;
-         }
+         get => _tempTableCreationOptions.PrimaryKeyCreation;
+         set => _tempTableCreationOptions.PrimaryKeyCreation = value;
       }
 
       /// <summary>
@@ -126,7 +126,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
          _bulkInsertOptions = new SqlServerBulkInsertOptions();
          _tempTableCreationOptions = new TempTableCreationOptions();
 
-         PrimaryKeyCreation = SqlServerPrimaryKeyCreation.AfterBulkInsert;
+         MomentOfPrimaryKeyCreation = MomentOfSqlServerPrimaryKeyCreation.AfterBulkInsert;
 
          if (optionsToInitializeFrom != null)
             InitializeFrom(optionsToInitializeFrom);
@@ -137,21 +137,16 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
          TruncateTableIfExists = options.TempTableCreationOptions.TruncateTableIfExists;
          DropTableOnDispose = options.TempTableCreationOptions.DropTableOnDispose;
          TableNameProvider = options.TempTableCreationOptions.TableNameProvider;
+         PrimaryKeyCreation = options.TempTableCreationOptions.PrimaryKeyCreation;
          MembersToInsert = options.BulkInsertOptions.MembersToInsert;
 
          if (options is SqlServerTempTableBulkInsertOptions sqlServerOptions)
          {
-            PrimaryKeyCreation = sqlServerOptions.PrimaryKeyCreation;
             BatchSize = sqlServerOptions.BatchSize;
             EnableStreaming = sqlServerOptions.EnableStreaming;
             BulkCopyTimeout = sqlServerOptions.BulkCopyTimeout;
             SqlBulkCopyOptions = sqlServerOptions.SqlBulkCopyOptions;
-         }
-         else
-         {
-            PrimaryKeyCreation = options.TempTableCreationOptions.CreatePrimaryKey
-                                    ? SqlServerPrimaryKeyCreation.AfterBulkInsert
-                                    : SqlServerPrimaryKeyCreation.None;
+            MomentOfPrimaryKeyCreation = sqlServerOptions.MomentOfPrimaryKeyCreation;
          }
       }
    }

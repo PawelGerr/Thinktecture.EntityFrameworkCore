@@ -130,23 +130,15 @@ DROP TABLE IF EXISTS {_sqlGenerationHelper.DelimitIdentifier(tableName, "temp")}
             isFirst = false;
          }
 
-         if (options.CreatePrimaryKey)
-            CreatePkClause(entityType, properties, sb);
+         CreatePkClause(options.PrimaryKeyCreation.GetPrimaryKeyProperties(entityType, properties), sb);
 
          return sb.ToString();
       }
 
-      private void CreatePkClause(IEntityType entityType, IReadOnlyList<IProperty> properties, StringBuilder sb)
+      private void CreatePkClause(IReadOnlyCollection<IProperty> keyProperties, StringBuilder sb)
       {
-         var keyProperties = entityType.FindPrimaryKey()?.Properties ?? entityType.GetProperties();
-
          if (keyProperties.Any())
          {
-            var missingColumns = keyProperties.Except(properties);
-
-            if (missingColumns.Any())
-               throw new ArgumentException($"Cannot create PRIMARY KEY because not all key columns are part of the temp table. Missing columns: {String.Join(", ", missingColumns.Select(c => c.GetColumnBaseName()))}.");
-
             var columnNames = keyProperties.Select(p => p.GetColumnBaseName());
 
             sb.AppendLine(",");

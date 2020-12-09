@@ -25,7 +25,7 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
          ConfigureModel = builder => builder.ConfigureTempTable<int, int?>();
 
          var values = new List<(int, int?)> { (1, null) };
-         await using var query = await ActDbContext.BulkInsertValuesIntoTempTableAsync(values, new SqlServerTempTableBulkInsertOptions { PrimaryKeyCreation = SqlServerPrimaryKeyCreation.None });
+         await using var query = await ActDbContext.BulkInsertValuesIntoTempTableAsync(values, new SqlServerTempTableBulkInsertOptions { PrimaryKeyCreation = PrimaryKeyPropertiesProviders.None });
 
          var tempTable = await query.Query.ToListAsync();
          tempTable.Should()
@@ -39,7 +39,7 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
          ConfigureModel = builder => builder.ConfigureTempTable<string, string>().Property(t => t.Column2).IsRequired(false);
 
          var values = new List<(string, string?)> { ("value1", null) };
-         await using var query = await ActDbContext.BulkInsertValuesIntoTempTableAsync(values, new SqlServerTempTableBulkInsertOptions { PrimaryKeyCreation = SqlServerPrimaryKeyCreation.None });
+         await using var query = await ActDbContext.BulkInsertValuesIntoTempTableAsync(values, new SqlServerTempTableBulkInsertOptions { PrimaryKeyCreation = PrimaryKeyPropertiesProviders.None });
 
          var tempTable = await query.Query.ToListAsync();
          tempTable.Should()
@@ -50,7 +50,7 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
       [Fact]
       public async Task Should_create_pk_by_default()
       {
-         ConfigureModel = builder => builder.ConfigureTempTable<int, int>();
+         ConfigureModel = builder => builder.ConfigureTempTable<int, int>(false);
 
          await using var tempTable = await ActDbContext.BulkInsertValuesIntoTempTableAsync(new List<(int, int)> { (1, 2) }, new SqlServerTempTableBulkInsertOptions { TableNameProvider = DefaultTempTableNameProvider.Instance });
 

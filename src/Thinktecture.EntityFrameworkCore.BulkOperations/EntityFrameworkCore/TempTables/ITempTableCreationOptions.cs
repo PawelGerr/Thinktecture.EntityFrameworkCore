@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Thinktecture.EntityFrameworkCore.BulkOperations;
 
 namespace Thinktecture.EntityFrameworkCore.TempTables
@@ -23,10 +24,10 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
       ITempTableNameProvider TableNameProvider { get; }
 
       /// <summary>
-      /// Indication whether to create the primary key along with the creation of the temp table.
-      /// Default is <c>true</c>.
+      /// Provides the corresponding columns if the primary key should be created.
+      /// The default is <see cref="PrimaryKeyPropertiesProviders.EntityTypeConfiguration"/>.
       /// </summary>
-      bool CreatePrimaryKey { get; }
+      IPrimaryKeyPropertiesProvider PrimaryKeyCreation { get; }
 
       /// <summary>
       /// Properties to create temp table with.
