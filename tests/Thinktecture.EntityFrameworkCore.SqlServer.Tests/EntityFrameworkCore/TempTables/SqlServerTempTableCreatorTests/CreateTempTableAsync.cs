@@ -15,7 +15,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
    // ReSharper disable once InconsistentNaming
    public class CreateTempTableAsync : IntegrationTestsBase
    {
-      private readonly TempTableCreationOptions _optionsWithNonUniqueName;
+      private readonly SqlServerTempTableCreationOptions _optionsWithNonUniqueName;
 
       private SqlServerTempTableCreator? _sut;
       private SqlServerTempTableCreator SUT => _sut ??= (SqlServerTempTableCreator)ActDbContext.GetService<ITempTableCreator>();
@@ -23,7 +23,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
       public CreateTempTableAsync(ITestOutputHelper testOutputHelper)
          : base(testOutputHelper, true)
       {
-         _optionsWithNonUniqueName = new TempTableCreationOptions { TableNameProvider = DefaultTempTableNameProvider.Instance, PrimaryKeyCreation = PrimaryKeyPropertiesProviders.None };
+         _optionsWithNonUniqueName = new SqlServerTempTableCreationOptions { TableNameProvider = DefaultTempTableNameProvider.Instance, PrimaryKeyCreation = PrimaryKeyPropertiesProviders.None };
       }
 
       [Fact]
@@ -591,7 +591,29 @@ Missing columns: Column2.");
          ValidateColumn(columns[1], nameof(TempTable<int, string>.Column2), "nvarchar", false);
       }
 
-      private void ValidateColumn(InformationSchemaColumn column, string name, string type, bool isNullable, byte? numericPrecision = null, int? numericScale = null, int? charMaxLength = null)
+      [Fact]
+      public async Task Should_create_temp_table_with_default_database_collation()
+      {
+         ConfigureModel = builder => builder.ConfigureTempTableEntity<CustomTempTable>();
+         _optionsWithNonUniqueName.UseDefaultDatabaseCollation = true;
+
+         await SUT.CreateTempTableAsync(ActDbContext.GetEntityType<CustomTempTable>(), _optionsWithNonUniqueName).ConfigureAwait(false);
+
+         var columns = AssertDbContext.GetTempTableColumns<CustomTempTable>().ToList();
+         columns.Should().HaveCount(2);
+
+         ValidateColumn(columns[0], nameof(CustomTempTable.Column1), "int", false);
+         ValidateColumn(columns[1], nameof(CustomTempTable.Column2), "nvarchar", true);
+      }
+
+      private static void ValidateColumn(
+         InformationSchemaColumn column,
+         string name,
+         string type,
+         bool isNullable,
+         byte? numericPrecision = null,
+         int? numericScale = null,
+         int? charMaxLength = null)
       {
          if (column == null)
             throw new ArgumentNullException(nameof(column));

@@ -174,9 +174,29 @@ INSERT BULK {table} ({columns})", (long)duration.TotalMilliseconds,
       }
 
       /// <inheritdoc />
-      public async Task<ITempTableQuery<T>> BulkInsertIntoTempTableAsync<T>(
+      public Task<ITempTableQuery<T>> BulkInsertIntoTempTableAsync<T>(
          IEnumerable<T> entities,
          ITempTableBulkInsertOptions options,
+         CancellationToken cancellationToken = default)
+         where T : class
+      {
+         if (options is not SqlServerTempTableBulkInsertOptions sqlServerOptions)
+            sqlServerOptions = new SqlServerTempTableBulkInsertOptions(options);
+
+         return BulkInsertIntoTempTableAsync(entities, sqlServerOptions, cancellationToken);
+      }
+
+      /// <summary>
+      /// Inserts the provided <paramref name="entities"/> into a temp table.
+      /// </summary>
+      /// <param name="entities">Entities to insert.</param>
+      /// <param name="options">Options.</param>
+      /// <param name="cancellationToken">Cancellation token.</param>
+      /// <typeparam name="T">Type of the entities.</typeparam>
+      /// <returns>A query returning the inserted <paramref name="entities"/>.</returns>
+      public async Task<ITempTableQuery<T>> BulkInsertIntoTempTableAsync<T>(
+         IEnumerable<T> entities,
+         ISqlServerTempTableBulkInsertOptions options,
          CancellationToken cancellationToken = default)
          where T : class
       {
@@ -188,16 +208,10 @@ INSERT BULK {table} ({columns})", (long)duration.TotalMilliseconds,
          var entityType = _ctx.Model.GetEntityType(typeof(T));
          var tempTableCreator = _ctx.GetService<ISqlServerTempTableCreator>();
 
-         if (!(options is SqlServerTempTableBulkInsertOptions sqlServerOptions))
-         {
-            sqlServerOptions = new SqlServerTempTableBulkInsertOptions(options);
-            options = sqlServerOptions;
-         }
-
          var tempTableOptions = options.TempTableCreationOptions;
 
-         if (sqlServerOptions.MomentOfPrimaryKeyCreation == MomentOfSqlServerPrimaryKeyCreation.AfterBulkInsert)
-            tempTableOptions = new TempTableCreationOptions(tempTableOptions) { PrimaryKeyCreation = PrimaryKeyPropertiesProviders.None };
+         if (options.MomentOfPrimaryKeyCreation == MomentOfSqlServerPrimaryKeyCreation.AfterBulkInsert)
+            tempTableOptions = new SqlServerTempTableCreationOptions(tempTableOptions) { PrimaryKeyCreation = PrimaryKeyPropertiesProviders.None };
 
          var tempTableReference = await tempTableCreator.CreateTempTableAsync(entityType, tempTableOptions, cancellationToken).ConfigureAwait(false);
 
@@ -205,10 +219,10 @@ INSERT BULK {table} ({columns})", (long)duration.TotalMilliseconds,
          {
             await BulkInsertAsync(entityType, entities, null, tempTableReference.Name, options.BulkInsertOptions, cancellationToken).ConfigureAwait(false);
 
-            if (sqlServerOptions.MomentOfPrimaryKeyCreation == MomentOfSqlServerPrimaryKeyCreation.AfterBulkInsert)
+            if (options.MomentOfPrimaryKeyCreation == MomentOfSqlServerPrimaryKeyCreation.AfterBulkInsert)
             {
                var properties = options.TempTableCreationOptions.MembersToInclude.GetPropertiesForTempTable(entityType);
-               var keyProperties = sqlServerOptions.PrimaryKeyCreation.GetPrimaryKeyProperties(entityType, properties);
+               var keyProperties = options.PrimaryKeyCreation.GetPrimaryKeyProperties(entityType, properties);
                await tempTableCreator.CreatePrimaryKeyAsync(_ctx, keyProperties, tempTableReference.Name, options.TempTableCreationOptions.TruncateTableIfExists, cancellationToken).ConfigureAwait(false);
             }
 

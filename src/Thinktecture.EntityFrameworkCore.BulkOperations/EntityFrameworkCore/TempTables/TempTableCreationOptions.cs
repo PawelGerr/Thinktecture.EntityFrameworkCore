@@ -6,7 +6,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
    /// <summary>
    /// Options required for creation of a temp table
    /// </summary>
-   public sealed class TempTableCreationOptions : ITempTableCreationOptions
+   public class TempTableCreationOptions : ITempTableCreationOptions
    {
       /// <inheritdoc />
       public bool TruncateTableIfExists { get; set; }
@@ -38,24 +38,21 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
       /// <summary>
       /// Initializes a new instance of <see cref="TempTableCreationOptions"/>.
       /// </summary>
-      public TempTableCreationOptions()
+      /// <param name="options">Options to take values over.</param>
+      public TempTableCreationOptions(ITempTableCreationOptions? options = null)
       {
-         DropTableOnDispose = true;
+         if (options is null)
+         {
+            DropTableOnDispose = true;
+         }
+         else
+         {
+            InitializeFrom(options);
+         }
       }
 
-      /// <summary>
-      /// Initializes a new instance of <see cref="TempTableCreationOptions"/>
-      /// and takes over values from the provided <paramref name="options"/>.
-      /// </summary>
-      /// <param name="options">Options to take values from</param>
-      /// <exception cref="ArgumentNullException">
-      /// if <paramref name="options"/> is <c>null</c>.
-      /// </exception>
-      public TempTableCreationOptions(ITempTableCreationOptions options)
+      private void InitializeFrom(ITempTableCreationOptions options)
       {
-         if (options == null)
-            throw new ArgumentNullException(nameof(options));
-
          PrimaryKeyCreation = options.PrimaryKeyCreation;
          TableNameProvider = options.TableNameProvider;
          TruncateTableIfExists = options.TruncateTableIfExists;

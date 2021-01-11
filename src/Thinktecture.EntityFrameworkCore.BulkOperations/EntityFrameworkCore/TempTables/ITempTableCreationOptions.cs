@@ -4,7 +4,7 @@ using Thinktecture.EntityFrameworkCore.BulkOperations;
 namespace Thinktecture.EntityFrameworkCore.TempTables
 {
    /// <summary>
-   /// Options required for creation of a temp table
+   /// Options required for creation of a temp table.
    /// </summary>
    public interface ITempTableCreationOptions
    {

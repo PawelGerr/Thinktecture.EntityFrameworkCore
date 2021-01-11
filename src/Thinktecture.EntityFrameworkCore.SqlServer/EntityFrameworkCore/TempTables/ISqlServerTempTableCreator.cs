@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -11,6 +12,22 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
    /// </summary>
    public interface ISqlServerTempTableCreator : ITempTableCreator
    {
+      /// <summary>
+      /// Creates a temp table.
+      /// </summary>
+      /// <param name="entityType">Entity/query type.</param>
+      /// <param name="options">Options.</param>
+      /// <param name="cancellationToken">Cancellation token.</param>
+      /// <returns>A reference to a temp table.</returns>
+      /// <exception cref="ArgumentNullException">
+      /// <paramref name="entityType"/> is <c>null</c>.
+      /// </exception>
+      /// <exception cref="ArgumentException">The provided type <paramref name="entityType"/> is not known by the current <see cref="DbContext"/>.</exception>
+      Task<ITempTableReference> CreateTempTableAsync(
+         IEntityType entityType,
+         ISqlServerTempTableCreationOptions options,
+         CancellationToken cancellationToken = default);
+
       /// <summary>
       /// Creates a primary key in a temp table with provided <paramref name="tableName"/>.
       /// </summary>

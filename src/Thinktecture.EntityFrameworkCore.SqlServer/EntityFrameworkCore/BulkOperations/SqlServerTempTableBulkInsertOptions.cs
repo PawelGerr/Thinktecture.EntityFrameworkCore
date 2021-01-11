@@ -9,24 +9,19 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
    /// <summary>
    /// Options used by the <see cref="BulkOperationsDbContextExtensions.BulkInsertIntoTempTableAsync{T}"/>.
    /// </summary>
-   public sealed class SqlServerTempTableBulkInsertOptions : ITempTableBulkInsertOptions
+   public sealed class SqlServerTempTableBulkInsertOptions : ISqlServerTempTableBulkInsertOptions
    {
       IBulkInsertOptions ITempTableBulkInsertOptions.BulkInsertOptions => _bulkInsertOptions;
       ITempTableCreationOptions ITempTableBulkInsertOptions.TempTableCreationOptions => _tempTableCreationOptions;
+      ISqlServerTempTableCreationOptions ISqlServerTempTableBulkInsertOptions.TempTableCreationOptions => _tempTableCreationOptions;
 
       private readonly SqlServerBulkInsertOptions _bulkInsertOptions;
-      private readonly TempTableCreationOptions _tempTableCreationOptions;
+      private readonly SqlServerTempTableCreationOptions _tempTableCreationOptions;
 
-      /// <summary>
-      /// Defines when the primary key should be created.
-      /// Default is set to <see cref="MomentOfSqlServerPrimaryKeyCreation.AfterBulkInsert"/>.
-      /// </summary>
+      /// <inheritdoc />
       public MomentOfSqlServerPrimaryKeyCreation MomentOfPrimaryKeyCreation { get; set; }
 
-      /// <summary>
-      /// Provides the corresponding columns if the primary key should be created.
-      /// The default is <see cref="PrimaryKeyPropertiesProviders.EntityTypeConfiguration"/>.
-      /// </summary>
+      /// <inheritdoc />
       public IPrimaryKeyPropertiesProvider PrimaryKeyCreation
       {
          get => _tempTableCreationOptions.PrimaryKeyCreation;
@@ -119,12 +114,21 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       }
 
       /// <summary>
+      /// Adds "COLLATE database_default" to columns so the collation matches with the one of the user database instead of the master db.
+      /// </summary>
+      public bool UseDefaultDatabaseCollation
+      {
+         get => _tempTableCreationOptions.UseDefaultDatabaseCollation;
+         set => _tempTableCreationOptions.UseDefaultDatabaseCollation = value;
+      }
+
+      /// <summary>
       /// Initializes new instance of <see cref="SqlServerTempTableBulkInsertOptions"/>.
       /// </summary>
       public SqlServerTempTableBulkInsertOptions(ITempTableBulkInsertOptions? optionsToInitializeFrom = null)
       {
          _bulkInsertOptions = new SqlServerBulkInsertOptions();
-         _tempTableCreationOptions = new TempTableCreationOptions();
+         _tempTableCreationOptions = new SqlServerTempTableCreationOptions();
 
          MomentOfPrimaryKeyCreation = MomentOfSqlServerPrimaryKeyCreation.AfterBulkInsert;
 

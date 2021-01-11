@@ -20,6 +20,8 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
    [SuppressMessage("ReSharper", "EF1001")]
    public sealed class SqlServerTempTableCreator : ISqlServerTempTableCreator
    {
+      private static readonly string[] _stringColumnTypes = { "char", "varchar", "text", "nchar", "nvarchar", "ntext" };
+
       private readonly DbContext _ctx;
       private readonly IDiagnosticsLogger<DbLoggerCategory.Query> _logger;
       private readonly ISqlGenerationHelper _sqlGenerationHelper;
@@ -45,9 +47,21 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
       }
 
       /// <inheritdoc />
-      public async Task<ITempTableReference> CreateTempTableAsync(
+      public Task<ITempTableReference> CreateTempTableAsync(
          IEntityType entityType,
          ITempTableCreationOptions options,
+         CancellationToken cancellationToken = default)
+      {
+         if (options is not ISqlServerTempTableCreationOptions sqlServerOptions)
+            sqlServerOptions = new SqlServerTempTableCreationOptions(options);
+
+         return CreateTempTableAsync(entityType, sqlServerOptions, cancellationToken);
+      }
+
+      /// <inheritdoc />
+      public async Task<ITempTableReference> CreateTempTableAsync(
+         IEntityType entityType,
+         ISqlServerTempTableCreationOptions options,
          CancellationToken cancellationToken = default)
       {
          if (entityType == null)
@@ -127,7 +141,7 @@ END
          await ctx.Database.ExecuteSqlRawAsync(sql, cancellationToken).ConfigureAwait(false);
       }
 
-      private string GetTempTableCreationSql(IEntityType entityType, string tableName, ITempTableCreationOptions options)
+      private string GetTempTableCreationSql(IEntityType entityType, string tableName, ISqlServerTempTableCreationOptions options)
       {
          if (tableName == null)
             throw new ArgumentNullException(nameof(tableName));
@@ -151,7 +165,7 @@ END
 ";
       }
 
-      private string GetColumnsDefinitions(IEntityType entityType, ITempTableCreationOptions options)
+      private string GetColumnsDefinitions(IEntityType entityType, ISqlServerTempTableCreationOptions options)
       {
          if (entityType == null)
             throw new ArgumentNullException(nameof(entityType));
@@ -165,10 +179,16 @@ END
             if (!isFirst)
                sb.AppendLine(",");
 
+            var columnType = property.GetColumnType();
+
             sb.Append("\t\t")
               .Append(_sqlGenerationHelper.DelimitIdentifier(property.GetColumnBaseName())).Append(' ')
-              .Append(property.GetColumnType())
-              .Append(property.IsNullable ? " NULL" : " NOT NULL");
+              .Append(columnType);
+
+            if (options.UseDefaultDatabaseCollation && _stringColumnTypes.Any(t => columnType.StartsWith(t, StringComparison.OrdinalIgnoreCase)))
+               sb.Append(" COLLATE database_default");
+
+            sb.Append(property.IsNullable ? " NULL" : " NOT NULL");
 
             if (IsIdentityColumn(property))
                sb.Append(" IDENTITY");
