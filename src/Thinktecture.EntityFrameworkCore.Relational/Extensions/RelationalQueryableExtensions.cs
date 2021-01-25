@@ -62,7 +62,7 @@ namespace Thinktecture
 
          return left
                 .GroupJoin(right, leftKeySelector, rightKeySelector, (o, i) => new { Outer = o, Inner = i })
-                .SelectMany(g => g.Inner.DefaultIfEmpty(), (o, i) => new LeftJoinResult<TLeft, TRight>(o.Outer, i))
+                .SelectMany(g => g.Inner.DefaultIfEmpty(), (o, i) => new LeftJoinResult<TLeft, TRight>{ Left = o.Outer, Right = i})
                 .Select(resultSelector);
       }
 
