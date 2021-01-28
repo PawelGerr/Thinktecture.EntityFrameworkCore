@@ -20,7 +20,7 @@ namespace Thinktecture.EntityFrameworkCore.Query
       /// <inheritdoc />
       protected override SqlExpression VisitCustomSqlExpression(SqlExpression sqlExpression, bool allowOptimizedExpansion, out bool nullable)
       {
-         if (sqlExpression is RowNumberClauseOrderingsExpression)
+         if (sqlExpression is INotNullableSqlExpression)
          {
             nullable = false;
             return sqlExpression;

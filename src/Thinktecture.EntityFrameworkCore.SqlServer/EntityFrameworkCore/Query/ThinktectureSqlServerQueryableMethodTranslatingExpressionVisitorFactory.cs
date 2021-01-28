@@ -5,37 +5,35 @@ using Microsoft.EntityFrameworkCore.Storage;
 namespace Thinktecture.EntityFrameworkCore.Query
 {
    /// <summary>
-   /// Factory for creation of the <see cref="ThinktectureSqliteQueryableMethodTranslatingExpressionVisitor"/>.
+   /// Factory for creation of the <see cref="ThinktectureSqlServerQueryableMethodTranslatingExpressionVisitor"/>.
    /// </summary>
-   public sealed class ThinktectureSqliteQueryableMethodTranslatingExpressionVisitorFactory : IQueryableMethodTranslatingExpressionVisitorFactory
+   public sealed class ThinktectureSqlServerQueryableMethodTranslatingExpressionVisitorFactory
+      : IQueryableMethodTranslatingExpressionVisitorFactory
    {
       private readonly QueryableMethodTranslatingExpressionVisitorDependencies _dependencies;
       private readonly RelationalQueryableMethodTranslatingExpressionVisitorDependencies _relationalDependencies;
       private readonly IRelationalTypeMappingSource _typeMappingSource;
-      private readonly ISqlGenerationHelper _sqlGenerationHelper;
 
       /// <summary>
-      /// Initializes new instance of <see cref="ThinktectureSqliteQueryableMethodTranslatingExpressionVisitorFactory"/>.
+      /// Initializes new instance of <see cref="ThinktectureSqlServerQueryableMethodTranslatingExpressionVisitorFactory"/>.
       /// </summary>
       /// <param name="dependencies">Dependencies.</param>
       /// <param name="relationalDependencies">Relational dependencies.</param>
       /// <param name="typeMappingSource">Type mapping source.</param>
-      public ThinktectureSqliteQueryableMethodTranslatingExpressionVisitorFactory(
+      public ThinktectureSqlServerQueryableMethodTranslatingExpressionVisitorFactory(
          QueryableMethodTranslatingExpressionVisitorDependencies dependencies,
          RelationalQueryableMethodTranslatingExpressionVisitorDependencies relationalDependencies,
-         IRelationalTypeMappingSource typeMappingSource,
-         ISqlGenerationHelper sqlGenerationHelper)
+         IRelationalTypeMappingSource typeMappingSource)
       {
          _dependencies = dependencies ?? throw new ArgumentNullException(nameof(dependencies));
          _relationalDependencies = relationalDependencies ?? throw new ArgumentNullException(nameof(relationalDependencies));
          _typeMappingSource = typeMappingSource ?? throw new ArgumentNullException(nameof(typeMappingSource));
-         _sqlGenerationHelper = sqlGenerationHelper;
       }
 
       /// <inheritdoc />
       public QueryableMethodTranslatingExpressionVisitor Create(QueryCompilationContext queryCompilationContext)
       {
-         return new ThinktectureSqliteQueryableMethodTranslatingExpressionVisitor(_dependencies, _relationalDependencies, queryCompilationContext, _typeMappingSource);
+         return new ThinktectureSqlServerQueryableMethodTranslatingExpressionVisitor(_dependencies, _relationalDependencies, queryCompilationContext, _typeMappingSource);
       }
    }
 }

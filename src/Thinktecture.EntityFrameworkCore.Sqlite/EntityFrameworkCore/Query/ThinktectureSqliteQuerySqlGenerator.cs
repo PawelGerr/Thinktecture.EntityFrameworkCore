@@ -3,24 +3,19 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
-using Microsoft.EntityFrameworkCore.SqlServer.Query.Internal;
+using Microsoft.EntityFrameworkCore.Sqlite.Query.Internal;
 using Thinktecture.EntityFrameworkCore.Query.SqlExpressions;
 
 namespace Thinktecture.EntityFrameworkCore.Query
 {
    /// <inheritdoc />
    [SuppressMessage("ReSharper", "EF1001")]
-   public class ThinktectureSqlServerQuerySqlGenerator : SqlServerQuerySqlGenerator
+   public class ThinktectureSqliteQuerySqlGenerator : SqliteQuerySqlGenerator
    {
-      private readonly ITenantDatabaseProvider _databaseProvider;
-
       /// <inheritdoc />
-      public ThinktectureSqlServerQuerySqlGenerator(
-         QuerySqlGeneratorDependencies dependencies,
-         ITenantDatabaseProvider databaseProvider)
+      public ThinktectureSqliteQuerySqlGenerator(QuerySqlGeneratorDependencies dependencies)
          : base(dependencies)
       {
-         _databaseProvider = databaseProvider ?? throw new ArgumentNullException(nameof(databaseProvider));
       }
 
       /// <inheritdoc />
@@ -40,6 +35,9 @@ namespace Thinktecture.EntityFrameworkCore.Query
          if (selectExpression.Tables.Count == 0)
             throw new NotSupportedException("A DELETE statement without any tables is invalid.");
 
+         if (selectExpression.Tables.Count != 1)
+            throw new NotSupportedException("SQLite supports only 1 outermost table in a DELETE statement.");
+
          if (selectExpression.GroupBy.Count > 0)
             throw new NotSupportedException("A GROUP BY clause is not supported in a DELETE statement.");
 
@@ -49,20 +47,12 @@ namespace Thinktecture.EntityFrameworkCore.Query
          if (selectExpression.Offset is not null)
             throw new NotSupportedException("An OFFSET clause (i.e. Skip(x)) is not supported in a DELETE statement.");
 
-         Sql.Append("DELETE ");
+         if (selectExpression.Limit is not null)
+            throw new NotSupportedException("A TOP/LIMIT clause (i.e. Take(x)) is not supported in a DELETE statement.");
 
-         GenerateTop(selectExpression);
+         Sql.Append("DELETE FROM ");
 
-         Sql.Append(Dependencies.SqlGenerationHelper.DelimitIdentifier(deleteExpression.Table.Alias)).AppendLine()
-            .Append("FROM ");
-
-         for (var i = 0; i < selectExpression.Tables.Count; i++)
-         {
-            if (i > 0)
-               Sql.AppendLine();
-
-            Visit(selectExpression.Tables[i]);
-         }
+         Visit(selectExpression.Tables[0]);
 
          if (selectExpression.Predicate is not null)
          {
@@ -71,26 +61,9 @@ namespace Thinktecture.EntityFrameworkCore.Query
          }
 
          Sql.Append(Dependencies.SqlGenerationHelper.StatementTerminator).AppendLine()
-            .Append("SELECT @@ROWCOUNT").Append(Dependencies.SqlGenerationHelper.StatementTerminator);
+            .Append("SELECT CHANGES()").Append(Dependencies.SqlGenerationHelper.StatementTerminator);
 
          return selectExpression;
-      }
-
-      /// <inheritdoc />
-      protected override Expression VisitTable(TableExpression tableExpression)
-      {
-         if (tableExpression == null)
-            throw new ArgumentNullException(nameof(tableExpression));
-
-         var databaseName = _databaseProvider.GetDatabaseName(tableExpression.Schema, tableExpression.Name);
-
-         if (!String.IsNullOrWhiteSpace(databaseName))
-         {
-            Sql.Append(Dependencies.SqlGenerationHelper.DelimitIdentifier(databaseName))
-               .Append(String.IsNullOrWhiteSpace(tableExpression.Schema) ? ".." : ".");
-         }
-
-         return base.VisitTable(tableExpression);
       }
    }
 }

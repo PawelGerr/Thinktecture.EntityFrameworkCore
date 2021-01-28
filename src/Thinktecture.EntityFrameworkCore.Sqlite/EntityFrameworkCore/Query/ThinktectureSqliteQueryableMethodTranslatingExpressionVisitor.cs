@@ -1,7 +1,9 @@
+using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Sqlite.Query.Internal;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace Thinktecture.EntityFrameworkCore.Query
 {
@@ -9,34 +11,43 @@ namespace Thinktecture.EntityFrameworkCore.Query
    /// Extends the capabilities of <see cref="Microsoft.EntityFrameworkCore.Sqlite.Query.Internal.SqliteQueryableMethodTranslatingExpressionVisitor"/>.
    /// </summary>
    [SuppressMessage("ReSharper", "EF1001")]
-   public class ThinktectureSqliteRelationalQueryableMethodTranslatingExpressionVisitor
+   public class ThinktectureSqliteQueryableMethodTranslatingExpressionVisitor
       : SqliteQueryableMethodTranslatingExpressionVisitor
    {
+      private readonly IRelationalTypeMappingSource _typeMappingSource;
+
       /// <inheritdoc />
-      public ThinktectureSqliteRelationalQueryableMethodTranslatingExpressionVisitor(
+      public ThinktectureSqliteQueryableMethodTranslatingExpressionVisitor(
          QueryableMethodTranslatingExpressionVisitorDependencies dependencies,
          RelationalQueryableMethodTranslatingExpressionVisitorDependencies relationalDependencies,
-         QueryCompilationContext queryCompilationContext)
+         QueryCompilationContext queryCompilationContext,
+         IRelationalTypeMappingSource typeMappingSource)
          : base(dependencies, relationalDependencies, queryCompilationContext)
       {
+         _typeMappingSource = typeMappingSource ?? throw new ArgumentNullException(nameof(typeMappingSource));
       }
 
       /// <inheritdoc />
-      protected ThinktectureSqliteRelationalQueryableMethodTranslatingExpressionVisitor(ThinktectureSqliteRelationalQueryableMethodTranslatingExpressionVisitor parentVisitor)
+      protected ThinktectureSqliteQueryableMethodTranslatingExpressionVisitor(
+         ThinktectureSqliteQueryableMethodTranslatingExpressionVisitor parentVisitor,
+         IRelationalTypeMappingSource typeMappingSource)
          : base(parentVisitor)
       {
+         _typeMappingSource = typeMappingSource ?? throw new ArgumentNullException(nameof(typeMappingSource));
       }
 
       /// <inheritdoc />
       protected override QueryableMethodTranslatingExpressionVisitor CreateSubqueryVisitor()
       {
-         return new ThinktectureSqliteRelationalQueryableMethodTranslatingExpressionVisitor(this);
+         return new ThinktectureSqliteQueryableMethodTranslatingExpressionVisitor(this, _typeMappingSource);
       }
 
       /// <inheritdoc />
       protected override Expression VisitMethodCall(MethodCallExpression methodCallExpression)
       {
-         return this.TranslateCustomMethods(methodCallExpression) ?? base.VisitMethodCall(methodCallExpression);
+         return this.TranslateRelationalMethods(methodCallExpression) ??
+                this.TranslateBulkMethods(methodCallExpression, _typeMappingSource) ??
+                base.VisitMethodCall(methodCallExpression);
       }
    }
 }

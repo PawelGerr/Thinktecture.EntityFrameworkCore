@@ -20,7 +20,7 @@ namespace Thinktecture
       /// <exception cref="ArgumentNullException">
       /// <paramref name="visitor"/> or <paramref name="methodCallExpression"/> is <c>null</c>.
       /// </exception>
-      public static ShapedQueryExpression? TranslateCustomMethods(this RelationalQueryableMethodTranslatingExpressionVisitor visitor, MethodCallExpression methodCallExpression)
+      public static ShapedQueryExpression? TranslateRelationalMethods(this RelationalQueryableMethodTranslatingExpressionVisitor visitor, MethodCallExpression methodCallExpression)
       {
          if (visitor == null)
             throw new ArgumentNullException(nameof(visitor));

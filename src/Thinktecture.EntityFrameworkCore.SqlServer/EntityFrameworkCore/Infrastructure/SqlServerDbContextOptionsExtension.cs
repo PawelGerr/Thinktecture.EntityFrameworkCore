@@ -52,7 +52,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       /// </summary>
       public bool AddCustomQueryableMethodTranslatingExpressionVisitorFactory
       {
-         get => _relationalOptions.AddCustomQueryableMethodTranslatingExpressionVisitorFactory;
+         get => _relationalOptions.AddCustomQueryableMethodTranslatingExpressionVisitorFactory || AddBulkOperationSupport;
          set => _relationalOptions.AddCustomQueryableMethodTranslatingExpressionVisitorFactory = value;
       }
 
@@ -68,11 +68,11 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
 
       /// <summary>
       /// A custom factory is registered if <c>true</c>.
-      /// The factory is required for some features like 'tenant database support'.
+      /// The factory is required for some features like 'tenant database support' or for generation of 'DELETE' statements.
       /// </summary>
       public bool AddCustomQuerySqlGeneratorFactory
       {
-         get => _relationalOptions.AddCustomQuerySqlGeneratorFactory;
+         get => _relationalOptions.AddCustomQuerySqlGeneratorFactory || AddBulkOperationSupport;
          set => _relationalOptions.AddCustomQuerySqlGeneratorFactory = value;
       }
 
@@ -110,6 +110,9 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       public void ApplyServices(IServiceCollection services)
       {
          services.TryAddSingleton(this);
+
+         if (AddCustomQueryableMethodTranslatingExpressionVisitorFactory)
+            services.AddSingleton<IQueryableMethodTranslatingExpressionVisitorFactory, ThinktectureSqlServerQueryableMethodTranslatingExpressionVisitorFactory>();
 
          if (AddCustomQuerySqlGeneratorFactory)
          {

@@ -41,7 +41,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       /// </summary>
       public bool AddCustomQueryableMethodTranslatingExpressionVisitorFactory
       {
-         get => _relationalOptions.AddCustomQueryableMethodTranslatingExpressionVisitorFactory;
+         get => _relationalOptions.AddCustomQueryableMethodTranslatingExpressionVisitorFactory || AddBulkOperationSupport;
          set => _relationalOptions.AddCustomQueryableMethodTranslatingExpressionVisitorFactory = value;
       }
 
@@ -53,6 +53,16 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       {
          get => _relationalOptions.AddCustomRelationalParameterBasedSqlProcessorFactory;
          set => _relationalOptions.AddCustomRelationalParameterBasedSqlProcessorFactory = value;
+      }
+
+      /// <summary>
+      /// A custom factory is registered if <c>true</c>.
+      /// The factory is required for some features like 'tenant database support' or for generation of 'DELETE' statements.
+      /// </summary>
+      public bool AddCustomQuerySqlGeneratorFactory
+      {
+         get => _relationalOptions.AddCustomQuerySqlGeneratorFactory || AddBulkOperationSupport;
+         set => _relationalOptions.AddCustomQuerySqlGeneratorFactory = value;
       }
 
       /// <summary>
@@ -85,10 +95,13 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       {
          services.TryAddSingleton(this);
 
-         if (_relationalOptions.AddCustomQueryableMethodTranslatingExpressionVisitorFactory)
+         if (AddCustomQuerySqlGeneratorFactory)
+            services.Add<IQuerySqlGeneratorFactory, ThinktectureSqliteQuerySqlGeneratorFactory>(RelationalDbContextOptionsExtension.GetLifetime<IQuerySqlGeneratorFactory>());
+
+         if (AddCustomQueryableMethodTranslatingExpressionVisitorFactory)
             services.AddSingleton<IQueryableMethodTranslatingExpressionVisitorFactory, ThinktectureSqliteQueryableMethodTranslatingExpressionVisitorFactory>();
 
-         if(AddCustomRelationalParameterBasedSqlProcessorFactory)
+         if (AddCustomRelationalParameterBasedSqlProcessorFactory)
             services.Add<IRelationalParameterBasedSqlProcessorFactory, ThinktectureRelationalParameterBasedSqlProcessorFactory>(GetLifetime<IRelationalParameterBasedSqlProcessorFactory>());
 
          if (AddTempTableSupport)
@@ -139,7 +152,8 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
          /// <inheritdoc />
          public override long GetServiceProviderHashCode()
          {
-            return HashCode.Combine(_extension.AddCustomQueryableMethodTranslatingExpressionVisitorFactory,
+            return HashCode.Combine(_extension.AddCustomQuerySqlGeneratorFactory,
+                                    _extension.AddCustomQueryableMethodTranslatingExpressionVisitorFactory,
                                     _extension.AddCustomRelationalParameterBasedSqlProcessorFactory,
                                     _extension.AddBulkOperationSupport,
                                     _extension.AddTempTableSupport);

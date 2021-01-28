@@ -454,14 +454,15 @@ Missing columns: Column2.");
          await using var tempTable = await SUT.CreateTempTableAsync(ActDbContext.GetEntityType<TestEntity>(), _optionsWithNonUniqueName);
 
          var columns = AssertDbContext.GetTempTableColumns<TestEntity>().OrderBy(c => c.Name).ToList();
-         columns.Should().HaveCount(6);
+         columns.Should().HaveCount(7);
 
          ValidateColumn(columns[0], nameof(TestEntity.ConvertibleClass), "INTEGER", true);
          ValidateColumn(columns[1], nameof(TestEntity.Count), "INTEGER", false);
          ValidateColumn(columns[2], nameof(TestEntity.Id), "TEXT", false);
          ValidateColumn(columns[3], nameof(TestEntity.Name), "TEXT", true);
-         ValidateColumn(columns[4], nameof(TestEntity.PropertyWithBackingField), "INTEGER", false);
-         ValidateColumn(columns[5], "_privateField", "INTEGER", false);
+         ValidateColumn(columns[4], nameof(TestEntity.ParentId), "TEXT", true);
+         ValidateColumn(columns[5], nameof(TestEntity.PropertyWithBackingField), "INTEGER", false);
+         ValidateColumn(columns[6], "_privateField", "INTEGER", false);
       }
 
       [Fact]

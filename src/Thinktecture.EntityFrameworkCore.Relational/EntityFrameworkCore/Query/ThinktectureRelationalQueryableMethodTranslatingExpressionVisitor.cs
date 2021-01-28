@@ -32,7 +32,7 @@ namespace Thinktecture.EntityFrameworkCore.Query
       /// <inheritdoc />
       protected override Expression VisitMethodCall(MethodCallExpression methodCallExpression)
       {
-         return this.TranslateCustomMethods(methodCallExpression) ?? base.VisitMethodCall(methodCallExpression);
+         return this.TranslateRelationalMethods(methodCallExpression) ?? base.VisitMethodCall(methodCallExpression);
       }
    }
 }
