@@ -42,6 +42,9 @@ namespace Thinktecture
                await DoBulkInsertIntoRealTableAsync(ctx);
                await DoBulkInsertSpecifiedColumnsIntoRealTableAsync(ctx);
 
+               // Bulk delete
+               await DoBulkDeleteAsync(ctx);
+
                // LEFT JOIN
                await DoLeftJoinAsync(ctx);
 
@@ -135,6 +138,18 @@ namespace Thinktecture
          var insertedCustomer = await ctx.Customers.FirstAsync(c => c.Id == customersToInsert.Id);
 
          Console.WriteLine($"Inserted customer: {insertedCustomer.Id}");
+      }
+
+      private static async Task DoBulkDeleteAsync(DemoDbContext ctx)
+      {
+         ctx.Add(new Customer(Guid.NewGuid(), "Customer To Delete", "Test"));
+         await ctx.SaveChangesAsync();
+
+         var affectedRows = await ctx.Customers
+                                     .Where(c => c.FirstName == "Customer To Delete")
+                                     .BulkDeleteAsync();
+
+         Console.WriteLine($"Number of deleted customers: {affectedRows}");
       }
    }
 }
