@@ -9,7 +9,6 @@ using Microsoft.EntityFrameworkCore.Sqlite.Query.Internal;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Thinktecture.EntityFrameworkCore.BulkOperations;
-using Thinktecture.EntityFrameworkCore.Data;
 using Thinktecture.EntityFrameworkCore.Query;
 using Thinktecture.EntityFrameworkCore.TempTables;
 
@@ -19,7 +18,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
    /// Extensions for DbContextOptions.
    /// </summary>
    [SuppressMessage("ReSharper", "EF1001")]
-   public sealed class SqliteDbContextOptionsExtension : IDbContextOptionsExtension
+   public sealed class SqliteDbContextOptionsExtension : DbContextOptionsExtensionBase, IDbContextOptionsExtension
    {
       private readonly RelationalDbContextOptionsExtension _relationalOptions;
 
@@ -104,13 +103,13 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
          services.TryAddSingleton(this);
 
          if (AddCustomQueryableMethodTranslatingExpressionVisitorFactory)
-            RelationalDbContextOptionsExtension.AddWithCheck<IQueryableMethodTranslatingExpressionVisitorFactory, ThinktectureSqliteQueryableMethodTranslatingExpressionVisitorFactory, SqliteQueryableMethodTranslatingExpressionVisitorFactory>(services);
+            AddWithCheck<IQueryableMethodTranslatingExpressionVisitorFactory, ThinktectureSqliteQueryableMethodTranslatingExpressionVisitorFactory, SqliteQueryableMethodTranslatingExpressionVisitorFactory>(services);
 
          if (AddCustomQuerySqlGeneratorFactory)
-            RelationalDbContextOptionsExtension.AddWithCheck<IQuerySqlGeneratorFactory, ThinktectureSqliteQuerySqlGeneratorFactory, SqliteQuerySqlGeneratorFactory>(services);
+            AddWithCheck<IQuerySqlGeneratorFactory, ThinktectureSqliteQuerySqlGeneratorFactory, SqliteQuerySqlGeneratorFactory>(services);
 
          if (AddCustomRelationalParameterBasedSqlProcessorFactory)
-            RelationalDbContextOptionsExtension.AddWithCheck<IRelationalParameterBasedSqlProcessorFactory, ThinktectureRelationalParameterBasedSqlProcessorFactory, RelationalParameterBasedSqlProcessorFactory>(services);
+            AddWithCheck<IRelationalParameterBasedSqlProcessorFactory, ThinktectureRelationalParameterBasedSqlProcessorFactory, RelationalParameterBasedSqlProcessorFactory>(services);
 
          if (AddTempTableSupport)
          {
@@ -120,7 +119,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
 
          if (AddBulkOperationSupport)
          {
-            services.TryAddSingleton<IEntityDataReaderFactory, EntityDataReaderFactory>();
+            AddEntityDataReader(services);
             services.TryAddScoped<SqliteBulkOperationExecutor, SqliteBulkOperationExecutor>();
             services.TryAddScoped<IBulkOperationExecutor>(provider => provider.GetRequiredService<SqliteBulkOperationExecutor>());
             services.TryAddScoped<ITempTableBulkOperationExecutor>(provider => provider.GetRequiredService<SqliteBulkOperationExecutor>());
