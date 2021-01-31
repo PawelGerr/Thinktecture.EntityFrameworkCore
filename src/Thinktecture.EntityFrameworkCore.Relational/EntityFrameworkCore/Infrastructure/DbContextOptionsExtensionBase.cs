@@ -21,6 +21,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       protected void AddEntityDataReader(IServiceCollection services)
       {
          services.TryAddSingleton<IEntityDataReaderFactory, EntityDataReaderFactory>();
+         services.TryAddSingleton<IPropertyGetterCache, PropertyGetterCache>();
       }
 
       /// <summary>

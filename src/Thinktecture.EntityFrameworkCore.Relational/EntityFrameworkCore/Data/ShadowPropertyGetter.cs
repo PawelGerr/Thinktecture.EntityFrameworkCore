@@ -12,30 +12,23 @@ namespace Thinktecture.EntityFrameworkCore.Data
    /// <typeparam name="TValue">Type of the shadow property.</typeparam>
    public sealed class ShadowPropertyGetter<TValue> : IShadowPropertyGetter
    {
-      private readonly DbContext _ctx;
       private readonly Func<InternalEntityEntry, TValue> _getter;
 
       /// <summary>
       /// Initializes new instance of <see cref="ShadowPropertyGetter{TValue}"/>.
       /// </summary>
-      /// <param name="ctx">Database context.</param>
       /// <param name="getter">Current value accessor of the shadow property.</param>
-      /// <exception cref="ArgumentNullException">
-      /// <paramref name="ctx"/> is <c>null</c>
-      /// - or
-      /// <paramref name="getter"/> is <c>null</c>.
-      /// </exception>
-      public ShadowPropertyGetter(DbContext ctx, Delegate getter)
+      /// <exception cref="ArgumentNullException"><paramref name="getter"/> is <c>null</c>.</exception>
+      public ShadowPropertyGetter(Delegate getter)
       {
-         _ctx = ctx ?? throw new ArgumentNullException(nameof(ctx));
          _getter = (Func<InternalEntityEntry, TValue>)getter ?? throw new ArgumentNullException(nameof(getter));
       }
 
       /// <inheritdoc />
       [SuppressMessage("ReSharper", "EF1001")]
-      public object? GetValue(object entity)
+      public object? GetValue(DbContext context, object entity)
       {
-         var entry = _ctx.Entry(entity);
+         var entry = context.Entry(entity);
          var internalEntry = ((IInfrastructure<InternalEntityEntry>)entry).Instance;
 
          return _getter(internalEntry);

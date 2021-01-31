@@ -4,6 +4,7 @@ using System.Linq;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.Extensions.Logging;
 using Thinktecture.TestDatabaseContext;
 using Xunit;
 using Xunit.Abstractions;
@@ -17,7 +18,7 @@ namespace Thinktecture.EntityFrameworkCore.Data.EntityDataReaderFactoryTests
       private readonly IProperty _column2Property;
 
       // ReSharper disable once InconsistentNaming
-      private EntityDataReaderFactory SUT => _sut ??= new EntityDataReaderFactory();
+      private EntityDataReaderFactory SUT => _sut ??= new EntityDataReaderFactory(new PropertyGetterCache(LoggerFactory!));
 
       public Create(ITestOutputHelper testOutputHelper)
          : base(testOutputHelper)

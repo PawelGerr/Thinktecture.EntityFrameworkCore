@@ -6,24 +6,20 @@ using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using Microsoft.Extensions.Logging;
 
 namespace Thinktecture.EntityFrameworkCore.Data
 {
    /// <summary>
    /// Data reader for Entity Framework Core entities.
    /// </summary>
-   /// <typeparam name="T">Type of the entity.</typeparam>
+   /// <typeparam name="TEntity">Type of the entity.</typeparam>
    [SuppressMessage("ReSharper", "EF1001")]
-   public sealed class EntityDataReader<T> : IEntityDataReader
-      where T : class
+   public sealed class EntityDataReader<TEntity> : IEntityDataReader
+      where TEntity : class
    {
-      private readonly ILogger _logger;
       private readonly DbContext _ctx;
-      private readonly IEnumerator<T> _enumerator;
-      private readonly Dictionary<int, Func<T, object?>> _propertyGetterLookup;
+      private readonly IEnumerator<TEntity> _enumerator;
+      private readonly Dictionary<int, Func<DbContext, TEntity, object?>> _propertyGetterLookup;
 
       /// <inheritdoc />
       public IReadOnlyList<IProperty> Properties { get; }
@@ -34,16 +30,18 @@ namespace Thinktecture.EntityFrameworkCore.Data
       /// <summary>
       /// Initializes <see cref="EntityDataReader{T}"/>
       /// </summary>
-      /// <param name="logger">Logger.</param>
       /// <param name="ctx">Database context.</param>
+      /// <param name="propertyGetterCache">Property getter cache.</param>
       /// <param name="entities">Entities to read.</param>
       /// <param name="properties">Properties to read.</param>
       public EntityDataReader(
-         ILogger logger,
          DbContext ctx,
-         IEnumerable<T> entities,
+         IPropertyGetterCache propertyGetterCache,
+         IEnumerable<TEntity> entities,
          IReadOnlyList<IProperty> properties)
       {
+         if (propertyGetterCache == null)
+            throw new ArgumentNullException(nameof(propertyGetterCache));
          if (entities == null)
             throw new ArgumentNullException(nameof(entities));
          if (properties == null)
@@ -51,89 +49,27 @@ namespace Thinktecture.EntityFrameworkCore.Data
          if (properties.Count == 0)
             throw new ArgumentException("The properties collection cannot be empty.", nameof(properties));
 
-         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
          _ctx = ctx ?? throw new ArgumentNullException(nameof(ctx));
          Properties = properties;
-         _propertyGetterLookup = BuildPropertyGetterLookup(properties);
+         _propertyGetterLookup = BuildPropertyGetterLookup(propertyGetterCache, properties);
          _enumerator = entities.GetEnumerator();
       }
 
-      private Dictionary<int, Func<T, object?>> BuildPropertyGetterLookup(IReadOnlyList<IProperty> properties)
+      private static Dictionary<int, Func<DbContext, TEntity, object?>> BuildPropertyGetterLookup(
+         IPropertyGetterCache propertyGetterCache,
+         IReadOnlyList<IProperty> properties)
       {
-         var lookup = new Dictionary<int, Func<T, object?>>();
+         var lookup = new Dictionary<int, Func<DbContext, TEntity, object?>>();
 
          for (var i = 0; i < properties.Count; i++)
          {
             var property = properties[i];
-            var hasSqlDefaultValue = property.GetDefaultValueSql() != null;
-            var hasDefaultValue = property.GetDefaultValue() != null;
-
-            if ((hasSqlDefaultValue || hasDefaultValue) && !property.IsNullable)
-            {
-               if (property.ClrType.IsClass)
-               {
-                  _logger.LogWarning("The corresponding column of '{Entity}.{Property}' has a DEFAULT value constraint in the database and is NOT NULL. Depending on the database vendor the .NET value `null` may lead to an exception because the tool for bulk insert of data may prevent sending `null`s for NOT NULL columns. Use 'MembersToInsert' on 'IBulkInsertOptions' to specify properties to insert and skip '{Entity}.{Property}' so database uses the DEFAULT value.",
-                                     property.DeclaringEntityType.ClrType.Name, property.Name, property.DeclaringEntityType.ClrType.Name, property.Name);
-               }
-               else if (!property.ClrType.IsGenericType ||
-                        !property.ClrType.IsGenericTypeDefinition &&
-                        property.ClrType.GetGenericTypeDefinition() != typeof(Nullable<>))
-               {
-                  _logger.LogWarning("The corresponding column of '{Entity}.{Property}' has a DEFAULT value constraint in the database and is NOT NULL. Depending on the database vendor the \".NET default values\" (`false`, `0`, `00000000-0000-0000-0000-000000000000` etc.) may lead to unexpected results because these values are sent to the database as-is, i.e. the DEFAULT value constraint will NOT be used by database. Use 'MembersToInsert' on 'IBulkInsertOptions' to specify properties to insert and skip '{Entity}.{Property}' so database uses the DEFAULT value.",
-                                     property.DeclaringEntityType.ClrType.Name, property.Name, property.DeclaringEntityType.ClrType.Name, property.Name);
-               }
-            }
-
-            var getter = BuildGetter(property);
-            var converter = property.GetValueConverter();
-            if (converter != null)
-               getter = UseConverter(getter, converter);
+            var getter = propertyGetterCache.GetPropertyGetter<TEntity>(property);
 
             lookup.Add(i, getter);
          }
 
          return lookup;
-      }
-
-      private Func<T, object?> BuildGetter(IProperty property)
-      {
-         if (property.IsShadowProperty())
-         {
-            var shadowPropGetter = CreateShadowPropertyGetter(property);
-            return shadowPropGetter.GetValue;
-         }
-
-         var getter = property.GetGetter();
-
-         if (getter == null)
-            throw new ArgumentException($"The property '{property.Name}' of entity '{property.DeclaringEntityType.Name}' has no property getter.");
-
-         return getter.GetClrValue;
-      }
-
-      private static Func<T, object?> UseConverter(Func<T, object?> getter, ValueConverter converter)
-      {
-         var convert = converter.ConvertToProvider;
-
-         return e =>
-                {
-                   var value = getter(e);
-
-                   if (value != null)
-                      value = convert(value);
-
-                   return value;
-                };
-      }
-
-      private IShadowPropertyGetter CreateShadowPropertyGetter(IProperty property)
-      {
-         var currentValueGetter = property.GetPropertyAccessors().CurrentValueGetter;
-         var shadowPropGetterType = typeof(ShadowPropertyGetter<>).MakeGenericType(property.ClrType);
-         var shadowPropGetter = Activator.CreateInstance(shadowPropGetterType, _ctx, currentValueGetter)
-                                ?? throw new Exception($"Could not create shadow property getter of type '{shadowPropGetterType.ShortDisplayName()}'.");
-
-         return (IShadowPropertyGetter)shadowPropGetter;
       }
 
       /// <inheritdoc />
@@ -156,7 +92,7 @@ namespace Thinktecture.EntityFrameworkCore.Data
       public object? GetValue(int i)
 #pragma warning restore 8766
       {
-         return _propertyGetterLookup[i](_enumerator.Current);
+         return _propertyGetterLookup[i](_ctx, _enumerator.Current);
       }
 
       /// <inheritdoc />

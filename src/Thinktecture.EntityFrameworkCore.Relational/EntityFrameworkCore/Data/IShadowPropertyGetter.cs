@@ -1,3 +1,5 @@
+using Microsoft.EntityFrameworkCore;
+
 namespace Thinktecture.EntityFrameworkCore.Data
 {
    /// <summary>
@@ -8,8 +10,9 @@ namespace Thinktecture.EntityFrameworkCore.Data
       /// <summary>
       /// Gets the value of the shadow property.
       /// </summary>
+      /// <param name="ctx">Context.</param>
       /// <param name="entity">Entity</param>
       /// <returns>The value of the shadow property.</returns>
-      object? GetValue(object entity);
+      object? GetValue(DbContext ctx, object entity);
    }
 }
