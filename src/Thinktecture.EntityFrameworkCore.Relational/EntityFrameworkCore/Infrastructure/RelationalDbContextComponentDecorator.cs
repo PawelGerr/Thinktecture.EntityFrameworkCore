@@ -52,19 +52,19 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
          {
             var service = services[i];
 
-            if (service.ServiceType == typeof(TService))
-            {
-               if (service.ImplementationType == null)
-                  throw new NotSupportedException($@"The registration of the Entity Framework Core service '{typeof(TService).FullName}' found but the service is not registered 'by type'.");
+            if (service.ServiceType != typeof(TService))
+               continue;
 
-               if (service.ImplementationType == typeof(TService))
-                  throw new NotSupportedException($@"The implementation type '{service.ImplementationType.ShortDisplayName()}' cannot be the same as the service type '{typeof(TService).ShortDisplayName()}'.");
+            if (service.ImplementationType == null)
+               throw new NotSupportedException($@"The registration of the Entity Framework Core service '{typeof(TService).FullName}' found but the service is not registered 'by type'.");
 
-               return (service.ImplementationType, service.Lifetime, i);
-            }
+            if (service.ImplementationType == typeof(TService))
+               throw new NotSupportedException($@"The implementation type '{service.ImplementationType.ShortDisplayName()}' cannot be the same as the service type '{typeof(TService).ShortDisplayName()}'.");
+
+            return (service.ImplementationType, service.Lifetime, i);
          }
 
-         throw new NotSupportedException($@"No registration of the Entity Framework Core service '{typeof(TService).FullName}' found. Please make sure the database provider is registered (via 'UseSqlServer' or 'UseSqlite').");
+         throw new NotSupportedException($@"No registration of the Entity Framework Core service '{typeof(TService).FullName}' found. Please make sure the database provider is registered first (via 'UseSqlServer' or 'UseSqlite' etc.).");
       }
    }
 }

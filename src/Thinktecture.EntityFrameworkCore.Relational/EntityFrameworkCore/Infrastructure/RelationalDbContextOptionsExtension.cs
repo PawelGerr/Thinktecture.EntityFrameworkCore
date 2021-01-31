@@ -132,7 +132,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
          services.Add<IMethodCallTranslatorPlugin, RelationalMethodCallTranslatorPlugin>(GetLifetime<IMethodCallTranslatorPlugin>());
 
          if (AddCustomRelationalQueryContextFactory)
-            services.Add<IQueryContextFactory, ThinktectureRelationalQueryContextFactory>(GetLifetime<IQueryContextFactory>());
+            ComponentDecorator.RegisterDecorator<IQueryContextFactory>(services, typeof(ThinktectureRelationalQueryContextFactory<>));
 
          if (AddCustomQueryableMethodTranslatingExpressionVisitorFactory)
             services.Add<IQueryableMethodTranslatingExpressionVisitorFactory, RelationalQueryableMethodTranslatingExpressionVisitorFactory>(GetLifetime<IQueryableMethodTranslatingExpressionVisitorFactory>());
