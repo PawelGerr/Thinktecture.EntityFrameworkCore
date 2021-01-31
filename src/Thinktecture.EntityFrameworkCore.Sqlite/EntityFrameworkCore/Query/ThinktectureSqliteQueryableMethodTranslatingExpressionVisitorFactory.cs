@@ -12,7 +12,6 @@ namespace Thinktecture.EntityFrameworkCore.Query
       private readonly QueryableMethodTranslatingExpressionVisitorDependencies _dependencies;
       private readonly RelationalQueryableMethodTranslatingExpressionVisitorDependencies _relationalDependencies;
       private readonly IRelationalTypeMappingSource _typeMappingSource;
-      private readonly ISqlGenerationHelper _sqlGenerationHelper;
 
       /// <summary>
       /// Initializes new instance of <see cref="ThinktectureSqliteQueryableMethodTranslatingExpressionVisitorFactory"/>.
@@ -23,13 +22,11 @@ namespace Thinktecture.EntityFrameworkCore.Query
       public ThinktectureSqliteQueryableMethodTranslatingExpressionVisitorFactory(
          QueryableMethodTranslatingExpressionVisitorDependencies dependencies,
          RelationalQueryableMethodTranslatingExpressionVisitorDependencies relationalDependencies,
-         IRelationalTypeMappingSource typeMappingSource,
-         ISqlGenerationHelper sqlGenerationHelper)
+         IRelationalTypeMappingSource typeMappingSource)
       {
          _dependencies = dependencies ?? throw new ArgumentNullException(nameof(dependencies));
          _relationalDependencies = relationalDependencies ?? throw new ArgumentNullException(nameof(relationalDependencies));
          _typeMappingSource = typeMappingSource ?? throw new ArgumentNullException(nameof(typeMappingSource));
-         _sqlGenerationHelper = sqlGenerationHelper;
       }
 
       /// <inheritdoc />

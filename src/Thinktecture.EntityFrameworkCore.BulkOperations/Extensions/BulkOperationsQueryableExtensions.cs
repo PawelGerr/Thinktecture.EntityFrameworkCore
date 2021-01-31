@@ -19,7 +19,7 @@ namespace Thinktecture
                                                                                                 .Single(m => m.Name == nameof(BulkDelete) && m.IsGenericMethod);
 
       /// <summary>
-      /// Deletes Entity Framework entities of type <see cref="T"/>.
+      /// Deletes Entity Framework entities of type <typeparamref name="T"/>.
       /// </summary>
       /// <param name="source">Entities to delete.</param>
       /// <typeparam name="T">Type of the entities to delete.</typeparam>
@@ -36,7 +36,7 @@ namespace Thinktecture
       }
 
       /// <summary>
-      /// Deletes Entity Framework entities of type <see cref="T"/>.
+      /// Deletes Entity Framework entities of type <typeparamref name="T"/>.
       /// </summary>
       /// <param name="source">Entities to delete.</param>
       /// <param name="cancellationToken">Cancellation token.</param>
