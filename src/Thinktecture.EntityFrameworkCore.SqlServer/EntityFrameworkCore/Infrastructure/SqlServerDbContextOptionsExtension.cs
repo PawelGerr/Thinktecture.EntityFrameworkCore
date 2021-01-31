@@ -46,14 +46,16 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
          set => _relationalOptions.AddTenantDatabaseSupport = value;
       }
 
+      private bool _addCustomQueryableMethodTranslatingExpressionVisitorFactory;
+
       /// <summary>
       /// A custom factory is registered if <c>true</c>.
       /// The factory is required to be able to translate custom methods like <see cref="RelationalQueryableExtensions.AsSubQuery{TEntity}"/>.
       /// </summary>
       public bool AddCustomQueryableMethodTranslatingExpressionVisitorFactory
       {
-         get => _relationalOptions.AddCustomQueryableMethodTranslatingExpressionVisitorFactory || AddBulkOperationSupport;
-         set => _relationalOptions.AddCustomQueryableMethodTranslatingExpressionVisitorFactory = value;
+         get => _addCustomQueryableMethodTranslatingExpressionVisitorFactory || AddBulkOperationSupport || AddRowNumberSupport;
+         set => _addCustomQueryableMethodTranslatingExpressionVisitorFactory = value;
       }
 
       /// <summary>
@@ -166,6 +168,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
 
          public override string LogFragment => _logFragment ??= $@"
 {{
+   'Custom QueryableMethodTranslatingExpressionVisitorFactory'={_extension.AddCustomQueryableMethodTranslatingExpressionVisitorFactory},
    'BulkOperationSupport'={_extension.AddBulkOperationSupport},
    'TempTableSupport'={_extension.AddTempTableSupport},
    'UseThinktectureSqlServerMigrationsSqlGenerator'={_extension.UseThinktectureSqlServerMigrationsSqlGenerator}
@@ -181,7 +184,8 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
          /// <inheritdoc />
          public override long GetServiceProviderHashCode()
          {
-            return HashCode.Combine(_extension.AddCustomQuerySqlGeneratorFactory,
+            return HashCode.Combine(_extension.AddCustomQueryableMethodTranslatingExpressionVisitorFactory,
+                                    _extension.AddCustomQuerySqlGeneratorFactory,
                                     _extension.AddCustomRelationalParameterBasedSqlProcessorFactory,
                                     _extension.AddBulkOperationSupport,
                                     _extension.AddTempTableSupport,
@@ -191,6 +195,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
          /// <inheritdoc />
          public override void PopulateDebugInfo(IDictionary<string, string> debugInfo)
          {
+            debugInfo["Thinktecture:CustomQueryableMethodTranslatingExpressionVisitorFactory"] = _extension.AddCustomQueryableMethodTranslatingExpressionVisitorFactory.ToString(CultureInfo.InvariantCulture);
             debugInfo["Thinktecture:BulkOperationSupport"] = _extension.AddBulkOperationSupport.ToString(CultureInfo.InvariantCulture);
             debugInfo["Thinktecture:TempTableSupport"] = _extension.AddTempTableSupport.ToString(CultureInfo.InvariantCulture);
             debugInfo["Thinktecture:UseThinktectureSqlServerMigrationsSqlGenerator"] = _extension.UseThinktectureSqlServerMigrationsSqlGenerator.ToString(CultureInfo.InvariantCulture);

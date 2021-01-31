@@ -64,18 +64,6 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       /// </summary>
       public bool AddTenantDatabaseSupport { get; set; }
 
-      private bool _addCustomQueryableMethodTranslatingExpressionVisitorFactory;
-
-      /// <summary>
-      /// A custom factory is registered if <c>true</c>.
-      /// The factory is required to be able to translate custom methods like <see cref="RelationalQueryableExtensions.AsSubQuery{TEntity}"/>.
-      /// </summary>
-      public bool AddCustomQueryableMethodTranslatingExpressionVisitorFactory
-      {
-         get => _addCustomQueryableMethodTranslatingExpressionVisitorFactory || AddRowNumberSupport;
-         set => _addCustomQueryableMethodTranslatingExpressionVisitorFactory = value;
-      }
-
       private bool _addCustomQuerySqlGeneratorFactory;
 
       /// <summary>
@@ -133,9 +121,6 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
 
          if (AddCustomRelationalQueryContextFactory)
             ComponentDecorator.RegisterDecorator<IQueryContextFactory>(services, typeof(ThinktectureRelationalQueryContextFactory<>));
-
-         if (AddCustomQueryableMethodTranslatingExpressionVisitorFactory)
-            services.Add<IQueryableMethodTranslatingExpressionVisitorFactory, RelationalQueryableMethodTranslatingExpressionVisitorFactory>(GetLifetime<IQueryableMethodTranslatingExpressionVisitorFactory>());
 
          if (_evaluatableExpressionFilterPlugins.Count > 0)
          {
@@ -256,7 +241,6 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
          public override string LogFragment => _logFragment ??= $@"
 {{
    'Custom RelationalQueryContextFactory'={_extension.AddCustomRelationalQueryContextFactory},
-   'Custom QueryableMethodTranslatingExpressionVisitorFactory'={_extension.AddCustomQueryableMethodTranslatingExpressionVisitorFactory},
    'Custom RelationalParameterBasedSqlProcessorFactory'={_extension.AddCustomRelationalParameterBasedSqlProcessorFactory},
    'Custom QuerySqlGeneratorFactory'={_extension.AddCustomQuerySqlGeneratorFactory},
    'Default schema respecting components added'={_extension.AddSchemaRespectingComponents},
@@ -277,9 +261,9 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
          {
             var hashCode = new HashCode();
             hashCode.Add(_extension.AddCustomRelationalQueryContextFactory);
-            hashCode.Add(_extension.AddCustomQueryableMethodTranslatingExpressionVisitorFactory);
             hashCode.Add(_extension.AddSchemaRespectingComponents);
             hashCode.Add(_extension.AddNestedTransactionsSupport);
+            hashCode.Add(_extension.AddRowNumberSupport);
             hashCode.Add(_extension.ComponentDecorator);
 
             _extension._evaluatableExpressionFilterPlugins.ForEach(type => hashCode.Add(type));
@@ -318,7 +302,6 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
          public override void PopulateDebugInfo(IDictionary<string, string> debugInfo)
          {
             debugInfo["Thinktecture:CustomRelationalQueryContextFactory"] = _extension.AddCustomRelationalQueryContextFactory.ToString(CultureInfo.InvariantCulture);
-            debugInfo["Thinktecture:CustomQueryableMethodTranslatingExpressionVisitorFactory"] = _extension.AddCustomQueryableMethodTranslatingExpressionVisitorFactory.ToString(CultureInfo.InvariantCulture);
             debugInfo["Thinktecture:CustomRelationalParameterBasedSqlProcessorFactory"] = _extension.AddCustomRelationalParameterBasedSqlProcessorFactory.ToString(CultureInfo.InvariantCulture);
             debugInfo["Thinktecture:CustomQuerySqlGeneratorFactory"] = _extension.AddCustomQuerySqlGeneratorFactory.ToString(CultureInfo.InvariantCulture);
             debugInfo["Thinktecture:SchemaRespectingComponents"] = _extension.AddSchemaRespectingComponents.ToString(CultureInfo.InvariantCulture);
