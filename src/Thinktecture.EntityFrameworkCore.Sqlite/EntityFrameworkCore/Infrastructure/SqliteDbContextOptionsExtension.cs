@@ -4,6 +4,8 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Query;
+using Microsoft.EntityFrameworkCore.Query.Internal;
+using Microsoft.EntityFrameworkCore.Sqlite.Query.Internal;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Thinktecture.EntityFrameworkCore.BulkOperations;
@@ -101,14 +103,14 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       {
          services.TryAddSingleton(this);
 
-         if (AddCustomQuerySqlGeneratorFactory)
-            services.Add<IQuerySqlGeneratorFactory, ThinktectureSqliteQuerySqlGeneratorFactory>(RelationalDbContextOptionsExtension.GetLifetime<IQuerySqlGeneratorFactory>());
-
          if (AddCustomQueryableMethodTranslatingExpressionVisitorFactory)
-            services.AddSingleton<IQueryableMethodTranslatingExpressionVisitorFactory, ThinktectureSqliteQueryableMethodTranslatingExpressionVisitorFactory>();
+            RelationalDbContextOptionsExtension.AddWithCheck<IQueryableMethodTranslatingExpressionVisitorFactory, ThinktectureSqliteQueryableMethodTranslatingExpressionVisitorFactory, SqliteQueryableMethodTranslatingExpressionVisitorFactory>(services);
+
+         if (AddCustomQuerySqlGeneratorFactory)
+            RelationalDbContextOptionsExtension.AddWithCheck<IQuerySqlGeneratorFactory, ThinktectureSqliteQuerySqlGeneratorFactory, SqliteQuerySqlGeneratorFactory>(services);
 
          if (AddCustomRelationalParameterBasedSqlProcessorFactory)
-            services.Add<IRelationalParameterBasedSqlProcessorFactory, ThinktectureRelationalParameterBasedSqlProcessorFactory>(GetLifetime<IRelationalParameterBasedSqlProcessorFactory>());
+            RelationalDbContextOptionsExtension.AddWithCheck<IRelationalParameterBasedSqlProcessorFactory, ThinktectureRelationalParameterBasedSqlProcessorFactory, RelationalParameterBasedSqlProcessorFactory>(services);
 
          if (AddTempTableSupport)
          {
@@ -123,11 +125,6 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
             services.TryAddScoped<IBulkOperationExecutor>(provider => provider.GetRequiredService<SqliteBulkOperationExecutor>());
             services.TryAddScoped<ITempTableBulkOperationExecutor>(provider => provider.GetRequiredService<SqliteBulkOperationExecutor>());
          }
-      }
-
-      private static ServiceLifetime GetLifetime<TService>()
-      {
-         return EntityFrameworkRelationalServicesBuilder.RelationalServices[typeof(TService)].Lifetime;
       }
 
       /// <inheritdoc />

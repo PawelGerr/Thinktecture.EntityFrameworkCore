@@ -72,14 +72,14 @@ namespace Thinktecture.EntityFrameworkCore.Data
             {
                if (property.ClrType.IsClass)
                {
-                  _logger.LogWarning("The corresponding column of '{Entity}.{Property}' has a DEFAULT value constraint in the database and is NOT NULL. Dependending on the database vendor the .NET value `null` may lead to an exception because the tool for bulk insert of data may prevent sending `null`s for NOT NULL columns. Use 'MembersToInsert' on 'IBulkInsertOptions' to specify properties to insert and skip '{Entity}.{Property}' so database uses the DEFAULT value.",
+                  _logger.LogWarning("The corresponding column of '{Entity}.{Property}' has a DEFAULT value constraint in the database and is NOT NULL. Depending on the database vendor the .NET value `null` may lead to an exception because the tool for bulk insert of data may prevent sending `null`s for NOT NULL columns. Use 'MembersToInsert' on 'IBulkInsertOptions' to specify properties to insert and skip '{Entity}.{Property}' so database uses the DEFAULT value.",
                                      property.DeclaringEntityType.ClrType.Name, property.Name, property.DeclaringEntityType.ClrType.Name, property.Name);
                }
                else if (!property.ClrType.IsGenericType ||
                         !property.ClrType.IsGenericTypeDefinition &&
                         property.ClrType.GetGenericTypeDefinition() != typeof(Nullable<>))
                {
-                  _logger.LogWarning("The corresponding column of '{Entity}.{Property}' has a DEFAULT value constraint in the database and is NOT NULL. Dependending on the database vendor the \".NET default values\" (`false`, `0`, `00000000-0000-0000-0000-000000000000` etc.) may lead to unexpected results because these values are sent to the database as-is, i.e. the DEFAULT value constraint will NOT be used by database. Use 'MembersToInsert' on 'IBulkInsertOptions' to specify properties to insert and skip '{Entity}.{Property}' so database uses the DEFAULT value.",
+                  _logger.LogWarning("The corresponding column of '{Entity}.{Property}' has a DEFAULT value constraint in the database and is NOT NULL. Depending on the database vendor the \".NET default values\" (`false`, `0`, `00000000-0000-0000-0000-000000000000` etc.) may lead to unexpected results because these values are sent to the database as-is, i.e. the DEFAULT value constraint will NOT be used by database. Use 'MembersToInsert' on 'IBulkInsertOptions' to specify properties to insert and skip '{Entity}.{Property}' so database uses the DEFAULT value.",
                                      property.DeclaringEntityType.ClrType.Name, property.Name, property.DeclaringEntityType.ClrType.Name, property.Name);
                }
             }

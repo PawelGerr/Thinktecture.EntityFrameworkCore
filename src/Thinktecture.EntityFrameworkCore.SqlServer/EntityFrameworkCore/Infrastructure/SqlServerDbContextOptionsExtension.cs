@@ -2,9 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Linq;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Query;
+using Microsoft.EntityFrameworkCore.Query.Internal;
+using Microsoft.EntityFrameworkCore.SqlServer.Query.Internal;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Thinktecture.EntityFrameworkCore.BulkOperations;
@@ -38,7 +41,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       }
 
       /// <summary>
-      /// Enables and disables support for tenant support.
+      /// Enables and disables tenants support.
       /// </summary>
       public bool AddTenantDatabaseSupport
       {
@@ -118,13 +121,13 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
          services.TryAddSingleton(this);
 
          if (AddCustomQueryableMethodTranslatingExpressionVisitorFactory)
-            services.AddSingleton<IQueryableMethodTranslatingExpressionVisitorFactory, ThinktectureSqlServerQueryableMethodTranslatingExpressionVisitorFactory>();
+            RelationalDbContextOptionsExtension.AddWithCheck<IQueryableMethodTranslatingExpressionVisitorFactory, ThinktectureSqlServerQueryableMethodTranslatingExpressionVisitorFactory, RelationalQueryableMethodTranslatingExpressionVisitorFactory>(services);
 
          if (AddCustomQuerySqlGeneratorFactory)
-            services.Add<IQuerySqlGeneratorFactory, ThinktectureSqlServerQuerySqlGeneratorFactory>(RelationalDbContextOptionsExtension.GetLifetime<IQuerySqlGeneratorFactory>());
+            RelationalDbContextOptionsExtension.AddWithCheck<IQuerySqlGeneratorFactory, ThinktectureSqlServerQuerySqlGeneratorFactory, SqlServerQuerySqlGeneratorFactory>(services);
 
          if (AddCustomRelationalParameterBasedSqlProcessorFactory)
-            services.Add<IRelationalParameterBasedSqlProcessorFactory, ThinktectureSqlServerParameterBasedSqlProcessorFactory>(RelationalDbContextOptionsExtension.GetLifetime<IRelationalParameterBasedSqlProcessorFactory>());
+            RelationalDbContextOptionsExtension.AddWithCheck<IRelationalParameterBasedSqlProcessorFactory, ThinktectureSqlServerParameterBasedSqlProcessorFactory, SqlServerParameterBasedSqlProcessorFactory>(services);
 
          if (AddTempTableSupport)
          {
@@ -142,7 +145,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
          }
 
          if (UseThinktectureSqlServerMigrationsSqlGenerator)
-            services.Add<IMigrationsSqlGenerator, ThinktectureSqlServerMigrationsSqlGenerator>(RelationalDbContextOptionsExtension.GetLifetime<IMigrationsSqlGenerator>());
+            RelationalDbContextOptionsExtension.AddWithCheck<IMigrationsSqlGenerator, ThinktectureSqlServerMigrationsSqlGenerator, SqlServerMigrationsSqlGenerator>(services);
       }
 
       /// <summary>
@@ -174,6 +177,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
    'Custom RelationalParameterBasedSqlProcessorFactory'={_extension.AddCustomRelationalParameterBasedSqlProcessorFactory},
    'BulkOperationSupport'={_extension.AddBulkOperationSupport},
    'TempTableSupport'={_extension.AddTempTableSupport},
+   'TenantDatabaseSupport'={_extension.AddTenantDatabaseSupport},
    'UseThinktectureSqlServerMigrationsSqlGenerator'={_extension.UseThinktectureSqlServerMigrationsSqlGenerator}
 }}";
 
@@ -192,6 +196,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
                                     _extension.AddCustomRelationalParameterBasedSqlProcessorFactory,
                                     _extension.AddBulkOperationSupport,
                                     _extension.AddTempTableSupport,
+                                    _extension.AddTenantDatabaseSupport,
                                     _extension.UseThinktectureSqlServerMigrationsSqlGenerator);
          }
 
@@ -203,6 +208,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
             debugInfo["Thinktecture:CustomRelationalParameterBasedSqlProcessorFactory"] = _extension.AddCustomRelationalParameterBasedSqlProcessorFactory.ToString(CultureInfo.InvariantCulture);
             debugInfo["Thinktecture:BulkOperationSupport"] = _extension.AddBulkOperationSupport.ToString(CultureInfo.InvariantCulture);
             debugInfo["Thinktecture:TempTableSupport"] = _extension.AddTempTableSupport.ToString(CultureInfo.InvariantCulture);
+            debugInfo["Thinktecture:TenantDatabaseSupport"] = _extension.AddTenantDatabaseSupport.ToString(CultureInfo.InvariantCulture);
             debugInfo["Thinktecture:UseThinktectureSqlServerMigrationsSqlGenerator"] = _extension.UseThinktectureSqlServerMigrationsSqlGenerator.ToString(CultureInfo.InvariantCulture);
          }
       }

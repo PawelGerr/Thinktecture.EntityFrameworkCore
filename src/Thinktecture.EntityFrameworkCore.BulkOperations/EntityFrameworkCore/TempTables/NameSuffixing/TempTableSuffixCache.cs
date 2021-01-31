@@ -45,13 +45,13 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.NameSuffixing
 
          lock (_lock)
          {
-            if (_globalCache.TryGetValue(connection, out var cachedSuffixes))
-            {
-               cachedSuffixes.DecrementNumberOfConsumers();
+            if (!_globalCache.TryGetValue(connection, out var cachedSuffixes))
+               return;
 
-               if (cachedSuffixes.NumberOfConsumers == 0)
-                  _globalCache.Remove(connection);
-            }
+            cachedSuffixes.DecrementNumberOfConsumers();
+
+            if (cachedSuffixes.NumberOfConsumers == 0)
+               _globalCache.Remove(connection);
          }
       }
    }
