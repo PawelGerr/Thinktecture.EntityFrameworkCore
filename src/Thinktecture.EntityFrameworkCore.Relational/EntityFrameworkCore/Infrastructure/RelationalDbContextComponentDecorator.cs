@@ -29,23 +29,6 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
          services[index] = ServiceDescriptor.Describe(typeof(TService), decoratorType, lifetime);
       }
 
-      /// <inheritdoc />
-      public ServiceLifetime GetLifetime<TService>(IServiceCollection services)
-      {
-         if (services == null)
-            throw new ArgumentNullException(nameof(services));
-
-         for (var i = services.Count - 1; i >= 0; i--)
-         {
-            var service = services[i];
-
-            if (service.ServiceType == typeof(TService))
-               return service.Lifetime;
-         }
-
-         throw new NotSupportedException($@"No registration of the Entity Framework Core service '{typeof(TService).FullName}' found. Please make sure the database provider is registered (via 'UseSqlServer' or 'UseSqlite').");
-      }
-
       private static (Type implementationType, ServiceLifetime lifetime, int index) GetLatestRegistration<TService>(IServiceCollection services)
       {
          for (var i = services.Count - 1; i >= 0; i--)

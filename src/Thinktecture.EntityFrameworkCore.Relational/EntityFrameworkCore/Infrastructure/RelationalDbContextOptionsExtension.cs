@@ -113,7 +113,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
             RegisterDefaultSchemaRespectingComponents(services);
 
          if (AddNestedTransactionsSupport)
-            RegisterNestedTransactionManager(services);
+            services.Add(ServiceDescriptor.Describe(typeof(IDbContextTransactionManager), typeof(NestedRelationalTransactionManager), GetLifetime<IDbContextTransactionManager>()));
 
          foreach (var descriptor in _serviceDescriptors)
          {
@@ -136,19 +136,6 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
             return serviceCharacteristics.Lifetime;
 
          throw new InvalidOperationException($"No service characteristics for service '{serviceType.Name}' found.");
-      }
-
-      private void RegisterNestedTransactionManager([NotNull] IServiceCollection services)
-      {
-         var lifetime = ComponentDecorator.GetLifetime<IRelationalConnection>(services);
-
-         services.Add(ServiceDescriptor.Describe(typeof(NestedRelationalTransactionManager),
-                                                 provider => new NestedRelationalTransactionManager(
-                                                                                                    provider.GetRequiredService<IDiagnosticsLogger<RelationalDbLoggerCategory.NestedTransaction>>(),
-                                                                                                    provider.GetRequiredService<IRelationalConnection>()),
-                                                 lifetime));
-         services.Add(ServiceDescriptor.Describe(typeof(IDbContextTransactionManager), provider => provider.GetRequiredService<NestedRelationalTransactionManager>(), lifetime));
-         services.Add(ServiceDescriptor.Describe(typeof(IRelationalTransactionManager), provider => provider.GetRequiredService<NestedRelationalTransactionManager>(), lifetime));
       }
 
       private void RegisterDefaultSchemaRespectingComponents(IServiceCollection services)

@@ -11,6 +11,9 @@ namespace Thinktecture.EntityFrameworkCore.Storage
    {
       private readonly NestedDbContextTransaction _parent;
 
+      /// <inheritdoc />
+      protected override string TransactionTypeName => "child transaction";
+
       /// <summary>
       /// Initializes new instance of <see cref="ChildNestedDbContextTransaction"/>.
       /// </summary>

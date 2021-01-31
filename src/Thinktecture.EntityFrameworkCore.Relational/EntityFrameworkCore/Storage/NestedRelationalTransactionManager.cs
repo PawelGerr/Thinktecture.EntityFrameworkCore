@@ -29,13 +29,13 @@ namespace Thinktecture.EntityFrameworkCore.Storage
       /// Initializes new instance of <see cref="NestedRelationalTransactionManager"/>.
       /// </summary>
       /// <param name="logger">Logger.</param>
-      /// <param name="innerManager">"Real" transaction manager, i.e. the one of the current database provider.</param>
+      /// <param name="connection">Current connection which is the "real" transaction manager, i.e. the one of the current database provider.</param>
       public NestedRelationalTransactionManager(
          IDiagnosticsLogger<RelationalDbLoggerCategory.NestedTransaction> logger,
-         IRelationalTransactionManager innerManager)
+         IRelationalConnection connection)
       {
          _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-         _innerManager = innerManager ?? throw new ArgumentNullException(nameof(innerManager));
+         _innerManager = connection ?? throw new ArgumentNullException(nameof(connection));
          _transactions = new Stack<NestedDbContextTransaction>();
       }
 

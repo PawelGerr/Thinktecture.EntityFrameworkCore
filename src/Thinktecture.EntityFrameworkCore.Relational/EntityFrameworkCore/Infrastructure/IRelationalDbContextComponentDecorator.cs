@@ -15,13 +15,5 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       /// <param name="genericDecoratorTypeDefinition">Generic type definition.</param>
       /// <typeparam name="TService">Service type.</typeparam>
       void RegisterDecorator<TService>(IServiceCollection services, Type genericDecoratorTypeDefinition);
-
-      /// <summary>
-      /// Gets the lifetimes of the last registration of the service with the type <typeparamref name="TService"/>.
-      /// </summary>
-      /// <param name="services">Service collection.</param>
-      /// <typeparam name="TService">Service type.</typeparam>
-      /// <returns>The lifetime of the service with the type <typeparamref name="TService"/>.</returns>
-      ServiceLifetime GetLifetime<TService>(IServiceCollection services);
    }
 }

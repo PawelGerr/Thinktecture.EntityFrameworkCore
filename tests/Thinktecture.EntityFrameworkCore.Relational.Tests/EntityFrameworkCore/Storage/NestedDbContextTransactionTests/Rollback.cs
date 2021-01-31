@@ -25,7 +25,7 @@ namespace Thinktecture.EntityFrameworkCore.Storage.NestedDbContextTransactionTes
          rootTx.Rollback();
 
          rootTx.Invoking(tx => tx.Rollback())
-               .Should().Throw<InvalidOperationException>().WithMessage("This transaction has completed; it is no longer usable.");
+               .Should().Throw<InvalidOperationException>().WithMessage("This root transaction has completed; it is no longer usable.");
 
          SUT.CurrentTransaction.Should().BeNull();
          IsTransactionUsable(rootTx.GetDbTransaction()).Should().BeFalse();

@@ -15,6 +15,9 @@ namespace Thinktecture.EntityFrameworkCore.Storage
       private readonly IRelationalTransactionManager _innerManager;
       private readonly IDbContextTransaction _innerTx;
 
+      /// <inheritdoc />
+      protected override string TransactionTypeName => "root transaction";
+
       /// <summary>
       /// Initializes new instance of <see cref="RootNestedDbContextTransaction"/>.
       /// </summary>
@@ -54,7 +57,7 @@ namespace Thinktecture.EntityFrameworkCore.Storage
       {
          await base.CommitAsync(cancellationToken).ConfigureAwait(false);
 
-         _innerManager.CommitTransaction();
+         await _innerManager.CommitTransactionAsync(cancellationToken).ConfigureAwait(false);
       }
 
       /// <inheritdoc />
@@ -70,7 +73,7 @@ namespace Thinktecture.EntityFrameworkCore.Storage
       {
          await base.RollbackAsync(cancellationToken).ConfigureAwait(false);
 
-         _innerManager.RollbackTransaction();
+         await _innerManager.RollbackTransactionAsync(cancellationToken).ConfigureAwait(false);
       }
 
       /// <inheritdoc />

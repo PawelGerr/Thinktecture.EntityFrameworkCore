@@ -27,6 +27,11 @@ namespace Thinktecture.EntityFrameworkCore.Storage
       private Stack<NestedDbContextTransaction>? _children;
 
       /// <summary>
+      /// Friendly transaction type name.
+      /// </summary>
+      protected abstract string TransactionTypeName { get; }
+
+      /// <summary>
       /// Gets the indication whether the transaction is completed, i.e. committed/rolled back, or not.
       /// </summary>
       protected bool IsCompleted => _isCommitted || _isRolledBack;
@@ -166,7 +171,7 @@ namespace Thinktecture.EntityFrameworkCore.Storage
          _isCommitted = true;
          NestedTransactionManager.Remove(this);
 
-         DiagnosticsLogger.Logger.LogInformation("Committed the transaction with id '{TransactionId}'.", TransactionId);
+         DiagnosticsLogger.Logger.LogInformation("The {TransactionType} with id '{TransactionId}' is committed.", TransactionTypeName, TransactionId);
       }
 
       /// <inheritdoc />
@@ -181,7 +186,7 @@ namespace Thinktecture.EntityFrameworkCore.Storage
          _isCommitted = true;
          await NestedTransactionManager.RemoveAsync(this).ConfigureAwait(false);
 
-         DiagnosticsLogger.Logger.LogInformation("Committed the transaction with id '{TransactionId}'.", TransactionId);
+         DiagnosticsLogger.Logger.LogInformation("The {TransactionType} with id '{TransactionId}' is committed.", TransactionTypeName, TransactionId);
       }
 
       /// <inheritdoc />
@@ -204,7 +209,7 @@ namespace Thinktecture.EntityFrameworkCore.Storage
          EnsureChildrenCompleted();
 
          _isRolledBack = true;
-         DiagnosticsLogger.Logger.LogInformation("Rolled back the transaction with id '{TransactionId}'.", TransactionId);
+         DiagnosticsLogger.Logger.LogInformation("The {TransactionType} with id '{TransactionId}' is rolled back.", TransactionTypeName, TransactionId);
       }
 
       private void EnsureChildrenCompleted()
@@ -219,7 +224,7 @@ namespace Thinktecture.EntityFrameworkCore.Storage
          if (_isDisposed)
             return;
 
-         DiagnosticsLogger.Logger.LogInformation("Disposing the transaction with id '{TransactionId}'.", TransactionId);
+         DiagnosticsLogger.Logger.LogInformation("Disposing {TransactionType} with id '{TransactionId}'.", TransactionTypeName, TransactionId);
          Dispose(true);
 
          _isDisposed = true;
@@ -233,7 +238,7 @@ namespace Thinktecture.EntityFrameworkCore.Storage
          if (_isDisposed)
             return;
 
-         DiagnosticsLogger.Logger.LogInformation("Disposing the transaction with id '{TransactionId}'.", TransactionId);
+         DiagnosticsLogger.Logger.LogInformation("Disposing {TransactionType} with id '{TransactionId}'.", TransactionTypeName, TransactionId);
          await DisposeAsync(true).ConfigureAwait(false);
 
          _isDisposed = true;
@@ -304,7 +309,7 @@ namespace Thinktecture.EntityFrameworkCore.Storage
       private void EnsureUsable()
       {
          if (IsCompleted || _isDisposed)
-            throw new InvalidOperationException("This transaction has completed; it is no longer usable.");
+            throw new InvalidOperationException($"This {TransactionTypeName} has completed; it is no longer usable.");
       }
    }
 }

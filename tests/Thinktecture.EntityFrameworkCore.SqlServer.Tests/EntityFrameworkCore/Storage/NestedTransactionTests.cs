@@ -15,7 +15,7 @@ namespace Thinktecture.EntityFrameworkCore.Storage
 {
    public class NestedTransactionTests : IntegrationTestsBase
    {
-      protected NestedRelationalTransactionManager SUT => ActDbContext.GetService<NestedRelationalTransactionManager>();
+      protected NestedRelationalTransactionManager SUT => (NestedRelationalTransactionManager)ActDbContext.GetService<IDbContextTransactionManager>();
 
       public NestedTransactionTests(ITestOutputHelper testOutputHelper)
          : base(testOutputHelper, false)

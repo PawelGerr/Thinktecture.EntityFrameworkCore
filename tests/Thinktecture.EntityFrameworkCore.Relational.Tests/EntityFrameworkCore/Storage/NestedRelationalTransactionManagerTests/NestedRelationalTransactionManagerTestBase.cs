@@ -2,13 +2,14 @@ using System;
 using System.Data.Common;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Storage;
 using Xunit.Abstractions;
 
 namespace Thinktecture.EntityFrameworkCore.Storage.NestedRelationalTransactionManagerTests
 {
    public abstract class NestedRelationalTransactionManagerTestBase : IntegrationTestsBase
    {
-      protected NestedRelationalTransactionManager SUT => ActDbContext.GetService<NestedRelationalTransactionManager>();
+      protected NestedRelationalTransactionManager SUT => (NestedRelationalTransactionManager)ActDbContext.GetService<IDbContextTransactionManager>();
 
       protected NestedRelationalTransactionManagerTestBase(
          ITestOutputHelper testOutputHelper,
