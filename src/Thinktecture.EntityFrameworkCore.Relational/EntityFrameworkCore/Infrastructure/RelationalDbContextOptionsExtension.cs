@@ -64,18 +64,6 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       /// </summary>
       public bool AddTenantDatabaseSupport { get; set; }
 
-      private bool _addCustomQuerySqlGeneratorFactory;
-
-      /// <summary>
-      /// A custom factory is registered if <c>true</c>.
-      /// The factory is required for some features.
-      /// </summary>
-      public bool AddCustomQuerySqlGeneratorFactory
-      {
-         get => _addCustomQuerySqlGeneratorFactory || AddTenantDatabaseSupport;
-         set => _addCustomQuerySqlGeneratorFactory = value;
-      }
-
       private bool _addCustomRelationalQueryContextFactory;
 
       /// <summary>
@@ -86,18 +74,6 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       {
          get => _addCustomRelationalQueryContextFactory || AddTenantDatabaseSupport;
          set => _addCustomRelationalQueryContextFactory = value;
-      }
-
-      private bool _addCustomRelationalParameterBasedSqlProcessorFactory;
-
-      /// <summary>
-      /// A custom factory is registered if <c>true</c>.
-      /// The factory is required for some features.
-      /// </summary>
-      public bool AddCustomRelationalParameterBasedSqlProcessorFactory
-      {
-         get => _addCustomRelationalParameterBasedSqlProcessorFactory || AddRowNumberSupport;
-         set => _addCustomRelationalParameterBasedSqlProcessorFactory = value;
       }
 
       /// <summary>
@@ -177,7 +153,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
 
       private void RegisterDefaultSchemaRespectingComponents(IServiceCollection services)
       {
-         services.AddSingleton<IMigrationOperationSchemaSetter, MigrationOperationSchemaSetter>();
+         services.TryAddSingleton<IMigrationOperationSchemaSetter, MigrationOperationSchemaSetter>();
 
          ComponentDecorator.RegisterDecorator<IModelCacheKeyFactory>(services, typeof(DefaultSchemaRespectingModelCacheKeyFactory<>));
          ComponentDecorator.RegisterDecorator<IModelCustomizer>(services, typeof(DefaultSchemaModelCustomizer<>));
@@ -244,8 +220,6 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
          public override string LogFragment => _logFragment ??= $@"
 {{
    'Custom RelationalQueryContextFactory'={_extension.AddCustomRelationalQueryContextFactory},
-   'Custom RelationalParameterBasedSqlProcessorFactory'={_extension.AddCustomRelationalParameterBasedSqlProcessorFactory},
-   'Custom QuerySqlGeneratorFactory'={_extension.AddCustomQuerySqlGeneratorFactory},
    'Default schema respecting components added'={_extension.AddSchemaRespectingComponents},
    'NestedTransactionsSupport'={_extension.AddNestedTransactionsSupport},
    'RowNumberSupport'={_extension.AddRowNumberSupport},
@@ -266,6 +240,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
             hashCode.Add(_extension.AddCustomRelationalQueryContextFactory);
             hashCode.Add(_extension.AddSchemaRespectingComponents);
             hashCode.Add(_extension.AddNestedTransactionsSupport);
+            hashCode.Add(_extension.AddTenantDatabaseSupport);
             hashCode.Add(_extension.AddRowNumberSupport);
             hashCode.Add(_extension.ComponentDecorator);
 
@@ -273,8 +248,6 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
             _extension._serviceDescriptors.ForEach(descriptor => hashCode.Add(GetHashCode(descriptor)));
 
             // Following switches doesn't add any new components:
-            //   AddTenantDatabaseSupport
-            //   AddCustomQuerySqlGeneratorFactory
             //   AddCustomRelationalParameterBasedSqlProcessorFactory
 
             return hashCode.ToHashCode();
@@ -304,8 +277,6 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
          public override void PopulateDebugInfo(IDictionary<string, string> debugInfo)
          {
             debugInfo["Thinktecture:CustomRelationalQueryContextFactory"] = _extension.AddCustomRelationalQueryContextFactory.ToString(CultureInfo.InvariantCulture);
-            debugInfo["Thinktecture:CustomRelationalParameterBasedSqlProcessorFactory"] = _extension.AddCustomRelationalParameterBasedSqlProcessorFactory.ToString(CultureInfo.InvariantCulture);
-            debugInfo["Thinktecture:CustomQuerySqlGeneratorFactory"] = _extension.AddCustomQuerySqlGeneratorFactory.ToString(CultureInfo.InvariantCulture);
             debugInfo["Thinktecture:SchemaRespectingComponents"] = _extension.AddSchemaRespectingComponents.ToString(CultureInfo.InvariantCulture);
             debugInfo["Thinktecture:NestedTransactionsSupport"] = _extension.AddNestedTransactionsSupport.ToString(CultureInfo.InvariantCulture);
             debugInfo["Thinktecture:RowNumberSupport"] = _extension.AddRowNumberSupport.ToString(CultureInfo.InvariantCulture);
