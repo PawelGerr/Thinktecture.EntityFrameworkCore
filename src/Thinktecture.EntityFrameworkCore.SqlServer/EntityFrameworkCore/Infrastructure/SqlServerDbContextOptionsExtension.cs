@@ -117,10 +117,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
             services.AddSingleton<IQueryableMethodTranslatingExpressionVisitorFactory, ThinktectureSqlServerQueryableMethodTranslatingExpressionVisitorFactory>();
 
          if (AddCustomQuerySqlGeneratorFactory)
-         {
             services.Add<IQuerySqlGeneratorFactory, ThinktectureSqlServerQuerySqlGeneratorFactory>(RelationalDbContextOptionsExtension.GetLifetime<IQuerySqlGeneratorFactory>());
-            services.TryAdd<ITenantDatabaseProviderFactory, DummyTenantDatabaseProviderFactory>(ServiceLifetime.Singleton);
-         }
 
          if (AddCustomRelationalParameterBasedSqlProcessorFactory)
             services.Add<IRelationalParameterBasedSqlProcessorFactory, ThinktectureSqlServerParameterBasedSqlProcessorFactory>(RelationalDbContextOptionsExtension.GetLifetime<IRelationalParameterBasedSqlProcessorFactory>());

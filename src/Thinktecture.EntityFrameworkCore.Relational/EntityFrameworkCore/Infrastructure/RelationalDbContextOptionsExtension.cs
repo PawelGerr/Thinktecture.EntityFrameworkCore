@@ -116,6 +116,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
             throw new ArgumentNullException(nameof(services));
 
          services.TryAddSingleton(this);
+         services.TryAddSingleton<ITenantDatabaseProviderFactory>(DummyTenantDatabaseProviderFactory.Instance);
 
          services.Add<IMethodCallTranslatorPlugin, RelationalMethodCallTranslatorPlugin>(GetLifetime<IMethodCallTranslatorPlugin>());
 
@@ -186,6 +187,8 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       /// <inheritdoc />
       public void Validate(IDbContextOptions options)
       {
+         if (AddTenantDatabaseSupport && _serviceDescriptors.All(d => d.ServiceType != typeof(ITenantDatabaseProviderFactory)))
+            throw new InvalidOperationException($"TenantDatabaseSupport is enabled but there is no registration of an implementation of '{nameof(ITenantDatabaseProviderFactory)}'.");
       }
 
       /// <summary>
@@ -270,8 +273,8 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
             _extension._serviceDescriptors.ForEach(descriptor => hashCode.Add(GetHashCode(descriptor)));
 
             // Following switches doesn't add any new components:
-            //   AddRowNumberSupport, AddCountDistinctSupport, AddTenantDatabaseSupport,
-            //   AddCustomRelationalSqlTranslatingExpressionVisitorFactory, AddCustomQuerySqlGeneratorFactory,
+            //   AddTenantDatabaseSupport
+            //   AddCustomQuerySqlGeneratorFactory
             //   AddCustomRelationalParameterBasedSqlProcessorFactory
 
             return hashCode.ToHashCode();
@@ -286,7 +289,6 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
                implHashcode = descriptor.ImplementationType.GetHashCode();
             }
             else if (descriptor.ImplementationInstance != null)
-
             {
                implHashcode = descriptor.ImplementationInstance.GetHashCode();
             }

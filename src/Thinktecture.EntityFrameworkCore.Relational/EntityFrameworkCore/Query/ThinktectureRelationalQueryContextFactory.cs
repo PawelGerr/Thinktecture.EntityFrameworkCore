@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.Internal;
+using Thinktecture.EntityFrameworkCore.Infrastructure;
 
 namespace Thinktecture.EntityFrameworkCore.Query
 {
@@ -13,18 +14,22 @@ namespace Thinktecture.EntityFrameworkCore.Query
       private const string _TENANT_PARAM_PREFIX = "97B894F9-5CDA-4B43-B7AC-6BCCE58FC19E";
 
       private readonly TFactory _factory;
+      private readonly RelationalDbContextOptionsExtension _relationalOptions;
       private readonly ITenantDatabaseProviderFactory _tenantDatabaseProviderFactory;
 
       /// <summary>
       /// Initializes new instance of <see cref="ThinktectureRelationalQueryContextFactory{T}"/>.
       /// </summary>
       /// <param name="factory">Inner factory.</param>
+      /// <param name="relationalOptions">Options extensions.</param>
       /// <param name="tenantDatabaseProviderFactory">Tenant provider.</param>
       public ThinktectureRelationalQueryContextFactory(
          TFactory factory,
+         RelationalDbContextOptionsExtension relationalOptions,
          ITenantDatabaseProviderFactory tenantDatabaseProviderFactory)
       {
          _factory = factory ?? throw new ArgumentNullException(nameof(factory));
+         _relationalOptions = relationalOptions ?? throw new ArgumentNullException(nameof(relationalOptions));
          _tenantDatabaseProviderFactory = tenantDatabaseProviderFactory ?? throw new ArgumentNullException(nameof(tenantDatabaseProviderFactory));
       }
 
@@ -33,7 +38,8 @@ namespace Thinktecture.EntityFrameworkCore.Query
       {
          var ctx = _factory.Create();
 
-         AddTenantParameter(ctx);
+         if (_relationalOptions.AddTenantDatabaseSupport)
+            AddTenantParameter(ctx);
 
          return ctx;
       }

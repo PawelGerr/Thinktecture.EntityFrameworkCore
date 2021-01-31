@@ -1,15 +1,16 @@
-using Thinktecture.EntityFrameworkCore.Query;
-
-namespace Thinktecture.EntityFrameworkCore.Infrastructure
+namespace Thinktecture.EntityFrameworkCore.Query
 {
-#pragma warning disable CA1812
    // ReSharper disable once ClassNeverInstantiated.Global
    internal sealed class DummyTenantDatabaseProviderFactory : ITenantDatabaseProviderFactory
    {
+      public static readonly DummyTenantDatabaseProviderFactory Instance = new();
+
+      private static readonly DummyTenantDatabaseProvider _provider = new();
+
       /// <inheritdoc />
       public ITenantDatabaseProvider Create()
       {
-         return new DummyTenantDatabaseProvider();
+         return _provider;
       }
 
       private class DummyTenantDatabaseProvider : ITenantDatabaseProvider
