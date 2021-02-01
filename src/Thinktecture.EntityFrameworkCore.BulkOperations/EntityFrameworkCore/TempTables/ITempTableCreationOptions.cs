@@ -16,7 +16,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
       /// If the database supports "truncate" then the table is going to be truncated otherwise the table is dropped.
       /// If the property is set to <c>false</c> then the temp table is considered a "new table", i.e. no "EXISTS" checks are made.
       /// </remarks>
-      bool TruncateTableIfExists { get; set; }
+      bool TruncateTableIfExists { get; }
 
       /// <summary>
       /// Provides the name to create a temp table with.

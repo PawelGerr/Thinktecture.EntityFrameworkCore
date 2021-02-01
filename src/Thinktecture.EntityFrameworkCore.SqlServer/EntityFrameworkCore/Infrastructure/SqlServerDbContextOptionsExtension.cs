@@ -130,6 +130,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
 
          if (AddTempTableSupport)
          {
+            services.AddSingleton<TempTableStatementCache<SqlServerTempTableCreatorCacheKey>>();
             services.TryAddScoped<ISqlServerTempTableCreator, SqlServerTempTableCreator>();
             services.TryAddScoped<ITempTableCreator>(provider => provider.GetRequiredService<ISqlServerTempTableCreator>());
             services.AddTempTableSuffixComponents();

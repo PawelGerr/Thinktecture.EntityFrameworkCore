@@ -26,6 +26,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
       private readonly IDiagnosticsLogger<DbLoggerCategory.Query> _logger;
       private readonly ISqlGenerationHelper _sqlGenerationHelper;
       private readonly IRelationalTypeMappingSource _typeMappingSource;
+      private readonly TempTableStatementCache<SqlServerTempTableCreatorCacheKey> _cache;
 
       /// <summary>
       /// Initializes <see cref="SqlServerTempTableCreator"/>.
@@ -34,16 +35,19 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
       /// <param name="logger">Logger.</param>
       /// <param name="sqlGenerationHelper">SQL generation helper.</param>
       /// <param name="typeMappingSource">Type mappings.</param>
+      /// <param name="cache">SQL statement cache.</param>
       public SqlServerTempTableCreator(
          ICurrentDbContext ctx,
          IDiagnosticsLogger<DbLoggerCategory.Query> logger,
          ISqlGenerationHelper sqlGenerationHelper,
-         IRelationalTypeMappingSource typeMappingSource)
+         IRelationalTypeMappingSource typeMappingSource,
+         TempTableStatementCache<SqlServerTempTableCreatorCacheKey> cache)
       {
          _ctx = ctx?.Context ?? throw new ArgumentNullException(nameof(sqlGenerationHelper));
          _logger = logger ?? throw new ArgumentNullException(nameof(logger));
          _sqlGenerationHelper = sqlGenerationHelper ?? throw new ArgumentNullException(nameof(sqlGenerationHelper));
          _typeMappingSource = typeMappingSource ?? throw new ArgumentNullException(nameof(typeMappingSource));
+         _cache = cache ?? throw new ArgumentNullException(nameof(cache));
       }
 
       /// <inheritdoc />
@@ -146,42 +150,50 @@ END
          if (tableName == null)
             throw new ArgumentNullException(nameof(tableName));
 
-         var sql = $@"
-      CREATE TABLE {_sqlGenerationHelper.DelimitIdentifier(tableName)}
-      (
-{GetColumnsDefinitions(entityType, options)}
-      );";
+         var cachedStatement = _cache.GetOrAdd(new SqlServerTempTableCreatorCacheKey(options, entityType), CreateCachedStatement);
 
-         if (!options.TruncateTableIfExists)
-            return sql;
-
-         return $@"
-IF(OBJECT_ID('tempdb..{tableName}') IS NOT NULL)
-   TRUNCATE TABLE {_sqlGenerationHelper.DelimitIdentifier(tableName)};
-ELSE
-BEGIN
-{sql}
-END
-";
+         return cachedStatement.GetSqlStatement(tableName);
       }
 
-      private string GetColumnsDefinitions(IEntityType entityType, ISqlServerTempTableCreationOptions options)
+      private CachedTempTableStatement CreateCachedStatement(SqlServerTempTableCreatorCacheKey cacheKey)
       {
-         if (entityType == null)
-            throw new ArgumentNullException(nameof(entityType));
+         var columnDefinitions = GetColumnsDefinitions(cacheKey);
 
-         var properties = options.MembersToInclude.GetPropertiesForTempTable(entityType);
+         if (!cacheKey.TruncateTableIfExists)
+         {
+            return new CachedTempTableStatement(name => $@"
+CREATE TABLE {_sqlGenerationHelper.DelimitIdentifier(name)}
+(
+" + columnDefinitions + @"
+);");
+         }
+
+         return new CachedTempTableStatement(name => $@"
+IF(OBJECT_ID('tempdb..{name}') IS NOT NULL)
+   TRUNCATE TABLE {_sqlGenerationHelper.DelimitIdentifier(name)};
+ELSE
+BEGIN
+CREATE TABLE {_sqlGenerationHelper.DelimitIdentifier(name)}
+(
+" + columnDefinitions + @"
+);
+END
+");
+      }
+
+      private string GetColumnsDefinitions(SqlServerTempTableCreatorCacheKey options)
+      {
          var sb = new StringBuilder();
          var isFirst = true;
 
-         foreach (var property in properties)
+         foreach (var property in options.Properties)
          {
             if (!isFirst)
                sb.AppendLine(",");
 
             var columnType = property.GetColumnType();
 
-            sb.Append("\t\t")
+            sb.Append('\t')
               .Append(_sqlGenerationHelper.DelimitIdentifier(property.GetColumnBaseName())).Append(' ')
               .Append(columnType);
 
@@ -213,7 +225,7 @@ END
             isFirst = false;
          }
 
-         CreatePkClause(options.PrimaryKeyCreation.GetPrimaryKeyProperties(entityType, properties), sb);
+         CreatePkClause(options.PrimaryKeys, sb);
 
          return sb.ToString();
       }
@@ -222,25 +234,25 @@ END
          IReadOnlyCollection<IProperty> keyProperties,
          StringBuilder sb)
       {
-         if (keyProperties.Count > 0)
+         if (keyProperties.Count <= 0)
+            return;
+
+         var columnNames = keyProperties.Select(p => p.GetColumnBaseName());
+
+         sb.AppendLine(",");
+         sb.Append("\t\tPRIMARY KEY (");
+         var isFirst = true;
+
+         foreach (var columnName in columnNames)
          {
-            var columnNames = keyProperties.Select(p => p.GetColumnBaseName());
+            if (!isFirst)
+               sb.Append(", ");
 
-            sb.AppendLine(",");
-            sb.Append("\t\tPRIMARY KEY (");
-            var isFirst = true;
-
-            foreach (var columnName in columnNames)
-            {
-               if (!isFirst)
-                  sb.Append(", ");
-
-               sb.Append(_sqlGenerationHelper.DelimitIdentifier(columnName));
-               isFirst = false;
-            }
-
-            sb.Append(')');
+            sb.Append(_sqlGenerationHelper.DelimitIdentifier(columnName));
+            isFirst = false;
          }
+
+         sb.Append(')');
       }
 
       private static bool IsIdentityColumn(IProperty property)

@@ -21,6 +21,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
       private readonly IDiagnosticsLogger<DbLoggerCategory.Query> _logger;
       private readonly ISqlGenerationHelper _sqlGenerationHelper;
       private readonly IRelationalTypeMappingSource _typeMappingSource;
+      private readonly TempTableStatementCache<SqliteTempTableCreatorCacheKey> _cache;
 
       /// <summary>
       /// Initializes <see cref="SqliteTempTableCreator"/>.
@@ -29,16 +30,19 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
       /// <param name="logger">Logger.</param>
       /// <param name="sqlGenerationHelper">SQL generation helper.</param>
       /// <param name="typeMappingSource">Type mappings.</param>
+      /// <param name="cache">SQL statement cache.</param>
       public SqliteTempTableCreator(
          ICurrentDbContext ctx,
          IDiagnosticsLogger<DbLoggerCategory.Query> logger,
          ISqlGenerationHelper sqlGenerationHelper,
-         IRelationalTypeMappingSource typeMappingSource)
+         IRelationalTypeMappingSource typeMappingSource,
+         TempTableStatementCache<SqliteTempTableCreatorCacheKey> cache)
       {
          _ctx = ctx?.Context ?? throw new ArgumentNullException(nameof(ctx));
          _logger = logger ?? throw new ArgumentNullException(nameof(logger));
          _sqlGenerationHelper = sqlGenerationHelper ?? throw new ArgumentNullException(nameof(sqlGenerationHelper));
          _typeMappingSource = typeMappingSource ?? throw new ArgumentNullException(nameof(typeMappingSource));
+         _cache = cache ?? throw new ArgumentNullException(nameof(cache));
       }
 
       /// <inheritdoc />
@@ -75,29 +79,39 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
          if (tableName == null)
             throw new ArgumentNullException(nameof(tableName));
 
-         var sql = $@"
-      CREATE TEMPORARY TABLE {_sqlGenerationHelper.DelimitIdentifier(tableName)}
-      (
-{GetColumnsDefinitions(entityType, options)}
-      );";
+         var cachedStatement = _cache.GetOrAdd(new SqliteTempTableCreatorCacheKey(options, entityType), CreateCachedStatement);
 
-         if (!options.TruncateTableIfExists)
-            return sql;
-
-         return $@"
-DROP TABLE IF EXISTS {_sqlGenerationHelper.DelimitIdentifier(tableName, "temp")};
-
-{sql}
-";
+         return cachedStatement.GetSqlStatement(tableName);
       }
 
-      private string GetColumnsDefinitions(IEntityType entityType, ITempTableCreationOptions options)
+      private CachedTempTableStatement CreateCachedStatement(SqliteTempTableCreatorCacheKey cacheKey)
       {
-         var properties = options.MembersToInclude.GetPropertiesForTempTable(entityType);
+         var columnDefinitions = GetColumnsDefinitions(cacheKey);
+
+         if (!cacheKey.TruncateTableIfExists)
+         {
+            return new CachedTempTableStatement(name => $@"
+      CREATE TEMPORARY TABLE {_sqlGenerationHelper.DelimitIdentifier(name)}
+      (
+" + columnDefinitions + @"
+      );");
+         }
+
+         return new CachedTempTableStatement(name => $@"
+DROP TABLE IF EXISTS {_sqlGenerationHelper.DelimitIdentifier(name, "temp")};
+
+CREATE TEMPORARY TABLE {_sqlGenerationHelper.DelimitIdentifier(name)}
+(
+" + columnDefinitions + @"
+);");
+      }
+
+      private string GetColumnsDefinitions(SqliteTempTableCreatorCacheKey options)
+      {
          var sb = new StringBuilder();
          var isFirst = true;
 
-         foreach (var property in properties)
+         foreach (var property in options.Properties)
          {
             if (!isFirst)
                sb.AppendLine(",");
@@ -130,7 +144,7 @@ DROP TABLE IF EXISTS {_sqlGenerationHelper.DelimitIdentifier(tableName, "temp")}
             isFirst = false;
          }
 
-         CreatePkClause(options.PrimaryKeyCreation.GetPrimaryKeyProperties(entityType, properties), sb);
+         CreatePkClause(options.PrimaryKeys, sb);
 
          return sb.ToString();
       }

@@ -28,7 +28,8 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqliteTempTableCreatorTest
       private SqliteTempTableCreator SUT => _sut ??= new SqliteTempTableCreator(ActDbContext.GetService<ICurrentDbContext>(),
                                                                                 ActDbContext.GetService<IDiagnosticsLogger<DbLoggerCategory.Query>>(),
                                                                                 _sqlGenerationHelperMock.Object,
-                                                                                _relationalTypeMappingSourceMock.Object);
+                                                                                _relationalTypeMappingSourceMock.Object,
+                                                                                new TempTableStatementCache<SqliteTempTableCreatorCacheKey>());
 
       public CreateTempTableAsync(ITestOutputHelper testOutputHelper)
          : base(testOutputHelper)
