@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
         <TargetFrameworks>netstandard2.1;net5.0</TargetFrameworks>
@@ -7,5 +7,11 @@
     <ItemGroup>
       <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="5.0.2" />
     </ItemGroup>
+
+   <ItemGroup>
+      <Compile Include="..\..\shared\IsExternalInit.cs">
+         <Link>IsExternalInit.cs</Link>
+      </Compile>
+   </ItemGroup>
 
 </Project>
