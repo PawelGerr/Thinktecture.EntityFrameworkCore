@@ -219,6 +219,27 @@ namespace Thinktecture.EntityFrameworkCore.Storage
       }
 
       /// <inheritdoc />
+      public abstract bool SupportsSavepoints { get; }
+
+      /// <inheritdoc />
+      public abstract void CreateSavepoint(string name);
+
+      /// <inheritdoc />
+      public abstract Task CreateSavepointAsync(string name, CancellationToken cancellationToken = default);
+
+      /// <inheritdoc />
+      public abstract void RollbackToSavepoint(string name);
+
+      /// <inheritdoc />
+      public abstract Task RollbackToSavepointAsync(string name, CancellationToken cancellationToken = default);
+
+      /// <inheritdoc />
+      public abstract void ReleaseSavepoint(string name);
+
+      /// <inheritdoc />
+      public abstract Task ReleaseSavepointAsync(string name, CancellationToken cancellationToken = default);
+
+      /// <inheritdoc />
       public void Dispose()
       {
          if (_isDisposed)

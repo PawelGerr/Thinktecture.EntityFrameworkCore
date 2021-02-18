@@ -18,6 +18,9 @@ namespace Thinktecture.EntityFrameworkCore.Storage
       /// <inheritdoc />
       protected override string TransactionTypeName => "root transaction";
 
+      /// <inheritdoc />
+      public override bool SupportsSavepoints => _innerTx.SupportsSavepoints;
+
       /// <summary>
       /// Initializes new instance of <see cref="RootNestedDbContextTransaction"/>.
       /// </summary>
@@ -74,6 +77,42 @@ namespace Thinktecture.EntityFrameworkCore.Storage
          await base.RollbackAsync(cancellationToken).ConfigureAwait(false);
 
          await _innerManager.RollbackTransactionAsync(cancellationToken).ConfigureAwait(false);
+      }
+
+      /// <inheritdoc />
+      public override void CreateSavepoint(string name)
+      {
+         _innerTx.CreateSavepoint(name);
+      }
+
+      /// <inheritdoc />
+      public override Task CreateSavepointAsync(string name, CancellationToken cancellationToken = default)
+      {
+         return _innerTx.CreateSavepointAsync(name, cancellationToken);
+      }
+
+      /// <inheritdoc />
+      public override void RollbackToSavepoint(string name)
+      {
+         _innerTx.RollbackToSavepoint(name);
+      }
+
+      /// <inheritdoc />
+      public override Task RollbackToSavepointAsync(string name, CancellationToken cancellationToken = default)
+      {
+         return _innerTx.RollbackToSavepointAsync(name, cancellationToken);
+      }
+
+      /// <inheritdoc />
+      public override void ReleaseSavepoint(string name)
+      {
+         _innerTx.ReleaseSavepoint(name);
+      }
+
+      /// <inheritdoc />
+      public override Task ReleaseSavepointAsync(string name, CancellationToken cancellationToken = default)
+      {
+         return _innerTx.ReleaseSavepointAsync(name, cancellationToken);
       }
 
       /// <inheritdoc />
