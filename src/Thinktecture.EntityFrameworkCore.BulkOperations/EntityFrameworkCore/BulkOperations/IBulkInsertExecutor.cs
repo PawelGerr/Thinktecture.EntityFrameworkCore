@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 namespace Thinktecture.EntityFrameworkCore.BulkOperations
 {
    /// <summary>
-   /// Executes bulk operations.
+   /// Executes bulk inserts.
    /// </summary>
    public interface IBulkInsertExecutor
    {
