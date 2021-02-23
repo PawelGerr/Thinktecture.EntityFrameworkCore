@@ -24,7 +24,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
    // ReSharper disable once ClassNeverInstantiated.Global
    [SuppressMessage("ReSharper", "EF1001")]
    public sealed class SqliteBulkOperationExecutor
-      : IBulkOperationExecutor, ITempTableBulkOperationExecutor, ITruncateTableExecutor
+      : IBulkInsertExecutor, ITempTableBulkOperationExecutor, ITruncateTableExecutor
    {
       private readonly DbContext _ctx;
       private readonly IDiagnosticsLogger<SqliteDbLoggerCategory.BulkOperation> _logger;
@@ -56,7 +56,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       }
 
       /// <inheritdoc />
-      IBulkInsertOptions IBulkOperationExecutor.CreateOptions()
+      IBulkInsertOptions IBulkInsertExecutor.CreateOptions()
       {
          return new SqliteBulkInsertOptions();
       }

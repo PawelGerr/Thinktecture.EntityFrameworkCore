@@ -122,7 +122,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
          {
             AddEntityDataReader(services);
             services.TryAddScoped<SqliteBulkOperationExecutor, SqliteBulkOperationExecutor>();
-            services.TryAddScoped<IBulkOperationExecutor>(provider => provider.GetRequiredService<SqliteBulkOperationExecutor>());
+            services.TryAddScoped<IBulkInsertExecutor>(provider => provider.GetRequiredService<SqliteBulkOperationExecutor>());
             services.TryAddScoped<ITempTableBulkOperationExecutor>(provider => provider.GetRequiredService<SqliteBulkOperationExecutor>());
             services.TryAddScoped<ITruncateTableExecutor>(provider => provider.GetRequiredService<SqliteBulkOperationExecutor>());
          }

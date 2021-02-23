@@ -7,12 +7,12 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
    /// <summary>
    /// Executes bulk operations.
    /// </summary>
-   public interface IBulkOperationExecutor
+   public interface IBulkInsertExecutor
    {
       /// <summary>
       /// Creates options with default values.
       /// </summary>
-      /// <returns>Options to use with <see cref="IBulkOperationExecutor"/>.</returns>
+      /// <returns>Options to use with <see cref="IBulkInsertExecutor"/>.</returns>
       IBulkInsertOptions CreateOptions();
 
       /// <summary>

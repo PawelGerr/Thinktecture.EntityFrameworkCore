@@ -76,7 +76,7 @@ namespace Thinktecture
                                             CancellationToken cancellationToken = default)
          where T : class
       {
-         var bulkInsertExecutor = ctx.GetService<IBulkOperationExecutor>();
+         var bulkInsertExecutor = ctx.GetService<IBulkInsertExecutor>();
 
          var options = bulkInsertExecutor.CreateOptions();
          options.MembersToInsert = EntityMembersProvider.From(propertiesToInsert);
@@ -99,13 +99,13 @@ namespace Thinktecture
                                             CancellationToken cancellationToken = default)
          where T : class
       {
-         var bulkInsertExecutor = ctx.GetService<IBulkOperationExecutor>();
+         var bulkInsertExecutor = ctx.GetService<IBulkInsertExecutor>();
          options ??= bulkInsertExecutor.CreateOptions();
 
          return BulkInsertAsync(bulkInsertExecutor, entities, options, cancellationToken);
       }
 
-      private static async Task BulkInsertAsync<T>(IBulkOperationExecutor bulkInsertExecutor,
+      private static async Task BulkInsertAsync<T>(IBulkInsertExecutor bulkInsertExecutor,
                                                    IEnumerable<T> entities,
                                                    IBulkInsertOptions options,
                                                    CancellationToken cancellationToken)

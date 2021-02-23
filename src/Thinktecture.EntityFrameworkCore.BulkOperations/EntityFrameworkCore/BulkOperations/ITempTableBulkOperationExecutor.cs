@@ -13,7 +13,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       /// <summary>
       /// Creates options with default values.
       /// </summary>
-      /// <returns>Options to use with <see cref="IBulkOperationExecutor"/>.</returns>
+      /// <returns>Options to use with <see cref="ITempTableBulkOperationExecutor"/>.</returns>
       ITempTableBulkInsertOptions CreateOptions();
 
       /// <summary>
