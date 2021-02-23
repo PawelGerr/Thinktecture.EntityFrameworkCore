@@ -23,7 +23,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
    /// </summary>
    [SuppressMessage("ReSharper", "EF1001")]
    public sealed class SqlServerBulkOperationExecutor
-      : IBulkInsertExecutor, ITempTableBulkOperationExecutor, ITruncateTableExecutor
+      : IBulkInsertExecutor, ITempTableBulkInsertExecutor, ITruncateTableExecutor
    {
       private readonly DbContext _ctx;
       private readonly IDiagnosticsLogger<SqlServerDbLoggerCategory.BulkOperation> _logger;
@@ -61,7 +61,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       }
 
       /// <inheritdoc />
-      ITempTableBulkInsertOptions ITempTableBulkOperationExecutor.CreateOptions()
+      ITempTableBulkInsertOptions ITempTableBulkInsertExecutor.CreateOptions()
       {
          return new SqlServerTempTableBulkInsertOptions();
       }

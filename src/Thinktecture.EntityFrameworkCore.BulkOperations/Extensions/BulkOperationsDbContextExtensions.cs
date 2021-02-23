@@ -180,7 +180,7 @@ namespace Thinktecture
                                                                              CancellationToken cancellationToken = default)
          where T : class
       {
-         var executor = ctx.GetService<ITempTableBulkOperationExecutor>();
+         var executor = ctx.GetService<ITempTableBulkInsertExecutor>();
          options ??= executor.CreateOptions();
          return executor.BulkInsertIntoTempTableAsync(entities, options, cancellationToken);
       }

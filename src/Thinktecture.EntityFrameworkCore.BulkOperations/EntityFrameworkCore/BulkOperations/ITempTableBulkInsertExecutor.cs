@@ -8,12 +8,12 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
    /// <summary>
    /// Inserts entities into a temp table.
    /// </summary>
-   public interface ITempTableBulkOperationExecutor
+   public interface ITempTableBulkInsertExecutor
    {
       /// <summary>
       /// Creates options with default values.
       /// </summary>
-      /// <returns>Options to use with <see cref="ITempTableBulkOperationExecutor"/>.</returns>
+      /// <returns>Options to use with <see cref="ITempTableBulkInsertExecutor"/>.</returns>
       ITempTableBulkInsertOptions CreateOptions();
 
       /// <summary>
