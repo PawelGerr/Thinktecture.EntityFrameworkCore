@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Thinktecture.EntityFrameworkCore.BulkOperations;
@@ -20,8 +19,9 @@ namespace Thinktecture
       /// <param name="entityMembersProvider">Entity member provider.</param>
       /// <param name="entityType">Entity type.</param>
       /// <returns>Properties to include into a temp table.</returns>
-      public static IReadOnlyList<IProperty> GetPropertiesForTempTable(this IEntityMembersProvider? entityMembersProvider,
-                                                                       IEntityType entityType)
+      public static IReadOnlyList<IProperty> GetPropertiesForTempTable(
+         this IEntityMembersProvider? entityMembersProvider,
+         IEntityType entityType)
       {
          if (entityType == null)
             throw new ArgumentNullException(nameof(entityType));
@@ -29,7 +29,25 @@ namespace Thinktecture
          if (entityMembersProvider == null)
             return entityType.GetProperties().ToList();
 
-         return ConvertToEntityProperties(entityMembersProvider.GetMembers(), entityType);
+         return entityMembersProvider.GetMembers().ConvertToEntityProperties(entityType);
+      }
+
+      /// <summary>
+      /// Determines properties to include into a temp table into.
+      /// </summary>
+      /// <param name="entityMembersProvider">Entity member provider.</param>
+      /// <param name="entityType">Entity type.</param>
+      /// <returns>Properties to include into a temp table.</returns>
+      public static IReadOnlyList<IProperty> GetProperties(
+         this IEntityMembersProvider entityMembersProvider,
+         IEntityType entityType)
+      {
+         if (entityMembersProvider == null)
+            throw new ArgumentNullException(nameof(entityMembersProvider));
+         if (entityType == null)
+            throw new ArgumentNullException(nameof(entityType));
+
+         return entityMembersProvider.GetMembers().ConvertToEntityProperties(entityType);
       }
 
       /// <summary>
@@ -37,9 +55,30 @@ namespace Thinktecture
       /// </summary>
       /// <param name="entityMembersProvider">Entity member provider.</param>
       /// <param name="entityType">Entity type.</param>
-      /// <returns>Properties to use insert into a (temp) table.</returns>
-      public static IReadOnlyList<IProperty> GetPropertiesForInsert(this IEntityMembersProvider? entityMembersProvider,
-                                                                    IEntityType entityType)
+      /// <returns>Properties to insert into a (temp) table.</returns>
+      public static IReadOnlyList<IProperty> GetPropertiesForInsert(
+         this IEntityMembersProvider? entityMembersProvider,
+         IEntityType entityType)
+      {
+         return GetWritableProperties(entityMembersProvider, entityType);
+      }
+
+      /// <summary>
+      /// Determines properties to use in update of a table.
+      /// </summary>
+      /// <param name="entityMembersProvider">Entity member provider.</param>
+      /// <param name="entityType">Entity type.</param>
+      /// <returns>Properties to use in update of a table.</returns>
+      public static IReadOnlyList<IProperty> GetPropertiesForUpdate(
+         this IEntityMembersProvider? entityMembersProvider,
+         IEntityType entityType)
+      {
+         return GetWritableProperties(entityMembersProvider, entityType);
+      }
+
+      private static IReadOnlyList<IProperty> GetWritableProperties(
+         IEntityMembersProvider? entityMembersProvider,
+         IEntityType entityType)
       {
          if (entityType == null)
             throw new ArgumentNullException(nameof(entityType));
@@ -47,33 +86,7 @@ namespace Thinktecture
          if (entityMembersProvider == null)
             return entityType.GetProperties().Where(p => p.GetBeforeSaveBehavior() != PropertySaveBehavior.Ignore).ToList();
 
-         return ConvertToEntityProperties(entityMembersProvider.GetMembers(), entityType);
-      }
-
-      private static IReadOnlyList<IProperty> ConvertToEntityProperties(IReadOnlyList<MemberInfo> memberInfos, IEntityType entityType)
-      {
-         var properties = new IProperty[memberInfos.Count];
-
-         for (var i = 0; i < memberInfos.Count; i++)
-         {
-            var memberInfo = memberInfos[i];
-            var property = FindProperty(entityType, memberInfo);
-
-            properties[i] = property ?? throw new ArgumentException($"The member '{memberInfo.Name}' has not found on entity '{entityType.Name}'.", nameof(memberInfos));
-         }
-
-         return properties;
-      }
-
-      private static IProperty? FindProperty(IEntityType entityType, MemberInfo memberInfo)
-      {
-         foreach (var property in entityType.GetProperties())
-         {
-            if (property.PropertyInfo == memberInfo || property.FieldInfo == memberInfo)
-               return property;
-         }
-
-         return null;
+         return entityMembersProvider.GetMembers().ConvertToEntityProperties(entityType);
       }
    }
 }

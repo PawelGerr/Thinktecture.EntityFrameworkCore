@@ -72,7 +72,7 @@ namespace Thinktecture
       /// <exception cref="ArgumentNullException"> <paramref name="ctx"/> or <paramref name="entities"/> is <c>null</c>.</exception>
       public static Task BulkInsertAsync<T>(this DbContext ctx,
                                             IEnumerable<T> entities,
-                                            Expression<Func<T, object>> propertiesToInsert,
+                                            Expression<Func<T, object?>> propertiesToInsert,
                                             CancellationToken cancellationToken = default)
          where T : class
       {
@@ -115,6 +115,67 @@ namespace Thinktecture
             throw new ArgumentNullException(nameof(bulkInsertExecutor));
 
          await bulkInsertExecutor.BulkInsertAsync(entities, options, cancellationToken).ConfigureAwait(false);
+      }
+
+      /// <summary>
+      /// Updates <paramref name="entities"/> in the table.
+      /// </summary>
+      /// <param name="ctx">Database context.</param>
+      /// <param name="entities">Entities to update.</param>
+      /// <param name="propertiesToUpdate">Properties to update.</param>
+      /// <param name="propertiesToMatchOn">Properties to match on.</param>
+      /// <param name="cancellationToken">Cancellation token.</param>
+      /// <typeparam name="T">Entity type.</typeparam>
+      /// <exception cref="ArgumentNullException"> <paramref name="ctx"/> or <paramref name="entities"/> is <c>null</c>.</exception>
+      public static Task BulkUpdateAsync<T>(this DbContext ctx,
+                                            IEnumerable<T> entities,
+                                            Expression<Func<T, object?>> propertiesToUpdate,
+                                            Expression<Func<T, object?>>? propertiesToMatchOn = null,
+                                            CancellationToken cancellationToken = default)
+         where T : class
+      {
+         var bulkInsertExecutor = ctx.GetService<IBulkUpdateExecutor>();
+
+         var options = bulkInsertExecutor.CreateOptions();
+         options.MembersToUpdate = EntityMembersProvider.From(propertiesToUpdate);
+
+         if (propertiesToMatchOn is not null)
+            options.KeyProperties = EntityMembersProvider.From(propertiesToMatchOn);
+
+         return BulkUpdateAsync(bulkInsertExecutor, entities, options, cancellationToken);
+      }
+
+      /// <summary>
+      /// Updates <paramref name="entities"/> in the table.
+      /// </summary>
+      /// <param name="ctx">Database context.</param>
+      /// <param name="entities">Entities to update.</param>
+      /// <param name="options">Options.</param>
+      /// <param name="cancellationToken">Cancellation token.</param>
+      /// <typeparam name="T">Entity type.</typeparam>
+      /// <exception cref="ArgumentNullException"> <paramref name="ctx"/> or <paramref name="entities"/> is <c>null</c>.</exception>
+      public static Task BulkUpdateAsync<T>(this DbContext ctx,
+                                            IEnumerable<T> entities,
+                                            IBulkUpdateOptions? options = null,
+                                            CancellationToken cancellationToken = default)
+         where T : class
+      {
+         var bulkUpdateExecutor = ctx.GetService<IBulkUpdateExecutor>();
+         options ??= bulkUpdateExecutor.CreateOptions();
+
+         return BulkUpdateAsync(bulkUpdateExecutor, entities, options, cancellationToken);
+      }
+
+      private static async Task BulkUpdateAsync<T>(IBulkUpdateExecutor bulkUpdateExecutor,
+                                                   IEnumerable<T> entities,
+                                                   IBulkUpdateOptions options,
+                                                   CancellationToken cancellationToken)
+         where T : class
+      {
+         if (bulkUpdateExecutor == null)
+            throw new ArgumentNullException(nameof(bulkUpdateExecutor));
+
+         await bulkUpdateExecutor.BulkUpdateAsync(entities, options, cancellationToken).ConfigureAwait(false);
       }
 
       /// <summary>

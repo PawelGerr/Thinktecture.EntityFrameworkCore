@@ -85,20 +85,9 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       }
 
       /// <summary>
-      /// Enables and disables support for temp tables.
+      /// Enables and disables support for bulk operations and temp tables.
       /// </summary>
-      public bool AddTempTableSupport { get; set; }
-
-      private bool _addBulkOperationSupport;
-
-      /// <summary>
-      /// Enables and disables support for bulk operations.
-      /// </summary>
-      public bool AddBulkOperationSupport
-      {
-         get => _addBulkOperationSupport || AddTempTableSupport; // temp tables require bulk operations
-         set => _addBulkOperationSupport = value;
-      }
+      public bool AddBulkOperationSupport { get; set; }
 
       /// <summary>
       /// Changes the implementation of <see cref="IMigrationsSqlGenerator"/> to <see cref="ThinktectureSqlServerMigrationsSqlGenerator"/>.
@@ -128,20 +117,18 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
          if (AddCustomRelationalParameterBasedSqlProcessorFactory)
             AddWithCheck<IRelationalParameterBasedSqlProcessorFactory, ThinktectureSqlServerParameterBasedSqlProcessorFactory, SqlServerParameterBasedSqlProcessorFactory>(services);
 
-         if (AddTempTableSupport)
+         if (AddBulkOperationSupport)
          {
             services.AddSingleton<TempTableStatementCache<SqlServerTempTableCreatorCacheKey>>();
             services.TryAddScoped<ISqlServerTempTableCreator, SqlServerTempTableCreator>();
             services.TryAddScoped<ITempTableCreator>(provider => provider.GetRequiredService<ISqlServerTempTableCreator>());
             services.AddTempTableSuffixComponents();
-         }
 
-         if (AddBulkOperationSupport)
-         {
             AddEntityDataReader(services);
             services.TryAddScoped<SqlServerBulkOperationExecutor, SqlServerBulkOperationExecutor>();
             services.TryAddScoped<IBulkInsertExecutor>(provider => provider.GetRequiredService<SqlServerBulkOperationExecutor>());
             services.TryAddScoped<ITempTableBulkInsertExecutor>(provider => provider.GetRequiredService<SqlServerBulkOperationExecutor>());
+            services.TryAddScoped<IBulkUpdateExecutor>(provider => provider.GetRequiredService<SqlServerBulkOperationExecutor>());
             services.TryAddScoped<ITruncateTableExecutor>(provider => provider.GetRequiredService<SqlServerBulkOperationExecutor>());
          }
 
@@ -177,7 +164,6 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
    'Custom QuerySqlGeneratorFactory'={_extension.AddCustomQuerySqlGeneratorFactory},
    'Custom RelationalParameterBasedSqlProcessorFactory'={_extension.AddCustomRelationalParameterBasedSqlProcessorFactory},
    'BulkOperationSupport'={_extension.AddBulkOperationSupport},
-   'TempTableSupport'={_extension.AddTempTableSupport},
    'TenantDatabaseSupport'={_extension.AddTenantDatabaseSupport},
    'UseThinktectureSqlServerMigrationsSqlGenerator'={_extension.UseThinktectureSqlServerMigrationsSqlGenerator}
 }}";
@@ -196,7 +182,6 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
                                     _extension.AddCustomQuerySqlGeneratorFactory,
                                     _extension.AddCustomRelationalParameterBasedSqlProcessorFactory,
                                     _extension.AddBulkOperationSupport,
-                                    _extension.AddTempTableSupport,
                                     _extension.AddTenantDatabaseSupport,
                                     _extension.UseThinktectureSqlServerMigrationsSqlGenerator);
          }
@@ -208,7 +193,6 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
             debugInfo["Thinktecture:CustomQuerySqlGeneratorFactory"] = _extension.AddCustomQuerySqlGeneratorFactory.ToString(CultureInfo.InvariantCulture);
             debugInfo["Thinktecture:CustomRelationalParameterBasedSqlProcessorFactory"] = _extension.AddCustomRelationalParameterBasedSqlProcessorFactory.ToString(CultureInfo.InvariantCulture);
             debugInfo["Thinktecture:BulkOperationSupport"] = _extension.AddBulkOperationSupport.ToString(CultureInfo.InvariantCulture);
-            debugInfo["Thinktecture:TempTableSupport"] = _extension.AddTempTableSupport.ToString(CultureInfo.InvariantCulture);
             debugInfo["Thinktecture:TenantDatabaseSupport"] = _extension.AddTenantDatabaseSupport.ToString(CultureInfo.InvariantCulture);
             debugInfo["Thinktecture:UseThinktectureSqlServerMigrationsSqlGenerator"] = _extension.UseThinktectureSqlServerMigrationsSqlGenerator.ToString(CultureInfo.InvariantCulture);
          }

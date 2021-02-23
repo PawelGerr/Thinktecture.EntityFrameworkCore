@@ -80,7 +80,7 @@ namespace Thinktecture
       {
          base.ConfigureSqlServer(builder);
 
-         builder.AddTempTableSupport()
+         builder.AddBulkOperationSupport()
                 .AddRowNumberSupport();
 
          if (IsTenantDatabaseSupportEnabled)

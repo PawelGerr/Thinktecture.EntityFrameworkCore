@@ -45,7 +45,7 @@ namespace Thinktecture
             .AddDbContext<DemoDbContext>(builder => builder
                                                     .UseSqlite(ConnectionString, sqlOptions =>
                                                                                  {
-                                                                                    sqlOptions.AddTempTableSupport()
+                                                                                    sqlOptions.AddBulkOperationSupport()
                                                                                               .AddRowNumberSupport();
                                                                                  })
                                                     .EnableSensitiveDataLogging()

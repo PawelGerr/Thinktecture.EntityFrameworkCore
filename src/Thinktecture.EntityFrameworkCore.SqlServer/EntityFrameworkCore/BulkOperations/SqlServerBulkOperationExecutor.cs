@@ -23,7 +23,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
    /// </summary>
    [SuppressMessage("ReSharper", "EF1001")]
    public sealed class SqlServerBulkOperationExecutor
-      : IBulkInsertExecutor, ITempTableBulkInsertExecutor, ITruncateTableExecutor
+      : IBulkInsertExecutor, ITempTableBulkInsertExecutor, IBulkUpdateExecutor, ITruncateTableExecutor
    {
       private readonly DbContext _ctx;
       private readonly IDiagnosticsLogger<SqlServerDbLoggerCategory.BulkOperation> _logger;
@@ -33,9 +33,6 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       {
          public static readonly EventId Inserting = 0;
          public static readonly EventId Inserted = 1;
-
-         public static readonly EventId Truncating = 2;
-         public static readonly EventId Truncated = 3;
       }
 
       /// <summary>
@@ -67,6 +64,12 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       }
 
       /// <inheritdoc />
+      IBulkUpdateOptions IBulkUpdateExecutor.CreateOptions()
+      {
+         return new SqlServerBulkUpdateOptions();
+      }
+
+      /// <inheritdoc />
       public Task BulkInsertAsync<T>(
          IEnumerable<T> entities,
          IBulkInsertOptions options,
@@ -94,7 +97,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
          if (options == null)
             throw new ArgumentNullException(nameof(options));
 
-         if (!(options is SqlServerBulkInsertOptions sqlServerOptions))
+         if (options is not ISqlServerBulkInsertOptions sqlServerOptions)
             sqlServerOptions = new SqlServerBulkInsertOptions(options);
 
          var factory = _ctx.GetService<IEntityDataReaderFactory>();
@@ -145,7 +148,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
          return columnsSb.ToString();
       }
 
-      private SqlBulkCopy CreateSqlBulkCopy(SqlConnection sqlCon, SqlTransaction? sqlTx, string? schema, string tableName, SqlServerBulkInsertOptions sqlServerOptions)
+      private SqlBulkCopy CreateSqlBulkCopy(SqlConnection sqlCon, SqlTransaction? sqlTx, string? schema, string tableName, ISqlServerBulkInsertOptions sqlServerOptions)
       {
          var bulkCopy = new SqlBulkCopy(sqlCon, sqlServerOptions.SqlBulkCopyOptions, sqlTx)
                         {
@@ -164,9 +167,9 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
 
       private void LogInserting(SqlBulkCopyOptions options, SqlBulkCopy bulkCopy, string columns)
       {
-         _logger.Logger.LogInformation(EventIds.Inserting, @"Executing DbCommand [SqlBulkCopyOptions={SqlBulkCopyOptions}, BulkCopyTimeout={BulkCopyTimeout}, BatchSize={BatchSize}, EnableStreaming={EnableStreaming}]
-INSERT BULK {table} ({columns})", options, bulkCopy.BulkCopyTimeout, bulkCopy.BatchSize, bulkCopy.EnableStreaming,
-                                       bulkCopy.DestinationTableName, columns);
+         _logger.Logger.LogDebug(EventIds.Inserting, @"Executing DbCommand [SqlBulkCopyOptions={SqlBulkCopyOptions}, BulkCopyTimeout={BulkCopyTimeout}, BatchSize={BatchSize}, EnableStreaming={EnableStreaming}]
+INSERT BULK {Table} ({Columns})", options, bulkCopy.BulkCopyTimeout, bulkCopy.BatchSize, bulkCopy.EnableStreaming,
+                                 bulkCopy.DestinationTableName, columns);
       }
 
       private void LogInserted(SqlBulkCopyOptions options, TimeSpan duration, SqlBulkCopy bulkCopy, string columns)
@@ -184,7 +187,7 @@ INSERT BULK {table} ({columns})", (long)duration.TotalMilliseconds,
          CancellationToken cancellationToken = default)
          where T : class
       {
-         if (options is not SqlServerTempTableBulkInsertOptions sqlServerOptions)
+         if (options is not ISqlServerTempTableBulkInsertOptions sqlServerOptions)
             sqlServerOptions = new SqlServerTempTableBulkInsertOptions(options);
 
          return BulkInsertIntoTempTableAsync(entities, sqlServerOptions, cancellationToken);
@@ -249,15 +252,130 @@ INSERT BULK {table} ({columns})", (long)duration.TotalMilliseconds,
          var tableIdentifier = _sqlGenerationHelper.DelimitIdentifier(entityType.GetTableName(), entityType.GetSchema());
          var truncateStatement = $"TRUNCATE TABLE {tableIdentifier};";
 
-         _logger.Logger.LogInformation(EventIds.Truncating, @"Executing DbCommand
-{TruncateStatement}", truncateStatement);
-         var stopwatch = Stopwatch.StartNew();
-
          await _ctx.Database.ExecuteSqlRawAsync(truncateStatement, cancellationToken);
+      }
 
-         stopwatch.Stop();
-         _logger.Logger.LogInformation(EventIds.Truncated, @"Executed DbCommand ({Duration}ms)
-{TruncateStatement}", stopwatch.ElapsedMilliseconds, truncateStatement);
+      /// <inheritdoc />
+      public async Task<int> BulkUpdateAsync<T>(
+         IEnumerable<T> entities,
+         IBulkUpdateOptions options,
+         CancellationToken cancellationToken = default)
+         where T : class
+      {
+         if (entities == null)
+            throw new ArgumentNullException(nameof(entities));
+         if (options == null)
+            throw new ArgumentNullException(nameof(options));
+
+         if (options is not ISqlServerBulkUpdateOptions sqlServerOptions)
+            sqlServerOptions = new SqlServerBulkUpdateOptions(options);
+
+         var entityType = _ctx.Model.GetEntityType(typeof(T));
+         var propertiesForUpdate = options.MembersToUpdate.GetPropertiesForUpdate(entityType);
+
+         if (propertiesForUpdate.Count == 0)
+            throw new ArgumentException("The number of properties to update cannot be 0.");
+
+         await using var tempTable = await BulkInsertIntoTempTableAsync(entities, sqlServerOptions.TempTableOptions, cancellationToken);
+
+         var mergeStatement = CreateMergeCommand(entityType, tempTable.Name, sqlServerOptions, propertiesForUpdate);
+
+         return await _ctx.Database.ExecuteSqlRawAsync(mergeStatement, cancellationToken);
+      }
+
+      private string CreateMergeCommand(
+         IEntityType entityType,
+         string sourceTempTableName,
+         ISqlServerBulkUpdateOptions options,
+         IReadOnlyList<IProperty> propertiesToUpdate)
+      {
+         var keyProperties = GetKeyPropertiesForMerge(entityType, propertiesToUpdate, options.KeyProperties);
+
+         var sb = new StringBuilder();
+
+         sb.Append("MERGE INTO ")
+           .Append(_sqlGenerationHelper.DelimitIdentifier(entityType.GetTableName(), entityType.GetSchema()));
+
+         if (options.MergeTableHints.Count != 0)
+         {
+            sb.Append(" WITH (");
+
+            for (var i = 0; i < options.MergeTableHints.Count; i++)
+            {
+               if (i != 0)
+                  sb.Append(", ");
+
+               sb.Append(options.MergeTableHints[i]);
+            }
+
+            sb.Append(")");
+         }
+
+         sb.Append(" AS d USING ")
+           .Append(_sqlGenerationHelper.DelimitIdentifier(sourceTempTableName))
+           .Append(" AS s ON ");
+
+         var isFirstIteration = true;
+
+         foreach (var property in keyProperties)
+         {
+            if (!isFirstIteration)
+               sb.AppendLine(" AND ");
+
+            var escapedColumnName = _sqlGenerationHelper.DelimitIdentifier(property.GetColumnBaseName());
+
+            sb.Append("(d.").Append(escapedColumnName).Append(" = s.").Append(escapedColumnName);
+
+            if (property.IsNullable)
+               sb.Append(" OR d.").Append(escapedColumnName).Append(" IS NULL AND s.").Append(escapedColumnName).Append(" IS NULL");
+
+            sb.Append(")");
+            isFirstIteration = false;
+         }
+
+         sb.AppendLine()
+           .AppendLine("WHEN MATCHED THEN UPDATE SET");
+
+         isFirstIteration = true;
+
+         foreach (var property in propertiesToUpdate.Except(keyProperties))
+         {
+            if (!isFirstIteration)
+               sb.AppendLine(",");
+
+            var columnName = property.GetColumnBaseName();
+            var escapedColumnName = _sqlGenerationHelper.DelimitIdentifier(columnName);
+
+            sb.Append("\td.").Append(escapedColumnName).Append(" = s.").Append(escapedColumnName);
+            isFirstIteration = false;
+         }
+
+         sb.Append(_sqlGenerationHelper.StatementTerminator);
+
+         return sb.ToString();
+      }
+
+      private static IReadOnlyCollection<IProperty> GetKeyPropertiesForMerge(
+         IEntityType entityType,
+         IReadOnlyList<IProperty> properties,
+         IEntityMembersProvider? keyMembersProvider)
+      {
+         var keyProperties = keyMembersProvider is null
+                                ? entityType.FindPrimaryKey()?.Properties
+                                : keyMembersProvider.GetProperties(entityType);
+
+         if (keyProperties is null or { Count: 0 })
+            throw new ArgumentException("The number of key properties to perform JOIN/match on cannot be 0.");
+
+         var missingColumns = keyProperties.Except(properties);
+
+         if (missingColumns.Any())
+         {
+            throw new InvalidOperationException(@$"Cannot execute MERGE command because not all key columns are part of the source table.
+Missing columns: {String.Join(", ", missingColumns.Select(c => c.GetColumnBaseName()))}.");
+         }
+
+         return keyProperties;
       }
    }
 }

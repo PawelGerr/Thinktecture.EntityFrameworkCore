@@ -47,7 +47,7 @@ namespace Thinktecture
          if (ctx == null)
             throw new ArgumentNullException(nameof(ctx));
 
-         using var command = ctx.Database.GetDbConnection().CreateCommand();
+         await using var command = ctx.Database.GetDbConnection().CreateCommand();
 
          command.Transaction = ctx.Database.CurrentTransaction?.GetDbTransaction();
 #pragma warning disable CA2100

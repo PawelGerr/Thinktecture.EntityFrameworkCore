@@ -15,19 +15,7 @@ namespace Thinktecture
    public static class SqlServerDbContextOptionsBuilderExtensions
    {
       /// <summary>
-      /// Adds support for temp tables.
-      /// </summary>
-      /// <param name="sqlServerOptionsBuilder">SQL Server options builder.</param>
-      /// <param name="addTempTableSupport">Indication whether to enable or disable the feature.</param>
-      /// <returns>Provided <paramref name="sqlServerOptionsBuilder"/>.</returns>
-      public static SqlServerDbContextOptionsBuilder AddTempTableSupport(this SqlServerDbContextOptionsBuilder sqlServerOptionsBuilder,
-                                                                         bool addTempTableSupport = true)
-      {
-         return AddOrUpdateExtension(sqlServerOptionsBuilder, extension => extension.AddTempTableSupport = addTempTableSupport);
-      }
-
-      /// <summary>
-      /// Adds support for bulk operations.
+      /// Adds support for bulk operations and temp tables.
       /// </summary>
       /// <param name="sqlServerOptionsBuilder">SQL Server options builder.</param>
       /// <param name="addBulkOperationSupport">Indication whether to enable or disable the feature.</param>

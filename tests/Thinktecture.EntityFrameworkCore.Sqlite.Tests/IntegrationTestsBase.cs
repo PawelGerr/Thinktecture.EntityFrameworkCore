@@ -62,7 +62,7 @@ namespace Thinktecture
       {
          base.ConfigureSqlite(builder);
 
-         builder.AddTempTableSupport()
+         builder.AddBulkOperationSupport()
                 .AddRowNumberSupport();
       }
 

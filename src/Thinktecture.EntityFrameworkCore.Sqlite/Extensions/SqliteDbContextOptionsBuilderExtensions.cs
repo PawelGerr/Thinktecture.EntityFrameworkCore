@@ -11,19 +11,7 @@ namespace Thinktecture
    public static class SqliteDbContextOptionsBuilderExtensions
    {
       /// <summary>
-      /// Adds support for temp tables.
-      /// </summary>
-      /// <param name="sqliteOptionsBuilder">SQLite options builder.</param>
-      /// <param name="addTempTableSupport">Indication whether to enable or disable the feature.</param>
-      /// <returns>Provided <paramref name="sqliteOptionsBuilder"/>.</returns>
-      public static SqliteDbContextOptionsBuilder AddTempTableSupport(this SqliteDbContextOptionsBuilder sqliteOptionsBuilder,
-                                                                      bool addTempTableSupport = true)
-      {
-         return AddOrUpdateExtension(sqliteOptionsBuilder, extension => extension.AddTempTableSupport = addTempTableSupport);
-      }
-
-      /// <summary>
-      /// Adds support for bulk operations.
+      /// Adds support for bulk operations and temp tables.
       /// </summary>
       /// <param name="sqliteOptionsBuilder">SQLite options builder.</param>
       /// <param name="addBulkOperationSupport">Indication whether to enable or disable the feature.</param>
@@ -63,7 +51,7 @@ namespace Thinktecture
       }
 
       private static SqliteDbContextOptionsBuilder AddOrUpdateExtension(this SqliteDbContextOptionsBuilder sqliteOptionsBuilder,
-                                                                         Action<SqliteDbContextOptionsExtension> callback)
+                                                                        Action<SqliteDbContextOptionsExtension> callback)
       {
          if (sqliteOptionsBuilder == null)
             throw new ArgumentNullException(nameof(sqliteOptionsBuilder));

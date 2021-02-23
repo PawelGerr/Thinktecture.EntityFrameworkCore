@@ -51,7 +51,7 @@ namespace Thinktecture
 
                                                                                        sqlOptions.AddRowNumberSupport()
                                                                                                  .AddTenantDatabaseSupport<DemoTenantDatabaseProviderFactory>()
-                                                                                                 .AddTempTableSupport()
+                                                                                                 .AddBulkOperationSupport()
                                                                                                  .UseThinktectureSqlServerMigrationsSqlGenerator();
                                                                                     })
                                                     .EnableSensitiveDataLogging()

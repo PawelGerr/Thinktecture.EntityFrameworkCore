@@ -73,20 +73,9 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       }
 
       /// <summary>
-      /// Enables and disables support for temp tables.
+      /// Enables and disables support for bulk operations and temp tables.
       /// </summary>
-      public bool AddTempTableSupport { get; set; }
-
-      private bool _addBulkOperationSupport;
-
-      /// <summary>
-      /// Enables and disables support for bulk operations.
-      /// </summary>
-      public bool AddBulkOperationSupport
-      {
-         get => _addBulkOperationSupport || AddTempTableSupport; // temp tables require bulk operations
-         set => _addBulkOperationSupport = value;
-      }
+      public bool AddBulkOperationSupport { get; set; }
 
       /// <summary>
       /// Initializes new instance of <see cref="SqliteDbContextOptionsExtension"/>.
@@ -111,15 +100,12 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
          if (AddCustomRelationalParameterBasedSqlProcessorFactory)
             AddWithCheck<IRelationalParameterBasedSqlProcessorFactory, ThinktectureRelationalParameterBasedSqlProcessorFactory, RelationalParameterBasedSqlProcessorFactory>(services);
 
-         if (AddTempTableSupport)
+         if (AddBulkOperationSupport)
          {
             services.AddSingleton<TempTableStatementCache<SqliteTempTableCreatorCacheKey>>();
             services.TryAddScoped<ITempTableCreator, SqliteTempTableCreator>();
             services.AddTempTableSuffixComponents();
-         }
 
-         if (AddBulkOperationSupport)
-         {
             AddEntityDataReader(services);
             services.TryAddScoped<SqliteBulkOperationExecutor, SqliteBulkOperationExecutor>();
             services.TryAddScoped<IBulkInsertExecutor>(provider => provider.GetRequiredService<SqliteBulkOperationExecutor>());
@@ -145,8 +131,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
    'Custom QueryableMethodTranslatingExpressionVisitorFactory'={_extension.AddCustomQueryableMethodTranslatingExpressionVisitorFactory},
    'Custom QuerySqlGeneratorFactory'={_extension.AddCustomQuerySqlGeneratorFactory},
    'Custom RelationalParameterBasedSqlProcessorFactory'={_extension.AddCustomRelationalParameterBasedSqlProcessorFactory},
-   'BulkOperationSupport'={_extension.AddBulkOperationSupport},
-   'TempTableSupport'={_extension.AddTempTableSupport}
+   'BulkOperationSupport'={_extension.AddBulkOperationSupport}
 }}";
 
          /// <inheritdoc />
@@ -162,8 +147,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
             return HashCode.Combine(_extension.AddCustomQueryableMethodTranslatingExpressionVisitorFactory,
                                     _extension.AddCustomQuerySqlGeneratorFactory,
                                     _extension.AddCustomRelationalParameterBasedSqlProcessorFactory,
-                                    _extension.AddBulkOperationSupport,
-                                    _extension.AddTempTableSupport);
+                                    _extension.AddBulkOperationSupport);
          }
 
          /// <inheritdoc />
@@ -173,7 +157,6 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
             debugInfo["Thinktecture:CustomQuerySqlGeneratorFactory"] = _extension.AddCustomQuerySqlGeneratorFactory.ToString(CultureInfo.InvariantCulture);
             debugInfo["Thinktecture:CustomRelationalParameterBasedSqlProcessorFactory"] = _extension.AddCustomRelationalParameterBasedSqlProcessorFactory.ToString(CultureInfo.InvariantCulture);
             debugInfo["Thinktecture:BulkOperationSupport"] = _extension.AddBulkOperationSupport.ToString(CultureInfo.InvariantCulture);
-            debugInfo["Thinktecture:TempTableSupport"] = _extension.AddTempTableSupport.ToString(CultureInfo.InvariantCulture);
          }
       }
    }
