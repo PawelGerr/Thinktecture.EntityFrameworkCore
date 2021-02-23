@@ -184,5 +184,19 @@ namespace Thinktecture
          options ??= executor.CreateOptions();
          return executor.BulkInsertIntoTempTableAsync(entities, options, cancellationToken);
       }
+
+      /// <summary>
+      /// Truncates the table of the entity of type <typeparamref name="T"/>.
+      /// </summary>
+      /// <param name="ctx">Database context.</param>
+      /// <param name="cancellationToken">Cancellation token.</param>
+      /// <typeparam name="T">Type of the entity to truncate.</typeparam>
+      public static Task TruncateTableAsync<T>(this DbContext ctx,
+                                               CancellationToken cancellationToken = default)
+         where T : class
+      {
+         var executor = ctx.GetService<ITruncateTableExecutor>();
+         return executor.TruncateTableAsync<T>(cancellationToken);
+      }
    }
 }

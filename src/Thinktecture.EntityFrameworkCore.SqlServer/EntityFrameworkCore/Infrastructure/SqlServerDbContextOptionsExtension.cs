@@ -142,6 +142,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
             services.TryAddScoped<SqlServerBulkOperationExecutor, SqlServerBulkOperationExecutor>();
             services.TryAddScoped<IBulkOperationExecutor>(provider => provider.GetRequiredService<SqlServerBulkOperationExecutor>());
             services.TryAddScoped<ITempTableBulkOperationExecutor>(provider => provider.GetRequiredService<SqlServerBulkOperationExecutor>());
+            services.TryAddScoped<ITruncateTableExecutor>(provider => provider.GetRequiredService<SqlServerBulkOperationExecutor>());
          }
 
          if (UseThinktectureSqlServerMigrationsSqlGenerator)

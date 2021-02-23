@@ -23,7 +23,8 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
    /// </summary>
    // ReSharper disable once ClassNeverInstantiated.Global
    [SuppressMessage("ReSharper", "EF1001")]
-   public sealed class SqliteBulkOperationExecutor : IBulkOperationExecutor, ITempTableBulkOperationExecutor
+   public sealed class SqliteBulkOperationExecutor
+      : IBulkOperationExecutor, ITempTableBulkOperationExecutor, ITruncateTableExecutor
    {
       private readonly DbContext _ctx;
       private readonly IDiagnosticsLogger<SqliteDbLoggerCategory.BulkOperation> _logger;
@@ -33,6 +34,9 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       {
          public static readonly EventId Inserting = 0;
          public static readonly EventId Inserted = 1;
+
+         public static readonly EventId Truncating = 2;
+         public static readonly EventId Truncated = 3;
       }
 
       /// <summary>
@@ -249,6 +253,25 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
             await tempTableReference.DisposeAsync().ConfigureAwait(false);
             throw;
          }
+      }
+
+      /// <inheritdoc />
+      public async Task TruncateTableAsync<T>(CancellationToken cancellationToken = default)
+         where T : class
+      {
+         var entityType = _ctx.Model.GetEntityType(typeof(T));
+         var tableIdentifier = _sqlGenerationHelper.DelimitIdentifier(entityType.GetTableName(), entityType.GetSchema());
+         var truncateStatement = $"DELETE FROM {tableIdentifier};";
+
+         _logger.Logger.LogInformation(EventIds.Truncating, @"Executing DbCommand
+{TruncateStatement}", truncateStatement);
+         var stopwatch = Stopwatch.StartNew();
+
+         await _ctx.Database.ExecuteSqlRawAsync(truncateStatement, cancellationToken);
+
+         stopwatch.Stop();
+         _logger.Logger.LogInformation(EventIds.Truncated, @"Executed DbCommand ({Duration}ms)
+{TruncateStatement}", stopwatch.ElapsedMilliseconds, truncateStatement);
       }
 
       private readonly struct ParameterInfo
