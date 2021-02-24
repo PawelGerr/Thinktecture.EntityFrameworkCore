@@ -6,7 +6,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
    /// <summary>
    /// Bulk insert options for SQLite.
    /// </summary>
-   public sealed class SqliteBulkInsertOptions : IBulkInsertOptions
+   public sealed class SqliteBulkInsertOptions : ISqliteBulkInsertOptions
    {
       /// <inheritdoc />
       public IEntityMembersProvider? MembersToInsert { get; set; }
@@ -15,7 +15,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       /// Behavior for auto-increment columns.
       /// Default is <see cref="SqliteAutoIncrementBehavior.SetZeroToNull"/>
       /// </summary>
-      public SqliteAutoIncrementBehavior AutoIncrementBehavior { get; set; } = SqliteAutoIncrementBehavior.SetZeroToNull;
+      public SqliteAutoIncrementBehavior AutoIncrementBehavior { get; set; }
 
       /// <summary>
       /// Initializes new instance of <see cref="SqliteBulkInsertOptions"/>.
@@ -24,11 +24,14 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       public SqliteBulkInsertOptions(IBulkInsertOptions? optionsToInitializeFrom = null)
       {
          if (optionsToInitializeFrom is null)
+         {
+            AutoIncrementBehavior = SqliteAutoIncrementBehavior.SetZeroToNull;
             return;
+         }
 
          MembersToInsert = optionsToInitializeFrom.MembersToInsert;
 
-         if (optionsToInitializeFrom is SqliteBulkInsertOptions sqliteOptions)
+         if (optionsToInitializeFrom is ISqliteBulkInsertOptions sqliteOptions)
             AutoIncrementBehavior = sqliteOptions.AutoIncrementBehavior;
       }
    }

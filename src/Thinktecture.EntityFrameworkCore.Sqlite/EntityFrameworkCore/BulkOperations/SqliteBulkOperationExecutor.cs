@@ -24,7 +24,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
    // ReSharper disable once ClassNeverInstantiated.Global
    [SuppressMessage("ReSharper", "EF1001")]
    public sealed class SqliteBulkOperationExecutor
-      : IBulkInsertExecutor, ITempTableBulkInsertExecutor, ITruncateTableExecutor
+      : IBulkInsertExecutor, ITempTableBulkInsertExecutor, IBulkUpdateExecutor, ITruncateTableExecutor
    {
       private readonly DbContext _ctx;
       private readonly IDiagnosticsLogger<SqliteDbLoggerCategory.BulkOperation> _logger;
@@ -32,8 +32,8 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
 
       private static class EventIds
       {
-         public static readonly EventId Inserting = 0;
-         public static readonly EventId Inserted = 1;
+         public static readonly EventId Started = 0;
+         public static readonly EventId Finished = 1;
       }
 
       /// <summary>
@@ -65,6 +65,12 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       }
 
       /// <inheritdoc />
+      IBulkUpdateOptions IBulkUpdateExecutor.CreateOptions()
+      {
+         return new SqliteBulkUpdateOptions();
+      }
+
+      /// <inheritdoc />
       public Task BulkInsertAsync<T>(
          IEnumerable<T> entities,
          IBulkInsertOptions options,
@@ -92,11 +98,26 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
          if (options == null)
             throw new ArgumentNullException(nameof(options));
 
-         if (!(options is SqliteBulkInsertOptions sqliteOptions))
+         if (!(options is ISqliteBulkInsertOptions sqliteOptions))
             sqliteOptions = new SqliteBulkInsertOptions(options);
 
-         var factory = _ctx.GetService<IEntityDataReaderFactory>();
          var properties = sqliteOptions.MembersToInsert.GetPropertiesForInsert(entityType);
+         var autoIncrementBehavior = sqliteOptions.AutoIncrementBehavior;
+
+         await ExecuteBulkOperationAsync(entities, schema, tableName, SqliteCommandBuilder.Insert, properties, autoIncrementBehavior, cancellationToken);
+      }
+
+      private async Task<int> ExecuteBulkOperationAsync<T>(
+         IEnumerable<T> entities,
+         string? schema,
+         string tableName,
+         SqliteCommandBuilder commandBuilder,
+         IReadOnlyList<IProperty> properties,
+         SqliteAutoIncrementBehavior autoIncrementBehavior,
+         CancellationToken cancellationToken)
+         where T : class
+      {
+         var factory = _ctx.GetService<IEntityDataReaderFactory>();
          var sqlCon = (SqliteConnection)_ctx.Database.GetDbConnection();
 
          using var reader = factory.Create(_ctx, entities, properties);
@@ -109,7 +130,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
 
             var tableIdentifier = _sqlGenerationHelper.DelimitIdentifier(tableName, schema);
 #pragma warning disable CA2100
-            command.CommandText = GetInsertStatement(reader, tableIdentifier);
+            command.CommandText = commandBuilder.GetStatement(_sqlGenerationHelper, reader, tableIdentifier);
 #pragma warning restore CA2100
             var parameterInfos = CreateParameters(reader, command);
 
@@ -122,27 +143,30 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
                throw new InvalidOperationException($"Cannot access destination table '{tableIdentifier}'.", ex);
             }
 
-            LogInserting(command.CommandText);
+            LogBulkOperationStart(command.CommandText);
             var stopwatch = Stopwatch.StartNew();
+            var numberOfAffectedRows = 0;
 
             while (reader.Read())
             {
                for (var i = 0; i < reader.FieldCount; i++)
                {
                   var paramInfo = parameterInfos[i];
-                  object? value = reader.GetValue(i);
+                  var value = reader.GetValue(i);
 
-                  if (sqliteOptions.AutoIncrementBehavior == SqliteAutoIncrementBehavior.SetZeroToNull && paramInfo.IsAutoIncrementColumn && 0.Equals(value))
+                  if (autoIncrementBehavior == SqliteAutoIncrementBehavior.SetZeroToNull && paramInfo.IsAutoIncrementColumn && 0.Equals(value))
                      value = null;
 
                   paramInfo.Parameter.Value = value ?? DBNull.Value;
                }
 
-               await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+               numberOfAffectedRows += await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
             }
 
             stopwatch.Stop();
-            LogInserted(command.CommandText, stopwatch.Elapsed);
+            LogBulkOperationEnd(command.CommandText, stopwatch.Elapsed);
+
+            return numberOfAffectedRows;
          }
          finally
          {
@@ -168,50 +192,16 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
          return parameters;
       }
 
-      private string GetInsertStatement(IEntityDataReader reader,
-                                        string tableIdentifier)
+      private void LogBulkOperationStart(string statement)
       {
-         var sb = new StringBuilder();
-         sb.Append("INSERT INTO ").Append(tableIdentifier).Append('(');
-
-         for (var i = 0; i < reader.Properties.Count; i++)
-         {
-            var column = reader.Properties[i];
-
-            if (i > 0)
-               sb.Append(", ");
-
-            sb.Append(_sqlGenerationHelper.DelimitIdentifier(column.GetColumnBaseName()));
-         }
-
-         sb.Append(") VALUES (");
-
-         for (var i = 0; i < reader.Properties.Count; i++)
-         {
-            var property = reader.Properties[i];
-            var index = reader.GetPropertyIndex(property);
-
-            if (i > 0)
-               sb.Append(", ");
-
-            sb.Append("$p").Append(index);
-         }
-
-         sb.Append(");");
-
-         return sb.ToString();
+         _logger.Logger.LogDebug(EventIds.Started, @"Executing DbCommand
+{Statement}", statement);
       }
 
-      private void LogInserting(string insertStatement)
+      private void LogBulkOperationEnd(string statement, TimeSpan duration)
       {
-         _logger.Logger.LogDebug(EventIds.Inserting, @"Executing DbCommand
-{insertStatement}", insertStatement);
-      }
-
-      private void LogInserted(string insertStatement, TimeSpan duration)
-      {
-         _logger.Logger.LogInformation(EventIds.Inserted, @"Executed DbCommand ({duration}ms)
-{insertStatement}", (long)duration.TotalMilliseconds, insertStatement);
+         _logger.Logger.LogInformation(EventIds.Finished, @"Executed DbCommand ({Duration}ms)
+{Statement}", (long)duration.TotalMilliseconds, statement);
       }
 
       /// <inheritdoc />
@@ -229,7 +219,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
          var entityType = _ctx.Model.GetEntityType(typeof(T));
          var tempTableCreator = _ctx.GetService<ITempTableCreator>();
 
-         if (!(options is SqliteTempTableBulkInsertOptions))
+         if (options is not ISqliteTempTableBulkInsertOptions)
          {
             var sqliteOptions = new SqliteTempTableBulkInsertOptions(options);
             options = sqliteOptions;
@@ -261,6 +251,28 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
          var truncateStatement = $"DELETE FROM {tableIdentifier};";
 
          await _ctx.Database.ExecuteSqlRawAsync(truncateStatement, cancellationToken);
+      }
+
+      /// <inheritdoc />
+      public async Task<int> BulkUpdateAsync<T>(
+         IEnumerable<T> entities,
+         IBulkUpdateOptions options,
+         CancellationToken cancellationToken = default)
+         where T : class
+      {
+         if (entities == null)
+            throw new ArgumentNullException(nameof(entities));
+         if (options == null)
+            throw new ArgumentNullException(nameof(options));
+
+         if (!(options is ISqliteBulkUpdateOptions sqliteOptions))
+            sqliteOptions = new SqliteBulkUpdateOptions(options);
+
+         var entityType = _ctx.Model.GetEntityType(typeof(T));
+         var propertiesToUpdate = sqliteOptions.MembersToUpdate.GetPropertiesForUpdate(entityType);
+         var keyProperties = options.KeyProperties.GetKeyProperties(entityType, propertiesToUpdate);
+
+         return await ExecuteBulkOperationAsync(entities, entityType.GetSchema(), entityType.GetTableName(), SqliteCommandBuilder.Update(keyProperties), propertiesToUpdate, SqliteAutoIncrementBehavior.KeepValueAsIs, cancellationToken);
       }
 
       private readonly struct ParameterInfo

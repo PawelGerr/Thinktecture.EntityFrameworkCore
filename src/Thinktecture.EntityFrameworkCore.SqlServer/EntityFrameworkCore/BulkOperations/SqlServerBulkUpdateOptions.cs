@@ -13,7 +13,6 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
    {
       private static readonly ImmutableArray<TableHintLimited> _defaultTableHints = ImmutableArray<TableHintLimited>.Empty.Add(TableHintLimited.HoldLock);
 
-      ITempTableBulkInsertOptions IBulkUpdateOptions.TempTableOptions => TempTableOptions;
       ISqlServerTempTableBulkInsertOptions ISqlServerBulkUpdateOptions.TempTableOptions => TempTableOptions;
 
       /// <summary>
@@ -47,17 +46,15 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       /// <param name="optionsToInitializeFrom">Options to initialize from.</param>
       public SqlServerBulkUpdateOptions(IBulkUpdateOptions? optionsToInitializeFrom = null)
       {
-         TempTableOptions = new SqlServerTempTableBulkInsertOptions(optionsToInitializeFrom?.TempTableOptions);
-
          if (optionsToInitializeFrom is ISqlServerBulkUpdateOptions options)
          {
-            MembersToUpdate = options.MembersToUpdate;
+            TempTableOptions = new SqlServerTempTableBulkInsertOptions(options.TempTableOptions);
             KeyProperties = options.KeyProperties;
             MergeTableHints = options.MergeTableHints;
          }
          else
          {
-            TempTableOptions.PrimaryKeyCreation = PrimaryKeyPropertiesProviders.None;
+            TempTableOptions = new SqlServerTempTableBulkInsertOptions { PrimaryKeyCreation = PrimaryKeyPropertiesProviders.None };
          }
       }
    }

@@ -42,7 +42,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
                                                                          {
                                                                             MembersToUpdate = membersProvider
                                                                          }))
-            .Should().Throw<InvalidOperationException>().WithMessage(@"Cannot execute MERGE command because not all key columns are part of the source table.
+            .Should().Throw<InvalidOperationException>().WithMessage(@"Not all key properties are part of the source table.
 Missing columns: Id.");
       }
 

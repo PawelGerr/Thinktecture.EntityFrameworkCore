@@ -37,6 +37,41 @@ namespace Thinktecture
       /// </summary>
       /// <param name="entityMembersProvider">Entity member provider.</param>
       /// <param name="entityType">Entity type.</param>
+      /// <param name="properties">Properties of the table.</param>
+      /// <returns>Properties to include into a temp table.</returns>
+      public static IReadOnlyList<IProperty> GetKeyProperties(
+         this IEntityMembersProvider? entityMembersProvider,
+         IEntityType entityType,
+         IReadOnlyList<IProperty> properties)
+      {
+         if (entityType == null)
+            throw new ArgumentNullException(nameof(entityType));
+         if (properties == null)
+            throw new ArgumentNullException(nameof(properties));
+
+         var keyProperties = entityMembersProvider is null
+                                ? entityType.FindPrimaryKey()?.Properties
+                                : entityMembersProvider.GetProperties(entityType);
+
+         if (keyProperties is null or { Count: 0 })
+            throw new ArgumentException("The number of key properties to perform JOIN/match on cannot be 0.");
+
+         var missingColumns = keyProperties.Except(properties);
+
+         if (missingColumns.Any())
+         {
+            throw new InvalidOperationException(@$"Not all key properties are part of the source table.
+Missing columns: {String.Join(", ", missingColumns.Select(c => c.GetColumnBaseName()))}.");
+         }
+
+         return keyProperties;
+      }
+
+      /// <summary>
+      /// Determines properties to include into a temp table into.
+      /// </summary>
+      /// <param name="entityMembersProvider">Entity member provider.</param>
+      /// <param name="entityType">Entity type.</param>
       /// <returns>Properties to include into a temp table.</returns>
       public static IReadOnlyList<IProperty> GetProperties(
          this IEntityMembersProvider entityMembersProvider,

@@ -175,7 +175,7 @@ INSERT BULK {Table} ({Columns})", options, bulkCopy.BulkCopyTimeout, bulkCopy.Ba
       private void LogInserted(SqlBulkCopyOptions options, TimeSpan duration, SqlBulkCopy bulkCopy, string columns)
       {
          _logger.Logger.LogInformation(EventIds.Inserted, @"Executed DbCommand ({duration}ms) [SqlBulkCopyOptions={SqlBulkCopyOptions}, BulkCopyTimeout={BulkCopyTimeout}, BatchSize={BatchSize}, EnableStreaming={EnableStreaming}]
-INSERT BULK {table} ({columns})", (long)duration.TotalMilliseconds,
+INSERT BULK {Table} ({Columns})", (long)duration.TotalMilliseconds,
                                        options, bulkCopy.BulkCopyTimeout, bulkCopy.BatchSize, bulkCopy.EnableStreaming,
                                        bulkCopy.DestinationTableName, columns);
       }
@@ -289,7 +289,7 @@ INSERT BULK {table} ({columns})", (long)duration.TotalMilliseconds,
          ISqlServerBulkUpdateOptions options,
          IReadOnlyList<IProperty> propertiesToUpdate)
       {
-         var keyProperties = GetKeyPropertiesForMerge(entityType, propertiesToUpdate, options.KeyProperties);
+         var keyProperties = options.KeyProperties.GetKeyProperties(entityType, propertiesToUpdate);
 
          var sb = new StringBuilder();
 
@@ -353,29 +353,6 @@ INSERT BULK {table} ({columns})", (long)duration.TotalMilliseconds,
          sb.Append(_sqlGenerationHelper.StatementTerminator);
 
          return sb.ToString();
-      }
-
-      private static IReadOnlyCollection<IProperty> GetKeyPropertiesForMerge(
-         IEntityType entityType,
-         IReadOnlyList<IProperty> properties,
-         IEntityMembersProvider? keyMembersProvider)
-      {
-         var keyProperties = keyMembersProvider is null
-                                ? entityType.FindPrimaryKey()?.Properties
-                                : keyMembersProvider.GetProperties(entityType);
-
-         if (keyProperties is null or { Count: 0 })
-            throw new ArgumentException("The number of key properties to perform JOIN/match on cannot be 0.");
-
-         var missingColumns = keyProperties.Except(properties);
-
-         if (missingColumns.Any())
-         {
-            throw new InvalidOperationException(@$"Cannot execute MERGE command because not all key columns are part of the source table.
-Missing columns: {String.Join(", ", missingColumns.Select(c => c.GetColumnBaseName()))}.");
-         }
-
-         return keyProperties;
       }
    }
 }

@@ -5,36 +5,44 @@ using System.Reflection;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
-using Thinktecture.EntityFrameworkCore.BulkOperations;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Thinktecture.TestDatabaseContext;
 using Xunit;
 using Xunit.Abstractions;
 
 // ReSharper disable InconsistentNaming
 
-namespace Thinktecture.Extensions.DbContextExtensionsTests
+namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqliteBulkOperationExecutorTests
 {
    // ReSharper disable once InconsistentNaming
    public class BulkUpdateAsync : IntegrationTestsBase
    {
+      private SqliteBulkOperationExecutor? _sut;
+
+      private SqliteBulkOperationExecutor SUT => _sut ??= ActDbContext.GetService<SqliteBulkOperationExecutor>();
+
       public BulkUpdateAsync(ITestOutputHelper testOutputHelper)
-         : base(testOutputHelper, true)
+         : base(testOutputHelper)
       {
       }
 
       [Fact]
       public void Should_not_throw_if_entities_is_empty()
       {
-         ActDbContext.Invoking(sut => sut.BulkUpdateAsync(new List<TestEntity>()))
-                     .Should().NotThrow();
+         SUT.Invoking(sut => sut.BulkUpdateAsync(new List<TestEntity>(), new SqliteBulkUpdateOptions()))
+            .Should().NotThrow();
       }
 
       [Fact]
       public void Should_throw_if_key_property_is_not_present()
       {
-         ActDbContext.Invoking(sut => sut.BulkUpdateAsync(new List<TestEntity>(),
-                                                          entity => new { entity.Name }))
-                     .Should().Throw<InvalidOperationException>().WithMessage(@"Not all key properties are part of the source table.
+         var membersProvider = EntityMembersProvider.From<TestEntity>(entity => new { entity.Name });
+
+         SUT.Invoking(sut => sut.BulkUpdateAsync(new List<TestEntity>(), new SqliteBulkUpdateOptions
+                                                                         {
+                                                                            MembersToUpdate = membersProvider
+                                                                         }))
+            .Should().Throw<InvalidOperationException>().WithMessage(@"Not all key properties are part of the source table.
 Missing columns: Id.");
       }
 
@@ -47,7 +55,7 @@ Missing columns: Id.");
 
          entity.ConvertibleClass = new ConvertibleClass(43);
 
-         await ActDbContext.BulkUpdateAsync(new List<TestEntity> { entity });
+         await SUT.BulkUpdateAsync(new List<TestEntity> { entity }, new SqliteBulkUpdateOptions());
 
          var loadedEntity = AssertDbContext.TestEntities.Single();
          loadedEntity.ConvertibleClass.Should().NotBeNull();
@@ -67,7 +75,7 @@ Missing columns: Id.");
          entity_2.Name = "OtherName";
          entity_2.Count = 2;
 
-         await ActDbContext.BulkUpdateAsync(new[] { entity_1, entity_2 });
+         await SUT.BulkUpdateAsync(new[] { entity_1, entity_2 }, new SqliteBulkUpdateOptions());
 
          var loadedEntities = await AssertDbContext.TestEntities.ToListAsync();
          loadedEntities.Should().HaveCount(2)
@@ -88,9 +96,9 @@ Missing columns: Id.");
          entity_2.Name = "value";
          entity_2.Count = 2;
 
-         await ActDbContext.BulkUpdateAsync(new[] { entity_1, entity_2 },
-                                            e => new { e.Name, e.Count },
-                                            e => e.Name);
+         var properties = EntityMembersProvider.From<TestEntity>(e => new { e.Name, e.Count });
+         var keyProperties = EntityMembersProvider.From<TestEntity>(e => e.Name);
+         await SUT.BulkUpdateAsync(new[] { entity_1, entity_2 }, new SqliteBulkUpdateOptions { MembersToUpdate = properties, KeyProperties = keyProperties });
 
          entity_1.Name = "value";
          entity_2.Name = null;
@@ -117,7 +125,7 @@ Missing columns: Id.");
          entity_2.Name = "OtherName";
          entity_2.Count = 2;
 
-         await ActDbContext.BulkUpdateAsync(new[] { entity_1 });
+         await SUT.BulkUpdateAsync(new[] { entity_1 }, new SqliteBulkUpdateOptions());
 
          entity_2.Name = default;
          entity_2.Count = default;
@@ -137,7 +145,7 @@ Missing columns: Id.");
 
          entity.SetPrivateField(1);
 
-         await ActDbContext.BulkUpdateAsync(new[] { entity });
+         await SUT.BulkUpdateAsync(new[] { entity }, new SqliteBulkUpdateOptions());
 
          var loadedEntity = await AssertDbContext.TestEntities.FirstOrDefaultAsync();
          loadedEntity.GetPrivateField().Should().Be(1);
@@ -153,7 +161,7 @@ Missing columns: Id.");
          ActDbContext.Entry(entity).Property("ShadowStringProperty").CurrentValue = "value";
          ActDbContext.Entry(entity).Property("ShadowIntProperty").CurrentValue = 42;
 
-         await ActDbContext.BulkUpdateAsync(new[] { entity });
+         await SUT.BulkUpdateAsync(new[] { entity }, new SqliteBulkUpdateOptions());
 
          var loadedEntity = await AssertDbContext.TestEntitiesWithShadowProperties.FirstOrDefaultAsync();
          AssertDbContext.Entry(loadedEntity).Property("ShadowStringProperty").CurrentValue.Should().Be("value");
@@ -179,33 +187,17 @@ Missing columns: Id.");
          entity.NullableInt = null;
          entity.NullableString = null;
 
-         await ActDbContext.BulkUpdateAsync(new[] { entity });
+         await SUT.BulkUpdateAsync(new[] { entity }, new SqliteBulkUpdateOptions());
 
          var loadedEntity = await AssertDbContext.TestEntitiesWithDefaultValues.FirstOrDefaultAsync();
          loadedEntity.Should().BeEquivalentTo(new TestEntityWithSqlDefaultValues
                                               {
                                                  Id = new Guid("53A5EC9B-BB8D-4B9D-9136-68C011934B63"),
-                                                 Int = 0,         // persisted as-is
-                                                 NullableInt = 2, // DEFAULT value constraint
+                                                 Int = 0,            // persisted as-is
+                                                 NullableInt = null, // persisted as-is
                                                  String = "other value",
-                                                 NullableString = "4" // DEFAULT value constraint
+                                                 NullableString = null // persisted as-is
                                               });
-      }
-
-      [Fact]
-      public async Task Should_ignore_RowVersion()
-      {
-         var entity = new TestEntityWithRowVersion { Id = new Guid("EBC95620-4D80-4318-9B92-AD7528B2965C") };
-         ArrangeDbContext.Add(entity);
-         await ArrangeDbContext.SaveChangesAsync();
-
-         entity.RowVersion = Int32.MaxValue;
-
-         await ActDbContext.BulkUpdateAsync(new[] { entity });
-
-         var loadedEntity = await AssertDbContext.TestEntitiesWithRowVersion.FirstOrDefaultAsync();
-         loadedEntity.Id.Should().Be(new Guid("EBC95620-4D80-4318-9B92-AD7528B2965C"));
-         loadedEntity.RowVersion.Should().NotBe(Int32.MaxValue);
       }
 
       [Fact]
@@ -225,17 +217,17 @@ Missing columns: Id.");
          var propertyWithBackingField = typeof(TestEntity).GetProperty(nameof(TestEntity.PropertyWithBackingField)) ?? throw new Exception($"Property {nameof(TestEntity.PropertyWithBackingField)} not found.");
          var privateField = typeof(TestEntity).GetField("_privateField", BindingFlags.Instance | BindingFlags.NonPublic) ?? throw new Exception($"Field _privateField not found.");
 
-         await ActDbContext.BulkUpdateAsync(new[] { entity },
-                                            new SqlServerBulkUpdateOptions
-                                            {
-                                               MembersToUpdate = new EntityMembersProvider(new MemberInfo[]
-                                                                                           {
-                                                                                              idProperty,
-                                                                                              countProperty,
-                                                                                              propertyWithBackingField,
-                                                                                              privateField
-                                                                                           })
-                                            });
+         await SUT.BulkUpdateAsync(new[] { entity },
+                                   new SqliteBulkUpdateOptions
+                                   {
+                                      MembersToUpdate = new EntityMembersProvider(new MemberInfo[]
+                                                                                  {
+                                                                                     idProperty,
+                                                                                     countProperty,
+                                                                                     propertyWithBackingField,
+                                                                                     privateField
+                                                                                  })
+                                   });
 
          var loadedEntities = await AssertDbContext.TestEntities.ToListAsync();
          loadedEntities.Should().HaveCount(1);
