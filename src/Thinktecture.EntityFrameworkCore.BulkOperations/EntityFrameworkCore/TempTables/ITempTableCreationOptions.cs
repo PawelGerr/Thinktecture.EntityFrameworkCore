@@ -31,9 +31,9 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
 
       /// <summary>
       /// Properties to create temp table with.
-      /// If the <see cref="MembersToInclude"/> is <c>null</c> then the tamp table will contain all properties of the entity.
+      /// If the <see cref="PropertiesToInclude"/> is <c>null</c> then the tamp table will contain all properties of the entity.
       /// </summary>
-      IEntityMembersProvider? MembersToInclude { get; }
+      IEntityPropertiesProvider? PropertiesToInclude { get; }
 
       /// <summary>
       /// Indication whether to drop the temp table on dispose of <see cref="ITempTableQuery{T}"/>.

@@ -33,7 +33,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
          IEntityType entityType)
       {
          TruncateTableIfExists = options.TruncateTableIfExists;
-         Properties = options.MembersToInclude.GetPropertiesForTempTable(entityType);
+         Properties = options.PropertiesToInclude.GetPropertiesForTempTable(entityType);
          PrimaryKeys = options.PrimaryKeyCreation.GetPrimaryKeyProperties(entityType, Properties);
       }
 

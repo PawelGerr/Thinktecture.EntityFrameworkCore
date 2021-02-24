@@ -65,9 +65,9 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       }
 
       /// <inheritdoc />
-      IBulkUpdateOptions IBulkUpdateExecutor.CreateOptions()
+      IBulkUpdateOptions IBulkUpdateExecutor.CreateOptions(IEntityPropertiesProvider? propertiesToUpdate, IEntityPropertiesProvider? keyProperties)
       {
-         return new SqliteBulkUpdateOptions();
+         return new SqliteBulkUpdateOptions(propertiesToUpdate, keyProperties);
       }
 
       /// <inheritdoc />
@@ -101,7 +101,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
          if (!(options is ISqliteBulkInsertOptions sqliteOptions))
             sqliteOptions = new SqliteBulkInsertOptions(options);
 
-         var properties = sqliteOptions.MembersToInsert.GetPropertiesForInsert(entityType);
+         var properties = sqliteOptions.PropertiesToInsert.GetPropertiesForInsert(entityType);
          var autoIncrementBehavior = sqliteOptions.AutoIncrementBehavior;
 
          await ExecuteBulkOperationAsync(entities, schema, tableName, SqliteCommandBuilder.Insert, properties, autoIncrementBehavior, cancellationToken);
@@ -265,12 +265,9 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
          if (options == null)
             throw new ArgumentNullException(nameof(options));
 
-         if (!(options is ISqliteBulkUpdateOptions sqliteOptions))
-            sqliteOptions = new SqliteBulkUpdateOptions(options);
-
          var entityType = _ctx.Model.GetEntityType(typeof(T));
-         var propertiesToUpdate = sqliteOptions.MembersToUpdate.GetPropertiesForUpdate(entityType);
-         var keyProperties = options.KeyProperties.GetKeyProperties(entityType, propertiesToUpdate);
+         var keyProperties = options.KeyProperties.GetKeyProperties(entityType);
+         var propertiesToUpdate = options.PropertiesToUpdate.GetPropertiesForUpdate(entityType).Union(keyProperties).ToList();
 
          return await ExecuteBulkOperationAsync(entities, entityType.GetSchema(), entityType.GetTableName(), SqliteCommandBuilder.Update(keyProperties), propertiesToUpdate, SqliteAutoIncrementBehavior.KeepValueAsIs, cancellationToken);
       }

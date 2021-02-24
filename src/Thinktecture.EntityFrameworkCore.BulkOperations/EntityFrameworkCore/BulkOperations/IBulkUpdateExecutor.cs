@@ -12,8 +12,10 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       /// <summary>
       /// Creates options with default values.
       /// </summary>
+      /// <param name="propertiesToUpdate">Provides properties to update.</param>
+      /// <param name="keyProperties">Provides key properties.</param>
       /// <returns>Options to use with <see cref="IBulkInsertExecutor"/>.</returns>
-      IBulkUpdateOptions CreateOptions();
+      IBulkUpdateOptions CreateOptions(IEntityPropertiesProvider? propertiesToUpdate = null, IEntityPropertiesProvider? keyProperties = null);
 
       /// <summary>
       /// Performs bulk update.

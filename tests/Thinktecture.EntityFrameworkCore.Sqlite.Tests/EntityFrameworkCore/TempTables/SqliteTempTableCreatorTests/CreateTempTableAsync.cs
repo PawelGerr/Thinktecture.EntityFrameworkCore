@@ -245,7 +245,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqliteTempTableCreatorTest
       {
          ConfigureModel = builder => builder.ConfigureTempTableEntity<CustomTempTable>();
 
-         _optionsWithNonUniqueName.MembersToInclude = EntityMembersProvider.From<CustomTempTable>(t => t.Column1);
+         _optionsWithNonUniqueName.PropertiesToInclude = EntityPropertiesProvider.From<CustomTempTable>(t => t.Column1);
 
          // ReSharper disable once RedundantArgumentDefaultValue
          await using var tempTable = await SUT.CreateTempTableAsync(ActDbContext.GetEntityType<CustomTempTable>(), _optionsWithNonUniqueName);
@@ -276,7 +276,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqliteTempTableCreatorTest
       public void Should_throw_if_some_pk_columns_are_missing()
       {
          _optionsWithNonUniqueName.PrimaryKeyCreation = PrimaryKeyPropertiesProviders.EntityTypeConfiguration;
-         _optionsWithNonUniqueName.MembersToInclude = EntityMembersProvider.From<CustomTempTable>(t => t.Column1);
+         _optionsWithNonUniqueName.PropertiesToInclude = EntityPropertiesProvider.From<CustomTempTable>(t => t.Column1);
 
          ConfigureModel = builder =>
                           {
@@ -296,7 +296,7 @@ Missing columns: Column2.");
       public async Task Should_not_throw_if_some_pk_columns_are_missing_and_provider_is_Adaptive()
       {
          _optionsWithNonUniqueName.PrimaryKeyCreation = PrimaryKeyPropertiesProviders.AdaptiveForced;
-         _optionsWithNonUniqueName.MembersToInclude = EntityMembersProvider.From<CustomTempTable>(t => t.Column1);
+         _optionsWithNonUniqueName.PropertiesToInclude = EntityPropertiesProvider.From<CustomTempTable>(t => t.Column1);
 
          ConfigureModel = builder =>
                           {

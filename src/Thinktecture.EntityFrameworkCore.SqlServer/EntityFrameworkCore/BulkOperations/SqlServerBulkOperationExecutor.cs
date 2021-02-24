@@ -46,7 +46,10 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
          IDiagnosticsLogger<SqlServerDbLoggerCategory.BulkOperation> logger,
          ISqlGenerationHelper sqlGenerationHelper)
       {
-         _ctx = ctx?.Context ?? throw new ArgumentNullException(nameof(ctx));
+         if (ctx == null)
+            throw new ArgumentNullException(nameof(ctx));
+
+         _ctx = ctx.Context;
          _logger = logger ?? throw new ArgumentNullException(nameof(logger));
          _sqlGenerationHelper = sqlGenerationHelper ?? throw new ArgumentNullException(nameof(sqlGenerationHelper));
       }
@@ -64,9 +67,9 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       }
 
       /// <inheritdoc />
-      IBulkUpdateOptions IBulkUpdateExecutor.CreateOptions()
+      IBulkUpdateOptions IBulkUpdateExecutor.CreateOptions(IEntityPropertiesProvider? propertiesToUpdate, IEntityPropertiesProvider? keyProperties)
       {
-         return new SqlServerBulkUpdateOptions();
+         return new SqlServerBulkUpdateOptions(propertiesToUpdate, keyProperties);
       }
 
       /// <inheritdoc />
@@ -101,7 +104,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
             sqlServerOptions = new SqlServerBulkInsertOptions(options);
 
          var factory = _ctx.GetService<IEntityDataReaderFactory>();
-         var properties = options.MembersToInsert.GetPropertiesForInsert(entityType);
+         var properties = options.PropertiesToInsert.GetPropertiesForInsert(entityType);
          var sqlCon = (SqlConnection)_ctx.Database.GetDbConnection();
          var sqlTx = (SqlTransaction?)_ctx.Database.CurrentTransaction?.GetDbTransaction();
 
@@ -174,7 +177,7 @@ INSERT BULK {Table} ({Columns})", options, bulkCopy.BulkCopyTimeout, bulkCopy.Ba
 
       private void LogInserted(SqlBulkCopyOptions options, TimeSpan duration, SqlBulkCopy bulkCopy, string columns)
       {
-         _logger.Logger.LogInformation(EventIds.Inserted, @"Executed DbCommand ({duration}ms) [SqlBulkCopyOptions={SqlBulkCopyOptions}, BulkCopyTimeout={BulkCopyTimeout}, BatchSize={BatchSize}, EnableStreaming={EnableStreaming}]
+         _logger.Logger.LogInformation(EventIds.Inserted, @"Executed DbCommand ({Duration}ms) [SqlBulkCopyOptions={SqlBulkCopyOptions}, BulkCopyTimeout={BulkCopyTimeout}, BatchSize={BatchSize}, EnableStreaming={EnableStreaming}]
 INSERT BULK {Table} ({Columns})", (long)duration.TotalMilliseconds,
                                        options, bulkCopy.BulkCopyTimeout, bulkCopy.BatchSize, bulkCopy.EnableStreaming,
                                        bulkCopy.DestinationTableName, columns);
@@ -228,7 +231,7 @@ INSERT BULK {Table} ({Columns})", (long)duration.TotalMilliseconds,
 
             if (options.MomentOfPrimaryKeyCreation == MomentOfSqlServerPrimaryKeyCreation.AfterBulkInsert)
             {
-               var properties = options.TempTableCreationOptions.MembersToInclude.GetPropertiesForTempTable(entityType);
+               var properties = options.TempTableCreationOptions.PropertiesToInclude.GetPropertiesForTempTable(entityType);
                var keyProperties = options.PrimaryKeyCreation.GetPrimaryKeyProperties(entityType, properties);
                await tempTableCreator.CreatePrimaryKeyAsync(_ctx, keyProperties, tempTableReference.Name, options.TempTableCreationOptions.TruncateTableIfExists, cancellationToken).ConfigureAwait(false);
             }
@@ -271,12 +274,18 @@ INSERT BULK {Table} ({Columns})", (long)duration.TotalMilliseconds,
             sqlServerOptions = new SqlServerBulkUpdateOptions(options);
 
          var entityType = _ctx.Model.GetEntityType(typeof(T));
-         var propertiesForUpdate = options.MembersToUpdate.GetPropertiesForUpdate(entityType);
+         var propertiesForUpdate = options.PropertiesToUpdate.GetPropertiesForUpdate(entityType);
 
          if (propertiesForUpdate.Count == 0)
             throw new ArgumentException("The number of properties to update cannot be 0.");
 
-         await using var tempTable = await BulkInsertIntoTempTableAsync(entities, sqlServerOptions.TempTableOptions, cancellationToken);
+         var tempTableOptions = new SqlServerTempTableBulkInsertOptions(sqlServerOptions.TempTableOptions)
+                                {
+                                   PropertiesToInsert = options.PropertiesToUpdate is null
+                                                           ? null
+                                                           : new CompositeTempTableEntityPropertiesProvider(sqlServerOptions.PropertiesToUpdate, sqlServerOptions.KeyProperties)
+                                };
+         await using var tempTable = await BulkInsertIntoTempTableAsync(entities, tempTableOptions, cancellationToken);
 
          var mergeStatement = CreateMergeCommand(entityType, tempTable.Name, sqlServerOptions, propertiesForUpdate);
 
@@ -287,9 +296,9 @@ INSERT BULK {Table} ({Columns})", (long)duration.TotalMilliseconds,
          IEntityType entityType,
          string sourceTempTableName,
          ISqlServerBulkUpdateOptions options,
-         IReadOnlyList<IProperty> propertiesToUpdate)
+         IEnumerable<IProperty> propertiesToUpdate)
       {
-         var keyProperties = options.KeyProperties.GetKeyProperties(entityType, propertiesToUpdate);
+         var keyProperties = options.KeyProperties.GetKeyProperties(entityType);
 
          var sb = new StringBuilder();
 

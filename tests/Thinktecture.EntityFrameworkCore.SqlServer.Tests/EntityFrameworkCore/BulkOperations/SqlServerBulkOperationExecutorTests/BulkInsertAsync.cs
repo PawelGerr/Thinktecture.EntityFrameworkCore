@@ -131,7 +131,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
          var options = new SqlServerBulkInsertOptions
                        {
                           // we skip TestEntityWithSqlDefaultValues.String
-                          MembersToInsert = EntityMembersProvider.From<TestEntityWithSqlDefaultValues>(e => new
+                          PropertiesToInsert = EntityPropertiesProvider.From<TestEntityWithSqlDefaultValues>(e => new
                                                                                                             {
                                                                                                                e.Id,
                                                                                                                e.Int,
@@ -180,7 +180,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
          var options = new SqlServerBulkInsertOptions
                        {
                           // we skip TestEntityWithDefaultValues.String
-                          MembersToInsert = EntityMembersProvider.From<TestEntityWithDotnetDefaultValues>(e => new
+                          PropertiesToInsert = EntityPropertiesProvider.From<TestEntityWithDotnetDefaultValues>(e => new
                                                                                                                {
                                                                                                                   e.Id,
                                                                                                                   e.Int,
@@ -261,7 +261,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
          await SUT.BulkInsertAsync(testEntities,
                                    new SqlServerBulkInsertOptions
                                    {
-                                      MembersToInsert = new EntityMembersProvider(new MemberInfo[]
+                                      PropertiesToInsert = new EntityPropertiesProvider(new MemberInfo[]
                                                                                   {
                                                                                      idProperty,
                                                                                      countProperty,

@@ -49,13 +49,13 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       }
 
       /// <inheritdoc />
-      public IEntityMembersProvider? MembersToInsert
+      public IEntityPropertiesProvider? PropertiesToInsert
       {
-         get => _bulkInsertOptions.MembersToInsert;
+         get => _bulkInsertOptions.PropertiesToInsert;
          set
          {
-            _bulkInsertOptions.MembersToInsert = value;
-            _tempTableCreationOptions.MembersToInclude = value;
+            _bulkInsertOptions.PropertiesToInsert = value;
+            _tempTableCreationOptions.PropertiesToInclude = value;
          }
       }
 

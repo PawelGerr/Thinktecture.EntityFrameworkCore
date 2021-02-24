@@ -34,16 +34,15 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
       }
 
       [Fact]
-      public void Should_throw_if_key_property_is_not_present()
+      public void Should_not_throw_if_key_property_is_not_present_in_PropertiesToUpdate()
       {
-         var membersProvider = EntityMembersProvider.From<TestEntity>(entity => new { entity.Name });
+         var propertiesProvider = EntityPropertiesProvider.From<TestEntity>(entity => new { entity.Name });
 
          SUT.Invoking(sut => sut.BulkUpdateAsync(new List<TestEntity>(), new SqlServerBulkUpdateOptions
                                                                          {
-                                                                            MembersToUpdate = membersProvider
+                                                                            PropertiesToUpdate = propertiesProvider
                                                                          }))
-            .Should().Throw<InvalidOperationException>().WithMessage(@"Not all key properties are part of the source table.
-Missing columns: Id.");
+            .Should().NotThrow();
       }
 
       [Fact]
@@ -96,9 +95,9 @@ Missing columns: Id.");
          entity_2.Name = "value";
          entity_2.Count = 2;
 
-         var properties = EntityMembersProvider.From<TestEntity>(e => new { e.Name, e.Count });
-         var keyProperties = EntityMembersProvider.From<TestEntity>(e => e.Name);
-         await SUT.BulkUpdateAsync(new[] { entity_1, entity_2 }, new SqlServerBulkUpdateOptions { MembersToUpdate = properties, KeyProperties = keyProperties });
+         var properties = EntityPropertiesProvider.From<TestEntity>(e => new { e.Count });
+         var keyProperties = EntityPropertiesProvider.From<TestEntity>(e => e.Name);
+         await SUT.BulkUpdateAsync(new[] { entity_1, entity_2 }, new SqlServerBulkUpdateOptions { PropertiesToUpdate = properties, KeyProperties = keyProperties });
 
          entity_1.Name = "value";
          entity_2.Name = null;
@@ -236,13 +235,13 @@ Missing columns: Id.");
          await SUT.BulkUpdateAsync(new[] { entity },
                                    new SqlServerBulkUpdateOptions
                                    {
-                                      MembersToUpdate = new EntityMembersProvider(new MemberInfo[]
-                                                                                  {
-                                                                                     idProperty,
-                                                                                     countProperty,
-                                                                                     propertyWithBackingField,
-                                                                                     privateField
-                                                                                  })
+                                      PropertiesToUpdate = new EntityPropertiesProvider(new MemberInfo[]
+                                                                                        {
+                                                                                           idProperty,
+                                                                                           countProperty,
+                                                                                           propertyWithBackingField,
+                                                                                           privateField
+                                                                                        })
                                    });
 
          var loadedEntities = await AssertDbContext.TestEntities.ToListAsync();

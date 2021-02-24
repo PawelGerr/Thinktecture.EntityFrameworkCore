@@ -30,12 +30,11 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
       }
 
       [Fact]
-      public void Should_throw_if_key_property_is_not_present()
+      public void Should_not_throw_if_key_property_is_not_present_in_PropertiesToUpdate()
       {
          ActDbContext.Invoking(sut => sut.BulkUpdateAsync(new List<TestEntity>(),
                                                           entity => new { entity.Name }))
-                     .Should().Throw<InvalidOperationException>().WithMessage(@"Not all key properties are part of the source table.
-Missing columns: Id.");
+                     .Should().NotThrow();
       }
 
       [Fact]
@@ -89,7 +88,7 @@ Missing columns: Id.");
          entity_2.Count = 2;
 
          await ActDbContext.BulkUpdateAsync(new[] { entity_1, entity_2 },
-                                            e => new { e.Name, e.Count },
+                                            e => e.Count,
                                             e => e.Name);
 
          entity_1.Name = "value";
@@ -228,13 +227,13 @@ Missing columns: Id.");
          await ActDbContext.BulkUpdateAsync(new[] { entity },
                                             new SqlServerBulkUpdateOptions
                                             {
-                                               MembersToUpdate = new EntityMembersProvider(new MemberInfo[]
-                                                                                           {
-                                                                                              idProperty,
-                                                                                              countProperty,
-                                                                                              propertyWithBackingField,
-                                                                                              privateField
-                                                                                           })
+                                               PropertiesToUpdate = new EntityPropertiesProvider(new MemberInfo[]
+                                                                                                 {
+                                                                                                    idProperty,
+                                                                                                    countProperty,
+                                                                                                    propertyWithBackingField,
+                                                                                                    privateField
+                                                                                                 })
                                             });
 
          var loadedEntities = await AssertDbContext.TestEntities.ToListAsync();

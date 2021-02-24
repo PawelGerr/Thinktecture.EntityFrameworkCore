@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using Thinktecture.EntityFrameworkCore.TempTables;
 
 namespace Thinktecture.EntityFrameworkCore.BulkOperations
@@ -18,17 +19,13 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       /// <summary>
       /// Options for creation of the temp table and for bulk insert of data used for later update.
       /// </summary>
-      public SqlServerTempTableBulkInsertOptions TempTableOptions { get; }
+      public SqlServerTempTableBulkOperationOptions TempTableOptions { get; }
 
       /// <inheritdoc />
-      public IEntityMembersProvider? MembersToUpdate
-      {
-         get => TempTableOptions.MembersToInsert;
-         set => TempTableOptions.MembersToInsert = value;
-      }
+      public IEntityPropertiesProvider? PropertiesToUpdate { get; set; }
 
       /// <inheritdoc />
-      public IEntityMembersProvider? KeyProperties { get; set; }
+      public IEntityPropertiesProvider? KeyProperties { get; set; }
 
       private IImmutableList<TableHintLimited>? _mergeTableHints;
 
@@ -48,14 +45,26 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       {
          if (optionsToInitializeFrom is ISqlServerBulkUpdateOptions options)
          {
-            TempTableOptions = new SqlServerTempTableBulkInsertOptions(options.TempTableOptions);
+            TempTableOptions = new SqlServerTempTableBulkOperationOptions(options.TempTableOptions);
             KeyProperties = options.KeyProperties;
             MergeTableHints = options.MergeTableHints;
          }
          else
          {
-            TempTableOptions = new SqlServerTempTableBulkInsertOptions { PrimaryKeyCreation = PrimaryKeyPropertiesProviders.None };
+            TempTableOptions = new SqlServerTempTableBulkOperationOptions { PrimaryKeyCreation = PrimaryKeyPropertiesProviders.None };
          }
+      }
+
+      /// <summary>
+      /// Initializes new instance of <see cref="SqlServerBulkUpdateOptions"/>.
+      /// </summary>
+      /// <param name="propertiesToUpdate">Provides properties to update.</param>
+      /// <param name="keyProperties">Provides key properties.</param>
+      public SqlServerBulkUpdateOptions(IEntityPropertiesProvider? propertiesToUpdate, IEntityPropertiesProvider? keyProperties)
+      {
+         TempTableOptions = new SqlServerTempTableBulkOperationOptions { PrimaryKeyCreation = PrimaryKeyPropertiesProviders.None };
+         PropertiesToUpdate = propertiesToUpdate;
+         KeyProperties = keyProperties;
       }
    }
 }

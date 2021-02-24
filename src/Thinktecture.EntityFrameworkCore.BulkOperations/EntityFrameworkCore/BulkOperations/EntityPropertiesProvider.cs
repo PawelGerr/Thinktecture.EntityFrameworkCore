@@ -3,29 +3,36 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using Microsoft.EntityFrameworkCore.Metadata;
 
 namespace Thinktecture.EntityFrameworkCore.BulkOperations
 {
    /// <summary>
-   /// Gets entity members provided via the constructor.
+   /// Provides entity properties to work with.
    /// </summary>
-   public sealed class EntityMembersProvider : IEntityMembersProvider
+   public sealed class EntityPropertiesProvider : IEntityPropertiesProvider
    {
       private readonly IReadOnlyList<MemberInfo> _members;
+      private IReadOnlyList<IProperty>? _properties;
 
       /// <summary>
-      /// Initializes new instance of <see cref="EntityMembersProvider"/>.
+      /// Initializes new instance of <see cref="EntityPropertiesProvider"/>.
       /// </summary>
-      /// <param name="members">Members to return by the method <see cref="GetMembers"/>.</param>
-      public EntityMembersProvider(IReadOnlyList<MemberInfo> members)
+      /// <param name="members">Members to use.</param>
+      public EntityPropertiesProvider(IReadOnlyList<MemberInfo> members)
       {
-         _members = members ?? throw new ArgumentNullException(nameof(members));
+         if (members == null)
+            throw new ArgumentNullException(nameof(members));
+         if (members.Count == 0)
+            throw new ArgumentException("The members collection cannot be empty.");
+
+         _members = members;
       }
 
       /// <inheritdoc />
-      public IReadOnlyList<MemberInfo> GetMembers()
+      public IReadOnlyList<IProperty> GetProperties(IEntityType entityType)
       {
-         return _members;
+         return _properties ??= _members.ConvertToEntityProperties(entityType);
       }
 
       /// <summary>
@@ -33,11 +40,11 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       /// </summary>
       /// <param name="projection">Projection to extract the members from.</param>
       /// <typeparam name="T">Type of the entity.</typeparam>
-      /// <returns>An instance of <see cref="IEntityMembersProvider"/> containing members extracted from <paramref name="projection"/>.</returns>
+      /// <returns>An instance of <see cref="IEntityPropertiesProvider"/> containing members extracted from <paramref name="projection"/>.</returns>
       /// <exception cref="ArgumentNullException"><paramref name="projection"/> is <c>null</c>.</exception>
       /// <exception cref="ArgumentException">No members couldn't be extracted.</exception>
       /// <exception cref="NotSupportedException">The <paramref name="projection"/> contains unsupported expressions.</exception>
-      public static IEntityMembersProvider From<T>(Expression<Func<T, object?>> projection)
+      public static IEntityPropertiesProvider From<T>(Expression<Func<T, object?>> projection)
       {
          if (projection == null)
             throw new ArgumentNullException(nameof(projection));
@@ -47,7 +54,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
          if (members.Count == 0)
             throw new ArgumentException("The provided projection contains no properties.");
 
-         return new EntityMembersProvider(members);
+         return new EntityPropertiesProvider(members);
       }
    }
 }

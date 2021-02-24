@@ -1,5 +1,7 @@
 using System;
 using FluentAssertions;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Thinktecture.TestDatabaseContext;
 using Xunit;
 
@@ -10,46 +12,54 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.PropertiesProviderTest
       [Fact]
       public void Should_throw_if_expression_is_null()
       {
-         Action action = () => EntityMembersProvider.From<TestEntity>(null!);
+         Action action = () => EntityPropertiesProvider.From<TestEntity>(null!);
          action.Should().Throw<ArgumentNullException>();
       }
 
       [Fact]
       public void Should_throw_if_no_properties_provided()
       {
-         Action action = () => EntityMembersProvider.From<TestEntity>(entity => new { });
+         Action action = () => EntityPropertiesProvider.From<TestEntity>(entity => new { });
          action.Should().Throw<ArgumentException>();
       }
 
       [Fact]
       public void Should_throw_if_expression_return_constant()
       {
-         Action action = () => EntityMembersProvider.From<TestEntity>(entity => null!);
+         Action action = () => EntityPropertiesProvider.From<TestEntity>(entity => null!);
          action.Should().Throw<NotSupportedException>();
       }
 
       [Fact]
       public void Should_extract_property_accessor()
       {
-         var propertiesProvider = EntityMembersProvider.From<TestEntity>(entity => entity.Id);
+         var entityType = GetEntityType<TestEntity>();
+         var idProperty = entityType.FindProperty(nameof(TestEntity.Id));
+         var propertiesProvider = EntityPropertiesProvider.From<TestEntity>(entity => entity.Id);
 
-         var properties = propertiesProvider.GetMembers();
+         var properties = propertiesProvider.GetProperties(entityType);
          properties.Should().HaveCount(1);
-         var idProperty = typeof(TestEntity).GetProperty(nameof(TestEntity.Id)) ?? throw new Exception($"Property {nameof(TestEntity.Id)} not found.");
          properties.Should().Contain(idProperty);
       }
 
       [Fact]
       public void Should_extract_properties()
       {
-         var propertiesProvider = EntityMembersProvider.From<TestEntity>(entity => new { entity.Id, entity.Count });
+         var entityType = GetEntityType<TestEntity>();
+         var idProperty = entityType.FindProperty(nameof(TestEntity.Id));
+         var countProperty = entityType.FindProperty(nameof(TestEntity.Count));
+         var propertiesProvider = EntityPropertiesProvider.From<TestEntity>(entity => new { entity.Id, entity.Count });
 
-         var properties = propertiesProvider.GetMembers();
+         var properties = propertiesProvider.GetProperties(entityType);
          properties.Should().HaveCount(2);
-         var idProperty = typeof(TestEntity).GetProperty(nameof(TestEntity.Id)) ?? throw new Exception($"Property {nameof(TestEntity.Id)} not found.");
-         var countProperty = typeof(TestEntity).GetProperty(nameof(TestEntity.Count)) ?? throw new Exception($"Property {nameof(TestEntity.Count)} not found.");
          properties.Should().Contain(idProperty);
          properties.Should().Contain(countProperty);
+      }
+
+      private static IEntityType GetEntityType<T>()
+      {
+         var options = new DbContextOptionsBuilder<TestDbContext>().UseSqlite("DataSource=:memory:").Options;
+         return new TestDbContext(options).Model.GetEntityType(typeof(T));
       }
    }
 }

@@ -30,7 +30,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
       }
 
       /// <inheritdoc />
-      public IEntityMembersProvider? MembersToInclude { get; set; }
+      public IEntityPropertiesProvider? PropertiesToInclude { get; set; }
 
       /// <inheritdoc />
       public bool DropTableOnDispose { get; set; }
@@ -56,7 +56,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
          PrimaryKeyCreation = options.PrimaryKeyCreation;
          TableNameProvider = options.TableNameProvider;
          TruncateTableIfExists = options.TruncateTableIfExists;
-         MembersToInclude = options.MembersToInclude;
+         PropertiesToInclude = options.PropertiesToInclude;
          DropTableOnDispose = options.DropTableOnDispose;
       }
    }
