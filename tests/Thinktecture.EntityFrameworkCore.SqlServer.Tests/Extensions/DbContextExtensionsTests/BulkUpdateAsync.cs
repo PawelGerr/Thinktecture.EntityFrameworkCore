@@ -23,18 +23,19 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
       }
 
       [Fact]
-      public void Should_not_throw_if_entities_is_empty()
+      public async Task Should_not_throw_if_entities_is_empty()
       {
-         ActDbContext.Invoking(sut => sut.BulkUpdateAsync(new List<TestEntity>()))
-                     .Should().NotThrow();
+         var affectedRows = await ActDbContext.BulkUpdateAsync(new List<TestEntity>());
+
+         affectedRows.Should().Be(0);
       }
 
       [Fact]
-      public void Should_not_throw_if_key_property_is_not_present_in_PropertiesToUpdate()
+      public async Task Should_not_throw_if_key_property_is_not_present_in_PropertiesToUpdate()
       {
-         ActDbContext.Invoking(sut => sut.BulkUpdateAsync(new List<TestEntity>(),
-                                                          entity => new { entity.Name }))
-                     .Should().NotThrow();
+         var affectedRows = await ActDbContext.BulkUpdateAsync(new List<TestEntity>(), entity => new { entity.Name });
+
+         affectedRows.Should().Be(0);
       }
 
       [Fact]
@@ -46,7 +47,9 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
 
          entity.ConvertibleClass = new ConvertibleClass(43);
 
-         await ActDbContext.BulkUpdateAsync(new List<TestEntity> { entity });
+         var affectedRows = await ActDbContext.BulkUpdateAsync(new List<TestEntity> { entity });
+
+         affectedRows.Should().Be(1);
 
          var loadedEntity = AssertDbContext.TestEntities.Single();
          loadedEntity.ConvertibleClass.Should().NotBeNull();
@@ -66,7 +69,9 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
          entity_2.Name = "OtherName";
          entity_2.Count = 2;
 
-         await ActDbContext.BulkUpdateAsync(new[] { entity_1, entity_2 });
+         var affectedRows = await ActDbContext.BulkUpdateAsync(new[] { entity_1, entity_2 });
+
+         affectedRows.Should().Be(2);
 
          var loadedEntities = await AssertDbContext.TestEntities.ToListAsync();
          loadedEntities.Should().HaveCount(2)
@@ -87,9 +92,11 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
          entity_2.Name = "value";
          entity_2.Count = 2;
 
-         await ActDbContext.BulkUpdateAsync(new[] { entity_1, entity_2 },
-                                            e => e.Count,
-                                            e => e.Name);
+         var affectedRows = await ActDbContext.BulkUpdateAsync(new[] { entity_1, entity_2 },
+                                                               e => e.Count,
+                                                               e => e.Name);
+
+         affectedRows.Should().Be(2);
 
          entity_1.Name = "value";
          entity_2.Name = null;
@@ -116,7 +123,9 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
          entity_2.Name = "OtherName";
          entity_2.Count = 2;
 
-         await ActDbContext.BulkUpdateAsync(new[] { entity_1 });
+         var affectedRows = await ActDbContext.BulkUpdateAsync(new[] { entity_1 });
+
+         affectedRows.Should().Be(1);
 
          entity_2.Name = default;
          entity_2.Count = default;
@@ -136,7 +145,9 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
 
          entity.SetPrivateField(1);
 
-         await ActDbContext.BulkUpdateAsync(new[] { entity });
+         var affectedRows = await ActDbContext.BulkUpdateAsync(new[] { entity });
+
+         affectedRows.Should().Be(1);
 
          var loadedEntity = await AssertDbContext.TestEntities.FirstOrDefaultAsync();
          loadedEntity.GetPrivateField().Should().Be(1);
@@ -152,7 +163,9 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
          ActDbContext.Entry(entity).Property("ShadowStringProperty").CurrentValue = "value";
          ActDbContext.Entry(entity).Property("ShadowIntProperty").CurrentValue = 42;
 
-         await ActDbContext.BulkUpdateAsync(new[] { entity });
+         var affectedRows = await ActDbContext.BulkUpdateAsync(new[] { entity });
+
+         affectedRows.Should().Be(1);
 
          var loadedEntity = await AssertDbContext.TestEntitiesWithShadowProperties.FirstOrDefaultAsync();
          AssertDbContext.Entry(loadedEntity).Property("ShadowStringProperty").CurrentValue.Should().Be("value");
@@ -178,7 +191,9 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
          entity.NullableInt = null;
          entity.NullableString = null;
 
-         await ActDbContext.BulkUpdateAsync(new[] { entity });
+         var affectedRows = await ActDbContext.BulkUpdateAsync(new[] { entity });
+
+         affectedRows.Should().Be(1);
 
          var loadedEntity = await AssertDbContext.TestEntitiesWithDefaultValues.FirstOrDefaultAsync();
          loadedEntity.Should().BeEquivalentTo(new TestEntityWithSqlDefaultValues
@@ -200,7 +215,9 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
 
          entity.RowVersion = Int32.MaxValue;
 
-         await ActDbContext.BulkUpdateAsync(new[] { entity });
+         var affectedRows = await ActDbContext.BulkUpdateAsync(new[] { entity });
+
+         affectedRows.Should().Be(1);
 
          var loadedEntity = await AssertDbContext.TestEntitiesWithRowVersion.FirstOrDefaultAsync();
          loadedEntity.Id.Should().Be(new Guid("EBC95620-4D80-4318-9B92-AD7528B2965C"));
@@ -224,17 +241,19 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
          var propertyWithBackingField = typeof(TestEntity).GetProperty(nameof(TestEntity.PropertyWithBackingField)) ?? throw new Exception($"Property {nameof(TestEntity.PropertyWithBackingField)} not found.");
          var privateField = typeof(TestEntity).GetField("_privateField", BindingFlags.Instance | BindingFlags.NonPublic) ?? throw new Exception($"Field _privateField not found.");
 
-         await ActDbContext.BulkUpdateAsync(new[] { entity },
-                                            new SqlServerBulkUpdateOptions
-                                            {
-                                               PropertiesToUpdate = new EntityPropertiesProvider(new MemberInfo[]
-                                                                                                 {
-                                                                                                    idProperty,
-                                                                                                    countProperty,
-                                                                                                    propertyWithBackingField,
-                                                                                                    privateField
-                                                                                                 })
-                                            });
+         var affectedRows = await ActDbContext.BulkUpdateAsync(new[] { entity },
+                                                               new SqlServerBulkUpdateOptions
+                                                               {
+                                                                  PropertiesToUpdate = new EntityPropertiesProvider(new MemberInfo[]
+                                                                                                                    {
+                                                                                                                       idProperty,
+                                                                                                                       countProperty,
+                                                                                                                       propertyWithBackingField,
+                                                                                                                       privateField
+                                                                                                                    })
+                                                               });
+
+         affectedRows.Should().Be(1);
 
          var loadedEntities = await AssertDbContext.TestEntities.ToListAsync();
          loadedEntities.Should().HaveCount(1);

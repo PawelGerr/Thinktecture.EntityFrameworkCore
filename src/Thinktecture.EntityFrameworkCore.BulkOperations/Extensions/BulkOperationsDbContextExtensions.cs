@@ -124,13 +124,14 @@ namespace Thinktecture
       /// <param name="propertiesToUpdate">Properties to update.</param>
       /// <param name="propertiesToMatchOn">Properties to match on.</param>
       /// <param name="cancellationToken">Cancellation token.</param>
+      /// <returns>Number of affected rows.</returns>
       /// <typeparam name="T">Entity type.</typeparam>
       /// <exception cref="ArgumentNullException"> <paramref name="ctx"/> or <paramref name="entities"/> is <c>null</c>.</exception>
-      public static Task BulkUpdateAsync<T>(this DbContext ctx,
-                                            IEnumerable<T> entities,
-                                            Expression<Func<T, object?>> propertiesToUpdate,
-                                            Expression<Func<T, object?>>? propertiesToMatchOn = null,
-                                            CancellationToken cancellationToken = default)
+      public static Task<int> BulkUpdateAsync<T>(this DbContext ctx,
+                                                 IEnumerable<T> entities,
+                                                 Expression<Func<T, object?>> propertiesToUpdate,
+                                                 Expression<Func<T, object?>>? propertiesToMatchOn = null,
+                                                 CancellationToken cancellationToken = default)
          where T : class
       {
          var bulkInsertExecutor = ctx.GetService<IBulkUpdateExecutor>();
@@ -148,12 +149,13 @@ namespace Thinktecture
       /// <param name="entities">Entities to update.</param>
       /// <param name="options">Options.</param>
       /// <param name="cancellationToken">Cancellation token.</param>
+      /// <returns>Number of affected rows.</returns>
       /// <typeparam name="T">Entity type.</typeparam>
       /// <exception cref="ArgumentNullException"> <paramref name="ctx"/> or <paramref name="entities"/> is <c>null</c>.</exception>
-      public static Task BulkUpdateAsync<T>(this DbContext ctx,
-                                            IEnumerable<T> entities,
-                                            IBulkUpdateOptions? options = null,
-                                            CancellationToken cancellationToken = default)
+      public static Task<int> BulkUpdateAsync<T>(this DbContext ctx,
+                                                 IEnumerable<T> entities,
+                                                 IBulkUpdateOptions? options = null,
+                                                 CancellationToken cancellationToken = default)
          where T : class
       {
          var bulkUpdateExecutor = ctx.GetService<IBulkUpdateExecutor>();
@@ -162,16 +164,16 @@ namespace Thinktecture
          return BulkUpdateAsync(bulkUpdateExecutor, entities, options, cancellationToken);
       }
 
-      private static async Task BulkUpdateAsync<T>(IBulkUpdateExecutor bulkUpdateExecutor,
-                                                   IEnumerable<T> entities,
-                                                   IBulkUpdateOptions options,
-                                                   CancellationToken cancellationToken)
+      private static async Task<int> BulkUpdateAsync<T>(IBulkUpdateExecutor bulkUpdateExecutor,
+                                                        IEnumerable<T> entities,
+                                                        IBulkUpdateOptions options,
+                                                        CancellationToken cancellationToken)
          where T : class
       {
          if (bulkUpdateExecutor == null)
             throw new ArgumentNullException(nameof(bulkUpdateExecutor));
 
-         await bulkUpdateExecutor.BulkUpdateAsync(entities, options, cancellationToken).ConfigureAwait(false);
+         return await bulkUpdateExecutor.BulkUpdateAsync(entities, options, cancellationToken).ConfigureAwait(false);
       }
 
       /// <summary>
