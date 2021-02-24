@@ -12,22 +12,22 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       /// <summary>
       /// Timeout used by <see cref="SqlBulkCopy"/>
       /// </summary>
-      TimeSpan? BulkCopyTimeout { get; set; }
+      TimeSpan? BulkCopyTimeout { get; }
 
       /// <summary>
       /// Options used by <see cref="SqlBulkCopy"/>.
       /// </summary>
-      SqlBulkCopyOptions SqlBulkCopyOptions { get; set; }
+      SqlBulkCopyOptions SqlBulkCopyOptions { get; }
 
       /// <summary>
       /// Batch size used by <see cref="SqlBulkCopy"/>.
       /// </summary>
-      int? BatchSize { get; set; }
+      int? BatchSize { get; }
 
       /// <summary>
       /// Enables or disables a <see cref="SqlBulkCopy"/> object to stream data from an <see cref="IDataReader"/> object.
       /// Default is set to <c>true</c>.
       /// </summary>
-      bool EnableStreaming { get; set; }
+      bool EnableStreaming { get; }
    }
 }

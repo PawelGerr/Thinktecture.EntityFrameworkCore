@@ -54,17 +54,5 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
             TempTableOptions = new SqlServerTempTableBulkOperationOptions { PrimaryKeyCreation = PrimaryKeyPropertiesProviders.None };
          }
       }
-
-      /// <summary>
-      /// Initializes new instance of <see cref="SqlServerBulkUpdateOptions"/>.
-      /// </summary>
-      /// <param name="propertiesToUpdate">Provides properties to update.</param>
-      /// <param name="keyProperties">Provides key properties.</param>
-      public SqlServerBulkUpdateOptions(IEntityPropertiesProvider? propertiesToUpdate, IEntityPropertiesProvider? keyProperties)
-      {
-         TempTableOptions = new SqlServerTempTableBulkOperationOptions { PrimaryKeyCreation = PrimaryKeyPropertiesProviders.None };
-         PropertiesToUpdate = propertiesToUpdate;
-         KeyProperties = keyProperties;
-      }
    }
 }

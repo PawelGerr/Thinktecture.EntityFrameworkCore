@@ -9,6 +9,6 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       /// Behavior for auto-increment columns.
       /// Default is <see cref="SqliteAutoIncrementBehavior.SetZeroToNull"/>
       /// </summary>
-      SqliteAutoIncrementBehavior AutoIncrementBehavior { get; set; }
+      SqliteAutoIncrementBehavior AutoIncrementBehavior { get; }
    }
 }

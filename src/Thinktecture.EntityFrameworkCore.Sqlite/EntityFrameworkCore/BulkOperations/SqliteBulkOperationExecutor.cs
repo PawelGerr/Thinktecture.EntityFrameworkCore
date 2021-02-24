@@ -53,9 +53,9 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       }
 
       /// <inheritdoc />
-      IBulkInsertOptions IBulkInsertExecutor.CreateOptions()
+      IBulkInsertOptions IBulkInsertExecutor.CreateOptions(IEntityPropertiesProvider? propertiesToInsert)
       {
-         return new SqliteBulkInsertOptions();
+         return new SqliteBulkInsertOptions { PropertiesToInsert = propertiesToInsert };
       }
 
       /// <inheritdoc />
@@ -67,7 +67,11 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       /// <inheritdoc />
       IBulkUpdateOptions IBulkUpdateExecutor.CreateOptions(IEntityPropertiesProvider? propertiesToUpdate, IEntityPropertiesProvider? keyProperties)
       {
-         return new SqliteBulkUpdateOptions(propertiesToUpdate, keyProperties);
+         return new SqliteBulkUpdateOptions
+                {
+                   PropertiesToUpdate = propertiesToUpdate,
+                   KeyProperties = keyProperties
+                };
       }
 
       /// <inheritdoc />
