@@ -1,25 +1,26 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-
 namespace Thinktecture.EntityFrameworkCore.BulkOperations
 {
    /// <summary>
-   /// Bulk update options for SQL Server.
+   /// Bulk insert or update options for SQL Server.
    /// </summary>
-   public sealed class SqlServerBulkUpdateOptions : SqlServerBulkOperationOptions, ISqlServerBulkUpdateOptions
+   public sealed class SqlServerBulkInsertOrUpdateOptions
+      : SqlServerBulkOperationOptions, ISqlServerBulkInsertOrUpdateOptions
    {
       ISqlServerTempTableBulkInsertOptions ISqlServerBulkOperationOptions.TempTableOptions => TempTableOptions;
+
+      /// <inheritdoc />
+      public IEntityPropertiesProvider? PropertiesToInsert { get; set; }
 
       /// <summary>
       /// Initializes new instance of <see cref="SqlServerBulkUpdateOptions"/>.
       /// </summary>
       /// <param name="optionsToInitializeFrom">Options to initialize from.</param>
-      public SqlServerBulkUpdateOptions(IBulkUpdateOptions? optionsToInitializeFrom = null)
+      public SqlServerBulkInsertOrUpdateOptions(IBulkInsertOrUpdateOptions? optionsToInitializeFrom = null)
          : base(optionsToInitializeFrom as ISqlServerBulkOperationOptions,
                 optionsToInitializeFrom?.PropertiesToUpdate,
                 optionsToInitializeFrom?.KeyProperties)
       {
+         PropertiesToInsert = optionsToInitializeFrom?.PropertiesToInsert;
       }
    }
 }

@@ -1,5 +1,4 @@
 using System;
-using System.Reflection;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
@@ -54,20 +53,9 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
                           };
          var testEntities = new[] { testEntity };
 
-         var idProperty = typeof(TestEntity).GetProperty(nameof(TestEntity.Id)) ?? throw new Exception($"Property {nameof(TestEntity.Id)} not found.");
-         var countProperty = typeof(TestEntity).GetProperty(nameof(TestEntity.Count)) ?? throw new Exception($"Property {nameof(TestEntity.Count)} not found.");
-         var propertyWithBackingField = typeof(TestEntity).GetProperty(nameof(TestEntity.PropertyWithBackingField)) ?? throw new Exception($"Property {nameof(TestEntity.PropertyWithBackingField)} not found.");
-         var privateField = typeof(TestEntity).GetField("_privateField", BindingFlags.Instance | BindingFlags.NonPublic) ?? throw new Exception($"Field _privateField not found.");
-
          await ActDbContext.BulkInsertAsync(testEntities, new SqlServerBulkInsertOptions
                                                           {
-                                                             PropertiesToInsert = new EntityPropertiesProvider(new MemberInfo[]
-                                                                                                               {
-                                                                                                                  idProperty,
-                                                                                                                  countProperty,
-                                                                                                                  propertyWithBackingField,
-                                                                                                                  privateField
-                                                                                                               })
+                                                             PropertiesToInsert = new EntityPropertiesProvider(TestEntity.GetRequiredProperties())
                                                           });
 
          var loadedEntities = await AssertDbContext.TestEntities.ToListAsync();

@@ -9,10 +9,31 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
    public interface IEntityPropertiesProvider
    {
       /// <summary>
-      /// Gets properties to work with.
+      /// Determines properties to include into a temp table into.
       /// </summary>
-      /// <param name="entityType">The type of the entity to get the properties for.</param>
-      /// <returns>A collection of <see cref="IProperty"/>.</returns>
-      IReadOnlyList<IProperty> GetProperties(IEntityType entityType);
+      /// <param name="entityType">Entity type.</param>
+      /// <returns>Properties to include into a temp table.</returns>
+      IReadOnlyList<IProperty> GetPropertiesForTempTable(IEntityType entityType);
+
+      /// <summary>
+      /// Determines properties to include into a temp table into.
+      /// </summary>
+      /// <param name="entityType">Entity type.</param>
+      /// <returns>Properties to include into a temp table.</returns>
+      IReadOnlyList<IProperty> GetKeyProperties(IEntityType entityType);
+
+      /// <summary>
+      /// Determines properties to insert into a (temp) table.
+      /// </summary>
+      /// <param name="entityType">Entity type.</param>
+      /// <returns>Properties to insert into a (temp) table.</returns>
+      IReadOnlyList<IProperty> GetPropertiesForInsert(IEntityType entityType);
+
+      /// <summary>
+      /// Determines properties to use in update of a table.
+      /// </summary>
+      /// <param name="entityType">Entity type.</param>
+      /// <returns>Properties to use in update of a table.</returns>
+      IReadOnlyList<IProperty> GetPropertiesForUpdate(IEntityType entityType);
    }
 }

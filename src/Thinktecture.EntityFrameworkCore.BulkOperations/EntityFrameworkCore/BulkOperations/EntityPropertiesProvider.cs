@@ -13,7 +13,9 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
    public sealed class EntityPropertiesProvider : IEntityPropertiesProvider
    {
       private readonly IReadOnlyList<MemberInfo> _members;
-      private IReadOnlyList<IProperty>? _properties;
+
+      private IEntityType? _entityType;                           // cache!
+      private IReadOnlyList<IProperty>? _propertiesForEntityType; // cache!
 
       /// <summary>
       /// Initializes new instance of <see cref="EntityPropertiesProvider"/>.
@@ -29,10 +31,39 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
          _members = members;
       }
 
-      /// <inheritdoc />
-      public IReadOnlyList<IProperty> GetProperties(IEntityType entityType)
+      private IReadOnlyList<IProperty> GetProperties(IEntityType entityType)
       {
-         return _properties ??= _members.ConvertToEntityProperties(entityType);
+         if (_propertiesForEntityType == null || entityType != _entityType)
+         {
+            _entityType = entityType;
+            _propertiesForEntityType = _members.ConvertToEntityProperties(entityType);
+         }
+
+         return _propertiesForEntityType;
+      }
+
+      /// <inheritdoc />
+      public IReadOnlyList<IProperty> GetPropertiesForTempTable(IEntityType entityType)
+      {
+         return GetProperties(entityType);
+      }
+
+      /// <inheritdoc />
+      public IReadOnlyList<IProperty> GetKeyProperties(IEntityType entityType)
+      {
+         return GetProperties(entityType);
+      }
+
+      /// <inheritdoc />
+      public IReadOnlyList<IProperty> GetPropertiesForInsert(IEntityType entityType)
+      {
+         return GetProperties(entityType);
+      }
+
+      /// <inheritdoc />
+      public IReadOnlyList<IProperty> GetPropertiesForUpdate(IEntityType entityType)
+      {
+         return GetProperties(entityType);
       }
 
       /// <summary>

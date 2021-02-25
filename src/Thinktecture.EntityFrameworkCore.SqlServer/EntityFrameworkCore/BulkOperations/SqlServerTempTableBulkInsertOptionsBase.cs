@@ -1,6 +1,5 @@
 using System;
 using System.Data;
-using System.Reflection;
 using Microsoft.Data.SqlClient;
 using Thinktecture.EntityFrameworkCore.TempTables;
 
@@ -14,6 +13,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       IBulkInsertOptions ITempTableBulkInsertOptions.BulkInsertOptions => _bulkInsertOptions;
       ITempTableCreationOptions ITempTableBulkInsertOptions.TempTableCreationOptions => _tempTableCreationOptions;
       ISqlServerTempTableCreationOptions ISqlServerTempTableBulkInsertOptions.TempTableCreationOptions => _tempTableCreationOptions;
+      IEntityPropertiesProvider? ISqlServerTempTableBulkInsertOptions.PropertiesToInsert => PropertiesToInsert;
 
       private readonly SqlServerBulkInsertOptions _bulkInsertOptions;
       private readonly SqlServerTempTableCreationOptions _tempTableCreationOptions;
@@ -102,7 +102,6 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       /// <summary>
       /// Gets properties to insert.
       /// </summary>
-      /// <returns>A collection of <see cref="MemberInfo"/>.</returns>
       protected IEntityPropertiesProvider? PropertiesToInsert
       {
          get => _bulkInsertOptions.PropertiesToInsert;

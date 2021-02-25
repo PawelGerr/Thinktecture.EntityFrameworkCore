@@ -12,6 +12,6 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       /// Properties to insert.
       /// If the <see cref="PropertiesToInsert"/> is null then all properties of the entity are going to be inserted.
       /// </summary>
-      public IEntityPropertiesProvider? PropertiesToInsert { get; }
+      IEntityPropertiesProvider? PropertiesToInsert { get; }
    }
 }

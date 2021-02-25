@@ -24,7 +24,8 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
    // ReSharper disable once ClassNeverInstantiated.Global
    [SuppressMessage("ReSharper", "EF1001")]
    public sealed class SqliteBulkOperationExecutor
-      : IBulkInsertExecutor, ITempTableBulkInsertExecutor, IBulkUpdateExecutor, ITruncateTableExecutor
+      : IBulkInsertExecutor, ITempTableBulkInsertExecutor, IBulkUpdateExecutor,
+        IBulkInsertOrUpdateExecutor, ITruncateTableExecutor
    {
       private readonly DbContext _ctx;
       private readonly IDiagnosticsLogger<SqliteDbLoggerCategory.BulkOperation> _logger;
@@ -47,7 +48,10 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
          IDiagnosticsLogger<SqliteDbLoggerCategory.BulkOperation> logger,
          ISqlGenerationHelper sqlGenerationHelper)
       {
-         _ctx = ctx?.Context ?? throw new ArgumentNullException(nameof(ctx));
+         if (ctx == null)
+            throw new ArgumentNullException(nameof(ctx));
+
+         _ctx = ctx.Context ?? throw new ArgumentNullException(nameof(ctx));
          _logger = logger ?? throw new ArgumentNullException(nameof(logger));
          _sqlGenerationHelper = sqlGenerationHelper ?? throw new ArgumentNullException(nameof(sqlGenerationHelper));
       }
@@ -69,6 +73,20 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       {
          return new SqliteBulkUpdateOptions
                 {
+                   PropertiesToUpdate = propertiesToUpdate,
+                   KeyProperties = keyProperties
+                };
+      }
+
+      /// <inheritdoc />
+      IBulkInsertOrUpdateOptions IBulkInsertOrUpdateExecutor.CreateOptions(
+         IEntityPropertiesProvider? propertiesToInsert,
+         IEntityPropertiesProvider? propertiesToUpdate,
+         IEntityPropertiesProvider? keyProperties)
+      {
+         return new SqliteBulkInsertOrUpdateOptions
+                {
+                   PropertiesToInsert = propertiesToInsert,
                    PropertiesToUpdate = propertiesToUpdate,
                    KeyProperties = keyProperties
                 };
@@ -105,10 +123,68 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
          if (!(options is ISqliteBulkInsertOptions sqliteOptions))
             sqliteOptions = new SqliteBulkInsertOptions(options);
 
-         var properties = sqliteOptions.PropertiesToInsert.GetPropertiesForInsert(entityType);
-         var autoIncrementBehavior = sqliteOptions.AutoIncrementBehavior;
+         var properties = sqliteOptions.PropertiesToInsert.DeterminePropertiesForInsert(entityType);
 
-         await ExecuteBulkOperationAsync(entities, schema, tableName, SqliteCommandBuilder.Insert, properties, autoIncrementBehavior, cancellationToken);
+         await ExecuteBulkOperationAsync(entities, schema, tableName, SqliteCommandBuilder.Insert(properties), properties, sqliteOptions.AutoIncrementBehavior, cancellationToken);
+      }
+
+      /// <inheritdoc />
+      public async Task<int> BulkUpdateAsync<T>(
+         IEnumerable<T> entities,
+         IBulkUpdateOptions options,
+         CancellationToken cancellationToken = default)
+         where T : class
+      {
+         if (entities == null)
+            throw new ArgumentNullException(nameof(entities));
+         if (options == null)
+            throw new ArgumentNullException(nameof(options));
+
+         var entityType = _ctx.Model.GetEntityType(typeof(T));
+         var keyProperties = options.KeyProperties.DetermineKeyProperties(entityType);
+         var propertiesToUpdate = options.PropertiesToUpdate.DeterminePropertiesForUpdate(entityType);
+         var allProperties = propertiesToUpdate.Union(keyProperties).ToList();
+
+         var commandBuilder = SqliteCommandBuilder.Update(propertiesToUpdate, keyProperties);
+         return await ExecuteBulkOperationAsync(entities, entityType, commandBuilder, allProperties, SqliteAutoIncrementBehavior.KeepValueAsIs, cancellationToken);
+      }
+
+      /// <inheritdoc />
+      public async Task<int> BulkInsertOrUpdateAsync<T>(
+         IEnumerable<T> entities,
+         IBulkInsertOrUpdateOptions options,
+         CancellationToken cancellationToken = default)
+         where T : class
+      {
+         if (entities == null)
+            throw new ArgumentNullException(nameof(entities));
+         if (options == null)
+            throw new ArgumentNullException(nameof(options));
+
+         if (!(options is ISqliteBulkInsertOrUpdateOptions sqliteOptions))
+            sqliteOptions = new SqliteBulkInsertOrUpdateOptions(options);
+
+         var entityType = _ctx.Model.GetEntityType(typeof(T));
+         var keyProperties = options.KeyProperties.DetermineKeyProperties(entityType);
+         var propertiesToInsert = options.PropertiesToInsert.DeterminePropertiesForInsert(entityType);
+         var propertiesToUpdate = options.PropertiesToUpdate.DeterminePropertiesForUpdate(entityType);
+         var allProperties = propertiesToInsert.Union(propertiesToUpdate).Union(keyProperties).ToList();
+
+         var commandBuilder = SqliteCommandBuilder.InsertOrUpdate(propertiesToInsert, propertiesToUpdate, keyProperties);
+
+         return await ExecuteBulkOperationAsync(entities, entityType, commandBuilder, allProperties, sqliteOptions.AutoIncrementBehavior, cancellationToken);
+      }
+
+      private async Task<int> ExecuteBulkOperationAsync<T>(
+         IEnumerable<T> entities,
+         IEntityType entityType,
+         SqliteCommandBuilder commandBuilder,
+         IReadOnlyList<IProperty> properties,
+         SqliteAutoIncrementBehavior autoIncrementBehavior,
+         CancellationToken cancellationToken)
+         where T : class
+      {
+         return await ExecuteBulkOperationAsync(entities, entityType.GetSchema(), entityType.GetTableName(), commandBuilder, properties, autoIncrementBehavior, cancellationToken);
       }
 
       private async Task<int> ExecuteBulkOperationAsync<T>(
@@ -144,7 +220,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
             }
             catch (SqliteException ex)
             {
-               throw new InvalidOperationException($"Cannot access destination table '{tableIdentifier}'.", ex);
+               throw new InvalidOperationException($"Error during bulk operation on table '{tableIdentifier}'. See inner exception for more details.", ex);
             }
 
             LogBulkOperationStart(command.CommandText);
@@ -255,25 +331,6 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
          var truncateStatement = $"DELETE FROM {tableIdentifier};";
 
          await _ctx.Database.ExecuteSqlRawAsync(truncateStatement, cancellationToken);
-      }
-
-      /// <inheritdoc />
-      public async Task<int> BulkUpdateAsync<T>(
-         IEnumerable<T> entities,
-         IBulkUpdateOptions options,
-         CancellationToken cancellationToken = default)
-         where T : class
-      {
-         if (entities == null)
-            throw new ArgumentNullException(nameof(entities));
-         if (options == null)
-            throw new ArgumentNullException(nameof(options));
-
-         var entityType = _ctx.Model.GetEntityType(typeof(T));
-         var keyProperties = options.KeyProperties.GetKeyProperties(entityType);
-         var propertiesToUpdate = options.PropertiesToUpdate.GetPropertiesForUpdate(entityType).Union(keyProperties).ToList();
-
-         return await ExecuteBulkOperationAsync(entities, entityType.GetSchema(), entityType.GetTableName(), SqliteCommandBuilder.Update(keyProperties), propertiesToUpdate, SqliteAutoIncrementBehavior.KeepValueAsIs, cancellationToken);
       }
 
       private readonly struct ParameterInfo

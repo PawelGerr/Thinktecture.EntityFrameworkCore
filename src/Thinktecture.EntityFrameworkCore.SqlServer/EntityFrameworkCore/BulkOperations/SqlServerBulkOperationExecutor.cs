@@ -23,7 +23,8 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
    /// </summary>
    [SuppressMessage("ReSharper", "EF1001")]
    public sealed class SqlServerBulkOperationExecutor
-      : IBulkInsertExecutor, ITempTableBulkInsertExecutor, IBulkUpdateExecutor, ITruncateTableExecutor
+      : IBulkInsertExecutor, ITempTableBulkInsertExecutor, IBulkUpdateExecutor,
+        IBulkInsertOrUpdateExecutor, ITruncateTableExecutor
    {
       private readonly DbContext _ctx;
       private readonly IDiagnosticsLogger<SqlServerDbLoggerCategory.BulkOperation> _logger;
@@ -77,6 +78,20 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       }
 
       /// <inheritdoc />
+      IBulkInsertOrUpdateOptions IBulkInsertOrUpdateExecutor.CreateOptions(
+         IEntityPropertiesProvider? propertiesToInsert,
+         IEntityPropertiesProvider? propertiesToUpdate,
+         IEntityPropertiesProvider? keyProperties)
+      {
+         return new SqlServerBulkInsertOrUpdateOptions
+                {
+                   PropertiesToInsert = propertiesToInsert,
+                   PropertiesToUpdate = propertiesToUpdate,
+                   KeyProperties = keyProperties
+                };
+      }
+
+      /// <inheritdoc />
       public Task BulkInsertAsync<T>(
          IEnumerable<T> entities,
          IBulkInsertOptions options,
@@ -108,7 +123,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
             sqlServerOptions = new SqlServerBulkInsertOptions(options);
 
          var factory = _ctx.GetService<IEntityDataReaderFactory>();
-         var properties = options.PropertiesToInsert.GetPropertiesForInsert(entityType);
+         var properties = options.PropertiesToInsert.DeterminePropertiesForInsert(entityType);
          var sqlCon = (SqlConnection)_ctx.Database.GetDbConnection();
          var sqlTx = (SqlTransaction?)_ctx.Database.CurrentTransaction?.GetDbTransaction();
 
@@ -235,7 +250,7 @@ INSERT BULK {Table} ({Columns})", (long)duration.TotalMilliseconds,
 
             if (options.MomentOfPrimaryKeyCreation == MomentOfSqlServerPrimaryKeyCreation.AfterBulkInsert)
             {
-               var properties = options.TempTableCreationOptions.PropertiesToInclude.GetPropertiesForTempTable(entityType);
+               var properties = options.TempTableCreationOptions.PropertiesToInclude.DeterminePropertiesForTempTable(entityType);
                var keyProperties = options.PrimaryKeyCreation.GetPrimaryKeyProperties(entityType, properties);
                await tempTableCreator.CreatePrimaryKeyAsync(_ctx, keyProperties, tempTableReference.Name, options.TempTableCreationOptions.TruncateTableIfExists, cancellationToken).ConfigureAwait(false);
             }
@@ -278,32 +293,78 @@ INSERT BULK {Table} ({Columns})", (long)duration.TotalMilliseconds,
             sqlServerOptions = new SqlServerBulkUpdateOptions(options);
 
          var entityType = _ctx.Model.GetEntityType(typeof(T));
-         var propertiesForUpdate = options.PropertiesToUpdate.GetPropertiesForUpdate(entityType);
+         var propertiesForUpdate = options.PropertiesToUpdate.DeterminePropertiesForUpdate(entityType);
 
          if (propertiesForUpdate.Count == 0)
             throw new ArgumentException("The number of properties to update cannot be 0.");
 
-         var tempTableOptions = new SqlServerTempTableBulkInsertOptions(sqlServerOptions.TempTableOptions)
-                                {
-                                   PropertiesToInsert = options.PropertiesToUpdate is null
-                                                           ? null
-                                                           : new CompositeTempTableEntityPropertiesProvider(sqlServerOptions.PropertiesToUpdate, sqlServerOptions.KeyProperties)
-                                };
+         var tempTableOptions = GetSqlServerTempTableBulkInsertOptions(sqlServerOptions, null, sqlServerOptions.PropertiesToUpdate, sqlServerOptions.KeyProperties);
+
          await using var tempTable = await BulkInsertIntoTempTableAsync(entities, tempTableOptions, cancellationToken);
 
-         var mergeStatement = CreateMergeCommand(entityType, tempTable.Name, sqlServerOptions, propertiesForUpdate);
+         var mergeStatement = CreateMergeCommand(entityType, tempTable.Name, sqlServerOptions, null, propertiesForUpdate, options.KeyProperties.DetermineKeyProperties(entityType));
 
          return await _ctx.Database.ExecuteSqlRawAsync(mergeStatement, cancellationToken);
       }
 
-      private string CreateMergeCommand(
+      /// <inheritdoc />
+      public async Task<int> BulkInsertOrUpdateAsync<T>(
+         IEnumerable<T> entities,
+         IBulkInsertOrUpdateOptions options,
+         CancellationToken cancellationToken = default)
+         where T : class
+      {
+         if (entities == null)
+            throw new ArgumentNullException(nameof(entities));
+         if (options == null)
+            throw new ArgumentNullException(nameof(options));
+
+         if (options is not ISqlServerBulkInsertOrUpdateOptions sqlServerOptions)
+            sqlServerOptions = new SqlServerBulkInsertOrUpdateOptions(options);
+
+         var entityType = _ctx.Model.GetEntityType(typeof(T));
+         var propertiesForInsert = options.PropertiesToInsert.DeterminePropertiesForInsert(entityType);
+         var propertiesForUpdate = options.PropertiesToUpdate.DeterminePropertiesForUpdate(entityType);
+
+         if (propertiesForInsert.Count == 0)
+            throw new ArgumentException("The number of properties to insert cannot be 0.");
+         if (propertiesForUpdate.Count == 0)
+            throw new ArgumentException("The number of properties to update cannot be 0.");
+
+         var tempTableOptions = GetSqlServerTempTableBulkInsertOptions(sqlServerOptions, options.PropertiesToInsert, sqlServerOptions.PropertiesToUpdate, sqlServerOptions.KeyProperties);
+
+         await using var tempTable = await BulkInsertIntoTempTableAsync(entities, tempTableOptions, cancellationToken);
+
+         var mergeStatement = CreateMergeCommand(entityType, tempTable.Name, sqlServerOptions, propertiesForInsert, propertiesForUpdate, options.KeyProperties.DetermineKeyProperties(entityType));
+
+         return await _ctx.Database.ExecuteSqlRawAsync(mergeStatement, cancellationToken);
+      }
+
+      private static ISqlServerTempTableBulkInsertOptions GetSqlServerTempTableBulkInsertOptions(
+         ISqlServerBulkOperationOptions sqlServerOptions,
+         IEntityPropertiesProvider? propertiesToInsert,
+         IEntityPropertiesProvider? propertiesToUpdate,
+         IEntityPropertiesProvider? keyProperties)
+      {
+         return sqlServerOptions.TempTableOptions.PropertiesToInsert is not null
+                   ? sqlServerOptions.TempTableOptions
+                   : new SqlServerTempTableBulkInsertOptions(sqlServerOptions.TempTableOptions)
+                     {
+                        PropertiesToInsert = propertiesToInsert is null && propertiesToUpdate is null
+                                                ? null
+                                                : new CompositeTempTableEntityPropertiesProvider(propertiesToInsert, propertiesToUpdate, keyProperties)
+                     };
+      }
+
+      private string CreateMergeCommand<T>(
          IEntityType entityType,
          string sourceTempTableName,
-         ISqlServerBulkUpdateOptions options,
-         IEnumerable<IProperty> propertiesToUpdate)
+         T options,
+         IReadOnlyList<IProperty>? propertiesToInsert,
+         IReadOnlyList<IProperty> propertiesToUpdate,
+         IReadOnlyList<IProperty> keyProperties)
+         where T : ISqlServerBulkOperationOptions
       {
-         var keyProperties = options.KeyProperties.GetKeyProperties(entityType);
-
          var sb = new StringBuilder();
 
          sb.Append("MERGE INTO ")
@@ -324,7 +385,8 @@ INSERT BULK {Table} ({Columns})", (long)duration.TotalMilliseconds,
             sb.Append(")");
          }
 
-         sb.Append(" AS d USING ")
+         sb.AppendLine(" AS d")
+           .Append("USING ")
            .Append(_sqlGenerationHelper.DelimitIdentifier(sourceTempTableName))
            .Append(" AS s ON ");
 
@@ -347,20 +409,58 @@ INSERT BULK {Table} ({Columns})", (long)duration.TotalMilliseconds,
          }
 
          sb.AppendLine()
-           .AppendLine("WHEN MATCHED THEN UPDATE SET");
+           .AppendLine("WHEN MATCHED THEN")
+           .Append("\tUPDATE SET ");
 
          isFirstIteration = true;
 
          foreach (var property in propertiesToUpdate.Except(keyProperties))
          {
             if (!isFirstIteration)
-               sb.AppendLine(",");
+               sb.Append(", ");
 
-            var columnName = property.GetColumnBaseName();
-            var escapedColumnName = _sqlGenerationHelper.DelimitIdentifier(columnName);
+            var escapedColumnName = _sqlGenerationHelper.DelimitIdentifier(property.GetColumnBaseName());
 
-            sb.Append("\td.").Append(escapedColumnName).Append(" = s.").Append(escapedColumnName);
+            sb.Append("d.").Append(escapedColumnName).Append(" = s.").Append(escapedColumnName);
             isFirstIteration = false;
+         }
+
+         if (propertiesToInsert is not null)
+         {
+            sb.AppendLine()
+              .AppendLine("WHEN NOT MATCHED THEN")
+              .Append("\tINSERT (");
+
+            isFirstIteration = true;
+
+            foreach (var property in propertiesToInsert)
+            {
+               if (!isFirstIteration)
+                  sb.Append(", ");
+
+               var escapedColumnName = _sqlGenerationHelper.DelimitIdentifier(property.GetColumnBaseName());
+
+               sb.Append(escapedColumnName);
+               isFirstIteration = false;
+            }
+
+            sb.AppendLine(")")
+              .Append("\tVALUES (");
+
+            isFirstIteration = true;
+
+            foreach (var property in propertiesToInsert)
+            {
+               if (!isFirstIteration)
+                  sb.Append(", ");
+
+               var escapedColumnName = _sqlGenerationHelper.DelimitIdentifier(property.GetColumnBaseName());
+
+               sb.Append("s.").Append(escapedColumnName);
+               isFirstIteration = false;
+            }
+
+            sb.Append(")");
          }
 
          sb.Append(_sqlGenerationHelper.StatementTerminator);

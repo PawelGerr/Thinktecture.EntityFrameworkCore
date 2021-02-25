@@ -37,7 +37,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.PropertiesProviderTest
          var idProperty = entityType.FindProperty(nameof(TestEntity.Id));
          var propertiesProvider = EntityPropertiesProvider.From<TestEntity>(entity => entity.Id);
 
-         var properties = propertiesProvider.GetProperties(entityType);
+         var properties = propertiesProvider.GetPropertiesForTempTable(entityType);
          properties.Should().HaveCount(1);
          properties.Should().Contain(idProperty);
       }
@@ -50,7 +50,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.PropertiesProviderTest
          var countProperty = entityType.FindProperty(nameof(TestEntity.Count));
          var propertiesProvider = EntityPropertiesProvider.From<TestEntity>(entity => new { entity.Id, entity.Count });
 
-         var properties = propertiesProvider.GetProperties(entityType);
+         var properties = propertiesProvider.GetPropertiesForTempTable(entityType);
          properties.Should().HaveCount(2);
          properties.Should().Contain(idProperty);
          properties.Should().Contain(countProperty);

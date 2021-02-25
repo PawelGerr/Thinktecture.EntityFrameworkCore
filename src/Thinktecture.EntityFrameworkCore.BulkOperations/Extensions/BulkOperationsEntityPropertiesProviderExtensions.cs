@@ -19,7 +19,7 @@ namespace Thinktecture
       /// <param name="entityPropertiesProvider">Entity properties provider.</param>
       /// <param name="entityType">Entity type.</param>
       /// <returns>Properties to include into a temp table.</returns>
-      public static IReadOnlyList<IProperty> GetPropertiesForTempTable(
+      public static IReadOnlyList<IProperty> DeterminePropertiesForTempTable(
          this IEntityPropertiesProvider? entityPropertiesProvider,
          IEntityType entityType)
       {
@@ -28,7 +28,7 @@ namespace Thinktecture
 
          IReadOnlyList<IProperty> properties;
 
-         return entityPropertiesProvider == null || (properties = entityPropertiesProvider.GetProperties(entityType)).Count == 0
+         return entityPropertiesProvider == null || (properties = entityPropertiesProvider.GetPropertiesForTempTable(entityType)).Count == 0
                    ? entityType.GetProperties().ToList()
                    : properties;
       }
@@ -39,23 +39,29 @@ namespace Thinktecture
       /// <param name="entityPropertiesProvider">Entity properties provider.</param>
       /// <param name="entityType">Entity type.</param>
       /// <returns>Properties to include into a temp table.</returns>
-      public static IReadOnlyList<IProperty> GetKeyProperties(
+      public static IReadOnlyList<IProperty> DetermineKeyProperties(
          this IEntityPropertiesProvider? entityPropertiesProvider,
          IEntityType entityType)
       {
          if (entityType == null)
             throw new ArgumentNullException(nameof(entityType));
 
-         IReadOnlyList<IProperty> properties;
+         IReadOnlyList<IProperty>? properties;
 
-         var keyProperties = entityPropertiesProvider is null || (properties = entityPropertiesProvider.GetProperties(entityType)).Count == 0
-                                ? entityType.FindPrimaryKey()?.Properties
-                                : properties;
+         if (entityPropertiesProvider is null || (properties = entityPropertiesProvider.GetKeyProperties(entityType)).Count == 0)
+         {
+            properties = entityType.FindPrimaryKey()?.Properties;
 
-         if (keyProperties is null or { Count: 0 })
-            throw new ArgumentException("The number of key properties to perform JOIN/match on cannot be 0.");
+            if (properties is null or { Count: 0 })
+               throw new InvalidOperationException($"The entity '{entityType.Name}' has no primary key. Please provide key properties to perform JOIN/match on.");
+         }
+         else
+         {
+            if (properties is null or { Count: 0 })
+               throw new ArgumentException("The number of key properties to perform JOIN/match on cannot be 0.");
+         }
 
-         return keyProperties;
+         return properties;
       }
 
       /// <summary>
@@ -64,11 +70,18 @@ namespace Thinktecture
       /// <param name="entityPropertiesProvider">Entity properties provider.</param>
       /// <param name="entityType">Entity type.</param>
       /// <returns>Properties to insert into a (temp) table.</returns>
-      public static IReadOnlyList<IProperty> GetPropertiesForInsert(
+      public static IReadOnlyList<IProperty> DeterminePropertiesForInsert(
          this IEntityPropertiesProvider? entityPropertiesProvider,
          IEntityType entityType)
       {
-         return GetWritableProperties(entityPropertiesProvider, entityType);
+         if (entityType == null)
+            throw new ArgumentNullException(nameof(entityType));
+
+         IReadOnlyList<IProperty> properties;
+
+         return entityPropertiesProvider == null || (properties = entityPropertiesProvider.GetPropertiesForInsert(entityType)).Count == 0
+                   ? entityType.GetProperties().Where(p => p.GetBeforeSaveBehavior() != PropertySaveBehavior.Ignore).ToList()
+                   : properties;
       }
 
       /// <summary>
@@ -77,15 +90,8 @@ namespace Thinktecture
       /// <param name="entityPropertiesProvider">Entity properties provider.</param>
       /// <param name="entityType">Entity type.</param>
       /// <returns>Properties to use in update of a table.</returns>
-      public static IReadOnlyList<IProperty> GetPropertiesForUpdate(
+      public static IReadOnlyList<IProperty> DeterminePropertiesForUpdate(
          this IEntityPropertiesProvider? entityPropertiesProvider,
-         IEntityType entityType)
-      {
-         return GetWritableProperties(entityPropertiesProvider, entityType);
-      }
-
-      private static IReadOnlyList<IProperty> GetWritableProperties(
-         IEntityPropertiesProvider? entityPropertiesProvider,
          IEntityType entityType)
       {
          if (entityType == null)
@@ -93,7 +99,7 @@ namespace Thinktecture
 
          IReadOnlyList<IProperty> properties;
 
-         return entityPropertiesProvider == null || (properties = entityPropertiesProvider.GetProperties(entityType)).Count == 0
+         return entityPropertiesProvider == null || (properties = entityPropertiesProvider.GetPropertiesForUpdate(entityType)).Count == 0
                    ? entityType.GetProperties().Where(p => p.GetBeforeSaveBehavior() != PropertySaveBehavior.Ignore).ToList()
                    : properties;
       }

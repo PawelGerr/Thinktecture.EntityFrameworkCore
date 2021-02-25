@@ -7,25 +7,59 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
 {
    internal class CompositeTempTableEntityPropertiesProvider : IEntityPropertiesProvider
    {
-      private readonly IEntityPropertiesProvider? _mainPropertiesProvider;
+      private readonly IEntityPropertiesProvider? _propertiesToInsert;
+      private readonly IEntityPropertiesProvider? _propertiesToUpdate;
       private readonly IEntityPropertiesProvider? _keyPropertiesProvider;
 
       public CompositeTempTableEntityPropertiesProvider(
-         IEntityPropertiesProvider? mainPropertiesProvider,
+         IEntityPropertiesProvider? propertiesToInsert,
+         IEntityPropertiesProvider? propertiesToUpdate,
          IEntityPropertiesProvider? keyPropertiesProvider)
       {
-         _mainPropertiesProvider = mainPropertiesProvider;
+         _propertiesToInsert = propertiesToInsert;
+         _propertiesToUpdate = propertiesToUpdate;
          _keyPropertiesProvider = keyPropertiesProvider;
       }
 
-      public IReadOnlyList<IProperty> GetProperties(IEntityType entityType)
+      /// <inheritdoc />
+      public IReadOnlyList<IProperty> GetPropertiesForTempTable(IEntityType entityType)
       {
-         IReadOnlyList<IProperty> properties;
+         return GetProperties(entityType,
+                              _propertiesToInsert.DeterminePropertiesForTempTable(entityType),
+                              _propertiesToUpdate.DeterminePropertiesForTempTable(entityType));
+      }
 
-         if (_mainPropertiesProvider is null || (properties = _mainPropertiesProvider.GetProperties(entityType)).Count == 0)
-            return Array.Empty<IProperty>();
+      /// <inheritdoc />
+      public IReadOnlyList<IProperty> GetKeyProperties(IEntityType entityType)
+      {
+         return _keyPropertiesProvider.DetermineKeyProperties(entityType);
+      }
 
-         return properties.Union(_keyPropertiesProvider.GetKeyProperties(entityType)).ToList();
+      /// <inheritdoc />
+      public IReadOnlyList<IProperty> GetPropertiesForInsert(IEntityType entityType)
+      {
+         return GetProperties(entityType,
+                              _propertiesToInsert.DeterminePropertiesForInsert(entityType),
+                              _propertiesToUpdate.DeterminePropertiesForInsert(entityType));
+      }
+
+      /// <inheritdoc />
+      public IReadOnlyList<IProperty> GetPropertiesForUpdate(IEntityType entityType)
+      {
+         return GetProperties(entityType,
+                              _propertiesToInsert.DeterminePropertiesForUpdate(entityType),
+                              _propertiesToUpdate.DeterminePropertiesForUpdate(entityType));
+      }
+
+      private IReadOnlyList<IProperty> GetProperties(
+         IEntityType entityType,
+         IReadOnlyList<IProperty> propertiesToInsert,
+         IReadOnlyList<IProperty> propertiesToUpdate)
+      {
+         return _keyPropertiesProvider.DetermineKeyProperties(entityType)
+                                      .Union(propertiesToInsert)
+                                      .Union(propertiesToUpdate)
+                                      .ToList();
       }
    }
 }

@@ -23,5 +23,10 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       /// Options for creation of the temp table.
       /// </summary>
       new ISqlServerTempTableCreationOptions TempTableCreationOptions { get; }
+
+      /// <summary>
+      /// Gets properties for creation of the temp table and for insert.
+      /// </summary>
+      IEntityPropertiesProvider? PropertiesToInsert { get; }
    }
 }

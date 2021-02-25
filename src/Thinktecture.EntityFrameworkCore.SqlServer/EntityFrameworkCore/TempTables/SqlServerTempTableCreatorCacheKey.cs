@@ -37,7 +37,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
       {
          TruncateTableIfExists = options.TruncateTableIfExists;
          UseDefaultDatabaseCollation = options.UseDefaultDatabaseCollation;
-         Properties = options.PropertiesToInclude.GetPropertiesForTempTable(entityType);
+         Properties = options.PropertiesToInclude.DeterminePropertiesForTempTable(entityType);
          PrimaryKeys = options.PrimaryKeyCreation.GetPrimaryKeyProperties(entityType, Properties);
       }
 
