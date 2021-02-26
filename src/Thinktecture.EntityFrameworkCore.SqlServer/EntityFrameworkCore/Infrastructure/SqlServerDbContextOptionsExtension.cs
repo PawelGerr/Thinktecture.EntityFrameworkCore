@@ -125,7 +125,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
             services.AddTempTableSuffixComponents();
 
             AddEntityDataReader(services);
-            services.TryAddScoped<SqlServerBulkOperationExecutor, SqlServerBulkOperationExecutor>();
+            services.TryAddScoped<SqlServerBulkOperationExecutor>();
             services.TryAddScoped<IBulkInsertExecutor>(provider => provider.GetRequiredService<SqlServerBulkOperationExecutor>());
             services.TryAddScoped<ITempTableBulkInsertExecutor>(provider => provider.GetRequiredService<SqlServerBulkOperationExecutor>());
             services.TryAddScoped<IBulkUpdateExecutor>(provider => provider.GetRequiredService<SqlServerBulkOperationExecutor>());
