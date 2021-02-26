@@ -49,7 +49,8 @@ namespace Thinktecture
                                                                                               .AddRowNumberSupport();
                                                                                  })
                                                     .EnableSensitiveDataLogging()
-                                                    .UseLoggerFactory(_loggerFactory));
+                                                    .UseLoggerFactory(_loggerFactory)
+                                                    .AddNestedTransactionSupport());
 
          return services.BuildServiceProvider();
       }

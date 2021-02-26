@@ -30,5 +30,10 @@ namespace Thinktecture.Database
          FirstName = firstName;
          LastName = lastName;
       }
+
+      public override string ToString()
+      {
+         return $"{{ CustomerId='{Id}', FirstName='{FirstName}', LastName='{LastName}' }}";
+      }
    }
 }

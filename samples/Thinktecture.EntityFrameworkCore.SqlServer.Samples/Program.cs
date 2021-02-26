@@ -32,30 +32,52 @@ namespace Thinktecture
             var productId = await ctx.EnsureProductAsync(new Guid("872BCAC2-1A85-4B22-AC0F-7D920563A000"));
             var orderId = await ctx.EnsureOrderAsync(new Guid("EC1CBF87-F53F-4EF4-B286-8F5EB0AE810D"), customerId);
             await ctx.EnsureOrderItemAsync(orderId, productId, 42);
+            ctx.ChangeTracker.Clear(); // resetting DbContext, as an alternative to create a new one
 
             // Bulk insert into "real" tables
             await DoBulkInsertIntoRealTableAsync(ctx);
+            ctx.ChangeTracker.Clear();
+
             await DoBulkInsertSpecifiedColumnsIntoRealTableAsync(ctx);
+            ctx.ChangeTracker.Clear();
+
+            // Bulk update
+            await DoBulkUpdateAsync(ctx, customerId);
+            ctx.ChangeTracker.Clear();
+
+            // Bulk insert or update
+            await DoBulkInsertOrUpdateAsync(ctx, customerId);
+            ctx.ChangeTracker.Clear();
 
             // Bulk delete
             await DoBulkDeleteAsync(ctx);
+            ctx.ChangeTracker.Clear();
 
             // Bulk insert into temp tables
             await DoBulkInsertEntitiesIntoTempTableAsync(ctx);
+            ctx.ChangeTracker.Clear();
+
             await DoBulkInsertIntoTempTableAsync(ctx, new List<Guid> { customerId });
+            ctx.ChangeTracker.Clear();
+
             await DoBulkInsertIntoTempTableAsync(ctx, new List<(Guid, Guid)> { (customerId, productId) });
+            ctx.ChangeTracker.Clear();
 
             // LEFT JOIN
             await DoLeftJoinAsync(ctx);
+            ctx.ChangeTracker.Clear();
 
             // ROWNUMBER
             await DoRowNumberAsync(ctx);
+            ctx.ChangeTracker.Clear();
 
             // Tenant
             await DoTenantQueriesAsync(ctx);
+            ctx.ChangeTracker.Clear();
 
             // Nested transactions
             await DoNestedTransactionsAsync(ctx, orderId);
+            ctx.ChangeTracker.Clear();
          }
 
          Console.WriteLine("Exiting samples...");
@@ -195,6 +217,30 @@ namespace Thinktecture
                                      .BulkDeleteAsync();
 
          Console.WriteLine($"Number of deleted customers: {affectedRows}");
+      }
+
+      private static async Task DoBulkInsertOrUpdateAsync(DemoDbContext ctx, Guid customerId)
+      {
+         var customer = new Customer(customerId, "First name - DoBulkInsertOrUpdateAsync", "Last name will not be updated");
+         var newCustomer = new Customer(Guid.NewGuid(), "First name - DoBulkInsertOrUpdateAsync", "Last name - DoBulkInsertOrUpdateAsync");
+
+         await ctx.BulkInsertOrUpdateAsync(new[] { newCustomer, customer }, propertiesToUpdate: c => c.FirstName);
+
+         var customers = await ctx.Customers.Where(c => c.Id == customerId || c.Id == newCustomer.Id).ToListAsync();
+
+         Console.WriteLine($"Updated customer: {customers.Single(c => c.Id == customerId)}");
+         Console.WriteLine($"New customer: {customers.Single(c => c.Id == newCustomer.Id)}");
+      }
+
+      private static async Task DoBulkUpdateAsync(DemoDbContext ctx, Guid customerId)
+      {
+         var customer = new Customer(customerId, "First name - DoBulkUpdateAsync", "Last name will not be updated");
+
+         await ctx.BulkUpdateAsync(new[] { customer }, c => c.FirstName);
+
+         var updatedCustomer = await ctx.Customers.FirstAsync(c => c.Id == customerId);
+
+         Console.WriteLine($"Updated customer: {updatedCustomer}");
       }
 
       private static async Task DoBulkInsertIntoTempTableAsync(DemoDbContext ctx, List<Guid> customerIds)

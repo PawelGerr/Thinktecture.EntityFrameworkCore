@@ -24,6 +24,7 @@ namespace Thinktecture
          using (var scope = sp.CreateScope())
          {
             var ctx = scope.ServiceProvider.GetRequiredService<DemoDbContext>();
+            // have to keep open the connection because we are using an in-memory SQLite database
             await ctx.Database.OpenConnectionAsync();
 
             try
@@ -34,22 +35,38 @@ namespace Thinktecture
                var productId = await ctx.EnsureProductAsync(new Guid("872BCAC2-1A85-4B22-AC0F-7D920563A000"));
                var orderId = await ctx.EnsureOrderAsync(new Guid("EC1CBF87-F53F-4EF4-B286-8F5EB0AE810D"), customerId);
                await ctx.EnsureOrderItemAsync(orderId, productId, 42);
+               ctx.ChangeTracker.Clear(); // resetting DbContext, as an alternative to create a new one
 
                // Bulk insert into temp tables
                await DoBulkInsertIntoTempTableAsync(ctx);
+               ctx.ChangeTracker.Clear();
 
                // Bulk insert into "real" tables
                await DoBulkInsertIntoRealTableAsync(ctx);
+               ctx.ChangeTracker.Clear();
+
                await DoBulkInsertSpecifiedColumnsIntoRealTableAsync(ctx);
+               ctx.ChangeTracker.Clear();
+
+               // Bulk update
+               await DoBulkUpdateAsync(ctx, customerId);
+               ctx.ChangeTracker.Clear();
+
+               // Bulk insert or update
+               await DoBulkInsertOrUpdateAsync(ctx, customerId);
+               ctx.ChangeTracker.Clear();
 
                // Bulk delete
                await DoBulkDeleteAsync(ctx);
+               ctx.ChangeTracker.Clear();
 
                // LEFT JOIN
                await DoLeftJoinAsync(ctx);
+               ctx.ChangeTracker.Clear();
 
                // ROWNUMBER
                await DoRowNumberAsync(ctx);
+               ctx.ChangeTracker.Clear();
             }
             finally
             {
@@ -138,6 +155,30 @@ namespace Thinktecture
          var insertedCustomer = await ctx.Customers.FirstAsync(c => c.Id == customersToInsert.Id);
 
          Console.WriteLine($"Inserted customer: {insertedCustomer.Id}");
+      }
+
+      private static async Task DoBulkInsertOrUpdateAsync(DemoDbContext ctx, Guid customerId)
+      {
+         var customer = new Customer(customerId, "First name - DoBulkInsertOrUpdateAsync", "Last name will not be updated");
+         var newCustomer = new Customer(Guid.NewGuid(), "First name - DoBulkInsertOrUpdateAsync", "Last name - DoBulkInsertOrUpdateAsync");
+
+         await ctx.BulkInsertOrUpdateAsync(new[] { newCustomer, customer }, propertiesToUpdate: c => c.FirstName);
+
+         var customers = await ctx.Customers.Where(c => c.Id == customerId || c.Id == newCustomer.Id).ToListAsync();
+
+         Console.WriteLine($"Updated customer: {customers.Single(c => c.Id == customerId)}");
+         Console.WriteLine($"New customer: {customers.Single(c => c.Id == newCustomer.Id)}");
+      }
+
+      private static async Task DoBulkUpdateAsync(DemoDbContext ctx, Guid customerId)
+      {
+         var customer = new Customer(customerId, "First name - DoBulkUpdateAsync", "Last name will not be updated");
+
+         await ctx.BulkUpdateAsync(new[] { customer }, c => c.FirstName);
+
+         var updatedCustomer = await ctx.Customers.FirstAsync(c => c.Id == customerId);
+
+         Console.WriteLine($"Updated customer: {updatedCustomer}");
       }
 
       private static async Task DoBulkDeleteAsync(DemoDbContext ctx)
