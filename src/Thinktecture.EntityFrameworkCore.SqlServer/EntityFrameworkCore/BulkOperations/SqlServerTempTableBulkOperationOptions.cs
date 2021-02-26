@@ -8,7 +8,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
    /// <summary>
    /// Options for bulk insert into temp tables.
    /// </summary>
-   public class SqlServerTempTableBulkOperationOptions : ISqlServerTempTableBulkInsertOptions
+   public abstract class SqlServerTempTableBulkOperationOptions : ISqlServerTempTableBulkInsertOptions
    {
       IBulkInsertOptions ITempTableBulkInsertOptions.BulkInsertOptions => _bulkInsertOptions;
       ITempTableCreationOptions ITempTableBulkInsertOptions.TempTableCreationOptions => _tempTableCreationOptions;
@@ -125,7 +125,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       /// Initializes new instance of <see cref="SqlServerTempTableBulkOperationOptions"/>.
       /// </summary>
       /// <param name="optionsToInitializeFrom">Options to initialize from.</param>
-      internal SqlServerTempTableBulkOperationOptions(ITempTableBulkInsertOptions? optionsToInitializeFrom = null)
+      protected SqlServerTempTableBulkOperationOptions(ITempTableBulkInsertOptions? optionsToInitializeFrom)
       {
          _bulkInsertOptions = new SqlServerBulkInsertOptions();
          _tempTableCreationOptions = new SqlServerTempTableCreationOptions();

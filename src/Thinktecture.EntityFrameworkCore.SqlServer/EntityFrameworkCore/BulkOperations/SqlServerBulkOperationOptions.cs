@@ -45,17 +45,25 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       {
          if (options is null)
          {
-            TempTableOptions = new SqlServerTempTableBulkOperationOptions { PrimaryKeyCreation = PrimaryKeyPropertiesProviders.None };
+            TempTableOptions = new ConcreteSqlServerTempTableBulkOperationOptions { PrimaryKeyCreation = PrimaryKeyPropertiesProviders.None };
             MergeTableHints = new List<TableHintLimited> { TableHintLimited.HoldLock };
          }
          else
          {
-            TempTableOptions = new SqlServerTempTableBulkOperationOptions(options.TempTableOptions);
+            TempTableOptions = new ConcreteSqlServerTempTableBulkOperationOptions(options.TempTableOptions);
             MergeTableHints = options.MergeTableHints;
          }
 
          KeyProperties = keyProperties;
          PropertiesToUpdate = propertiesToUpdate;
+      }
+
+      private class ConcreteSqlServerTempTableBulkOperationOptions : SqlServerTempTableBulkOperationOptions
+      {
+         public ConcreteSqlServerTempTableBulkOperationOptions(ITempTableBulkInsertOptions? optionsToInitializeFrom = null)
+            : base(optionsToInitializeFrom)
+         {
+         }
       }
    }
 }
