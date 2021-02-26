@@ -258,6 +258,29 @@ namespace Thinktecture
       /// </summary>
       /// <param name="ctx">Database context.</param>
       /// <param name="entities">Entities to insert.</param>
+      /// <param name="propertiesToInsert">Properties to insert. If <c>null</c> then all properties are used.</param>
+      /// <param name="cancellationToken">Cancellation token.</param>
+      /// <typeparam name="T">Entity type.</typeparam>
+      /// <returns>A query for accessing the inserted values.</returns>
+      /// <exception cref="ArgumentNullException"> <paramref name="ctx"/> or <paramref name="entities"/> is <c>null</c>.</exception>
+      public static Task<ITempTableQuery<T>> BulkInsertIntoTempTableAsync<T>(
+         this DbContext ctx,
+         IEnumerable<T> entities,
+         Expression<Func<T, object?>>? propertiesToInsert = null,
+         CancellationToken cancellationToken = default)
+         where T : class
+      {
+         var executor = ctx.GetService<ITempTableBulkInsertExecutor>();
+         var options = executor.CreateOptions(propertiesToInsert is null ? null : EntityPropertiesProvider.From(propertiesToInsert));
+
+         return executor.BulkInsertIntoTempTableAsync(entities, options, cancellationToken);
+      }
+
+      /// <summary>
+      /// Copies <paramref name="entities"/> into a temp table and returns the query for accessing the inserted records.
+      /// </summary>
+      /// <param name="ctx">Database context.</param>
+      /// <param name="entities">Entities to insert.</param>
       /// <param name="options">Options.</param>
       /// <param name="cancellationToken">Cancellation token.</param>
       /// <typeparam name="T">Entity type.</typeparam>
@@ -266,7 +289,7 @@ namespace Thinktecture
       public static Task<ITempTableQuery<T>> BulkInsertIntoTempTableAsync<T>(
          this DbContext ctx,
          IEnumerable<T> entities,
-         ITempTableBulkInsertOptions? options = null,
+         ITempTableBulkInsertOptions? options,
          CancellationToken cancellationToken = default)
          where T : class
       {

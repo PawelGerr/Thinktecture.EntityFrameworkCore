@@ -13,8 +13,9 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       /// <summary>
       /// Creates options with default values.
       /// </summary>
+      /// <param name="propertiesToInsert">Properties to insert.</param>
       /// <returns>Options to use with <see cref="ITempTableBulkInsertExecutor"/>.</returns>
-      ITempTableBulkInsertOptions CreateOptions();
+      ITempTableBulkInsertOptions CreateOptions(IEntityPropertiesProvider? propertiesToInsert = null);
 
       /// <summary>
       /// Inserts the provided <paramref name="entities"/> into a temp table.

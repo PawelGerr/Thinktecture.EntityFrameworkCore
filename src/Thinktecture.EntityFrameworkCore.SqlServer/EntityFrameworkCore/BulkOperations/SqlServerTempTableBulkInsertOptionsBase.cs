@@ -6,7 +6,7 @@ using Thinktecture.EntityFrameworkCore.TempTables;
 namespace Thinktecture.EntityFrameworkCore.BulkOperations
 {
    /// <summary>
-   /// Options used by the <see cref="BulkOperationsDbContextExtensions.BulkInsertIntoTempTableAsync{T}"/>.
+   /// Options for bulk insert into temp tables.
    /// </summary>
    public class SqlServerTempTableBulkOperationOptions : ISqlServerTempTableBulkInsertOptions
    {
@@ -125,7 +125,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       /// Initializes new instance of <see cref="SqlServerTempTableBulkOperationOptions"/>.
       /// </summary>
       /// <param name="optionsToInitializeFrom">Options to initialize from.</param>
-      public SqlServerTempTableBulkOperationOptions(ITempTableBulkInsertOptions? optionsToInitializeFrom = null)
+      internal SqlServerTempTableBulkOperationOptions(ITempTableBulkInsertOptions? optionsToInitializeFrom = null)
       {
          _bulkInsertOptions = new SqlServerBulkInsertOptions();
          _tempTableCreationOptions = new SqlServerTempTableCreationOptions();

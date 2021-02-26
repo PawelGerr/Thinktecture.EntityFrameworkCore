@@ -4,7 +4,7 @@ using System.Reflection;
 namespace Thinktecture.EntityFrameworkCore.BulkOperations
 {
    /// <summary>
-   /// Options used by the <see cref="BulkOperationsDbContextExtensions.BulkInsertIntoTempTableAsync{T}"/>.
+   /// Options for bulk insert into temp tables.
    /// </summary>
    public sealed class SqlServerTempTableBulkInsertOptions : SqlServerTempTableBulkOperationOptions
    {

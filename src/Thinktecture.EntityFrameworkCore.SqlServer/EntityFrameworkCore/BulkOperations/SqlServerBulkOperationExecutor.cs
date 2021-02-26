@@ -62,9 +62,9 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       }
 
       /// <inheritdoc />
-      ITempTableBulkInsertOptions ITempTableBulkInsertExecutor.CreateOptions()
+      ITempTableBulkInsertOptions ITempTableBulkInsertExecutor.CreateOptions(IEntityPropertiesProvider? propertiesToInsert)
       {
-         return new SqlServerTempTableBulkInsertOptions();
+         return new SqlServerTempTableBulkInsertOptions { PropertiesToInsert = propertiesToInsert };
       }
 
       /// <inheritdoc />
