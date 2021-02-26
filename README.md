@@ -19,6 +19,7 @@ Use this repo to create issues and feature requests.
 ## Performance
 * [Temp-Tables](https://dev.azure.com/pawelgerr/Thinktecture.EntityFrameworkCore/_wiki/wikis/Thinktecture.EntityFrameworkCore.wiki/2/Temp-Tables)
 * [Bulk-Insert](https://dev.azure.com/pawelgerr/Thinktecture.EntityFrameworkCore/_wiki/wikis/Thinktecture.EntityFrameworkCore.wiki/65/Bulk-Insert)
+* [Bulk-Update](https://dev.azure.com/pawelgerr/Thinktecture.EntityFrameworkCore/_wiki/wikis/Thinktecture.EntityFrameworkCore.wiki/67/Bulk-Update)
 * [Bulk-Delete](https://dev.azure.com/pawelgerr/Thinktecture.EntityFrameworkCore/_wiki/wikis/Thinktecture.EntityFrameworkCore.wiki/63/Bulk-Delete)
 * [Truncate Tables](https://dev.azure.com/pawelgerr/Thinktecture.EntityFrameworkCore/_wiki/wikis/Thinktecture.EntityFrameworkCore.wiki/64/Truncate-Tables)
 
