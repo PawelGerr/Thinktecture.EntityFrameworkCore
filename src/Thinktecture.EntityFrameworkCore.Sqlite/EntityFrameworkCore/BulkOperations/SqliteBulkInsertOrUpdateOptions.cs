@@ -15,7 +15,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       public IEntityPropertiesProvider? KeyProperties { get; set; }
 
       /// <inheritdoc />
-      public SqliteAutoIncrementBehavior AutoIncrementBehavior { get; }
+      public SqliteAutoIncrementBehavior AutoIncrementBehavior { get; set; }
 
       /// <summary>
       /// Initializes new instance of <see cref="SqliteBulkInsertOrUpdateOptions"/>.

@@ -29,7 +29,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       /// Enables or disables a <see cref="SqlBulkCopy"/> object to stream data from an <see cref="IDataReader"/> object.
       /// Default is set to <c>true</c>.
       /// </summary>
-      public bool EnableStreaming { get; set; } = true;
+      public bool EnableStreaming { get; set; }
 
       /// <inheritdoc />
       public IEntityPropertiesProvider? PropertiesToInsert { get; set; }
@@ -44,6 +44,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
             return;
 
          PropertiesToInsert = optionsToInitializeFrom.PropertiesToInsert;
+         EnableStreaming = true;
 
          if (optionsToInitializeFrom is ISqlServerBulkInsertOptions sqlServerOptions)
          {
