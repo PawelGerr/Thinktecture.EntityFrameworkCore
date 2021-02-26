@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Thinktecture.EntityFrameworkCore;
 using Thinktecture.EntityFrameworkCore.TempTables;
@@ -19,6 +20,9 @@ namespace Thinktecture.TestDatabaseContext
       public DbSet<TestEntityWithShadowProperties> TestEntitiesWithShadowProperties { get; set; }
       public DbSet<TestEntityWithSqlDefaultValues> TestEntitiesWithDefaultValues { get; set; }
       public DbSet<TestEntityWithDotnetDefaultValues> TestEntitiesWithDotnetDefaultValues { get; set; }
+      public DbSet<TestEntityOwningInlineEntity> TestEntitiesOwningInlineEntity { get; set; }
+      public DbSet<TestEntityOwningOneSeparateEntity> TestEntitiesOwningOneSeparateEntity { get; set; }
+      public DbSet<TestEntityOwningManyEntities> TestEntitiesOwningManyEntities { get; set; }
       public IQueryable<TestViewEntity> TestView => Set<TestViewEntity>();
 #nullable enable
 
@@ -73,6 +77,12 @@ namespace Thinktecture.TestDatabaseContext
                                                                    builder.Property(e => e.NullableString).HasDefaultValue("4");
                                                                 });
 
+         modelBuilder.Entity<TestEntityOwningInlineEntity>(builder => builder.OwnsOne(e => e.InlineEntity));
+         modelBuilder.Entity<TestEntityOwningOneSeparateEntity>(builder => builder.OwnsOne(e => e.SeparateEntity,
+                                                                                           navigationBuilder => navigationBuilder.ToTable("SeparateEntities_One")));
+         modelBuilder.Entity<TestEntityOwningManyEntities>(builder => builder.OwnsMany(e => e.SeparateEntities,
+                                                                                       navigationBuilder => navigationBuilder.ToTable("SeparateEntities_Many")));
+
          ConfigureModel?.Invoke(modelBuilder);
 
          modelBuilder.Entity<InformationSchemaColumn>().HasNoKey().ToView("<<InformationSchemaColumn>>");
@@ -85,7 +95,13 @@ namespace Thinktecture.TestDatabaseContext
          where T : class
       {
          var type = typeof(T);
-         var tableName = Model.GetEntityType(type).GetTableName();
+         var entityType = Model.GetEntityType(type);
+         return GetTempTableColumns(entityType);
+      }
+
+      public IQueryable<InformationSchemaColumn> GetTempTableColumns(IEntityType entityType)
+      {
+         var tableName = entityType.GetTableName();
 
          return GetTempTableColumns(tableName);
       }

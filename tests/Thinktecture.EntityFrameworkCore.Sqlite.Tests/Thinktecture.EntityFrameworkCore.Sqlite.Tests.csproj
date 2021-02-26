@@ -20,6 +20,7 @@
     <ItemGroup>
       <ProjectReference Include="..\..\src\Thinktecture.EntityFrameworkCore.Sqlite.Testing\Thinktecture.EntityFrameworkCore.Sqlite.Testing.csproj" />
       <ProjectReference Include="..\..\src\Thinktecture.EntityFrameworkCore.Sqlite\Thinktecture.EntityFrameworkCore.Sqlite.csproj" />
+      <ProjectReference Include="..\Thinktecture.EntityFrameworkCore.TestHelpers\Thinktecture.EntityFrameworkCore.TestHelpers.csproj" />
     </ItemGroup>
 
 </Project>

@@ -43,7 +43,10 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
          IRelationalTypeMappingSource typeMappingSource,
          TempTableStatementCache<SqlServerTempTableCreatorCacheKey> cache)
       {
-         _ctx = ctx?.Context ?? throw new ArgumentNullException(nameof(sqlGenerationHelper));
+         if (ctx == null)
+            throw new ArgumentNullException(nameof(ctx));
+
+         _ctx = ctx.Context ?? throw new ArgumentNullException(nameof(sqlGenerationHelper));
          _logger = logger ?? throw new ArgumentNullException(nameof(logger));
          _sqlGenerationHelper = sqlGenerationHelper ?? throw new ArgumentNullException(nameof(sqlGenerationHelper));
          _typeMappingSource = typeMappingSource ?? throw new ArgumentNullException(nameof(typeMappingSource));

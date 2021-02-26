@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage;
 
 namespace Thinktecture.TestDatabaseContext
@@ -14,6 +15,9 @@ namespace Thinktecture.TestDatabaseContext
       public DbSet<TestEntityWithShadowProperties> TestEntitiesWithShadowProperties { get; set; }
       public DbSet<TestEntityWithSqlDefaultValues> TestEntitiesWithDefaultValues { get; set; }
       public DbSet<TestEntityWithDotnetDefaultValues> TestEntitiesWithDotnetDefaultValues { get; set; }
+      public DbSet<TestEntityOwningInlineEntity> TestEntitiesOwningInlineEntity { get; set; }
+      public DbSet<TestEntityOwningOneSeparateEntity> TestEntitiesOwningOneSeparateEntity { get; set; }
+      public DbSet<TestEntityOwningManyEntities> TestEntitiesOwningManyEntities { get; set; }
 #nullable enable
 
       public Action<ModelBuilder>? ConfigureModel { get; set; }
@@ -58,6 +62,12 @@ namespace Thinktecture.TestDatabaseContext
                                                                    builder.Property(e => e.NullableString).HasDefaultValue("4");
                                                                 });
 
+         modelBuilder.Entity<TestEntityOwningInlineEntity>(builder => builder.OwnsOne(e => e.InlineEntity));
+         modelBuilder.Entity<TestEntityOwningOneSeparateEntity>(builder => builder.OwnsOne(e => e.SeparateEntity,
+                                                                                           navigationBuilder => navigationBuilder.ToTable("SeparateEntities_One")));
+         modelBuilder.Entity<TestEntityOwningManyEntities>(builder => builder.OwnsMany(e => e.SeparateEntities,
+                                                                                       navigationBuilder => navigationBuilder.ToTable("SeparateEntities_Many")));
+
          ConfigureModel?.Invoke(modelBuilder);
 
          modelBuilder.Entity<SqliteMaster>().HasNoKey().ToView("sqlite_temp_master");
@@ -67,7 +77,13 @@ namespace Thinktecture.TestDatabaseContext
 
       public IQueryable<SqliteTableInfo> GetTempTableColumns<T>()
       {
-         var tableName = Model.GetEntityType(typeof(T)).GetTableName();
+         var entityType = Model.GetEntityType(typeof(T));
+         return GetTempTableColumns(entityType);
+      }
+
+      public IQueryable<SqliteTableInfo> GetTempTableColumns(IEntityType entityType)
+      {
+         var tableName = entityType.GetTableName();
 
          return GetTempTableColumns(tableName);
       }
