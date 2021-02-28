@@ -2,6 +2,7 @@ using System;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Thinktecture.EntityFrameworkCore.Data;
 using Thinktecture.TestDatabaseContext;
 using Xunit;
 
@@ -34,10 +35,10 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.PropertiesProviderTest
       public void Should_extract_property_accessor()
       {
          var entityType = GetEntityType<TestEntity>();
-         var idProperty = entityType.FindProperty(nameof(TestEntity.Id));
+         var idProperty = new PropertyWithNavigations(entityType.FindProperty(nameof(TestEntity.Id)), Array.Empty<INavigation>());
          var propertiesProvider = EntityPropertiesProvider.From<TestEntity>(entity => entity.Id);
 
-         var properties = propertiesProvider.GetPropertiesForTempTable(entityType);
+         var properties = propertiesProvider.GetPropertiesForTempTable(entityType, null, (_, _) => true);
          properties.Should().HaveCount(1);
          properties.Should().Contain(idProperty);
       }
@@ -46,11 +47,11 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.PropertiesProviderTest
       public void Should_extract_properties()
       {
          var entityType = GetEntityType<TestEntity>();
-         var idProperty = entityType.FindProperty(nameof(TestEntity.Id));
-         var countProperty = entityType.FindProperty(nameof(TestEntity.Count));
+         var idProperty = new PropertyWithNavigations(entityType.FindProperty(nameof(TestEntity.Id)), Array.Empty<INavigation>());
+         var countProperty = new PropertyWithNavigations(entityType.FindProperty(nameof(TestEntity.Count)), Array.Empty<INavigation>());
          var propertiesProvider = EntityPropertiesProvider.From<TestEntity>(entity => new { entity.Id, entity.Count });
 
-         var properties = propertiesProvider.GetPropertiesForTempTable(entityType);
+         var properties = propertiesProvider.GetPropertiesForTempTable(entityType, null, (_, _) => true);
          properties.Should().HaveCount(2);
          properties.Should().Contain(idProperty);
          properties.Should().Contain(countProperty);

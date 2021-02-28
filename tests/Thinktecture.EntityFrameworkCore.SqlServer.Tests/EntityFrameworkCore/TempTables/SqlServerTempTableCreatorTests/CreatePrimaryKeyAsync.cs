@@ -5,6 +5,8 @@ using FluentAssertions;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Metadata;
+using Thinktecture.EntityFrameworkCore.Data;
 using Thinktecture.TestDatabaseContext;
 using Xunit;
 using Xunit.Abstractions;
@@ -35,7 +37,8 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
                                                                                                           });
 
          var entityType = ActDbContext.GetEntityType<TempTable<int>>();
-         await SUT.CreatePrimaryKeyAsync(ActDbContext, PrimaryKeyPropertiesProviders.AdaptiveForced.GetPrimaryKeyProperties(entityType, entityType.GetProperties().ToList()), tempTableReference.Name);
+         var allProperties = entityType.GetProperties().Select(p => new PropertyWithNavigations(p, Array.Empty<INavigation>())).ToList();
+         await SUT.CreatePrimaryKeyAsync(ActDbContext, PrimaryKeyPropertiesProviders.AdaptiveForced.GetPrimaryKeyProperties(entityType, allProperties), tempTableReference.Name);
 
          var constraints = await AssertDbContext.GetTempTableConstraints<TempTable<int>>().ToListAsync();
          constraints.Should().HaveCount(1)
@@ -56,7 +59,8 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
                                                                                                       });
 
          var entityType = ActDbContext.GetEntityType<TestEntity>();
-         await SUT.CreatePrimaryKeyAsync(ActDbContext, PrimaryKeyPropertiesProviders.AdaptiveForced.GetPrimaryKeyProperties(entityType, entityType.GetProperties().ToList()), tempTableReference.Name);
+         var allProperties = entityType.GetProperties().Select(p => new PropertyWithNavigations(p, Array.Empty<INavigation>())).ToList();
+         await SUT.CreatePrimaryKeyAsync(ActDbContext, PrimaryKeyPropertiesProviders.AdaptiveForced.GetPrimaryKeyProperties(entityType, allProperties), tempTableReference.Name);
 
          var constraints = await AssertDbContext.GetTempTableConstraints<TestEntity>().ToListAsync();
          constraints.Should().HaveCount(1)
@@ -78,7 +82,8 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
                                                                                                       });
 #pragma warning restore 618
          var entityType = ArrangeDbContext.GetEntityType<TestEntity>();
-         var keyProperties = PrimaryKeyPropertiesProviders.AdaptiveForced.GetPrimaryKeyProperties(entityType, entityType.GetProperties().ToList());
+         var allProperties = entityType.GetProperties().Select(p => new PropertyWithNavigations(p, Array.Empty<INavigation>())).ToList();
+         var keyProperties = PrimaryKeyPropertiesProviders.AdaptiveForced.GetPrimaryKeyProperties(entityType, allProperties);
          await SUT.CreatePrimaryKeyAsync(ArrangeDbContext, keyProperties, tempTableReference.Name);
 
          SUT.Awaiting(sut => sut.CreatePrimaryKeyAsync(ActDbContext, keyProperties, tempTableReference.Name, true))
@@ -95,7 +100,8 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
                                                                                                          PrimaryKeyCreation = PrimaryKeyPropertiesProviders.None
                                                                                                       });
          var entityType = ArrangeDbContext.GetEntityType<TestEntity>();
-         var keyProperties = PrimaryKeyPropertiesProviders.AdaptiveForced.GetPrimaryKeyProperties(entityType, entityType.GetProperties().ToList());
+         var allProperties = entityType.GetProperties().Select(p => new PropertyWithNavigations(p, Array.Empty<INavigation>())).ToList();
+         var keyProperties = PrimaryKeyPropertiesProviders.AdaptiveForced.GetPrimaryKeyProperties(entityType, allProperties);
          await SUT.CreatePrimaryKeyAsync(ArrangeDbContext, keyProperties, tempTableReference.Name);
 
          // ReSharper disable once RedundantArgumentDefaultValue

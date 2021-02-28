@@ -11,17 +11,17 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
 {
    internal abstract class SqliteCommandBuilder
    {
-      public static SqliteCommandBuilder Insert(IReadOnlyList<IProperty> propertiesToInsert)
+      public static SqliteCommandBuilder Insert(IReadOnlyList<PropertyWithNavigations> propertiesToInsert)
       {
          return new SqliteInsertBuilder(propertiesToInsert);
       }
 
-      public static SqliteCommandBuilder Update(IReadOnlyList<IProperty> propertiesToUpdate, IReadOnlyList<IProperty> keyProperties)
+      public static SqliteCommandBuilder Update(IReadOnlyList<PropertyWithNavigations> propertiesToUpdate, IReadOnlyList<PropertyWithNavigations> keyProperties)
       {
          return new SqliteUpdateBuilder(propertiesToUpdate, keyProperties);
       }
 
-      public static SqliteCommandBuilder InsertOrUpdate(IReadOnlyList<IProperty> propertiesToInsert, IReadOnlyList<IProperty> propertiesToUpdate, IReadOnlyList<IProperty> keyProperties)
+      public static SqliteCommandBuilder InsertOrUpdate(IReadOnlyList<PropertyWithNavigations> propertiesToInsert, IReadOnlyList<PropertyWithNavigations> propertiesToUpdate, IReadOnlyList<PropertyWithNavigations> keyProperties)
       {
          return new SqliteInsertOrUpdateBuilder(propertiesToInsert, propertiesToUpdate, keyProperties);
       }
@@ -31,7 +31,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
          ISqlGenerationHelper sqlGenerationHelper,
          IEntityDataReader reader,
          string tableIdentifier,
-         IReadOnlyList<IProperty> propertiesToInsert)
+         IReadOnlyList<PropertyWithNavigations> propertiesToInsert)
       {
          sb.Append("INSERT INTO ").Append(tableIdentifier).Append('(');
 
@@ -40,7 +40,11 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
             if (i > 0)
                sb.Append(", ");
 
-            sb.Append(sqlGenerationHelper.DelimitIdentifier(propertiesToInsert[i].GetColumnBaseName()));
+            var property = propertiesToInsert[i];
+            var storeObject = StoreObjectIdentifier.Create(property.Property.DeclaringEntityType, StoreObjectType.Table)
+                              ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.Property.DeclaringEntityType.Name}'.");
+
+            sb.Append(sqlGenerationHelper.DelimitIdentifier(property.Property.GetColumnName(storeObject)));
          }
 
          sb.AppendLine(")")
@@ -66,9 +70,9 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
 
       private class SqliteInsertBuilder : SqliteCommandBuilder
       {
-         private readonly IReadOnlyList<IProperty> _propertiesToInsert;
+         private readonly IReadOnlyList<PropertyWithNavigations> _propertiesToInsert;
 
-         public SqliteInsertBuilder(IReadOnlyList<IProperty> propertiesToInsert)
+         public SqliteInsertBuilder(IReadOnlyList<PropertyWithNavigations> propertiesToInsert)
          {
             _propertiesToInsert = propertiesToInsert;
          }
@@ -87,12 +91,12 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
 
       private class SqliteUpdateBuilder : SqliteCommandBuilder
       {
-         private readonly IReadOnlyList<IProperty> _propertiesToUpdate;
-         private readonly IReadOnlyList<IProperty> _keyProperties;
+         private readonly IReadOnlyList<PropertyWithNavigations> _propertiesToUpdate;
+         private readonly IReadOnlyList<PropertyWithNavigations> _keyProperties;
 
          public SqliteUpdateBuilder(
-            IReadOnlyList<IProperty> propertiesToUpdate,
-            IReadOnlyList<IProperty> keyProperties)
+            IReadOnlyList<PropertyWithNavigations> propertiesToUpdate,
+            IReadOnlyList<PropertyWithNavigations> keyProperties)
          {
             _propertiesToUpdate = propertiesToUpdate;
             _keyProperties = keyProperties;
@@ -114,8 +118,8 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
             StringBuilder sb,
             ISqlGenerationHelper sqlGenerationHelper,
             IEntityDataReader reader,
-            IReadOnlyList<IProperty> propertiesToUpdate,
-            IReadOnlyList<IProperty> keyProperties)
+            IReadOnlyList<PropertyWithNavigations> propertiesToUpdate,
+            IReadOnlyList<PropertyWithNavigations> keyProperties)
          {
             sb.Append("SET ");
 
@@ -126,7 +130,10 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
                if (!isFirst)
                   sb.Append(", ");
 
-               sb.Append(sqlGenerationHelper.DelimitIdentifier(property.GetColumnBaseName()))
+               var storeObject = StoreObjectIdentifier.Create(property.Property.DeclaringEntityType, StoreObjectType.Table)
+                                 ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.Property.DeclaringEntityType.Name}'.");
+
+               sb.Append(sqlGenerationHelper.DelimitIdentifier(property.Property.GetColumnName(storeObject)))
                  .Append(" = $p").Append(reader.GetPropertyIndex(property));
 
                isFirst = false;
@@ -141,11 +148,14 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
 
                var property = keyProperties[i];
                var index = reader.GetPropertyIndex(property);
-               var escapedColumnName = sqlGenerationHelper.DelimitIdentifier(property.GetColumnBaseName());
+               var storeObject = StoreObjectIdentifier.Create(property.Property.DeclaringEntityType, StoreObjectType.Table)
+                                 ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.Property.DeclaringEntityType.Name}'.");
+
+               var escapedColumnName = sqlGenerationHelper.DelimitIdentifier(property.Property.GetColumnName(storeObject));
 
                sb.Append("(").Append(escapedColumnName).Append(" = $p").Append(index);
 
-               if (property.IsNullable)
+               if (property.Property.IsNullable)
                   sb.Append(" OR ").Append(escapedColumnName).Append(" IS NULL AND $p").Append(index).Append(" IS NULL");
 
                sb.Append(")");
@@ -155,14 +165,14 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
 
       private class SqliteInsertOrUpdateBuilder : SqliteCommandBuilder
       {
-         private readonly IReadOnlyList<IProperty> _propertiesToInsert;
-         private readonly IReadOnlyList<IProperty> _propertiesToUpdate;
-         private readonly IReadOnlyList<IProperty> _keyProperties;
+         private readonly IReadOnlyList<PropertyWithNavigations> _propertiesToInsert;
+         private readonly IReadOnlyList<PropertyWithNavigations> _propertiesToUpdate;
+         private readonly IReadOnlyList<PropertyWithNavigations> _keyProperties;
 
          public SqliteInsertOrUpdateBuilder(
-            IReadOnlyList<IProperty> propertiesToInsert,
-            IReadOnlyList<IProperty> propertiesToUpdate,
-            IReadOnlyList<IProperty> keyProperties)
+            IReadOnlyList<PropertyWithNavigations> propertiesToInsert,
+            IReadOnlyList<PropertyWithNavigations> propertiesToUpdate,
+            IReadOnlyList<PropertyWithNavigations> keyProperties)
          {
             _propertiesToInsert = propertiesToInsert;
             _propertiesToUpdate = propertiesToUpdate;
@@ -182,7 +192,11 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
                if (i > 0)
                   sb.Append(", ");
 
-               var escapedColumnName = sqlGenerationHelper.DelimitIdentifier(_keyProperties[i].GetColumnBaseName());
+               var property = _keyProperties[i];
+               var storeObject = StoreObjectIdentifier.Create(property.Property.DeclaringEntityType, StoreObjectType.Table)
+                                 ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.Property.DeclaringEntityType.Name}'.");
+
+               var escapedColumnName = sqlGenerationHelper.DelimitIdentifier(property.Property.GetColumnName(storeObject));
                sb.Append(escapedColumnName);
             }
 

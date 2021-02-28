@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
@@ -17,7 +18,7 @@ namespace Thinktecture.EntityFrameworkCore.Data
    public class PropertyGetterCache : IPropertyGetterCache
    {
       private readonly ILogger<PropertyGetterCache> _logger;
-      private readonly ConcurrentDictionary<IProperty, Delegate> _propertyGetterLookup;
+      private readonly ConcurrentDictionary<PropertyWithNavigations, Delegate> _propertyGetterLookup;
 
       /// <summary>
       /// Initializes new instance of <see cref="PropertyGetterCache"/>.
@@ -26,19 +27,20 @@ namespace Thinktecture.EntityFrameworkCore.Data
       public PropertyGetterCache(ILoggerFactory loggerFactory)
       {
          _logger = loggerFactory?.CreateLogger<PropertyGetterCache>() ?? throw new ArgumentNullException(nameof(loggerFactory));
-         _propertyGetterLookup = new ConcurrentDictionary<IProperty, Delegate>();
+         _propertyGetterLookup = new ConcurrentDictionary<PropertyWithNavigations, Delegate>();
       }
 
       /// <inheritdoc />
-      public Func<DbContext, TEntity, object?> GetPropertyGetter<TEntity>(IProperty property)
+      public Func<DbContext, TEntity, object?> GetPropertyGetter<TEntity>(PropertyWithNavigations property)
          where TEntity : class
       {
          return (Func<DbContext, TEntity, object?>)_propertyGetterLookup.GetOrAdd(property, BuildPropertyGetter<TEntity>);
       }
 
-      private Func<DbContext, TEntity, object?> BuildPropertyGetter<TEntity>(IProperty property)
+      private Func<DbContext, TEntity, object?> BuildPropertyGetter<TEntity>(PropertyWithNavigations cacheKey)
          where TEntity : class
       {
+         var property = cacheKey.Property;
          var hasSqlDefaultValue = property.GetDefaultValueSql() != null;
          var hasDefaultValue = property.GetDefaultValue() != null;
 
@@ -58,17 +60,57 @@ namespace Thinktecture.EntityFrameworkCore.Data
             }
          }
 
-         var getter = BuildGetter<TEntity>(property);
+         var getter = BuildGetter(property);
          var converter = property.GetValueConverter();
 
          if (converter != null)
             getter = UseConverter(getter, converter);
 
+         if (cacheKey.Navigations.Count != 0)
+         {
+            var naviGetter = BuildNavigationGetter(cacheKey.Navigations);
+            getter = Combine(naviGetter, getter);
+         }
+
          return getter;
       }
 
-      private static Func<DbContext, TEntity, object?> BuildGetter<TEntity>(IProperty property)
-         where TEntity : class
+      private static Func<object, object?> BuildNavigationGetter(IReadOnlyList<INavigation> navigations)
+      {
+         Func<object, object?>? getter = null;
+
+         for (var i = 0; i < navigations.Count; i++)
+         {
+            getter = Combine(getter, navigations[i].GetGetter().GetClrValue);
+         }
+
+         return getter ?? throw new ArgumentException("No navigations provided.");
+      }
+
+      private static Func<object, object?> Combine(Func<object, object?>? parentGetter, Func<object, object?> getter)
+      {
+         if (parentGetter is null)
+            return getter;
+
+         return e =>
+                {
+                   var childEntity = parentGetter(e);
+
+                   return childEntity == null ? null : getter(childEntity);
+                };
+      }
+
+      private static Func<DbContext, object, object?> Combine(Func<object, object?> naviGetter, Func<DbContext, object, object?> getter)
+      {
+         return (ctx, e) =>
+                {
+                   var childEntity = naviGetter(e);
+
+                   return childEntity == null ? null : getter(ctx, childEntity);
+                };
+      }
+
+      private static Func<DbContext, object, object?> BuildGetter(IProperty property)
       {
          if (property.IsShadowProperty())
          {
@@ -84,7 +126,7 @@ namespace Thinktecture.EntityFrameworkCore.Data
          return (_, entity) => getter.GetClrValue(entity);
       }
 
-      private static Func<DbContext, T, object?> UseConverter<T>(Func<DbContext, T, object?> getter, ValueConverter converter)
+      private static Func<DbContext, object, object?> UseConverter(Func<DbContext, object, object?> getter, ValueConverter converter)
       {
          var convert = converter.ConvertToProvider;
 

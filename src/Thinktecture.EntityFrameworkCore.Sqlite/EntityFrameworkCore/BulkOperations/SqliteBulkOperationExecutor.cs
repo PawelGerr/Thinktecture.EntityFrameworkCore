@@ -123,7 +123,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
          if (!(options is ISqliteBulkInsertOptions sqliteOptions))
             sqliteOptions = new SqliteBulkInsertOptions(options);
 
-         var properties = sqliteOptions.PropertiesToInsert.DeterminePropertiesForInsert(entityType);
+         var properties = sqliteOptions.PropertiesToInsert.DeterminePropertiesForInsert(entityType, true);
 
          await ExecuteBulkOperationAsync(entities, schema, tableName, SqliteCommandBuilder.Insert(properties), properties, sqliteOptions.AutoIncrementBehavior, cancellationToken);
       }
@@ -141,8 +141,8 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
             throw new ArgumentNullException(nameof(options));
 
          var entityType = _ctx.Model.GetEntityType(typeof(T));
-         var keyProperties = options.KeyProperties.DetermineKeyProperties(entityType);
-         var propertiesToUpdate = options.PropertiesToUpdate.DeterminePropertiesForUpdate(entityType);
+         var keyProperties = options.KeyProperties.DetermineKeyProperties(entityType, true);
+         var propertiesToUpdate = options.PropertiesToUpdate.DeterminePropertiesForUpdate(entityType, true);
          var allProperties = propertiesToUpdate.Union(keyProperties).ToList();
 
          var commandBuilder = SqliteCommandBuilder.Update(propertiesToUpdate, keyProperties);
@@ -165,9 +165,9 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
             sqliteOptions = new SqliteBulkInsertOrUpdateOptions(options);
 
          var entityType = _ctx.Model.GetEntityType(typeof(T));
-         var keyProperties = options.KeyProperties.DetermineKeyProperties(entityType);
-         var propertiesToInsert = options.PropertiesToInsert.DeterminePropertiesForInsert(entityType);
-         var propertiesToUpdate = options.PropertiesToUpdate.DeterminePropertiesForUpdate(entityType);
+         var keyProperties = options.KeyProperties.DetermineKeyProperties(entityType, true);
+         var propertiesToInsert = options.PropertiesToInsert.DeterminePropertiesForInsert(entityType, true);
+         var propertiesToUpdate = options.PropertiesToUpdate.DeterminePropertiesForUpdate(entityType, true);
          var allProperties = propertiesToInsert.Union(propertiesToUpdate).Union(keyProperties).ToList();
 
          var commandBuilder = SqliteCommandBuilder.InsertOrUpdate(propertiesToInsert, propertiesToUpdate, keyProperties);
@@ -179,7 +179,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
          IEnumerable<T> entities,
          IEntityType entityType,
          SqliteCommandBuilder commandBuilder,
-         IReadOnlyList<IProperty> properties,
+         IReadOnlyList<PropertyWithNavigations> properties,
          SqliteAutoIncrementBehavior autoIncrementBehavior,
          CancellationToken cancellationToken)
          where T : class
@@ -192,7 +192,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
          string? schema,
          string tableName,
          SqliteCommandBuilder commandBuilder,
-         IReadOnlyList<IProperty> properties,
+         IReadOnlyList<PropertyWithNavigations> properties,
          SqliteAutoIncrementBehavior autoIncrementBehavior,
          CancellationToken cancellationToken)
          where T : class
@@ -265,7 +265,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
 
             var parameter = command.CreateParameter();
             parameter.ParameterName = $"$p{index}";
-            parameters[i] = new ParameterInfo(parameter, property.IsAutoIncrement());
+            parameters[i] = new ParameterInfo(parameter, property.Property.IsAutoIncrement());
             command.Parameters.Add(parameter);
          }
 

@@ -12,9 +12,9 @@ namespace Thinktecture.EntityFrameworkCore.Data.EntityDataReaderTests
 {
    public class Properties : IntegrationTestsBase
    {
-      private readonly List<IProperty> _propertiesToRead = new();
-      private readonly IProperty _column1;
-      private readonly IProperty _column2;
+      private readonly List<PropertyWithNavigations> _propertiesToRead = new();
+      private readonly PropertyWithNavigations _column1;
+      private readonly PropertyWithNavigations _column2;
 
       private EntityDataReader<TestEntity>? _sut;
 
@@ -24,8 +24,8 @@ namespace Thinktecture.EntityFrameworkCore.Data.EntityDataReaderTests
       public Properties(ITestOutputHelper testOutputHelper)
          : base(testOutputHelper)
       {
-         _column1 = ArrangeDbContext.GetEntityType<TestEntity>().GetProperty(nameof(TestEntity.Column1));
-         _column2 = ArrangeDbContext.GetEntityType<TestEntity>().GetProperty(nameof(TestEntity.Column2));
+         _column1 = new PropertyWithNavigations(ArrangeDbContext.GetEntityType<TestEntity>().GetProperty(nameof(TestEntity.Column1)), Array.Empty<INavigation>());
+         _column2 = new PropertyWithNavigations(ArrangeDbContext.GetEntityType<TestEntity>().GetProperty(nameof(TestEntity.Column2)), Array.Empty<INavigation>());
       }
 
       [Fact]

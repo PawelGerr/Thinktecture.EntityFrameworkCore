@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Thinktecture.EntityFrameworkCore.Data;
 
 namespace Thinktecture.EntityFrameworkCore.TempTables
 {
@@ -16,12 +17,12 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
       /// <summary>
       /// Properties to create temp table with.
       /// </summary>
-      public IReadOnlyList<IProperty> Properties { get; }
+      public IReadOnlyList<PropertyWithNavigations> Properties { get; }
 
       /// <summary>
       /// Properties the primary key should be created with.
       /// </summary>
-      public IReadOnlyCollection<IProperty> PrimaryKeys { get; }
+      public IReadOnlyCollection<PropertyWithNavigations> PrimaryKeys { get; }
 
       /// <summary>
       /// Initializes new instance of <see cref="SqliteTempTableCreatorCacheKey"/>.
@@ -33,7 +34,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
          IEntityType entityType)
       {
          TruncateTableIfExists = options.TruncateTableIfExists;
-         Properties = options.PropertiesToInclude.DeterminePropertiesForTempTable(entityType);
+         Properties = options.PropertiesToInclude.DeterminePropertiesForTempTable(entityType, true);
          PrimaryKeys = options.PrimaryKeyCreation.GetPrimaryKeyProperties(entityType, Properties);
       }
 
@@ -45,7 +46,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
                 Equals(PrimaryKeys, other.PrimaryKeys);
       }
 
-      private static bool Equals(IReadOnlyCollection<IProperty> collection, IReadOnlyCollection<IProperty> other)
+      private static bool Equals(IReadOnlyCollection<PropertyWithNavigations> collection, IReadOnlyCollection<PropertyWithNavigations> other)
       {
          if (collection.Count != other.Count)
             return false;
@@ -56,7 +57,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
          {
             otherEnumerator.MoveNext();
 
-            if (item != otherEnumerator.Current)
+            if (!item.Equals(otherEnumerator.Current))
                return false;
          }
 
@@ -83,7 +84,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
 
       private static void ComputeHashCode(
          HashCode hashCode,
-         IEnumerable<IProperty> properties)
+         IEnumerable<PropertyWithNavigations> properties)
       {
          foreach (var property in properties)
          {

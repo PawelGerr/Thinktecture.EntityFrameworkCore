@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata;
 
 namespace Thinktecture.EntityFrameworkCore.Data
 {
@@ -27,7 +26,7 @@ namespace Thinktecture.EntityFrameworkCore.Data
       public IEntityDataReader Create<T>(
          DbContext ctx,
          IEnumerable<T> entities,
-         IReadOnlyList<IProperty> properties)
+         IReadOnlyList<PropertyWithNavigations> properties)
          where T : class
       {
          if (ctx == null)

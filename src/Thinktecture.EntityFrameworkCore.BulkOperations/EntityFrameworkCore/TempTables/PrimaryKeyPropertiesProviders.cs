@@ -5,6 +5,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Thinktecture.EntityFrameworkCore.Data;
 
 namespace Thinktecture.EntityFrameworkCore.TempTables
 {
@@ -63,38 +64,39 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
 
       private sealed class NoPrimaryKeyPropertiesProvider : IPrimaryKeyPropertiesProvider
       {
-         public IReadOnlyCollection<IProperty> GetPrimaryKeyProperties(IEntityType entityType, IReadOnlyCollection<IProperty> tempTableProperties)
+         public IReadOnlyCollection<PropertyWithNavigations> GetPrimaryKeyProperties(IEntityType entityType, IReadOnlyCollection<PropertyWithNavigations> tempTableProperties)
          {
             if (entityType == null)
                throw new ArgumentNullException(nameof(entityType));
             if (tempTableProperties == null)
                throw new ArgumentNullException(nameof(tempTableProperties));
 
-            return Array.Empty<IProperty>();
+            return Array.Empty<PropertyWithNavigations>();
          }
       }
 
       private sealed class ConfiguredPrimaryKeyPropertiesProvider : IPrimaryKeyPropertiesProvider
       {
-         public IReadOnlyCollection<IProperty> GetPrimaryKeyProperties(IEntityType entityType, IReadOnlyCollection<IProperty> tempTableProperties)
+         public IReadOnlyCollection<PropertyWithNavigations> GetPrimaryKeyProperties(IEntityType entityType, IReadOnlyCollection<PropertyWithNavigations> tempTableProperties)
          {
             if (entityType == null)
                throw new ArgumentNullException(nameof(entityType));
             if (tempTableProperties == null)
                throw new ArgumentNullException(nameof(tempTableProperties));
 
-            var keyProperties = entityType.FindPrimaryKey()?.Properties;
+            var pk = entityType.FindPrimaryKey()?.Properties;
 
-            if (keyProperties is null or { Count: 0 })
-               return Array.Empty<IProperty>();
+            if (pk is null or { Count: 0 })
+               return Array.Empty<PropertyWithNavigations>();
 
+            var keyProperties = pk.Select(p => new PropertyWithNavigations(p, Array.Empty<INavigation>())).ToList();
             var missingColumns = keyProperties.Except(tempTableProperties);
 
             if (missingColumns.Any())
             {
                throw new ArgumentException(@$"Cannot create PRIMARY KEY because not all key columns are part of the temp table.
 You may use other key properties providers like '{nameof(PrimaryKeyPropertiesProviders)}.{nameof(AdaptiveEntityTypeConfiguration)}' instead of '{nameof(PrimaryKeyPropertiesProviders)}.{nameof(EntityTypeConfiguration)}' to get different behaviors.
-Missing columns: {String.Join(", ", missingColumns.Select(c => c.GetColumnBaseName()))}.");
+Missing columns: {String.Join(", ", missingColumns.Select(p => p.Property.GetColumnBaseName()))}.");
             }
 
             return keyProperties;
@@ -103,33 +105,36 @@ Missing columns: {String.Join(", ", missingColumns.Select(c => c.GetColumnBaseNa
 
       private sealed class AdaptiveEntityTypeConfigurationPrimaryKeyPropertiesProvider : IPrimaryKeyPropertiesProvider
       {
-         public IReadOnlyCollection<IProperty> GetPrimaryKeyProperties(IEntityType entityType, IReadOnlyCollection<IProperty> tempTableProperties)
+         public IReadOnlyCollection<PropertyWithNavigations> GetPrimaryKeyProperties(IEntityType entityType, IReadOnlyCollection<PropertyWithNavigations> tempTableProperties)
          {
             if (tempTableProperties.Count == 0)
-               return Array.Empty<IProperty>();
+               return Array.Empty<PropertyWithNavigations>();
 
-            var keyProperties = entityType.FindPrimaryKey()?.Properties;
+            var pk = entityType.FindPrimaryKey()?.Properties;
 
-            if (keyProperties is null or { Count: 0 })
-               return Array.Empty<IProperty>();
+            if (pk is null or { Count: 0 })
+               return Array.Empty<PropertyWithNavigations>();
 
-            return keyProperties.Intersect(tempTableProperties).ToList();
+            return pk.Select(p => new PropertyWithNavigations(p, Array.Empty<INavigation>()))
+                     .Intersect(tempTableProperties)
+                     .ToList();
          }
       }
 
       private sealed class AdaptiveForcedPrimaryKeyPropertiesProvider : IPrimaryKeyPropertiesProvider
       {
-         public IReadOnlyCollection<IProperty> GetPrimaryKeyProperties(IEntityType entityType, IReadOnlyCollection<IProperty> tempTableProperties)
+         public IReadOnlyCollection<PropertyWithNavigations> GetPrimaryKeyProperties(IEntityType entityType, IReadOnlyCollection<PropertyWithNavigations> tempTableProperties)
          {
             if (tempTableProperties.Count == 0)
-               return Array.Empty<IProperty>();
+               return Array.Empty<PropertyWithNavigations>();
 
-            var keyProperties = entityType.FindPrimaryKey()?.Properties;
+            var pk = entityType.FindPrimaryKey()?.Properties;
 
-            if (keyProperties is null or { Count: 0 })
+            if (pk is null or { Count: 0 })
                return tempTableProperties;
 
-            return keyProperties.Intersect(tempTableProperties).ToList();
+            return pk.Select(p => new PropertyWithNavigations(p, Array.Empty<INavigation>()))
+                     .Intersect(tempTableProperties).ToList();
          }
       }
 
@@ -142,18 +147,23 @@ Missing columns: {String.Join(", ", missingColumns.Select(c => c.GetColumnBaseNa
             _members = members;
          }
 
-         public IReadOnlyCollection<IProperty> GetPrimaryKeyProperties(IEntityType entityType, IReadOnlyCollection<IProperty> tempTableProperties)
+         public IReadOnlyCollection<PropertyWithNavigations> GetPrimaryKeyProperties(IEntityType entityType, IReadOnlyCollection<PropertyWithNavigations> tempTableProperties)
          {
-            var keyProperties = _members.ConvertToEntityProperties(entityType);
+            var keyProperties = _members.ConvertToEntityProperties(entityType, Array.Empty<INavigation>(), true, NoFilter);
             var missingColumns = keyProperties.Except(tempTableProperties);
 
             if (missingColumns.Any())
             {
                throw new ArgumentException(@$"Not all key columns are part of the table.
-Missing columns: {String.Join(", ", missingColumns.Select(c => c.GetColumnBaseName()))}.");
+Missing columns: {String.Join(", ", missingColumns.Select(p => p.Property.GetColumnBaseName()))}.");
             }
 
             return keyProperties;
+         }
+
+         private static bool NoFilter(IProperty property, IReadOnlyList<INavigation> navigations)
+         {
+            return true;
          }
       }
    }

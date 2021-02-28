@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 
@@ -13,9 +14,9 @@ namespace Thinktecture.EntityFrameworkCore.Data
       /// Gets a property get for provided <paramref name="property"/>.
       /// </summary>
       /// <param name="property">Property to get the getter for.</param>
-      /// <typeparam name="TEntity">Type of the entity the <paramref name="property"/> belongs to.</typeparam>
+      /// <typeparam name="TRootEntity">Type of the root entity.</typeparam>
       /// <returns>Property getter.</returns>
-      Func<DbContext, TEntity, object?> GetPropertyGetter<TEntity>(IProperty property)
-         where TEntity : class;
+      Func<DbContext, TRootEntity, object?> GetPropertyGetter<TRootEntity>(PropertyWithNavigations property)
+         where TRootEntity : class;
    }
 }

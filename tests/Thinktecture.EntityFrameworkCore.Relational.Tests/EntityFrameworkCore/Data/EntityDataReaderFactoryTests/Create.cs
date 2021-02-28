@@ -4,7 +4,6 @@ using System.Linq;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
-using Microsoft.Extensions.Logging;
 using Thinktecture.TestDatabaseContext;
 using Xunit;
 using Xunit.Abstractions;
@@ -15,7 +14,7 @@ namespace Thinktecture.EntityFrameworkCore.Data.EntityDataReaderFactoryTests
    {
       private EntityDataReaderFactory? _sut;
 
-      private readonly IProperty _column2Property;
+      private readonly PropertyWithNavigations _column2Property;
 
       // ReSharper disable once InconsistentNaming
       private EntityDataReaderFactory SUT => _sut ??= new EntityDataReaderFactory(new PropertyGetterCache(LoggerFactory!));
@@ -23,20 +22,20 @@ namespace Thinktecture.EntityFrameworkCore.Data.EntityDataReaderFactoryTests
       public Create(ITestOutputHelper testOutputHelper)
          : base(testOutputHelper)
       {
-         _column2Property = ArrangeDbContext.GetEntityType<TestEntity>().GetProperty(nameof(TestEntity.Column2));
+         _column2Property = new PropertyWithNavigations(ArrangeDbContext.GetEntityType<TestEntity>().GetProperty(nameof(TestEntity.Column2)), Array.Empty<INavigation>());
       }
 
       [Fact]
       public void Should_throw_if_context_is_null()
       {
-         SUT.Invoking(sut => sut.Create(null!, Array.Empty<TestEntity>(), Array.Empty<IProperty>()))
+         SUT.Invoking(sut => sut.Create(null!, Array.Empty<TestEntity>(), Array.Empty<PropertyWithNavigations>()))
             .Should().Throw<ArgumentNullException>();
       }
 
       [Fact]
       public void Should_throw_if_entities_is_null()
       {
-         SUT.Invoking(sut => sut.Create<TestEntity>(ActDbContext, null!, Array.Empty<IProperty>()))
+         SUT.Invoking(sut => sut.Create<TestEntity>(ActDbContext, null!, Array.Empty<PropertyWithNavigations>()))
             .Should().Throw<ArgumentNullException>();
       }
 

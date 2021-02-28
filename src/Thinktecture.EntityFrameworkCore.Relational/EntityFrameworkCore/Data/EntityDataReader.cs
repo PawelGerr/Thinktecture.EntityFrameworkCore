@@ -5,7 +5,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Metadata;
 
 namespace Thinktecture.EntityFrameworkCore.Data
 {
@@ -22,7 +21,7 @@ namespace Thinktecture.EntityFrameworkCore.Data
       private readonly Dictionary<int, Func<DbContext, TEntity, object?>> _propertyGetterLookup;
 
       /// <inheritdoc />
-      public IReadOnlyList<IProperty> Properties { get; }
+      public IReadOnlyList<PropertyWithNavigations> Properties { get; }
 
       /// <inheritdoc />
       public int FieldCount => Properties.Count;
@@ -38,53 +37,54 @@ namespace Thinktecture.EntityFrameworkCore.Data
          DbContext ctx,
          IPropertyGetterCache propertyGetterCache,
          IEnumerable<TEntity> entities,
-         IReadOnlyList<IProperty> properties)
+         IReadOnlyList<PropertyWithNavigations> properties)
       {
          if (propertyGetterCache == null)
             throw new ArgumentNullException(nameof(propertyGetterCache));
          if (entities == null)
             throw new ArgumentNullException(nameof(entities));
-         if (properties == null)
-            throw new ArgumentNullException(nameof(properties));
+
+         _ctx = ctx ?? throw new ArgumentNullException(nameof(ctx));
+         Properties = properties ?? throw new ArgumentNullException(nameof(properties));
+
          if (properties.Count == 0)
             throw new ArgumentException("The properties collection cannot be empty.", nameof(properties));
 
-         _ctx = ctx ?? throw new ArgumentNullException(nameof(ctx));
-         Properties = properties;
          _propertyGetterLookup = BuildPropertyGetterLookup(propertyGetterCache, properties);
          _enumerator = entities.GetEnumerator();
       }
 
       private static Dictionary<int, Func<DbContext, TEntity, object?>> BuildPropertyGetterLookup(
          IPropertyGetterCache propertyGetterCache,
-         IReadOnlyList<IProperty> properties)
+         IReadOnlyList<PropertyWithNavigations> properties)
       {
          var lookup = new Dictionary<int, Func<DbContext, TEntity, object?>>();
 
          for (var i = 0; i < properties.Count; i++)
          {
-            var property = properties[i];
-            var getter = propertyGetterCache.GetPropertyGetter<TEntity>(property);
-
-            lookup.Add(i, getter);
+            var getter = propertyGetterCache.GetPropertyGetter<TEntity>(properties[i]);
+            lookup.Add(lookup.Count, getter);
          }
 
          return lookup;
       }
 
       /// <inheritdoc />
-      public int GetPropertyIndex(IProperty entityProperty)
+      public IEnumerable<(int index, PropertyWithNavigations property)> GetProperties()
       {
-         if (entityProperty == null)
-            throw new ArgumentNullException(nameof(entityProperty));
+         return Properties.Select((p, i) => (i, p));
+      }
 
+      /// <inheritdoc />
+      public int GetPropertyIndex(PropertyWithNavigations property)
+      {
          for (var i = 0; i < Properties.Count; i++)
          {
-            if (entityProperty.Equals(Properties[i]))
+            if (property.Equals(Properties[i]))
                return i;
          }
 
-         throw new ArgumentException($"The property '{entityProperty.Name}' of type '{entityProperty.ClrType.ShortDisplayName()}' cannot be read by current reader.");
+         throw new ArgumentException($"The property '{property.Property.Name}' of type '{property.Property.ClrType.ShortDisplayName()}' cannot be read by current reader.");
       }
 
       /// <inheritdoc />

@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage;
+using Thinktecture.EntityFrameworkCore.Data;
 
 namespace Thinktecture.EntityFrameworkCore.TempTables
 {
@@ -38,7 +39,10 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
          IRelationalTypeMappingSource typeMappingSource,
          TempTableStatementCache<SqliteTempTableCreatorCacheKey> cache)
       {
-         _ctx = ctx?.Context ?? throw new ArgumentNullException(nameof(ctx));
+         if (ctx == null)
+            throw new ArgumentNullException(nameof(ctx));
+
+         _ctx = ctx.Context;
          _logger = logger ?? throw new ArgumentNullException(nameof(logger));
          _sqlGenerationHelper = sqlGenerationHelper ?? throw new ArgumentNullException(nameof(sqlGenerationHelper));
          _typeMappingSource = typeMappingSource ?? throw new ArgumentNullException(nameof(typeMappingSource));
@@ -116,15 +120,18 @@ CREATE TEMPORARY TABLE {_sqlGenerationHelper.DelimitIdentifier(name)}
             if (!isFirst)
                sb.AppendLine(",");
 
-            sb.Append("\t\t")
-              .Append(_sqlGenerationHelper.DelimitIdentifier(property.GetColumnBaseName())).Append(' ')
-              .Append(property.GetColumnType())
-              .Append(property.IsNullable ? " NULL" : " NOT NULL");
+            var storeObject = StoreObjectIdentifier.Create(property.Property.DeclaringEntityType, StoreObjectType.Table)
+                              ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.Property.DeclaringEntityType.Name}'.");
 
-            if (property.IsAutoIncrement())
+            sb.Append("\t\t")
+              .Append(_sqlGenerationHelper.DelimitIdentifier(property.Property.GetColumnName(storeObject))).Append(' ')
+              .Append(property.Property.GetColumnType())
+              .Append(property.Property.IsNullable ? " NULL" : " NOT NULL");
+
+            if (property.Property.IsAutoIncrement())
                sb.Append("AUTOINCREMENT");
 
-            var defaultValueSql = property.GetDefaultValueSql();
+            var defaultValueSql = property.Property.GetDefaultValueSql();
 
             if (!String.IsNullOrWhiteSpace(defaultValueSql))
             {
@@ -132,7 +139,7 @@ CREATE TEMPORARY TABLE {_sqlGenerationHelper.DelimitIdentifier(name)}
             }
             else
             {
-               var defaultValue = property.GetDefaultValue();
+               var defaultValue = property.Property.GetDefaultValue();
 
                if (defaultValue != null && defaultValue != DBNull.Value)
                {
@@ -149,11 +156,17 @@ CREATE TEMPORARY TABLE {_sqlGenerationHelper.DelimitIdentifier(name)}
          return sb.ToString();
       }
 
-      private void CreatePkClause(IReadOnlyCollection<IProperty> keyProperties, StringBuilder sb)
+      private void CreatePkClause(IReadOnlyCollection<PropertyWithNavigations> keyProperties, StringBuilder sb)
       {
          if (keyProperties.Any())
          {
-            var columnNames = keyProperties.Select(p => p.GetColumnBaseName());
+            var columnNames = keyProperties.Select(p =>
+                                                   {
+                                                      var storeObject = StoreObjectIdentifier.Create(p.Property.DeclaringEntityType, StoreObjectType.Table)
+                                                                        ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{p.Property.DeclaringEntityType.Name}'.");
+
+                                                      return p.Property.GetColumnName(storeObject);
+                                                   });
 
             sb.AppendLine(",");
             sb.Append("\t\tPRIMARY KEY (");

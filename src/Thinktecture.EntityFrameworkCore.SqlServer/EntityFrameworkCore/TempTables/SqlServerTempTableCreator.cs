@@ -11,6 +11,7 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.SqlServer.Metadata.Internal;
 using Microsoft.EntityFrameworkCore.Storage;
+using Thinktecture.EntityFrameworkCore.Data;
 
 namespace Thinktecture.EntityFrameworkCore.TempTables
 {
@@ -113,7 +114,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
       /// <inheritdoc />
       public async Task CreatePrimaryKeyAsync(
          DbContext ctx,
-         IReadOnlyCollection<IProperty> keyProperties,
+         IReadOnlyCollection<PropertyWithNavigations> keyProperties,
          string tableName,
          bool checkForExistence = false,
          CancellationToken cancellationToken = default)
@@ -128,7 +129,12 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
          if (keyProperties.Count == 0)
             return;
 
-         var columnNames = keyProperties.Select(p => p.GetColumnBaseName());
+         var columnNames = keyProperties.Select(p =>
+                                                {
+                                                   var storeObject = StoreObjectIdentifier.Create(p.Property.DeclaringEntityType, StoreObjectType.Table)
+                                                                     ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{p.Property.DeclaringEntityType.Name}'.");
+                                                   return p.Property.GetColumnName(storeObject);
+                                                });
 
          var sql = $@"
 ALTER TABLE {_sqlGenerationHelper.DelimitIdentifier(tableName)}
@@ -194,21 +200,24 @@ END
             if (!isFirst)
                sb.AppendLine(",");
 
-            var columnType = property.GetColumnType();
+            var columnType = property.Property.GetColumnType();
+
+            var storeObject = StoreObjectIdentifier.Create(property.Property.DeclaringEntityType, StoreObjectType.Table)
+                              ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.Property.DeclaringEntityType.Name}'.");
 
             sb.Append('\t')
-              .Append(_sqlGenerationHelper.DelimitIdentifier(property.GetColumnBaseName())).Append(' ')
+              .Append(_sqlGenerationHelper.DelimitIdentifier(property.Property.GetColumnName(storeObject))).Append(' ')
               .Append(columnType);
 
             if (options.UseDefaultDatabaseCollation && _stringColumnTypes.Any(t => columnType.StartsWith(t, StringComparison.OrdinalIgnoreCase)))
                sb.Append(" COLLATE database_default");
 
-            sb.Append(property.IsNullable ? " NULL" : " NOT NULL");
+            sb.Append(property.Property.IsNullable ? " NULL" : " NOT NULL");
 
             if (IsIdentityColumn(property))
                sb.Append(" IDENTITY");
 
-            var defaultValueSql = property.GetDefaultValueSql();
+            var defaultValueSql = property.Property.GetDefaultValueSql();
 
             if (!String.IsNullOrWhiteSpace(defaultValueSql))
             {
@@ -216,7 +225,7 @@ END
             }
             else
             {
-               var defaultValue = property.GetDefaultValue();
+               var defaultValue = property.Property.GetDefaultValue();
 
                if (defaultValue != null && defaultValue != DBNull.Value)
                {
@@ -234,13 +243,19 @@ END
       }
 
       private void CreatePkClause(
-         IReadOnlyCollection<IProperty> keyProperties,
+         IReadOnlyCollection<PropertyWithNavigations> keyProperties,
          StringBuilder sb)
       {
          if (keyProperties.Count <= 0)
             return;
 
-         var columnNames = keyProperties.Select(p => p.GetColumnBaseName());
+         var columnNames = keyProperties.Select(p =>
+                                                {
+                                                   var storeObject = StoreObjectIdentifier.Create(p.Property.DeclaringEntityType, StoreObjectType.Table)
+                                                                     ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{p.Property.DeclaringEntityType.Name}'.");
+
+                                                   return p.Property.GetColumnName(storeObject);
+                                                });
 
          sb.AppendLine(",");
          sb.Append("\t\tPRIMARY KEY (");
@@ -258,9 +273,9 @@ END
          sb.Append(')');
       }
 
-      private static bool IsIdentityColumn(IProperty property)
+      private static bool IsIdentityColumn(PropertyWithNavigations property)
       {
-         return SqlServerValueGenerationStrategy.IdentityColumn.Equals(property.FindAnnotation(SqlServerAnnotationNames.ValueGenerationStrategy)?.Value);
+         return SqlServerValueGenerationStrategy.IdentityColumn.Equals(property.Property.FindAnnotation(SqlServerAnnotationNames.ValueGenerationStrategy)?.Value);
       }
    }
 }

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Thinktecture.EntityFrameworkCore.Data;
 
 namespace Thinktecture.EntityFrameworkCore.BulkOperations
 {
@@ -22,41 +23,54 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       }
 
       /// <inheritdoc />
-      public IReadOnlyList<IProperty> GetPropertiesForTempTable(IEntityType entityType)
-      {
-         return GetProperties(entityType,
-                              _propertiesToInsert.DeterminePropertiesForTempTable(entityType),
-                              _propertiesToUpdate.DeterminePropertiesForTempTable(entityType));
-      }
-
-      /// <inheritdoc />
-      public IReadOnlyList<IProperty> GetKeyProperties(IEntityType entityType)
-      {
-         return _keyPropertiesProvider.DetermineKeyProperties(entityType);
-      }
-
-      /// <inheritdoc />
-      public IReadOnlyList<IProperty> GetPropertiesForInsert(IEntityType entityType)
-      {
-         return GetProperties(entityType,
-                              _propertiesToInsert.DeterminePropertiesForInsert(entityType),
-                              _propertiesToUpdate.DeterminePropertiesForInsert(entityType));
-      }
-
-      /// <inheritdoc />
-      public IReadOnlyList<IProperty> GetPropertiesForUpdate(IEntityType entityType)
-      {
-         return GetProperties(entityType,
-                              _propertiesToInsert.DeterminePropertiesForUpdate(entityType),
-                              _propertiesToUpdate.DeterminePropertiesForUpdate(entityType));
-      }
-
-      private IReadOnlyList<IProperty> GetProperties(
+      public IReadOnlyList<PropertyWithNavigations> GetPropertiesForTempTable(
          IEntityType entityType,
-         IReadOnlyList<IProperty> propertiesToInsert,
-         IReadOnlyList<IProperty> propertiesToUpdate)
+         bool? inlinedOwnTypes,
+         Func<IProperty, IReadOnlyList<INavigation>, bool> filter)
       {
-         return _keyPropertiesProvider.DetermineKeyProperties(entityType)
+         return GetProperties(entityType, inlinedOwnTypes,
+                              _propertiesToInsert.DeterminePropertiesForTempTable(entityType, inlinedOwnTypes),
+                              _propertiesToUpdate.DeterminePropertiesForTempTable(entityType, inlinedOwnTypes));
+      }
+
+      /// <inheritdoc />
+      public IReadOnlyList<PropertyWithNavigations> GetKeyProperties(
+         IEntityType entityType,
+         bool? inlinedOwnTypes,
+         Func<IProperty, IReadOnlyList<INavigation>, bool> filter)
+      {
+         return _keyPropertiesProvider.DetermineKeyProperties(entityType, inlinedOwnTypes);
+      }
+
+      /// <inheritdoc />
+      public IReadOnlyList<PropertyWithNavigations> GetPropertiesForInsert(
+         IEntityType entityType,
+         bool? inlinedOwnTypes,
+         Func<IProperty, IReadOnlyList<INavigation>, bool> filter)
+      {
+         return GetProperties(entityType, inlinedOwnTypes,
+                              _propertiesToInsert.DeterminePropertiesForInsert(entityType, inlinedOwnTypes),
+                              _propertiesToUpdate.DeterminePropertiesForInsert(entityType, inlinedOwnTypes));
+      }
+
+      /// <inheritdoc />
+      public IReadOnlyList<PropertyWithNavigations> GetPropertiesForUpdate(
+         IEntityType entityType,
+         bool? inlinedOwnTypes,
+         Func<IProperty, IReadOnlyList<INavigation>, bool> filter)
+      {
+         return GetProperties(entityType, inlinedOwnTypes,
+                              _propertiesToInsert.DeterminePropertiesForUpdate(entityType, inlinedOwnTypes),
+                              _propertiesToUpdate.DeterminePropertiesForUpdate(entityType, inlinedOwnTypes));
+      }
+
+      private IReadOnlyList<PropertyWithNavigations> GetProperties(
+         IEntityType entityType,
+         bool? inlinedOwnTypes,
+         IReadOnlyList<PropertyWithNavigations> propertiesToInsert,
+         IReadOnlyList<PropertyWithNavigations> propertiesToUpdate)
+      {
+         return _keyPropertiesProvider.DetermineKeyProperties(entityType, inlinedOwnTypes)
                                       .Union(propertiesToInsert)
                                       .Union(propertiesToUpdate)
                                       .ToList();
