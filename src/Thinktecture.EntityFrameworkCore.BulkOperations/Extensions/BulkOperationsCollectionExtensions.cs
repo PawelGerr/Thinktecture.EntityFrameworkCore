@@ -35,7 +35,7 @@ namespace Thinktecture
             }
             else
             {
-               var ownedNavi = FindOwnedProperty(entityType, memberInfo, inlinedOwnTypes);
+               var ownedNavi = FindOwnedProperty(entityType, memberInfo);
 
                if (ownedNavi == null)
                   throw new Exception($"The member '{memberInfo.Name}' has not been found on entity '{entityType.Name}'.");
@@ -57,10 +57,9 @@ namespace Thinktecture
 
       private static INavigation? FindOwnedProperty(
          IEntityType entityType,
-         MemberInfo memberInfo,
-         bool? inlinedOwnTypes)
+         MemberInfo memberInfo)
       {
-         foreach (var ownedTypeNavi in entityType.GetOwnedTypesProperties(inlinedOwnTypes))
+         foreach (var ownedTypeNavi in entityType.GetOwnedTypesProperties(null)) // search for all onwed properties, i.e., don't use "inlinedOwnTypes" from the caller
          {
             if (ownedTypeNavi.PropertyInfo == memberInfo || ownedTypeNavi.FieldInfo == memberInfo)
             {

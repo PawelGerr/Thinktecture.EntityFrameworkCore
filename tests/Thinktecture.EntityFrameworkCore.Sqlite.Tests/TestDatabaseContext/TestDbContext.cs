@@ -66,7 +66,11 @@ namespace Thinktecture.TestDatabaseContext
          modelBuilder.Entity<TestEntityOwningOneSeparateEntity>(builder => builder.OwnsOne(e => e.SeparateEntity,
                                                                                            navigationBuilder => navigationBuilder.ToTable("SeparateEntities_One")));
          modelBuilder.Entity<TestEntityOwningManyEntities>(builder => builder.OwnsMany(e => e.SeparateEntities,
-                                                                                       navigationBuilder => navigationBuilder.ToTable("SeparateEntities_Many")));
+                                                                                       navigationBuilder =>
+                                                                                       {
+                                                                                          navigationBuilder.ToTable("SeparateEntities_Many");
+                                                                                          navigationBuilder.Property("Id").ValueGeneratedNever();
+                                                                                       }));
 
          ConfigureModel?.Invoke(modelBuilder);
 

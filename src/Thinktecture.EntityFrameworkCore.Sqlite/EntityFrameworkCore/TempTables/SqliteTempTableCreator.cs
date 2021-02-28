@@ -114,6 +114,7 @@ CREATE TEMPORARY TABLE {_sqlGenerationHelper.DelimitIdentifier(name)}
       {
          var sb = new StringBuilder();
          var isFirst = true;
+         var createPk = true;
 
          foreach (var property in options.Properties)
          {
@@ -129,7 +130,16 @@ CREATE TEMPORARY TABLE {_sqlGenerationHelper.DelimitIdentifier(name)}
               .Append(property.Property.IsNullable ? " NULL" : " NOT NULL");
 
             if (property.Property.IsAutoIncrement())
-               sb.Append("AUTOINCREMENT");
+            {
+               if (options.PrimaryKeys.Count != 1 || !property.Equals(options.PrimaryKeys.First()))
+               {
+                  throw new NotSupportedException(@$"SQLite does not allow the property '{property.Property.Name}' of the entity '{property.Property.DeclaringEntityType.Name}' to be an AUTOINCREMENT column unless this column is the PRIMARY KEY.
+Currently configured primary keys: [{String.Join(", ", options.PrimaryKeys.Select(p => p.Property.Name))}]");
+               }
+
+               sb.Append(" PRIMARY KEY AUTOINCREMENT");
+               createPk = false;
+            }
 
             var defaultValueSql = property.Property.GetDefaultValueSql();
 
@@ -151,38 +161,39 @@ CREATE TEMPORARY TABLE {_sqlGenerationHelper.DelimitIdentifier(name)}
             isFirst = false;
          }
 
-         CreatePkClause(options.PrimaryKeys, sb);
+         if (createPk)
+            CreatePkClause(options.PrimaryKeys, sb);
 
          return sb.ToString();
       }
 
       private void CreatePkClause(IReadOnlyCollection<PropertyWithNavigations> keyProperties, StringBuilder sb)
       {
-         if (keyProperties.Any())
+         if (!keyProperties.Any())
+            return;
+
+         var columnNames = keyProperties.Select(p =>
+                                                {
+                                                   var storeObject = StoreObjectIdentifier.Create(p.Property.DeclaringEntityType, StoreObjectType.Table)
+                                                                     ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{p.Property.DeclaringEntityType.Name}'.");
+
+                                                   return p.Property.GetColumnName(storeObject);
+                                                });
+
+         sb.AppendLine(",");
+         sb.Append("\t\tPRIMARY KEY (");
+         var isFirst = true;
+
+         foreach (var columnName in columnNames)
          {
-            var columnNames = keyProperties.Select(p =>
-                                                   {
-                                                      var storeObject = StoreObjectIdentifier.Create(p.Property.DeclaringEntityType, StoreObjectType.Table)
-                                                                        ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{p.Property.DeclaringEntityType.Name}'.");
+            if (!isFirst)
+               sb.Append(", ");
 
-                                                      return p.Property.GetColumnName(storeObject);
-                                                   });
-
-            sb.AppendLine(",");
-            sb.Append("\t\tPRIMARY KEY (");
-            var isFirst = true;
-
-            foreach (var columnName in columnNames)
-            {
-               if (!isFirst)
-                  sb.Append(", ");
-
-               sb.Append(_sqlGenerationHelper.DelimitIdentifier(columnName));
-               isFirst = false;
-            }
-
-            sb.Append(')');
+            sb.Append(_sqlGenerationHelper.DelimitIdentifier(columnName));
+            isFirst = false;
          }
+
+         sb.Append(')');
       }
 
       private (ITempTableNameLease nameLease, string tableName) GetTableName(
