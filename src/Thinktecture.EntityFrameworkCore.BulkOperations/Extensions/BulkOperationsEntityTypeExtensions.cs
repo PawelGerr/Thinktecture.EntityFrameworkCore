@@ -29,31 +29,7 @@ namespace Thinktecture
          return entityType.GetNavigations()
                           .Where(n => n.ForeignKey.IsOwnership &&
                                       n.ForeignKey.PrincipalEntityType == entityType &&
-                                      (inlinedOwnTypes == null || inlinedOwnTypes == IsOwnedTypeInline(entityType, n)));
-      }
-
-      /// <summary>
-      /// Indication whether the owned type is persisted in the same table as the owner.
-      /// </summary>
-      /// <param name="entityType">Entity type.</param>
-      /// <param name="navigation">Navigation pointing to the owned type.</param>
-      /// <returns><c>true</c> if the owned type is persisted in the same table as the owner; otherwise <c>false</c>.</returns>
-      /// <exception cref="ArgumentNullException">
-      /// <paramref name="entityType"/> or <paramref name="navigation"/> is <c>null</c>.
-      /// </exception>
-      public static bool IsOwnedTypeInline(
-         this IEntityType entityType,
-         INavigation navigation)
-      {
-         if (entityType == null)
-            throw new ArgumentNullException(nameof(entityType));
-         if (navigation == null)
-            throw new ArgumentNullException(nameof(navigation));
-
-         var targetType = navigation.TargetEntityType;
-
-         return entityType.GetSchema() == targetType.GetSchema() &&
-                entityType.GetTableName() == targetType.GetTableName();
+                                      (inlinedOwnTypes == null || inlinedOwnTypes == n.IsOwnedTypeInline()));
       }
    }
 }

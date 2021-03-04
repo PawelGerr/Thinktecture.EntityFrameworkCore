@@ -238,13 +238,17 @@ INSERT BULK {Table} ({Columns})", (long)duration.TotalMilliseconds,
             throw new ArgumentNullException(nameof(options));
 
          var entityType = _ctx.Model.GetEntityType(typeof(T));
-         var tempTableCreator = _ctx.GetService<ISqlServerTempTableCreator>();
+         var selectedProperties = options.PropertiesToInsert.DeterminePropertiesForTempTable(entityType, null);
+
+         if (selectedProperties.Any(p => p.BelongsToSeparateOwnedType))
+            throw new NotSupportedException($"Bulk insert of separate owned types into temp tables is not supported. Properties of separate owned types: {String.Join(", ", selectedProperties.Where(p => p.BelongsToSeparateOwnedType))}");
 
          var tempTableOptions = options.TempTableCreationOptions;
 
          if (options.MomentOfPrimaryKeyCreation == MomentOfSqlServerPrimaryKeyCreation.AfterBulkInsert)
             tempTableOptions = new SqlServerTempTableCreationOptions(tempTableOptions) { PrimaryKeyCreation = PrimaryKeyPropertiesProviders.None };
 
+         var tempTableCreator = _ctx.GetService<ISqlServerTempTableCreator>();
          var tempTableReference = await tempTableCreator.CreateTempTableAsync(entityType, tempTableOptions, cancellationToken).ConfigureAwait(false);
 
          try
@@ -253,8 +257,8 @@ INSERT BULK {Table} ({Columns})", (long)duration.TotalMilliseconds,
 
             if (options.MomentOfPrimaryKeyCreation == MomentOfSqlServerPrimaryKeyCreation.AfterBulkInsert)
             {
-               var properties = options.TempTableCreationOptions.PropertiesToInclude.DeterminePropertiesForTempTable(entityType, true);
-               var keyProperties = options.PrimaryKeyCreation.GetPrimaryKeyProperties(entityType, properties);
+               var tempTableProperties = options.TempTableCreationOptions.PropertiesToInclude.DeterminePropertiesForTempTable(entityType, true);
+               var keyProperties = options.PrimaryKeyCreation.GetPrimaryKeyProperties(entityType, tempTableProperties);
                await tempTableCreator.CreatePrimaryKeyAsync(_ctx, keyProperties, tempTableReference.Name, options.TempTableCreationOptions.TruncateTableIfExists, cancellationToken).ConfigureAwait(false);
             }
 

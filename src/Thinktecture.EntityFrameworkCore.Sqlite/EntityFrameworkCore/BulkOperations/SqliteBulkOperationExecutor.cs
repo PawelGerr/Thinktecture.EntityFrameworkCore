@@ -299,14 +299,19 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
             throw new ArgumentNullException(nameof(options));
 
          var entityType = _ctx.Model.GetEntityType(typeof(T));
-         var tempTableCreator = _ctx.GetService<ITempTableCreator>();
 
-         if (options is not ISqliteTempTableBulkInsertOptions)
+         if (options is not ISqliteTempTableBulkInsertOptions sqliteOptions)
          {
-            var sqliteOptions = new SqliteTempTableBulkInsertOptions(options);
+            sqliteOptions = new SqliteTempTableBulkInsertOptions(options);
             options = sqliteOptions;
          }
 
+         var selectedProperties = sqliteOptions.PropertiesToInsert.DeterminePropertiesForTempTable(entityType, null);
+
+         if (selectedProperties.Any(p => p.BelongsToSeparateOwnedType))
+            throw new NotSupportedException($"Bulk insert of separate owned types into temp tables is not supported. Properties of separate owned types: {String.Join(", ", selectedProperties.Where(p => p.BelongsToSeparateOwnedType))}");
+
+         var tempTableCreator = _ctx.GetService<ITempTableCreator>();
          var tempTableReference = await tempTableCreator.CreateTempTableAsync(entityType, options.TempTableCreationOptions, cancellationToken).ConfigureAwait(false);
 
          try

@@ -59,11 +59,11 @@ namespace Thinktecture
          IEntityType entityType,
          MemberInfo memberInfo)
       {
-         foreach (var ownedTypeNavi in entityType.GetOwnedTypesProperties(null)) // search for all onwed properties, i.e., don't use "inlinedOwnTypes" from the caller
+         foreach (var ownedTypeNavi in entityType.GetOwnedTypesProperties(null)) // search for all owned properties, i.e., don't use "inlinedOwnTypes" from the caller
          {
             if (ownedTypeNavi.PropertyInfo == memberInfo || ownedTypeNavi.FieldInfo == memberInfo)
             {
-               if (entityType.IsOwnedTypeInline(ownedTypeNavi))
+               if (ownedTypeNavi.IsOwnedTypeInline())
                   return ownedTypeNavi;
 
                throw new NotSupportedException($"Properties of owned types that are saved in a separate table are not supported. Property: {ownedTypeNavi.Name}");

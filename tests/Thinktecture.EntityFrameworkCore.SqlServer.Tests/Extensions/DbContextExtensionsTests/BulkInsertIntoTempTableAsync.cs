@@ -282,5 +282,48 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
          ActDbContext.Awaiting(ctx => ctx.BulkInsertIntoTempTableAsync(testEntities))
                      .Should().Throw<InvalidOperationException>().WithMessage("Column 'InlineEntity_IntColumn' does not allow DBNull.Value.");
       }
+
+      [Fact]
+      public void Should_throw_for_entities_with_separated_owned_type()
+      {
+         var testEntity = new TestEntityOwningOneSeparateEntity
+                          {
+                             Id = new Guid("3A1B2FFF-8E11-44E5-80E5-8C7FEEDACEB3"),
+                             SeparateEntity = new OwnedSeparateEntity
+                                              {
+                                                 IntColumn = 42,
+                                                 StringColumn = "value"
+                                              }
+                          };
+
+         ActDbContext.Awaiting(sut => sut.BulkInsertIntoTempTableAsync(new[] { testEntity }))
+                     .Should().Throw<NotSupportedException>()
+                     .WithMessage("Bulk insert of separate owned types into temp tables is not supported. Properties of separate owned types: SeparateEntity.IntColumn, SeparateEntity.StringColumn");
+      }
+
+      [Fact]
+      public async Task Should_work_for_entities_if_separated_owned_type_is_excluded()
+      {
+         var testEntity = new TestEntityOwningOneSeparateEntity
+                          {
+                             Id = new Guid("3A1B2FFF-8E11-44E5-80E5-8C7FEEDACEB3"),
+                             SeparateEntity = new OwnedSeparateEntity
+                                              {
+                                                 IntColumn = 42,
+                                                 StringColumn = "value"
+                                              }
+                          };
+
+         await using var tempTable = await ActDbContext.BulkInsertIntoTempTableAsync(new[] { testEntity }, e => e.Id);
+
+         var entities = await tempTable.Query.ToListAsync();
+
+         entities.Should().HaveCount(1)
+                 .And.BeEquivalentTo(new TestEntityOwningOneSeparateEntity
+                                     {
+                                        Id = new Guid("3A1B2FFF-8E11-44E5-80E5-8C7FEEDACEB3"),
+                                        SeparateEntity = null!
+                                     });
+      }
    }
 }
