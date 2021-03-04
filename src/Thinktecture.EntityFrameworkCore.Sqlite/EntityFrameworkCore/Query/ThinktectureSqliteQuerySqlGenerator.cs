@@ -19,15 +19,30 @@ namespace Thinktecture.EntityFrameworkCore.Query
       }
 
       /// <inheritdoc />
+      protected override Expression VisitExtension(Expression expression)
+      {
+         if (expression is TempTableExpression tempTableExpression)
+         {
+            Sql.Append(Dependencies.SqlGenerationHelper.DelimitIdentifier(tempTableExpression.Name))
+               .Append(AliasSeparator)
+               .Append(Dependencies.SqlGenerationHelper.DelimitIdentifier(tempTableExpression.Alias));
+
+            return expression;
+         }
+
+         return base.VisitExtension(expression);
+      }
+
+      /// <inheritdoc />
       protected override Expression VisitSelect(SelectExpression selectExpression)
       {
          if (selectExpression.TryGetDeleteExpression(out var deleteExpression))
-            return GenerateDeleteStatement(selectExpression, deleteExpression);
+            return GenerateDeleteStatement(selectExpression);
 
          return base.VisitSelect(selectExpression);
       }
 
-      private Expression GenerateDeleteStatement(SelectExpression selectExpression, DeleteExpression deleteExpression)
+      private Expression GenerateDeleteStatement(SelectExpression selectExpression)
       {
          if (selectExpression.IsDistinct)
             throw new NotSupportedException("A DISTINCT clause is not supported in a DELETE statement.");

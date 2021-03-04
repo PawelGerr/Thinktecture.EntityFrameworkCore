@@ -52,11 +52,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       public IEntityPropertiesProvider? PropertiesToInsert
       {
          get => _bulkInsertOptions.PropertiesToInsert;
-         set
-         {
-            _bulkInsertOptions.PropertiesToInsert = value;
-            _tempTableCreationOptions.PropertiesToInclude = value;
-         }
+         set => _bulkInsertOptions.PropertiesToInsert = value;
       }
 
       /// <summary>

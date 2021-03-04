@@ -3,15 +3,15 @@ using Microsoft.EntityFrameworkCore.Query;
 namespace Thinktecture.EntityFrameworkCore.Query
 {
    /// <inheritdoc />
-   public class ThinktectureRelationalParameterBasedSqlProcessorFactory : IRelationalParameterBasedSqlProcessorFactory
+   public class ThinktectureSqliteParameterBasedSqlProcessorFactory : IRelationalParameterBasedSqlProcessorFactory
    {
       private readonly RelationalParameterBasedSqlProcessorDependencies _dependencies;
 
       /// <summary>
-      /// Initializes new instance of <see cref="ThinktectureRelationalParameterBasedSqlProcessorFactory"/>.
+      /// Initializes new instance of <see cref="ThinktectureSqliteParameterBasedSqlProcessorFactory"/>.
       /// </summary>
       /// <param name="dependencies">Dependencies.</param>
-      public ThinktectureRelationalParameterBasedSqlProcessorFactory(RelationalParameterBasedSqlProcessorDependencies dependencies)
+      public ThinktectureSqliteParameterBasedSqlProcessorFactory(RelationalParameterBasedSqlProcessorDependencies dependencies)
       {
          _dependencies = dependencies;
       }
@@ -19,7 +19,7 @@ namespace Thinktecture.EntityFrameworkCore.Query
       /// <inheritdoc />
       public RelationalParameterBasedSqlProcessor Create(bool useRelationalNulls)
       {
-         return new ThinktectureRelationalParameterBasedSqlProcessor(_dependencies, useRelationalNulls);
+         return new ThinktectureSqliteParameterBasedSqlProcessor(_dependencies, useRelationalNulls);
       }
    }
 }

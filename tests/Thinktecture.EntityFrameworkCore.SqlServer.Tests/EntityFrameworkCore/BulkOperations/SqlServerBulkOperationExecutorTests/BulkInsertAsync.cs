@@ -131,12 +131,12 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
                        {
                           // we skip TestEntityWithSqlDefaultValues.String
                           PropertiesToInsert = EntityPropertiesProvider.From<TestEntityWithSqlDefaultValues>(e => new
-                                                                                                            {
-                                                                                                               e.Id,
-                                                                                                               e.Int,
-                                                                                                               e.NullableInt,
-                                                                                                               e.NullableString
-                                                                                                            })
+                                                                                                                  {
+                                                                                                                     e.Id,
+                                                                                                                     e.Int,
+                                                                                                                     e.NullableInt,
+                                                                                                                     e.NullableString
+                                                                                                                  })
                        };
 
          await SUT.BulkInsertAsync(testEntities, options);
@@ -180,12 +180,12 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
                        {
                           // we skip TestEntityWithDefaultValues.String
                           PropertiesToInsert = EntityPropertiesProvider.From<TestEntityWithDotnetDefaultValues>(e => new
-                                                                                                               {
-                                                                                                                  e.Id,
-                                                                                                                  e.Int,
-                                                                                                                  e.NullableInt,
-                                                                                                                  e.NullableString
-                                                                                                               })
+                                                                                                                     {
+                                                                                                                        e.Id,
+                                                                                                                        e.Int,
+                                                                                                                        e.NullableInt,
+                                                                                                                        e.NullableString
+                                                                                                                     })
                        };
 
          await SUT.BulkInsertAsync(testEntities, options);
@@ -269,6 +269,76 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
                                                  PropertyWithBackingField = 7
                                               });
          loadedEntity.GetPrivateField().Should().Be(3);
+      }
+
+      [Fact]
+      public void Should_throw_if_required_inlined_owned_type_is_null()
+      {
+         var testEntity = new TestEntityOwningInlineEntity
+                          {
+                             Id = new Guid("3A1B2FFF-8E11-44E5-80E5-8C7FEEDACEB3"),
+                             InlineEntity = null!
+                          };
+         var testEntities = new[] { testEntity };
+
+         ActDbContext.Awaiting(ctx => ctx.BulkInsertIntoTempTableAsync(testEntities))
+                     .Should().Throw<InvalidOperationException>().WithMessage("Column 'InlineEntity_IntColumn' does not allow DBNull.Value.");
+      }
+
+      [Fact]
+      public async Task Should_insert_inlined_owned_type_if_it_has_default_values_only()
+      {
+         var testEntity = new TestEntityOwningInlineEntity
+                          {
+                             Id = new Guid("3A1B2FFF-8E11-44E5-80E5-8C7FEEDACEB3"),
+                             InlineEntity = new OwnedInlineEntity()
+                          };
+         var testEntities = new[] { testEntity };
+
+         await SUT.BulkInsertAsync(testEntities, new SqlServerBulkInsertOptions());
+
+         var loadedEntities = await AssertDbContext.TestEntitiesOwningInlineEntity.ToListAsync();
+         loadedEntities.Should().HaveCount(1);
+         var loadedEntity = loadedEntities[0];
+         loadedEntity.Should().BeEquivalentTo(new TestEntityOwningInlineEntity
+                                              {
+                                                 Id = new Guid("3A1B2FFF-8E11-44E5-80E5-8C7FEEDACEB3"),
+                                                 InlineEntity = new OwnedInlineEntity
+                                                                {
+                                                                   IntColumn = 0,
+                                                                   StringColumn = null
+                                                                }
+                                              });
+      }
+
+      [Fact]
+      public async Task Should_insert_inlined_owned_types()
+      {
+         var testEntity = new TestEntityOwningInlineEntity
+                          {
+                             Id = new Guid("3A1B2FFF-8E11-44E5-80E5-8C7FEEDACEB3"),
+                             InlineEntity = new OwnedInlineEntity
+                                            {
+                                               IntColumn = 42,
+                                               StringColumn = "value"
+                                            }
+                          };
+         var testEntities = new[] { testEntity };
+
+         await SUT.BulkInsertAsync(testEntities, new SqlServerBulkInsertOptions());
+
+         var loadedEntities = await AssertDbContext.TestEntitiesOwningInlineEntity.ToListAsync();
+         loadedEntities.Should().HaveCount(1);
+         var loadedEntity = loadedEntities[0];
+         loadedEntity.Should().BeEquivalentTo(new TestEntityOwningInlineEntity
+                                              {
+                                                 Id = new Guid("3A1B2FFF-8E11-44E5-80E5-8C7FEEDACEB3"),
+                                                 InlineEntity = new OwnedInlineEntity
+                                                                {
+                                                                   IntColumn = 42,
+                                                                   StringColumn = "value"
+                                                                }
+                                              });
       }
    }
 }

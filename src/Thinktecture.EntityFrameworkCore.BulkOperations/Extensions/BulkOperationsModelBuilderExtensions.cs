@@ -82,9 +82,8 @@ namespace Thinktecture
          if (modelBuilder == null)
             throw new ArgumentNullException(nameof(modelBuilder));
 
-         var tableName = "#" + typeof(T).ShortDisplayName();
-
-         var builder = modelBuilder.Entity<T>().ToTable(tableName, tableBuilder => tableBuilder.ExcludeFromMigrations());
+         var builder = modelBuilder.Entity<T>().ToTable($"#{typeof(T).ShortDisplayName()}",
+                                                        tableBuilder => tableBuilder.ExcludeFromMigrations());
 
          if (isKeyless)
             builder.HasNoKey();

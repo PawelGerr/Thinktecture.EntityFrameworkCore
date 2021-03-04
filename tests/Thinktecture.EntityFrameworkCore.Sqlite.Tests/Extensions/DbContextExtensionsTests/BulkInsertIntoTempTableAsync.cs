@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
-using Microsoft.Data.SqlClient;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Thinktecture.TestDatabaseContext;
 using Xunit;
@@ -16,7 +16,7 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
    public class BulkInsertIntoTempTableAsync : IntegrationTestsBase
    {
       public BulkInsertIntoTempTableAsync(ITestOutputHelper testOutputHelper)
-         : base(testOutputHelper, true)
+         : base(testOutputHelper)
       {
       }
 
@@ -69,7 +69,7 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
          tempTableQuery.Dispose();
 
          tempTableQuery.Awaiting(t => t.Query.ToListAsync())
-                       .Should().Throw<SqlException>().WithMessage("Invalid object name '#TestEntities_1'.");
+                       .Should().Throw<SqliteException>().WithMessage("SQLite Error 1: 'no such table: TestEntities_1'.");
       }
 
       [Fact]
@@ -280,7 +280,8 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
          var testEntities = new[] { testEntity };
 
          ActDbContext.Awaiting(ctx => ctx.BulkInsertIntoTempTableAsync(testEntities))
-                     .Should().Throw<InvalidOperationException>().WithMessage("Column 'InlineEntity_IntColumn' does not allow DBNull.Value.");
+                     .Should().Throw<SqliteException>()
+                     .WithMessage("SQLite Error 19: 'NOT NULL constraint failed: TestEntitiesOwningInlineEntity_1.InlineEntity_IntColumn'.");
       }
    }
 }

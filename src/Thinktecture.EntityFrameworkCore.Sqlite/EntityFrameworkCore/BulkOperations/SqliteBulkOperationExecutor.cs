@@ -15,6 +15,7 @@ using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
 using Thinktecture.EntityFrameworkCore.Data;
 using Thinktecture.EntityFrameworkCore.TempTables;
+using Thinktecture.Internal;
 
 namespace Thinktecture.EntityFrameworkCore.BulkOperations
 {
@@ -23,7 +24,8 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
    /// </summary>
    // ReSharper disable once ClassNeverInstantiated.Global
    [SuppressMessage("ReSharper", "EF1001")]
-   public sealed class SqliteBulkOperationExecutor
+   public sealed class
+      SqliteBulkOperationExecutor
       : IBulkInsertExecutor, ITempTableBulkInsertExecutor, IBulkUpdateExecutor,
         IBulkInsertOrUpdateExecutor, ITruncateTableExecutor
    {
@@ -311,7 +313,12 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
          {
             await BulkInsertAsync(entityType, entities, null, tempTableReference.Name, options.BulkInsertOptions, cancellationToken).ConfigureAwait(false);
 
-            var query = _ctx.Set<T>().FromSqlRaw($"SELECT * FROM {_sqlGenerationHelper.DelimitIdentifier(tempTableReference.Name)}");
+            var query = _ctx.Set<T>().FromTempTable(tempTableReference.Name);
+
+            var pk = entityType.FindPrimaryKey();
+
+            if (pk is not null && pk.Properties.Count != 0)
+               query = query.AsNoTracking();
 
             return new TempTableQuery<T>(query, tempTableReference);
          }

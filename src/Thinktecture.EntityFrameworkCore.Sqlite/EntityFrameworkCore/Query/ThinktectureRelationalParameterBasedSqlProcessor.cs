@@ -2,16 +2,17 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
+using Thinktecture.EntityFrameworkCore.TempTables;
 
 namespace Thinktecture.EntityFrameworkCore.Query
 {
    /// <summary>
    /// Extends <see cref="RelationalParameterBasedSqlProcessor"/>.
    /// </summary>
-   public class ThinktectureRelationalParameterBasedSqlProcessor : RelationalParameterBasedSqlProcessor
+   public class ThinktectureSqliteParameterBasedSqlProcessor : RelationalParameterBasedSqlProcessor
    {
       /// <inheritdoc />
-      public ThinktectureRelationalParameterBasedSqlProcessor(
+      public ThinktectureSqliteParameterBasedSqlProcessor(
          RelationalParameterBasedSqlProcessorDependencies dependencies,
          bool useRelationalNulls)
          : base(dependencies, useRelationalNulls)
@@ -27,6 +28,17 @@ namespace Thinktecture.EntityFrameworkCore.Query
             throw new ArgumentNullException(nameof(parametersValues));
 
          return new ThinktectureSqlNullabilityProcessor(Dependencies, UseRelationalNulls).Process(selectExpression, parametersValues, out canCache);
+      }
+
+      /// <inheritdoc />
+      public override SelectExpression Optimize(SelectExpression selectExpression, IReadOnlyDictionary<string, object> parametersValues, out bool canCache)
+      {
+         selectExpression = base.Optimize(selectExpression, parametersValues, out canCache);
+
+         if (TempTableQueryContext.TryGetTempTableContexts(parametersValues, out var ctxs))
+            selectExpression = new TempTableNameReplacingVisitor(ctxs).Process(selectExpression);
+
+         return selectExpression;
       }
    }
 }

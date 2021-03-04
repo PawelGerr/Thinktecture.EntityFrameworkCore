@@ -46,7 +46,7 @@ namespace Thinktecture.EntityFrameworkCore.Query
       protected override Expression VisitMethodCall(MethodCallExpression methodCallExpression)
       {
          return this.TranslateRelationalMethods(methodCallExpression) ??
-                this.TranslateBulkMethods(methodCallExpression, _typeMappingSource) ??
+                this.TranslateBulkMethods(methodCallExpression, _typeMappingSource, QueryCompilationContext) ??
                 base.VisitMethodCall(methodCallExpression);
       }
    }

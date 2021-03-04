@@ -24,6 +24,21 @@ namespace Thinktecture.EntityFrameworkCore.Query
       }
 
       /// <inheritdoc />
+      protected override Expression VisitExtension(Expression expression)
+      {
+         if (expression is TempTableExpression tempTableExpression)
+         {
+            Sql.Append(Dependencies.SqlGenerationHelper.DelimitIdentifier(tempTableExpression.Name))
+               .Append(AliasSeparator)
+               .Append(Dependencies.SqlGenerationHelper.DelimitIdentifier(tempTableExpression.Alias));
+
+            return expression;
+         }
+
+         return base.VisitExtension(expression);
+      }
+
+      /// <inheritdoc />
       protected override Expression VisitSelect(SelectExpression selectExpression)
       {
          if (selectExpression.TryGetDeleteExpression(out var deleteExpression))

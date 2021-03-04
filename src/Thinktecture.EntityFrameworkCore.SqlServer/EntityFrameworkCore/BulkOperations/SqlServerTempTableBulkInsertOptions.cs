@@ -23,7 +23,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       /// </summary>
       /// <param name="optionsToInitializeFrom">Options to initialize from.</param>
       public SqlServerTempTableBulkInsertOptions(ITempTableBulkInsertOptions? optionsToInitializeFrom = null)
-         : base(optionsToInitializeFrom)
+         : base(false, optionsToInitializeFrom)
       {
       }
    }

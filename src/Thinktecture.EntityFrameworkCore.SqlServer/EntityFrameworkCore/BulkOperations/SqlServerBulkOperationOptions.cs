@@ -61,7 +61,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       private class ConcreteSqlServerTempTableBulkOperationOptions : SqlServerTempTableBulkOperationOptions
       {
          public ConcreteSqlServerTempTableBulkOperationOptions(ITempTableBulkInsertOptions? optionsToInitializeFrom = null)
-            : base(optionsToInitializeFrom)
+            : base(true, optionsToInitializeFrom)
          {
          }
       }

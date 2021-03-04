@@ -15,6 +15,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       ISqlServerTempTableCreationOptions ISqlServerTempTableBulkInsertOptions.TempTableCreationOptions => _tempTableCreationOptions;
       IEntityPropertiesProvider? ISqlServerTempTableBulkInsertOptions.PropertiesToInsert => PropertiesToInsert;
 
+      private readonly bool _couplePropertiesToInsertWithPropertiesToInclude;
       private readonly SqlServerBulkInsertOptions _bulkInsertOptions;
       private readonly SqlServerTempTableCreationOptions _tempTableCreationOptions;
 
@@ -108,7 +109,9 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
          set
          {
             _bulkInsertOptions.PropertiesToInsert = value;
-            _tempTableCreationOptions.PropertiesToInclude = value;
+
+            if (_couplePropertiesToInsertWithPropertiesToInclude)
+               _tempTableCreationOptions.PropertiesToInclude = value;
          }
       }
 
@@ -124,9 +127,14 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       /// <summary>
       /// Initializes new instance of <see cref="SqlServerTempTableBulkOperationOptions"/>.
       /// </summary>
+      /// <param name="couplePropertiesToInsertWithPropertiesToInclude">
+      /// Indication whether the <see cref="IEntityPropertiesProvider"/> of the <see cref="PropertiesToInsert"/> will be applied to <see cref="SqlServerTempTableCreationOptions"/>.</param>
       /// <param name="optionsToInitializeFrom">Options to initialize from.</param>
-      protected SqlServerTempTableBulkOperationOptions(ITempTableBulkInsertOptions? optionsToInitializeFrom)
+      protected SqlServerTempTableBulkOperationOptions(
+         bool couplePropertiesToInsertWithPropertiesToInclude,
+         ITempTableBulkInsertOptions? optionsToInitializeFrom)
       {
+         _couplePropertiesToInsertWithPropertiesToInclude = couplePropertiesToInsertWithPropertiesToInclude;
          _bulkInsertOptions = new SqlServerBulkInsertOptions();
          _tempTableCreationOptions = new SqlServerTempTableCreationOptions();
 

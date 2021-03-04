@@ -648,7 +648,7 @@ Currently configured primary keys: []");
       }
 
       [Fact]
-      public async Task Should_create_temp_table_for_entity_by_selecting_inlined_owned_type_as_whole()
+      public async Task Should_create_temp_table_for_entity_by_selecting_inlined_owned_type()
       {
          _optionsWithNonUniqueNameAndNoPrimaryKey.PropertiesToInclude = EntityPropertiesProvider.From<TestEntityOwningInlineEntity>(e => new
                                                                                                                                          {
@@ -687,7 +687,7 @@ Currently configured primary keys: []");
       }
 
       [Fact]
-      public void Should_throw_when_selecting_separated_owned_type_as_whole()
+      public void Should_throw_when_selecting_separated_owned_type()
       {
          _optionsWithNonUniqueNameAndNoPrimaryKey.PropertiesToInclude = EntityPropertiesProvider.From<TestEntityOwningOneSeparateEntity>(e => new
                                                                                                                                               {

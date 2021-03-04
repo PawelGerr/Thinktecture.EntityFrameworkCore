@@ -98,7 +98,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
             AddWithCheck<IQuerySqlGeneratorFactory, ThinktectureSqliteQuerySqlGeneratorFactory, SqliteQuerySqlGeneratorFactory>(services);
 
          if (AddCustomRelationalParameterBasedSqlProcessorFactory)
-            AddWithCheck<IRelationalParameterBasedSqlProcessorFactory, ThinktectureRelationalParameterBasedSqlProcessorFactory, RelationalParameterBasedSqlProcessorFactory>(services);
+            AddWithCheck<IRelationalParameterBasedSqlProcessorFactory, ThinktectureSqliteParameterBasedSqlProcessorFactory, RelationalParameterBasedSqlProcessorFactory>(services);
 
          if (AddBulkOperationSupport)
          {
