@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Reflection;
@@ -27,5 +28,19 @@ namespace Thinktecture.EntityFrameworkCore.Data
       /// <param name="property">Property to get the index for.</param>
       /// <returns>Index of the property.</returns>
       int GetPropertyIndex(PropertyWithNavigations property);
+   }
+
+   /// <summary>
+   /// Data reader to be used for bulk inserts.
+   /// </summary>
+   public interface IEntityDataReader<out T> : IEntityDataReader
+      where T : class
+   {
+      /// <summary>
+      /// Gets the entities that are read by now.
+      /// This method should not be called until the end of the reading by the reader otherwise the returned collection will be incomplete!
+      /// </summary>
+      /// <returns>Read entities.</returns>
+      IReadOnlyList<T> GetReadEntities();
    }
 }

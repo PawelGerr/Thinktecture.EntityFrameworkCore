@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Thinktecture.EntityFrameworkCore.Data
 {
    /// <summary>
-   /// Factory for <see cref="IEntityDataReader"/>.
+   /// Factory for <see cref="IEntityDataReader{T}"/>.
    /// </summary>
    // ReSharper disable once ClassNeverInstantiated.Global
    public sealed class EntityDataReaderFactory : IEntityDataReaderFactory
@@ -23,10 +23,11 @@ namespace Thinktecture.EntityFrameworkCore.Data
       }
 
       /// <inheritdoc />
-      public IEntityDataReader Create<T>(
+      public IEntityDataReader<T> Create<T>(
          DbContext ctx,
          IEnumerable<T> entities,
-         IReadOnlyList<PropertyWithNavigations> properties)
+         IReadOnlyList<PropertyWithNavigations> properties,
+         bool ensureReadEntitiesCollection)
          where T : class
       {
          if (ctx == null)
@@ -36,7 +37,7 @@ namespace Thinktecture.EntityFrameworkCore.Data
          if (properties == null)
             throw new ArgumentNullException(nameof(properties));
 
-         return new EntityDataReader<T>(ctx, _propertyGetterCache, entities, properties);
+         return new EntityDataReader<T>(ctx, _propertyGetterCache, entities, properties, ensureReadEntitiesCollection);
       }
    }
 }

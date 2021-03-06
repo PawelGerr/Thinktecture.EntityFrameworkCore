@@ -28,28 +28,28 @@ namespace Thinktecture.EntityFrameworkCore.Data.EntityDataReaderFactoryTests
       [Fact]
       public void Should_throw_if_context_is_null()
       {
-         SUT.Invoking(sut => sut.Create(null!, Array.Empty<TestEntity>(), Array.Empty<PropertyWithNavigations>()))
+         SUT.Invoking(sut => sut.Create(null!, Array.Empty<TestEntity>(), Array.Empty<PropertyWithNavigations>(), false))
             .Should().Throw<ArgumentNullException>();
       }
 
       [Fact]
       public void Should_throw_if_entities_is_null()
       {
-         SUT.Invoking(sut => sut.Create<TestEntity>(ActDbContext, null!, Array.Empty<PropertyWithNavigations>()))
+         SUT.Invoking(sut => sut.Create<TestEntity>(ActDbContext, null!, Array.Empty<PropertyWithNavigations>(), false))
             .Should().Throw<ArgumentNullException>();
       }
 
       [Fact]
       public void Should_throw_if_properties_is_null()
       {
-         SUT.Invoking(sut => sut.Create(ActDbContext, Array.Empty<TestEntity>(), null!))
+         SUT.Invoking(sut => sut.Create(ActDbContext, Array.Empty<TestEntity>(), null!, false))
             .Should().Throw<ArgumentNullException>();
       }
 
       [Fact]
       public void Should_generate_factory_if_entities_are_empty()
       {
-         var factory = SUT.Create(ActDbContext, Array.Empty<TestEntity>(), new[] { _column2Property });
+         var factory = SUT.Create(ActDbContext, Array.Empty<TestEntity>(), new[] { _column2Property }, false);
 
          factory.Should().NotBeNull();
          factory.Read().Should().BeFalse();
@@ -59,7 +59,7 @@ namespace Thinktecture.EntityFrameworkCore.Data.EntityDataReaderFactoryTests
       public void Should_generate_factory_for_provided_properties()
       {
          var entity = new TestEntity { Column2 = "value" };
-         var factory = SUT.Create(ActDbContext, new[] { entity }, new[] { _column2Property });
+         var factory = SUT.Create(ActDbContext, new[] { entity }, new[] { _column2Property }, false);
 
          factory.FieldCount.Should().Be(1);
          factory.Read().Should().BeTrue();

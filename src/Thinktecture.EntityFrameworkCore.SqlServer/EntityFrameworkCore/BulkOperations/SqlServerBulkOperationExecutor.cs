@@ -123,13 +123,40 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
          if (options is not ISqlServerBulkInsertOptions sqlServerOptions)
             sqlServerOptions = new SqlServerBulkInsertOptions(options);
 
-         var factory = _ctx.GetService<IEntityDataReaderFactory>();
-         var properties = options.PropertiesToInsert.DeterminePropertiesForInsert(entityType, null);
-         var sqlCon = (SqlConnection)_ctx.Database.GetDbConnection();
-         var sqlTx = (SqlTransaction?)_ctx.Database.CurrentTransaction?.GetDbTransaction();
+         var properties = sqlServerOptions.PropertiesToInsert.DeterminePropertiesForInsert(entityType, null);
+         var ctx = new BulkInsertContext(_ctx.GetService<IEntityDataReaderFactory>(),
+                                         (SqlConnection)_ctx.Database.GetDbConnection(),
+                                         (SqlTransaction?)_ctx.Database.CurrentTransaction?.GetDbTransaction(),
+                                         sqlServerOptions,
+                                         properties);
 
-         using var reader = factory.Create(_ctx, entities, properties);
-         using var bulkCopy = CreateSqlBulkCopy(sqlCon, sqlTx, schema, tableName, sqlServerOptions);
+         EnsureNoSeparateOwnedTypesInsideCollectionOwnedType(properties);
+
+         await BulkInsertAsync(entities, schema, tableName, ctx, cancellationToken);
+      }
+
+      private static void EnsureNoSeparateOwnedTypesInsideCollectionOwnedType(IReadOnlyList<PropertyWithNavigations> properties)
+      {
+         foreach (var property in properties)
+         {
+            INavigation? collection = null;
+
+            foreach (var navigation in property.Navigations)
+            {
+               if (!navigation.IsInlined() && collection is not null)
+                  throw new NotSupportedException($"Non-inlined (i.e. with its own table) nested owned type '{navigation.DeclaringEntityType.Name}.{navigation.Name}' inside another owned type collection '{collection.DeclaringEntityType.Name}.{collection.Name}' is not supported.");
+
+               if (navigation.IsCollection)
+                  collection = navigation;
+            }
+         }
+      }
+
+      private async Task BulkInsertAsync<T>(IEnumerable<T> entities, string? schema, string tableName, ISqlServerBulkOperationContext ctx, CancellationToken cancellationToken)
+         where T : class
+      {
+         using var reader = ctx.ReaderFactory.Create(_ctx, entities, ctx.Properties, ctx.HasExternalProperties);
+         using var bulkCopy = CreateSqlBulkCopy(ctx.Connection, ctx.Transaction, schema, tableName, ctx.Options);
 
          var columns = SetColumnMappings(bulkCopy, reader);
 
@@ -137,16 +164,42 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
 
          try
          {
-            LogInserting(sqlServerOptions.SqlBulkCopyOptions, bulkCopy, columns);
+            LogInserting(ctx.Options.SqlBulkCopyOptions, bulkCopy, columns);
             var stopwatch = Stopwatch.StartNew();
 
             await bulkCopy.WriteToServerAsync(reader, cancellationToken).ConfigureAwait(false);
 
-            LogInserted(sqlServerOptions.SqlBulkCopyOptions, stopwatch.Elapsed, bulkCopy, columns);
+            LogInserted(ctx.Options.SqlBulkCopyOptions, stopwatch.Elapsed, bulkCopy, columns);
+
+            if (ctx.HasExternalProperties)
+            {
+               var readEntities = reader.GetReadEntities();
+
+               if (readEntities.Count != 0)
+                  await BulkInsertSeparatedOwnedEntitiesAsync(readEntities, ctx, cancellationToken);
+            }
          }
          finally
          {
             await _ctx.Database.CloseConnectionAsync().ConfigureAwait(false);
+         }
+      }
+
+      private async Task BulkInsertSeparatedOwnedEntitiesAsync(
+         IReadOnlyList<object> parentEntities,
+         ISqlServerBulkOperationContext parentBulkOperationContext,
+         CancellationToken cancellationToken)
+      {
+         if (parentEntities.Count == 0)
+            return;
+
+         foreach (var childContext in parentBulkOperationContext.GetChildren(parentEntities))
+         {
+            await BulkInsertAsync(childContext.Entities,
+                                  childContext.EntityType.GetSchema(),
+                                  childContext.EntityType.GetTableName(),
+                                  childContext,
+                                  cancellationToken).ConfigureAwait(false);
          }
       }
 
@@ -240,8 +293,8 @@ INSERT BULK {Table} ({Columns})", (long)duration.TotalMilliseconds,
          var entityType = _ctx.Model.GetEntityType(typeof(T));
          var selectedProperties = options.PropertiesToInsert.DeterminePropertiesForTempTable(entityType, null);
 
-         if (selectedProperties.Any(p => p.BelongsToSeparateOwnedType))
-            throw new NotSupportedException($"Bulk insert of separate owned types into temp tables is not supported. Properties of separate owned types: {String.Join(", ", selectedProperties.Where(p => p.BelongsToSeparateOwnedType))}");
+         if (selectedProperties.Any(p => !p.IsInlined))
+            throw new NotSupportedException($"Bulk insert of separate owned types into temp tables is not supported. Properties of separate owned types: {String.Join(", ", selectedProperties.Where(p => !p.IsInlined))}");
 
          var tempTableOptions = options.TempTableCreationOptions;
 

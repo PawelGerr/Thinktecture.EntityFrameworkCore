@@ -13,12 +13,14 @@ namespace Thinktecture.EntityFrameworkCore.Data
    /// </summary>
    /// <typeparam name="TEntity">Type of the entity.</typeparam>
    [SuppressMessage("ReSharper", "EF1001")]
-   public sealed class EntityDataReader<TEntity> : IEntityDataReader
+   public sealed class EntityDataReader<TEntity> : IEntityDataReader<TEntity>
       where TEntity : class
    {
       private readonly DbContext _ctx;
       private readonly IEnumerator<TEntity> _enumerator;
       private readonly Dictionary<int, Func<DbContext, TEntity, object?>> _propertyGetterLookup;
+      private readonly IReadOnlyList<TEntity>? _entities;
+      private readonly List<TEntity>? _readEntities;
 
       /// <inheritdoc />
       public IReadOnlyList<PropertyWithNavigations> Properties { get; }
@@ -33,11 +35,13 @@ namespace Thinktecture.EntityFrameworkCore.Data
       /// <param name="propertyGetterCache">Property getter cache.</param>
       /// <param name="entities">Entities to read.</param>
       /// <param name="properties">Properties to read.</param>
+      /// <param name="ensureReadEntitiesCollection">Makes sure the method <see cref="IEntityDataReader{T}.GetReadEntities"/> has a collection to return.</param>
       public EntityDataReader(
          DbContext ctx,
          IPropertyGetterCache propertyGetterCache,
          IEnumerable<TEntity> entities,
-         IReadOnlyList<PropertyWithNavigations> properties)
+         IReadOnlyList<PropertyWithNavigations> properties,
+         bool ensureReadEntitiesCollection)
       {
          if (propertyGetterCache == null)
             throw new ArgumentNullException(nameof(propertyGetterCache));
@@ -52,6 +56,18 @@ namespace Thinktecture.EntityFrameworkCore.Data
 
          _propertyGetterLookup = BuildPropertyGetterLookup(propertyGetterCache, properties);
          _enumerator = entities.GetEnumerator();
+
+         if (ensureReadEntitiesCollection)
+         {
+            if (entities is IReadOnlyList<TEntity> entityList)
+            {
+               _entities = entityList;
+            }
+            else
+            {
+               _readEntities = new List<TEntity>();
+            }
+         }
       }
 
       private static Dictionary<int, Func<DbContext, TEntity, object?>> BuildPropertyGetterLookup(
@@ -88,6 +104,12 @@ namespace Thinktecture.EntityFrameworkCore.Data
       }
 
       /// <inheritdoc />
+      public IReadOnlyList<TEntity> GetReadEntities()
+      {
+         return _entities ?? _readEntities ?? throw new InvalidOperationException("'Read entities' were not requested previously.");
+      }
+
+      /// <inheritdoc />
 #pragma warning disable 8766
       public object? GetValue(int i)
 #pragma warning restore 8766
@@ -98,7 +120,11 @@ namespace Thinktecture.EntityFrameworkCore.Data
       /// <inheritdoc />
       public bool Read()
       {
-         return _enumerator.MoveNext();
+         if (!_enumerator.MoveNext())
+            return false;
+
+         _readEntities?.Add(_enumerator.Current);
+         return true;
       }
 
       /// <inheritdoc />

@@ -18,7 +18,7 @@ namespace Thinktecture
       /// <exception cref="ArgumentNullException">
       /// <paramref name="navigation"/> is <c>null</c>.
       /// </exception>
-      public static bool IsOwnedTypeInline(
+      public static bool IsInlined(
          this INavigation navigation)
       {
          if (navigation == null)

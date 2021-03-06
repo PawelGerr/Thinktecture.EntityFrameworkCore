@@ -251,9 +251,8 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
                              PropertyWithBackingField = 7
                           };
          testEntity.SetPrivateField(3);
-         var testEntities = new[] { testEntity };
 
-         await SUT.BulkInsertAsync(testEntities,
+         await SUT.BulkInsertAsync(new[] { testEntity },
                                    new SqlServerBulkInsertOptions
                                    {
                                       PropertiesToInsert = new EntityPropertiesProvider(TestEntity.GetRequiredProperties())
@@ -279,9 +278,8 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
                              Id = new Guid("3A1B2FFF-8E11-44E5-80E5-8C7FEEDACEB3"),
                              InlineEntity = null!
                           };
-         var testEntities = new[] { testEntity };
 
-         ActDbContext.Awaiting(ctx => ctx.BulkInsertIntoTempTableAsync(testEntities))
+         ActDbContext.Awaiting(ctx => ctx.BulkInsertIntoTempTableAsync(new[] { testEntity }))
                      .Should().Throw<InvalidOperationException>().WithMessage("Column 'InlineEntity_IntColumn' does not allow DBNull.Value.");
       }
 
@@ -293,9 +291,8 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
                              Id = new Guid("3A1B2FFF-8E11-44E5-80E5-8C7FEEDACEB3"),
                              InlineEntity = new OwnedEntity()
                           };
-         var testEntities = new[] { testEntity };
 
-         await SUT.BulkInsertAsync(testEntities, new SqlServerBulkInsertOptions());
+         await SUT.BulkInsertAsync(new[] { testEntity }, new SqlServerBulkInsertOptions());
 
          var loadedEntities = await AssertDbContext.TestEntities_Own_Inline.ToListAsync();
          loadedEntities.Should().HaveCount(1);
@@ -323,9 +320,8 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
                                                StringColumn = "value"
                                             }
                           };
-         var testEntities = new[] { testEntity };
 
-         await SUT.BulkInsertAsync(testEntities, new SqlServerBulkInsertOptions());
+         await SUT.BulkInsertAsync(new[] { testEntity }, new SqlServerBulkInsertOptions());
 
          var loadedEntities = await AssertDbContext.TestEntities_Own_Inline.ToListAsync();
          loadedEntities.Should().HaveCount(1);
@@ -339,6 +335,406 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
                                                                    StringColumn = "value"
                                                                 }
                                               });
+      }
+
+      [Fact]
+      public void Should_throw_if_separated_owned_type_uses_shadow_property_id_and_is_detached()
+      {
+         var testEntity = new TestEntity_Owns_SeparateOne
+                          {
+                             Id = new Guid("7C00ABFE-875B-4396-BE51-3E898647A264"),
+                             SeparateEntity = new OwnedEntity
+                                              {
+                                                 IntColumn = 42,
+                                                 StringColumn = "value"
+                                              }
+                          };
+
+         SUT.Awaiting(sut => sut.BulkInsertAsync(new[] { testEntity }, new SqlServerBulkInsertOptions()))
+            .Should().Throw<InvalidOperationException>()
+            .WithMessage("The entity type 'OwnedEntity' has a defining navigation and the supplied entity is currently not being tracked. To start tracking this entity, call '.Reference().TargetEntry' or '.Collection().FindEntry()' on the owner entry.");
+      }
+
+      [Fact]
+      public async Task Should_insert_TestEntity_Owns_SeparateOne()
+      {
+         var testEntity = new TestEntity_Owns_SeparateOne
+                          {
+                             Id = new Guid("7C00ABFE-875B-4396-BE51-3E898647A264"),
+                             SeparateEntity = new OwnedEntity
+                                              {
+                                                 IntColumn = 42,
+                                                 StringColumn = "value"
+                                              }
+                          };
+         ActDbContext.Add(testEntity);
+
+         await SUT.BulkInsertAsync(new[] { testEntity }, new SqlServerBulkInsertOptions());
+
+         var loadedEntities = await AssertDbContext.TestEntities_Own_SeparateOne.ToListAsync();
+         loadedEntities.Should().HaveCount(1);
+         var loadedEntity = loadedEntities[0];
+         loadedEntity.Should().BeEquivalentTo(testEntity);
+      }
+
+      [Fact]
+      public void Should_throw_if_separated_owned_types_uses_shadow_property_id_and_is_detached()
+      {
+         var testEntity = new TestEntity_Owns_SeparateMany
+                          {
+                             Id = new Guid("54FF93FC-6BE9-4F19-A52E-E517CA9FEAA7"),
+                             SeparateEntities = new List<OwnedEntity>
+                                                {
+                                                   new()
+                                                   {
+                                                      IntColumn = 42,
+                                                      StringColumn = "value 1"
+                                                   }
+                                                }
+                          };
+
+         SUT.Awaiting(sut => sut.BulkInsertAsync(new[] { testEntity }, new SqlServerBulkInsertOptions()))
+            .Should().Throw<InvalidOperationException>()
+            .WithMessage("The entity type 'OwnedEntity' has a defining navigation and the supplied entity is currently not being tracked. To start tracking this entity, call '.Reference().TargetEntry' or '.Collection().FindEntry()' on the owner entry.");
+      }
+
+      [Fact]
+      public async Task Should_insert_TestEntity_Owns_SeparateMany()
+      {
+         var testEntity = new TestEntity_Owns_SeparateMany
+                          {
+                             Id = new Guid("54FF93FC-6BE9-4F19-A52E-E517CA9FEAA7"),
+                             SeparateEntities = new List<OwnedEntity>
+                                                {
+                                                   new()
+                                                   {
+                                                      IntColumn = 42,
+                                                      StringColumn = "value 1"
+                                                   },
+                                                   new()
+                                                   {
+                                                      IntColumn = 43,
+                                                      StringColumn = "value 2"
+                                                   }
+                                                }
+                          };
+         ActDbContext.Add(testEntity);
+
+         await SUT.BulkInsertAsync(new[] { testEntity }, new SqlServerBulkInsertOptions());
+
+         var loadedEntities = await AssertDbContext.TestEntities_Own_SeparateMany.ToListAsync();
+         loadedEntities.Should().HaveCount(1);
+         var loadedEntity = loadedEntities[0];
+         loadedEntity.Should().BeEquivalentTo(testEntity);
+      }
+
+      [Fact]
+      public async Task Should_insert_TestEntity_Owns_Inline_Inline()
+      {
+         var testEntity = new TestEntity_Owns_Inline_Inline
+                          {
+                             Id = new Guid("54FF93FC-6BE9-4F19-A52E-E517CA9FEAA7"),
+                             InlineEntity = new OwnedEntity_Owns_Inline
+                                            {
+                                               IntColumn = 42,
+                                               StringColumn = "value 1",
+                                               InlineEntity = new OwnedEntity
+                                                              {
+                                                                 IntColumn = 43,
+                                                                 StringColumn = "value 2"
+                                                              }
+                                            }
+                          };
+         ActDbContext.Add(testEntity);
+
+         await SUT.BulkInsertAsync(new[] { testEntity }, new SqlServerBulkInsertOptions());
+
+         var loadedEntities = await AssertDbContext.TestEntities_Own_Inline_Inline.ToListAsync();
+         loadedEntities.Should().HaveCount(1)
+                       .And.BeEquivalentTo(testEntity);
+      }
+
+      [Fact]
+      public async Task Should_insert_TestEntity_Owns_Inline_SeparateMany()
+      {
+         var testEntity = new TestEntity_Owns_Inline_SeparateMany
+                          {
+                             Id = new Guid("54FF93FC-6BE9-4F19-A52E-E517CA9FEAA7"),
+                             InlineEntity = new OwnedEntity_Owns_SeparateMany
+                                            {
+                                               IntColumn = 42,
+                                               StringColumn = "value 1",
+                                               SeparateEntities = new List<OwnedEntity>
+                                                                  {
+                                                                     new()
+                                                                     {
+                                                                        IntColumn = 43,
+                                                                        StringColumn = "value 2"
+                                                                     },
+                                                                     new()
+                                                                     {
+                                                                        IntColumn = 44,
+                                                                        StringColumn = "value 3"
+                                                                     }
+                                                                  }
+                                            }
+                          };
+         ActDbContext.Add(testEntity);
+
+         await SUT.BulkInsertAsync(new[] { testEntity }, new SqlServerBulkInsertOptions());
+
+         var loadedEntities = await AssertDbContext.TestEntities_Own_Inline_SeparateMany.ToListAsync();
+         loadedEntities.Should().HaveCount(1)
+                       .And.BeEquivalentTo(testEntity);
+      }
+
+      [Fact]
+      public async Task Should_insert_TestEntity_Owns_Inline_SeparateOne()
+      {
+         var testEntity = new TestEntity_Owns_Inline_SeparateOne
+                          {
+                             Id = new Guid("54FF93FC-6BE9-4F19-A52E-E517CA9FEAA7"),
+                             InlineEntity = new OwnedEntity_Owns_SeparateOne
+                                            {
+                                               IntColumn = 42,
+                                               StringColumn = "value 1",
+                                               SeparateEntity = new()
+                                                                {
+                                                                   IntColumn = 43,
+                                                                   StringColumn = "value 2"
+                                                                }
+                                            }
+                          };
+
+         ActDbContext.Add(testEntity);
+
+         await SUT.BulkInsertAsync(new[]
+                                   {
+                                      testEntity
+                                   }, new SqlServerBulkInsertOptions());
+
+         var loadedEntities = await AssertDbContext.TestEntities_Own_Inline_SeparateOne.ToListAsync();
+         loadedEntities.Should().HaveCount(1)
+                       .And.BeEquivalentTo(testEntity);
+      }
+
+      [Fact]
+      public async Task Should_insert_TestEntity_Owns_SeparateMany_Inline()
+      {
+         var testEntity = new TestEntity_Owns_SeparateMany_Inline
+                          {
+                             Id = new Guid("54FF93FC-6BE9-4F19-A52E-E517CA9FEAA7"),
+                             SeparateEntities = new List<OwnedEntity_Owns_Inline>
+                                                {
+                                                   new()
+                                                   {
+                                                      IntColumn = 42,
+                                                      StringColumn = "value 1",
+                                                      InlineEntity = new OwnedEntity
+                                                                     {
+                                                                        IntColumn = 43,
+                                                                        StringColumn = "value 2"
+                                                                     }
+                                                   },
+                                                   new()
+                                                   {
+                                                      IntColumn = 44,
+                                                      StringColumn = "value 3",
+                                                      InlineEntity = new OwnedEntity
+                                                                     {
+                                                                        IntColumn = 45,
+                                                                        StringColumn = "value 4"
+                                                                     }
+                                                   }
+                                                }
+                          };
+
+         ActDbContext.Add(testEntity);
+
+         await SUT.BulkInsertAsync(new[] { testEntity }, new SqlServerBulkInsertOptions());
+
+         var loadedEntities = await AssertDbContext.TestEntities_Own_SeparateMany_Inline.ToListAsync();
+         loadedEntities.Should().HaveCount(1)
+                       .And.BeEquivalentTo(testEntity);
+      }
+
+      [Fact]
+      public void Should_throw_on_insert_of_TestEntity_Owns_SeparateMany_SeparateMany()
+      {
+         var testEntity = new TestEntity_Owns_SeparateMany_SeparateMany
+                          {
+                             Id = new Guid("54FF93FC-6BE9-4F19-A52E-E517CA9FEAA7"),
+                             SeparateEntities = new List<OwnedEntity_Owns_SeparateMany>
+                                                {
+                                                   new()
+                                                   {
+                                                      IntColumn = 42,
+                                                      StringColumn = "value 1",
+                                                      SeparateEntities = new List<OwnedEntity>
+                                                                         {
+                                                                            new()
+                                                                            {
+                                                                               IntColumn = 43,
+                                                                               StringColumn = "value 2"
+                                                                            },
+                                                                            new()
+                                                                            {
+                                                                               IntColumn = 44,
+                                                                               StringColumn = "value 3"
+                                                                            }
+                                                                         }
+                                                   },
+                                                   new()
+                                                   {
+                                                      IntColumn = 45,
+                                                      StringColumn = "value 4",
+                                                      SeparateEntities = new List<OwnedEntity>
+                                                                         {
+                                                                            new()
+                                                                            {
+                                                                               IntColumn = 46,
+                                                                               StringColumn = "value 5"
+                                                                            },
+                                                                            new()
+                                                                            {
+                                                                               IntColumn = 47,
+                                                                               StringColumn = "value 6"
+                                                                            }
+                                                                         }
+                                                   }
+                                                }
+                          };
+
+         ActDbContext.Add(testEntity);
+
+         SUT.Awaiting(sut => sut.BulkInsertAsync(new[] { testEntity }, new SqlServerBulkInsertOptions()))
+            .Should().Throw<NotSupportedException>().WithMessage("Non-inlined (i.e. with its own table) nested owned type 'Thinktecture.TestDatabaseContext.OwnedEntity_Owns_SeparateMany.SeparateEntities' inside another owned type collection 'Thinktecture.TestDatabaseContext.TestEntity_Owns_SeparateMany_SeparateMany.SeparateEntities' is not supported.");
+      }
+
+      [Fact]
+      public void Should_throw_on_insert_of_TestEntity_Owns_SeparateMany_SeparateOne()
+      {
+         var testEntity = new TestEntity_Owns_SeparateMany_SeparateOne
+                          {
+                             Id = new Guid("54FF93FC-6BE9-4F19-A52E-E517CA9FEAA7"),
+                             SeparateEntities = new List<OwnedEntity_Owns_SeparateOne>
+                                                {
+                                                   new()
+                                                   {
+                                                      IntColumn = 42,
+                                                      StringColumn = "value 1",
+                                                      SeparateEntity = new()
+                                                                       {
+                                                                          IntColumn = 43,
+                                                                          StringColumn = "value 2"
+                                                                       }
+                                                   },
+                                                   new()
+                                                   {
+                                                      IntColumn = 45,
+                                                      StringColumn = "value 4",
+                                                      SeparateEntity = new()
+                                                                       {
+                                                                          IntColumn = 46,
+                                                                          StringColumn = "value 5"
+                                                                       }
+                                                   }
+                                                }
+                          };
+
+         ActDbContext.Add(testEntity);
+
+         SUT.Awaiting(sut => sut.BulkInsertAsync(new[] { testEntity }, new SqlServerBulkInsertOptions()))
+            .Should().Throw<NotSupportedException>().WithMessage("Non-inlined (i.e. with its own table) nested owned type 'Thinktecture.TestDatabaseContext.OwnedEntity_Owns_SeparateOne.SeparateEntity' inside another owned type collection 'Thinktecture.TestDatabaseContext.TestEntity_Owns_SeparateMany_SeparateOne.SeparateEntities' is not supported.");
+      }
+
+      [Fact]
+      public async Task Should_insert_TestEntity_Owns_SeparateOne_Inline()
+      {
+         var testEntity = new TestEntity_Owns_SeparateOne_Inline
+                          {
+                             Id = new Guid("54FF93FC-6BE9-4F19-A52E-E517CA9FEAA7"),
+                             SeparateEntity = new()
+                                              {
+                                                 IntColumn = 42,
+                                                 StringColumn = "value 1",
+                                                 InlineEntity = new OwnedEntity
+                                                                {
+                                                                   IntColumn = 43,
+                                                                   StringColumn = "value 2"
+                                                                }
+                                              }
+                          };
+
+         ActDbContext.Add(testEntity);
+
+         await SUT.BulkInsertAsync(new[] { testEntity }, new SqlServerBulkInsertOptions());
+
+         var loadedEntities = await AssertDbContext.TestEntities_Own_SeparateOne_Inline.ToListAsync();
+         loadedEntities.Should().HaveCount(1)
+                       .And.BeEquivalentTo(testEntity);
+      }
+
+      [Fact]
+      public async Task Should_insert_TestEntity_Owns_SeparateOne_SeparateMany()
+      {
+         var testEntity = new TestEntity_Owns_SeparateOne_SeparateMany
+                          {
+                             Id = new Guid("54FF93FC-6BE9-4F19-A52E-E517CA9FEAA7"),
+                             SeparateEntity = new()
+                                              {
+                                                 IntColumn = 42,
+                                                 StringColumn = "value 1",
+                                                 SeparateEntities = new List<OwnedEntity>
+                                                                    {
+                                                                       new()
+                                                                       {
+                                                                          IntColumn = 43,
+                                                                          StringColumn = "value 2"
+                                                                       },
+                                                                       new()
+                                                                       {
+                                                                          IntColumn = 44,
+                                                                          StringColumn = "value 3"
+                                                                       }
+                                                                    }
+                                              }
+                          };
+
+         ActDbContext.Add(testEntity);
+
+         await SUT.BulkInsertAsync(new[] { testEntity }, new SqlServerBulkInsertOptions());
+
+         var loadedEntities = await AssertDbContext.TestEntities_Own_SeparateOne_SeparateMany.ToListAsync();
+         loadedEntities.Should().HaveCount(1)
+                       .And.BeEquivalentTo(testEntity);
+      }
+
+      [Fact]
+      public async Task Should_insert_TestEntity_Owns_SeparateOne_SeparateOne()
+      {
+         var testEntity = new TestEntity_Owns_SeparateOne_SeparateOne
+                          {
+                             Id = new Guid("54FF93FC-6BE9-4F19-A52E-E517CA9FEAA7"),
+                             SeparateEntity = new()
+                                              {
+                                                 IntColumn = 42,
+                                                 StringColumn = "value 1",
+                                                 SeparateEntity = new()
+                                                                  {
+                                                                     IntColumn = 43,
+                                                                     StringColumn = "value 2"
+                                                                  }
+                                              }
+                          };
+
+         ActDbContext.Add(testEntity);
+
+         await SUT.BulkInsertAsync(new[] { testEntity }, new SqlServerBulkInsertOptions());
+
+         var loadedEntities = await AssertDbContext.TestEntities_Own_SeparateOne_SeparateOne.ToListAsync();
+         loadedEntities.Should().HaveCount(1)
+                       .And.BeEquivalentTo(testEntity);
       }
    }
 }

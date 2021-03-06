@@ -18,7 +18,7 @@ namespace Thinktecture.EntityFrameworkCore.Data.EntityDataReaderTests
       private EntityDataReader<TestEntity>? _sut;
 
       // ReSharper disable once InconsistentNaming
-      private EntityDataReader<TestEntity> SUT => _sut ??= new EntityDataReader<TestEntity>(ActDbContext, new PropertyGetterCache(LoggerFactory!), Array.Empty<TestEntity>(), _propertiesToRead);
+      private EntityDataReader<TestEntity> SUT => _sut ??= new EntityDataReader<TestEntity>(ActDbContext, new PropertyGetterCache(LoggerFactory!), Array.Empty<TestEntity>(), _propertiesToRead, false);
 
       public Properties(ITestOutputHelper testOutputHelper)
          : base(testOutputHelper)

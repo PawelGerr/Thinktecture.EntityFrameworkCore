@@ -21,9 +21,9 @@ namespace Thinktecture.EntityFrameworkCore.Data
       public IReadOnlyList<INavigation> Navigations { get; }
 
       /// <summary>
-      /// Indication whether this property is part of a separate owned typed.
+      /// Indication whether this property is persisted in the same table as the parent or in a separate table.
       /// </summary>
-      public bool BelongsToSeparateOwnedType { get; }
+      public bool IsInlined { get; }
 
       /// <summary>
       /// Initializes a new instance of <see cref="PropertyWithNavigations"/>.
@@ -36,7 +36,7 @@ namespace Thinktecture.EntityFrameworkCore.Data
       {
          Property = property;
          Navigations = navigations;
-         BelongsToSeparateOwnedType = Navigations.Count != 0 && !Navigations[0].IsOwnedTypeInline();
+         IsInlined = Navigations.Count == 0 || Navigations.All(n => n.IsInlined());
       }
 
       /// <inheritdoc />
@@ -80,6 +80,41 @@ namespace Thinktecture.EntityFrameworkCore.Data
          var path = String.Join(".", Navigations.Select(n => n.Name));
 
          return String.IsNullOrWhiteSpace(path) ? Property.Name : $"{path}.{Property.Name}";
+      }
+
+      /// <summary>
+      /// Drops all leading <see cref="Navigations"/> incl. first non-inlined navigation and creates a new <see cref="PropertyWithNavigations"/> from the rest navigations.
+      /// </summary>
+      /// <returns>Dropped navigations and a new property without the dropped navigations.</returns>
+      /// <exception cref="InvalidOperationException">If the current property has no separate navigations.</exception>
+      public (IReadOnlyList<INavigation> DroppedNavigations, PropertyWithNavigations Property) DropUntilSeparateNavigation()
+      {
+         var droppedNavigation = new List<INavigation>();
+
+         for (var i = 0; i < Navigations.Count; i++)
+         {
+            var navigation = Navigations[i];
+
+            if (navigation.IsInlined())
+            {
+               droppedNavigation.Add(navigation);
+            }
+            else
+            {
+               droppedNavigation.Add(navigation);
+
+               var separateNavigations = new List<INavigation>();
+
+               for (var j = i + 1; j < Navigations.Count; j++)
+               {
+                  separateNavigations.Add(Navigations[j]);
+               }
+
+               return (droppedNavigation!, new PropertyWithNavigations(Property, separateNavigations));
+            }
+         }
+
+         throw new InvalidOperationException("This method must not be called for properties without separate navigations.");
       }
    }
 }

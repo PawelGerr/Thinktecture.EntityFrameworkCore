@@ -29,7 +29,7 @@ namespace Thinktecture
          return entityType.GetNavigations()
                           .Where(n => n.ForeignKey.IsOwnership &&
                                       n.ForeignKey.PrincipalEntityType == entityType &&
-                                      (inlinedOwnTypes == null || inlinedOwnTypes == n.IsOwnedTypeInline()));
+                                      (inlinedOwnTypes == null || inlinedOwnTypes == n.IsInlined()));
       }
    }
 }

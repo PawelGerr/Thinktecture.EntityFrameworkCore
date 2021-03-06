@@ -168,7 +168,7 @@ namespace Thinktecture
       private static bool InsertAndUpdateFilter(IProperty property, IReadOnlyList<INavigation> navigations)
       {
          return property.GetBeforeSaveBehavior() != PropertySaveBehavior.Ignore &&
-                (navigations.Count == 0 || !property.IsKey());
+                (navigations.Count == 0 || !navigations[^1].IsInlined() || !property.IsKey());
       }
    }
 }

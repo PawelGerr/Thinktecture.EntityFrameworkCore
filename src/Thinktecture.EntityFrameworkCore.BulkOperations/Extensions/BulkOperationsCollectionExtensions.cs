@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Thinktecture.EntityFrameworkCore.Data;
 
@@ -63,7 +64,7 @@ namespace Thinktecture
          {
             if (ownedTypeNavi.PropertyInfo == memberInfo || ownedTypeNavi.FieldInfo == memberInfo)
             {
-               if (ownedTypeNavi.IsOwnedTypeInline())
+               if (ownedTypeNavi.IsInlined())
                   return ownedTypeNavi;
 
                throw new NotSupportedException($"Properties of owned types that are saved in a separate table are not supported. Property: {ownedTypeNavi.Name}");
@@ -71,6 +72,103 @@ namespace Thinktecture
          }
 
          return null;
+      }
+
+      /// <summary>
+      /// Separates <paramref name="properties"/> in own properties and properties belonging to different tables.
+      /// </summary>
+      /// <param name="properties">Properties to separate.</param>
+      /// <returns>A collection of own and "external" properties.</returns>
+      public static (IReadOnlyList<PropertyWithNavigations> sameTable, IReadOnlyList<PropertyWithNavigations> otherTable) SeparateProperties(
+         this IReadOnlyList<PropertyWithNavigations> properties)
+      {
+         var sameTableProperties = new List<PropertyWithNavigations>();
+         List<PropertyWithNavigations>? externalProperties = null;
+
+         foreach (var property in properties)
+         {
+            if (property.IsInlined)
+            {
+               sameTableProperties.Add(property);
+            }
+            else
+            {
+               externalProperties ??= new List<PropertyWithNavigations>();
+               externalProperties.Add(property);
+            }
+         }
+
+         return (sameTableProperties, (IReadOnlyList<PropertyWithNavigations>?)externalProperties ?? Array.Empty<PropertyWithNavigations>());
+      }
+
+      /// <summary>
+      /// Groups <paramref name="externalProperties"/> by the owned type property they belong to.
+      /// </summary>
+      /// <param name="externalProperties">Properties to group.</param>
+      /// <param name="parentEntities">A collection of the parent properties.</param>
+      /// <returns>A collection of tuples of the owned type navigation, owned type entities and their properties.</returns>
+      public static IEnumerable<(INavigation, IEnumerable<object>, IReadOnlyList<PropertyWithNavigations>)> GroupExternalProperties(
+         this IReadOnlyList<PropertyWithNavigations> externalProperties,
+         IReadOnlyList<object> parentEntities)
+      {
+         foreach (var group in externalProperties.Select(p => p.DropUntilSeparateNavigation())
+                                                 .GroupBy(t => t, DroppedInlineNavigationsComparer.Instance))
+         {
+            var navigation = group.Key.DroppedNavigations.Last();
+            var ownedEntities = group.Key.DroppedNavigations.Aggregate((IEnumerable<object>)parentEntities, ProjectEntities);
+            var properties = group.Select(g => g.Property).ToList();
+
+            yield return (navigation, ownedEntities, properties);
+         }
+      }
+
+      private static IEnumerable<object> ProjectEntities(IEnumerable<object> ownedEntities, INavigation navigation)
+      {
+         var getter = navigation.GetGetter() ?? throw new Exception($"No property-getter for the navigational property '{navigation.ClrType.Name}.{navigation.PropertyInfo.Name}' found.");
+
+         ownedEntities = ownedEntities.Select(getter.GetClrValue);
+
+         if (navigation.IsCollection)
+            ownedEntities = ownedEntities.SelectMany(c => (IEnumerable<object>)c);
+
+         return ownedEntities;
+      }
+   }
+
+   /// <summary>
+   /// Uses "DroppedNavigations" only.
+   /// </summary>
+   internal class DroppedInlineNavigationsComparer
+      : IEqualityComparer<(IReadOnlyList<INavigation> DroppedNavigations, PropertyWithNavigations Property)>
+   {
+      public static DroppedInlineNavigationsComparer Instance = new();
+
+      public bool Equals(
+         (IReadOnlyList<INavigation> DroppedNavigations, PropertyWithNavigations Property) x,
+         (IReadOnlyList<INavigation> DroppedNavigations, PropertyWithNavigations Property) y)
+      {
+         if (x.DroppedNavigations.Count != y.DroppedNavigations.Count)
+            return false;
+
+         for (var i = 0; i < x.DroppedNavigations.Count; i++)
+         {
+            if (!x.DroppedNavigations[i].Equals(y.DroppedNavigations[i]))
+               return false;
+         }
+
+         return true;
+      }
+
+      public int GetHashCode((IReadOnlyList<INavigation> DroppedNavigations, PropertyWithNavigations Property) obj)
+      {
+         var hashCode = new HashCode();
+
+         foreach (var navigation in obj.DroppedNavigations)
+         {
+            hashCode.Add(navigation);
+         }
+
+         return hashCode.ToHashCode();
       }
    }
 }
