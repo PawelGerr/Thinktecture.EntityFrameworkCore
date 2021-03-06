@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using Microsoft.EntityFrameworkCore;
 
 namespace Thinktecture.TestDatabaseContext
 {
@@ -45,6 +46,15 @@ namespace Thinktecture.TestDatabaseContext
                    typeof(TestEntity).GetProperty(nameof(PropertyWithBackingField)) ?? throw new Exception($"Property {nameof(PropertyWithBackingField)} not found."),
                    typeof(TestEntity).GetField("_privateField", BindingFlags.Instance | BindingFlags.NonPublic) ?? throw new Exception($"Field _privateField not found.")
                 };
+      }
+
+      public static void Configure(ModelBuilder modelBuilder)
+      {
+         modelBuilder.Entity<TestEntity>(builder =>
+                                         {
+                                            builder.Property("_privateField");
+                                            builder.Property(e => e.ConvertibleClass).HasConversion(c => c!.Key, k => new ConvertibleClass(k));
+                                         });
       }
    }
 }

@@ -702,8 +702,6 @@ Currently configured primary keys: []");
       [Fact]
       public async Task Should_create_temp_table_for_entity_with_many_owned_types()
       {
-         _optionsWithNonUniqueNameAndNoPrimaryKey.PrimaryKeyCreation = PrimaryKeyPropertiesProviders.EntityTypeConfiguration;
-
          var ownerEntityType = ActDbContext.GetEntityType<TestEntityOwningManyEntities>();
          await using var tempTable = await SUT.CreateTempTableAsync(ownerEntityType, _optionsWithNonUniqueNameAndNoPrimaryKey);
 

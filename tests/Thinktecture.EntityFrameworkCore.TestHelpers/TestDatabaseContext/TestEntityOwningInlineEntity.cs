@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Microsoft.EntityFrameworkCore;
 
 namespace Thinktecture.TestDatabaseContext
 {
@@ -14,5 +15,9 @@ namespace Thinktecture.TestDatabaseContext
       {
       }
 #nullable enable
+      public static void Configure(ModelBuilder modelBuilder)
+      {
+         modelBuilder.Entity<TestEntityOwningInlineEntity>(builder => builder.OwnsOne(e => e.InlineEntity));
+      }
    }
 }

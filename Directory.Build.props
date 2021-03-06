@@ -23,5 +23,10 @@
          <Link>SkipLocalsInit.cs</Link>
       </Compile>
    </ItemGroup>
+   <ItemGroup>
+      <Compile Include="..\..\shared\IsExternalInit.cs">
+         <Link>IsExternalInit.cs</Link>
+      </Compile>
+   </ItemGroup>
 
 </Project>
