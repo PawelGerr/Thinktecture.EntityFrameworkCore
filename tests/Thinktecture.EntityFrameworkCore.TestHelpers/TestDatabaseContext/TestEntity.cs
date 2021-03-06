@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Thinktecture.TestDatabaseContext
 {
+#pragma warning disable 8618
    public class TestEntity
    {
       public Guid Id { get; set; }

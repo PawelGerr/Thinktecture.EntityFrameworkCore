@@ -75,10 +75,10 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
       [Fact]
       public async Task Should_work_with_inlined_owned_type()
       {
-         var testEntity = new TestEntityOwningInlineEntity
+         var testEntity = new TestEntity_Owns_Inline
                           {
                              Id = new Guid("3A1B2FFF-8E11-44E5-80E5-8C7FEEDACEB3"),
-                             InlineEntity = new OwnedInlineEntity
+                             InlineEntity = new OwnedEntity
                                             {
                                                IntColumn = 42,
                                                StringColumn = "value"
@@ -90,10 +90,10 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
          var entities = await tempTable.Query.ToListAsync();
 
          entities.Should().HaveCount(1)
-                 .And.BeEquivalentTo(new TestEntityOwningInlineEntity
+                 .And.BeEquivalentTo(new TestEntity_Owns_Inline
                                      {
                                         Id = new Guid("3A1B2FFF-8E11-44E5-80E5-8C7FEEDACEB3"),
-                                        InlineEntity = new OwnedInlineEntity
+                                        InlineEntity = new OwnedEntity
                                                        {
                                                           IntColumn = 42,
                                                           StringColumn = "value"
@@ -104,10 +104,10 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
       [Fact]
       public async Task Should_return_detached_entities_for_entities_with_a_primary_key()
       {
-         var testEntity = new TestEntityOwningInlineEntity
+         var testEntity = new TestEntity_Owns_Inline
                           {
                              Id = new Guid("3A1B2FFF-8E11-44E5-80E5-8C7FEEDACEB3"),
-                             InlineEntity = new OwnedInlineEntity
+                             InlineEntity = new OwnedEntity
                                             {
                                                IntColumn = 42,
                                                StringColumn = "value"
@@ -124,19 +124,19 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
       [Fact]
       public async Task Should_properly_join_2_temp_table_having_inlined_owned_type()
       {
-         var testEntity1 = new TestEntityOwningInlineEntity
+         var testEntity1 = new TestEntity_Owns_Inline
                            {
                               Id = new Guid("3A1B2FFF-8E11-44E5-80E5-8C7FEEDACEB3"),
-                              InlineEntity = new OwnedInlineEntity
+                              InlineEntity = new OwnedEntity
                                              {
                                                 IntColumn = 42,
                                                 StringColumn = "value"
                                              }
                            };
-         var testEntity2 = new TestEntityOwningInlineEntity
+         var testEntity2 = new TestEntity_Owns_Inline
                            {
                               Id = new Guid("3A1B2FFF-8E11-44E5-80E5-8C7FEEDACEB3"),
-                              InlineEntity = new OwnedInlineEntity
+                              InlineEntity = new OwnedEntity
                                              {
                                                 IntColumn = 43,
                                                 StringColumn = "other"
@@ -162,19 +162,19 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
       [Fact]
       public async Task Should_not_mess_up_temp_tables_with_alternating_requests_without_disposing_previous_one()
       {
-         var testEntity1 = new TestEntityOwningInlineEntity
+         var testEntity1 = new TestEntity_Owns_Inline
                            {
                               Id = new Guid("3A1B2FFF-8E11-44E5-80E5-8C7FEEDACEB3"),
-                              InlineEntity = new OwnedInlineEntity
+                              InlineEntity = new OwnedEntity
                                              {
                                                 IntColumn = 42,
                                                 StringColumn = "value"
                                              }
                            };
-         var testEntity2 = new TestEntityOwningInlineEntity
+         var testEntity2 = new TestEntity_Owns_Inline
                            {
                               Id = new Guid("3A1B2FFF-8E11-44E5-80E5-8C7FEEDACEB3"),
-                              InlineEntity = new OwnedInlineEntity
+                              InlineEntity = new OwnedEntity
                                              {
                                                 IntColumn = 43,
                                                 StringColumn = "other"
@@ -195,19 +195,19 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
       [Fact]
       public async Task Should_not_mess_up_temp_tables_with_alternating_requests_with_disposing_previous_one()
       {
-         var testEntity1 = new TestEntityOwningInlineEntity
+         var testEntity1 = new TestEntity_Owns_Inline
                            {
                               Id = new Guid("3A1B2FFF-8E11-44E5-80E5-8C7FEEDACEB3"),
-                              InlineEntity = new OwnedInlineEntity
+                              InlineEntity = new OwnedEntity
                                              {
                                                 IntColumn = 42,
                                                 StringColumn = "value"
                                              }
                            };
-         var testEntity2 = new TestEntityOwningInlineEntity
+         var testEntity2 = new TestEntity_Owns_Inline
                            {
                               Id = new Guid("3A1B2FFF-8E11-44E5-80E5-8C7FEEDACEB3"),
-                              InlineEntity = new OwnedInlineEntity
+                              InlineEntity = new OwnedEntity
                                              {
                                                 IntColumn = 43,
                                                 StringColumn = "other"
@@ -232,10 +232,10 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
       [Fact]
       public async Task Should_properly_join_real_table_with_temp_table_having_inlined_owned_type()
       {
-         var realEntity = new TestEntityOwningInlineEntity
+         var realEntity = new TestEntity_Owns_Inline
                           {
                              Id = new Guid("C0A98E8F-2715-4764-A02E-033FF5278B9B"),
-                             InlineEntity = new OwnedInlineEntity
+                             InlineEntity = new OwnedEntity
                                             {
                                                IntColumn = 42,
                                                StringColumn = "real"
@@ -244,10 +244,10 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
          ArrangeDbContext.Add(realEntity);
          await ArrangeDbContext.SaveChangesAsync();
 
-         var tempEntity = new TestEntityOwningInlineEntity
+         var tempEntity = new TestEntity_Owns_Inline
                           {
                              Id = new Guid("C0A98E8F-2715-4764-A02E-033FF5278B9B"),
-                             InlineEntity = new OwnedInlineEntity
+                             InlineEntity = new OwnedEntity
                                             {
                                                IntColumn = 100,
                                                StringColumn = "other"
@@ -257,13 +257,13 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
          await using var tempTable = await ActDbContext.BulkInsertIntoTempTableAsync(new[] { tempEntity });
 
          var entities = await tempTable.Query
-                                       .Join(ActDbContext.TestEntitiesOwningInlineEntity, e => e.Id, e => e.Id, (temp, real) => new { temp, real })
+                                       .Join(ActDbContext.TestEntities_Own_Inline, e => e.Id, e => e.Id, (temp, real) => new { temp, real })
                                        .ToListAsync();
 
          entities.Should().HaveCount(1).And.BeEquivalentTo(new { temp = tempEntity, real = realEntity });
 
          entities = await tempTable.Query
-                                   .Join(ActDbContext.TestEntitiesOwningInlineEntity, e => e.Id, e => e.Id, (temp, real) => new { temp, real })
+                                   .Join(ActDbContext.TestEntities_Own_Inline, e => e.Id, e => e.Id, (temp, real) => new { temp, real })
                                    .ToListAsync();
 
          entities.Should().HaveCount(1).And.BeEquivalentTo(new { temp = tempEntity, real = realEntity });
@@ -272,7 +272,7 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
       [Fact]
       public void Should_throw_if_required_inlined_owned_type_is_null()
       {
-         var testEntity = new TestEntityOwningInlineEntity
+         var testEntity = new TestEntity_Owns_Inline
                           {
                              Id = new Guid("3A1B2FFF-8E11-44E5-80E5-8C7FEEDACEB3"),
                              InlineEntity = null!
@@ -281,16 +281,16 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
 
          ActDbContext.Awaiting(ctx => ctx.BulkInsertIntoTempTableAsync(testEntities))
                      .Should().Throw<SqliteException>()
-                     .WithMessage("SQLite Error 19: 'NOT NULL constraint failed: TestEntitiesOwningInlineEntity_1.InlineEntity_IntColumn'.");
+                     .WithMessage("SQLite Error 19: 'NOT NULL constraint failed: TestEntities_Own_Inline_1.InlineEntity_IntColumn'.");
       }
 
       [Fact]
       public void Should_throw_for_entities_with_separated_owned_type()
       {
-         var testEntity = new TestEntityOwningOneSeparateEntity
+         var testEntity = new TestEntity_Owns_SeparateOne
                           {
                              Id = new Guid("3A1B2FFF-8E11-44E5-80E5-8C7FEEDACEB3"),
-                             SeparateEntity = new OwnedSeparateEntity
+                             SeparateEntity = new OwnedEntity
                                               {
                                                  IntColumn = 42,
                                                  StringColumn = "value"
@@ -305,10 +305,10 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
       [Fact]
       public async Task Should_work_for_entities_if_separated_owned_type_is_excluded()
       {
-         var testEntity = new TestEntityOwningOneSeparateEntity
+         var testEntity = new TestEntity_Owns_SeparateOne
                           {
                              Id = new Guid("3A1B2FFF-8E11-44E5-80E5-8C7FEEDACEB3"),
-                             SeparateEntity = new OwnedSeparateEntity
+                             SeparateEntity = new OwnedEntity
                                               {
                                                  IntColumn = 42,
                                                  StringColumn = "value"
@@ -320,7 +320,7 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
          var entities = await tempTable.Query.ToListAsync();
 
          entities.Should().HaveCount(1)
-                 .And.BeEquivalentTo(new TestEntityOwningOneSeparateEntity
+                 .And.BeEquivalentTo(new TestEntity_Owns_SeparateOne
                                      {
                                         Id = new Guid("3A1B2FFF-8E11-44E5-80E5-8C7FEEDACEB3"),
                                         SeparateEntity = null!

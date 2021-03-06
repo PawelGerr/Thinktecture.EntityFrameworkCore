@@ -237,7 +237,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqliteBulkOperationExe
       [Fact]
       public void Should_throw_if_required_inlined_owned_type_is_null()
       {
-         var testEntity = new TestEntityOwningInlineEntity
+         var testEntity = new TestEntity_Owns_Inline
                           {
                              Id = new Guid("3A1B2FFF-8E11-44E5-80E5-8C7FEEDACEB3"),
                              InlineEntity = null!
@@ -245,28 +245,28 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqliteBulkOperationExe
          var testEntities = new[] { testEntity };
 
          ActDbContext.Awaiting(ctx => ctx.BulkInsertIntoTempTableAsync(testEntities))
-                     .Should().Throw<SqliteException>().WithMessage("SQLite Error 19: 'NOT NULL constraint failed: TestEntitiesOwningInlineEntity_1.InlineEntity_IntColumn'.");
+                     .Should().Throw<SqliteException>().WithMessage("SQLite Error 19: 'NOT NULL constraint failed: TestEntities_Own_Inline_1.InlineEntity_IntColumn'.");
       }
 
       [Fact]
       public async Task Should_insert_inlined_owned_type_if_it_has_default_values_only()
       {
-         var testEntity = new TestEntityOwningInlineEntity
+         var testEntity = new TestEntity_Owns_Inline
                           {
                              Id = new Guid("3A1B2FFF-8E11-44E5-80E5-8C7FEEDACEB3"),
-                             InlineEntity = new OwnedInlineEntity()
+                             InlineEntity = new OwnedEntity()
                           };
          var testEntities = new[] { testEntity };
 
          await SUT.BulkInsertAsync(testEntities, new SqliteBulkInsertOptions());
 
-         var loadedEntities = await AssertDbContext.TestEntitiesOwningInlineEntity.ToListAsync();
+         var loadedEntities = await AssertDbContext.TestEntities_Own_Inline.ToListAsync();
          loadedEntities.Should().HaveCount(1);
          var loadedEntity = loadedEntities[0];
-         loadedEntity.Should().BeEquivalentTo(new TestEntityOwningInlineEntity
+         loadedEntity.Should().BeEquivalentTo(new TestEntity_Owns_Inline
                                               {
                                                  Id = new Guid("3A1B2FFF-8E11-44E5-80E5-8C7FEEDACEB3"),
-                                                 InlineEntity = new OwnedInlineEntity
+                                                 InlineEntity = new OwnedEntity
                                                                 {
                                                                    IntColumn = 0,
                                                                    StringColumn = null
@@ -277,10 +277,10 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqliteBulkOperationExe
       [Fact]
       public async Task Should_insert_inlined_owned_types()
       {
-         var testEntity = new TestEntityOwningInlineEntity
+         var testEntity = new TestEntity_Owns_Inline
                           {
                              Id = new Guid("3A1B2FFF-8E11-44E5-80E5-8C7FEEDACEB3"),
-                             InlineEntity = new OwnedInlineEntity
+                             InlineEntity = new OwnedEntity
                                             {
                                                IntColumn = 42,
                                                StringColumn = "value"
@@ -290,13 +290,13 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqliteBulkOperationExe
 
          await SUT.BulkInsertAsync(testEntities, new SqliteBulkInsertOptions());
 
-         var loadedEntities = await AssertDbContext.TestEntitiesOwningInlineEntity.ToListAsync();
+         var loadedEntities = await AssertDbContext.TestEntities_Own_Inline.ToListAsync();
          loadedEntities.Should().HaveCount(1);
          var loadedEntity = loadedEntities[0];
-         loadedEntity.Should().BeEquivalentTo(new TestEntityOwningInlineEntity
+         loadedEntity.Should().BeEquivalentTo(new TestEntity_Owns_Inline
                                               {
                                                  Id = new Guid("3A1B2FFF-8E11-44E5-80E5-8C7FEEDACEB3"),
-                                                 InlineEntity = new OwnedInlineEntity
+                                                 InlineEntity = new OwnedEntity
                                                                 {
                                                                    IntColumn = 42,
                                                                    StringColumn = "value"

@@ -115,39 +115,6 @@ namespace Thinktecture.Migrations
                     b.ToTable("TestEntities");
                 });
 
-            modelBuilder.Entity("Thinktecture.TestDatabaseContext.TestEntityOwningInlineEntity", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("TestEntitiesOwningInlineEntity");
-                });
-
-            modelBuilder.Entity("Thinktecture.TestDatabaseContext.TestEntityOwningManyEntities", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("TestEntitiesOwningManyEntities");
-                });
-
-            modelBuilder.Entity("Thinktecture.TestDatabaseContext.TestEntityOwningOneSeparateEntity", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("TestEntitiesOwningOneSeparateEntity");
-                });
-
             modelBuilder.Entity("Thinktecture.TestDatabaseContext.TestEntityWithAutoIncrement", b =>
                 {
                     b.Property<int>("Id")
@@ -248,6 +215,137 @@ namespace Thinktecture.Migrations
                     b.ToTable("TestEntitiesWithDefaultValues");
                 });
 
+            modelBuilder.Entity("Thinktecture.TestDatabaseContext.TestEntity_Owns_Inline", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("TestEntities_Own_Inline");
+                });
+
+            modelBuilder.Entity("Thinktecture.TestDatabaseContext.TestEntity_Owns_Inline_Inline", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("TestEntities_Own_Inline_Inline");
+                });
+
+            modelBuilder.Entity("Thinktecture.TestDatabaseContext.TestEntity_Owns_Inline_SeparateMany", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("TestEntities_Own_Inline_SeparateMany");
+                });
+
+            modelBuilder.Entity("Thinktecture.TestDatabaseContext.TestEntity_Owns_Inline_SeparateOne", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("TestEntities_Own_Inline_SeparateOne");
+                });
+
+            modelBuilder.Entity("Thinktecture.TestDatabaseContext.TestEntity_Owns_SeparateMany", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("TestEntities_Own_SeparateMany");
+                });
+
+            modelBuilder.Entity("Thinktecture.TestDatabaseContext.TestEntity_Owns_SeparateMany_Inline", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("TestEntities_Own_SeparateMany_Inline");
+                });
+
+            modelBuilder.Entity("Thinktecture.TestDatabaseContext.TestEntity_Owns_SeparateMany_SeparateMany", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("TestEntities_Own_SeparateMany_SeparateMany");
+                });
+
+            modelBuilder.Entity("Thinktecture.TestDatabaseContext.TestEntity_Owns_SeparateMany_SeparateOne", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("TestEntities_Own_SeparateMany_SeparateOne");
+                });
+
+            modelBuilder.Entity("Thinktecture.TestDatabaseContext.TestEntity_Owns_SeparateOne", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("TestEntities_Own_SeparateOne");
+                });
+
+            modelBuilder.Entity("Thinktecture.TestDatabaseContext.TestEntity_Owns_SeparateOne_Inline", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("TestEntities_Own_SeparateOne_Inline");
+                });
+
+            modelBuilder.Entity("Thinktecture.TestDatabaseContext.TestEntity_Owns_SeparateOne_SeparateMany", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("TestEntities_Own_SeparateOne_SeparateMany");
+                });
+
+            modelBuilder.Entity("Thinktecture.TestDatabaseContext.TestEntity_Owns_SeparateOne_SeparateOne", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("TestEntities_Own_SeparateOne_SeparateOne");
+                });
+
             modelBuilder.Entity("Thinktecture.TestDatabaseContext.TestEntity", b =>
                 {
                     b.HasOne("Thinktecture.TestDatabaseContext.TestEntity", "Parent")
@@ -257,11 +355,11 @@ namespace Thinktecture.Migrations
                     b.Navigation("Parent");
                 });
 
-            modelBuilder.Entity("Thinktecture.TestDatabaseContext.TestEntityOwningInlineEntity", b =>
+            modelBuilder.Entity("Thinktecture.TestDatabaseContext.TestEntity_Owns_Inline", b =>
                 {
-                    b.OwnsOne("Thinktecture.TestDatabaseContext.OwnedInlineEntity", "InlineEntity", b1 =>
+                    b.OwnsOne("Thinktecture.TestDatabaseContext.OwnedEntity", "InlineEntity", b1 =>
                         {
-                            b1.Property<Guid>("TestEntityOwningInlineEntityId")
+                            b1.Property<Guid>("TestEntity_Owns_InlineId")
                                 .HasColumnType("TEXT");
 
                             b1.Property<int>("IntColumn")
@@ -270,23 +368,194 @@ namespace Thinktecture.Migrations
                             b1.Property<string>("StringColumn")
                                 .HasColumnType("TEXT");
 
-                            b1.HasKey("TestEntityOwningInlineEntityId");
+                            b1.HasKey("TestEntity_Owns_InlineId");
 
-                            b1.ToTable("TestEntitiesOwningInlineEntity");
+                            b1.ToTable("TestEntities_Own_Inline");
 
                             b1.WithOwner()
-                                .HasForeignKey("TestEntityOwningInlineEntityId");
+                                .HasForeignKey("TestEntity_Owns_InlineId");
                         });
 
                     b.Navigation("InlineEntity")
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Thinktecture.TestDatabaseContext.TestEntityOwningManyEntities", b =>
+            modelBuilder.Entity("Thinktecture.TestDatabaseContext.TestEntity_Owns_Inline_Inline", b =>
                 {
-                    b.OwnsMany("Thinktecture.TestDatabaseContext.OwnedSeparateEntity", "SeparateEntities", b1 =>
+                    b.OwnsOne("Thinktecture.TestDatabaseContext.OwnedEntity_Owns_Inline", "InlineEntity", b1 =>
                         {
-                            b1.Property<Guid>("TestEntityOwningManyEntitiesId")
+                            b1.Property<Guid>("TestEntity_Owns_Inline_InlineId")
+                                .HasColumnType("TEXT");
+
+                            b1.Property<int>("IntColumn")
+                                .HasColumnType("INTEGER");
+
+                            b1.Property<string>("StringColumn")
+                                .HasColumnType("TEXT");
+
+                            b1.HasKey("TestEntity_Owns_Inline_InlineId");
+
+                            b1.ToTable("TestEntities_Own_Inline_Inline");
+
+                            b1.WithOwner()
+                                .HasForeignKey("TestEntity_Owns_Inline_InlineId");
+
+                            b1.OwnsOne("Thinktecture.TestDatabaseContext.OwnedEntity", "InlineEntity", b2 =>
+                                {
+                                    b2.Property<Guid>("OwnedEntity_Owns_InlineTestEntity_Owns_Inline_InlineId")
+                                        .HasColumnType("TEXT");
+
+                                    b2.Property<int>("IntColumn")
+                                        .HasColumnType("INTEGER");
+
+                                    b2.Property<string>("StringColumn")
+                                        .HasColumnType("TEXT");
+
+                                    b2.HasKey("OwnedEntity_Owns_InlineTestEntity_Owns_Inline_InlineId");
+
+                                    b2.ToTable("TestEntities_Own_Inline_Inline");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("OwnedEntity_Owns_InlineTestEntity_Owns_Inline_InlineId");
+                                });
+
+                            b1.Navigation("InlineEntity")
+                                .IsRequired();
+                        });
+
+                    b.Navigation("InlineEntity")
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Thinktecture.TestDatabaseContext.TestEntity_Owns_Inline_SeparateMany", b =>
+                {
+                    b.OwnsOne("Thinktecture.TestDatabaseContext.OwnedEntity_Owns_SeparateMany", "InlineEntity", b1 =>
+                        {
+                            b1.Property<Guid>("TestEntity_Owns_Inline_SeparateManyId")
+                                .HasColumnType("TEXT");
+
+                            b1.Property<int>("IntColumn")
+                                .HasColumnType("INTEGER");
+
+                            b1.Property<string>("StringColumn")
+                                .HasColumnType("TEXT");
+
+                            b1.HasKey("TestEntity_Owns_Inline_SeparateManyId");
+
+                            b1.ToTable("TestEntities_Own_Inline_SeparateMany");
+
+                            b1.WithOwner()
+                                .HasForeignKey("TestEntity_Owns_Inline_SeparateManyId");
+
+                            b1.OwnsMany("Thinktecture.TestDatabaseContext.OwnedEntity", "SeparateEntities", b2 =>
+                                {
+                                    b2.Property<Guid>("OwnedEntity_Owns_SeparateManyTestEntity_Owns_Inline_SeparateManyId")
+                                        .HasColumnType("TEXT");
+
+                                    b2.Property<int>("Id")
+                                        .ValueGeneratedOnAdd()
+                                        .HasColumnType("INTEGER");
+
+                                    b2.Property<int>("IntColumn")
+                                        .HasColumnType("INTEGER");
+
+                                    b2.Property<string>("StringColumn")
+                                        .HasColumnType("TEXT");
+
+                                    b2.HasKey("OwnedEntity_Owns_SeparateManyTestEntity_Owns_Inline_SeparateManyId", "Id");
+
+                                    b2.ToTable("InlineEntities_SeparateMany");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("OwnedEntity_Owns_SeparateManyTestEntity_Owns_Inline_SeparateManyId");
+                                });
+
+                            b1.Navigation("SeparateEntities");
+                        });
+
+                    b.Navigation("InlineEntity")
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Thinktecture.TestDatabaseContext.TestEntity_Owns_Inline_SeparateOne", b =>
+                {
+                    b.OwnsOne("Thinktecture.TestDatabaseContext.OwnedEntity_Owns_SeparateOne", "InlineEntity", b1 =>
+                        {
+                            b1.Property<Guid>("TestEntity_Owns_Inline_SeparateOneId")
+                                .HasColumnType("TEXT");
+
+                            b1.Property<int>("IntColumn")
+                                .HasColumnType("INTEGER");
+
+                            b1.Property<string>("StringColumn")
+                                .HasColumnType("TEXT");
+
+                            b1.HasKey("TestEntity_Owns_Inline_SeparateOneId");
+
+                            b1.ToTable("TestEntities_Own_Inline_SeparateOne");
+
+                            b1.WithOwner()
+                                .HasForeignKey("TestEntity_Owns_Inline_SeparateOneId");
+
+                            b1.OwnsOne("Thinktecture.TestDatabaseContext.OwnedEntity", "SeparateEntity", b2 =>
+                                {
+                                    b2.Property<Guid>("OwnedEntity_Owns_SeparateOneTestEntity_Owns_Inline_SeparateOneId")
+                                        .HasColumnType("TEXT");
+
+                                    b2.Property<int>("IntColumn")
+                                        .HasColumnType("INTEGER");
+
+                                    b2.Property<string>("StringColumn")
+                                        .HasColumnType("TEXT");
+
+                                    b2.HasKey("OwnedEntity_Owns_SeparateOneTestEntity_Owns_Inline_SeparateOneId");
+
+                                    b2.ToTable("InlineEntities_SeparateOne");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("OwnedEntity_Owns_SeparateOneTestEntity_Owns_Inline_SeparateOneId");
+                                });
+
+                            b1.Navigation("SeparateEntity")
+                                .IsRequired();
+                        });
+
+                    b.Navigation("InlineEntity")
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Thinktecture.TestDatabaseContext.TestEntity_Owns_SeparateMany", b =>
+                {
+                    b.OwnsMany("Thinktecture.TestDatabaseContext.OwnedEntity", "SeparateEntities", b1 =>
+                        {
+                            b1.Property<Guid>("TestEntity_Owns_SeparateManyId")
+                                .HasColumnType("TEXT");
+
+                            b1.Property<int>("Id")
+                                .HasColumnType("INTEGER");
+
+                            b1.Property<int>("IntColumn")
+                                .HasColumnType("INTEGER");
+
+                            b1.Property<string>("StringColumn")
+                                .HasColumnType("TEXT");
+
+                            b1.HasKey("TestEntity_Owns_SeparateManyId", "Id");
+
+                            b1.ToTable("SeparateEntitiesMany");
+
+                            b1.WithOwner()
+                                .HasForeignKey("TestEntity_Owns_SeparateManyId");
+                        });
+
+                    b.Navigation("SeparateEntities");
+                });
+
+            modelBuilder.Entity("Thinktecture.TestDatabaseContext.TestEntity_Owns_SeparateMany_Inline", b =>
+                {
+                    b.OwnsMany("Thinktecture.TestDatabaseContext.OwnedEntity_Owns_Inline", "SeparateEntities", b1 =>
+                        {
+                            b1.Property<Guid>("TestEntity_Owns_SeparateMany_InlineId")
                                 .HasColumnType("TEXT");
 
                             b1.Property<int>("Id")
@@ -299,22 +568,156 @@ namespace Thinktecture.Migrations
                             b1.Property<string>("StringColumn")
                                 .HasColumnType("TEXT");
 
-                            b1.HasKey("TestEntityOwningManyEntitiesId", "Id");
+                            b1.HasKey("TestEntity_Owns_SeparateMany_InlineId", "Id");
 
-                            b1.ToTable("SeparateEntities_Many");
+                            b1.ToTable("SeparateEntitiesMany_Inline");
 
                             b1.WithOwner()
-                                .HasForeignKey("TestEntityOwningManyEntitiesId");
+                                .HasForeignKey("TestEntity_Owns_SeparateMany_InlineId");
+
+                            b1.OwnsOne("Thinktecture.TestDatabaseContext.OwnedEntity", "InlineEntity", b2 =>
+                                {
+                                    b2.Property<Guid>("OwnedEntity_Owns_InlineTestEntity_Owns_SeparateMany_InlineId")
+                                        .HasColumnType("TEXT");
+
+                                    b2.Property<int>("OwnedEntity_Owns_InlineId")
+                                        .HasColumnType("INTEGER");
+
+                                    b2.Property<int>("IntColumn")
+                                        .HasColumnType("INTEGER");
+
+                                    b2.Property<string>("StringColumn")
+                                        .HasColumnType("TEXT");
+
+                                    b2.HasKey("OwnedEntity_Owns_InlineTestEntity_Owns_SeparateMany_InlineId", "OwnedEntity_Owns_InlineId");
+
+                                    b2.ToTable("SeparateEntitiesMany_Inline");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("OwnedEntity_Owns_InlineTestEntity_Owns_SeparateMany_InlineId", "OwnedEntity_Owns_InlineId");
+                                });
+
+                            b1.Navigation("InlineEntity")
+                                .IsRequired();
                         });
 
                     b.Navigation("SeparateEntities");
                 });
 
-            modelBuilder.Entity("Thinktecture.TestDatabaseContext.TestEntityOwningOneSeparateEntity", b =>
+            modelBuilder.Entity("Thinktecture.TestDatabaseContext.TestEntity_Owns_SeparateMany_SeparateMany", b =>
                 {
-                    b.OwnsOne("Thinktecture.TestDatabaseContext.OwnedSeparateEntity", "SeparateEntity", b1 =>
+                    b.OwnsMany("Thinktecture.TestDatabaseContext.OwnedEntity_Owns_SeparateMany", "SeparateEntities", b1 =>
                         {
-                            b1.Property<Guid>("TestEntityOwningOneSeparateEntityId")
+                            b1.Property<Guid>("TestEntity_Owns_SeparateMany_SeparateManyId")
+                                .HasColumnType("TEXT");
+
+                            b1.Property<int>("Id")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("INTEGER");
+
+                            b1.Property<int>("IntColumn")
+                                .HasColumnType("INTEGER");
+
+                            b1.Property<string>("StringColumn")
+                                .HasColumnType("TEXT");
+
+                            b1.HasKey("TestEntity_Owns_SeparateMany_SeparateManyId", "Id");
+
+                            b1.ToTable("SeparateEntitiesMany_SeparateEntitiesMany");
+
+                            b1.WithOwner()
+                                .HasForeignKey("TestEntity_Owns_SeparateMany_SeparateManyId");
+
+                            b1.OwnsMany("Thinktecture.TestDatabaseContext.OwnedEntity", "SeparateEntities", b2 =>
+                                {
+                                    b2.Property<Guid>("OwnedEntity_Owns_SeparateManyTestEntity_Owns_SeparateMany_SeparateManyId")
+                                        .HasColumnType("TEXT");
+
+                                    b2.Property<int>("OwnedEntity_Owns_SeparateManyId")
+                                        .HasColumnType("INTEGER");
+
+                                    b2.Property<int>("Id")
+                                        .ValueGeneratedOnAdd()
+                                        .HasColumnType("INTEGER");
+
+                                    b2.Property<int>("IntColumn")
+                                        .HasColumnType("INTEGER");
+
+                                    b2.Property<string>("StringColumn")
+                                        .HasColumnType("TEXT");
+
+                                    b2.HasKey("OwnedEntity_Owns_SeparateManyTestEntity_Owns_SeparateMany_SeparateManyId", "OwnedEntity_Owns_SeparateManyId", "Id");
+
+                                    b2.ToTable("SeparateEntitiesMany_SeparateEntitiesMany_Inner");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("OwnedEntity_Owns_SeparateManyTestEntity_Owns_SeparateMany_SeparateManyId", "OwnedEntity_Owns_SeparateManyId");
+                                });
+
+                            b1.Navigation("SeparateEntities");
+                        });
+
+                    b.Navigation("SeparateEntities");
+                });
+
+            modelBuilder.Entity("Thinktecture.TestDatabaseContext.TestEntity_Owns_SeparateMany_SeparateOne", b =>
+                {
+                    b.OwnsMany("Thinktecture.TestDatabaseContext.OwnedEntity_Owns_SeparateOne", "SeparateEntities", b1 =>
+                        {
+                            b1.Property<Guid>("TestEntity_Owns_SeparateMany_SeparateOneId")
+                                .HasColumnType("TEXT");
+
+                            b1.Property<int>("Id")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("INTEGER");
+
+                            b1.Property<int>("IntColumn")
+                                .HasColumnType("INTEGER");
+
+                            b1.Property<string>("StringColumn")
+                                .HasColumnType("TEXT");
+
+                            b1.HasKey("TestEntity_Owns_SeparateMany_SeparateOneId", "Id");
+
+                            b1.ToTable("SeparateEntitiesMany_SeparateEntitiesOne");
+
+                            b1.WithOwner()
+                                .HasForeignKey("TestEntity_Owns_SeparateMany_SeparateOneId");
+
+                            b1.OwnsOne("Thinktecture.TestDatabaseContext.OwnedEntity", "SeparateEntity", b2 =>
+                                {
+                                    b2.Property<Guid>("OwnedEntity_Owns_SeparateOneTestEntity_Owns_SeparateMany_SeparateOneId")
+                                        .HasColumnType("TEXT");
+
+                                    b2.Property<int>("OwnedEntity_Owns_SeparateOneId")
+                                        .HasColumnType("INTEGER");
+
+                                    b2.Property<int>("IntColumn")
+                                        .HasColumnType("INTEGER");
+
+                                    b2.Property<string>("StringColumn")
+                                        .HasColumnType("TEXT");
+
+                                    b2.HasKey("OwnedEntity_Owns_SeparateOneTestEntity_Owns_SeparateMany_SeparateOneId", "OwnedEntity_Owns_SeparateOneId");
+
+                                    b2.ToTable("SeparateEntitiesMany_SeparateEntitiesOne_Inner");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("OwnedEntity_Owns_SeparateOneTestEntity_Owns_SeparateMany_SeparateOneId", "OwnedEntity_Owns_SeparateOneId");
+                                });
+
+                            b1.Navigation("SeparateEntity")
+                                .IsRequired();
+                        });
+
+                    b.Navigation("SeparateEntities");
+                });
+
+            modelBuilder.Entity("Thinktecture.TestDatabaseContext.TestEntity_Owns_SeparateOne", b =>
+                {
+                    b.OwnsOne("Thinktecture.TestDatabaseContext.OwnedEntity", "SeparateEntity", b1 =>
+                        {
+                            b1.Property<Guid>("TestEntity_Owns_SeparateOneId")
                                 .HasColumnType("TEXT");
 
                             b1.Property<int>("IntColumn")
@@ -323,12 +726,156 @@ namespace Thinktecture.Migrations
                             b1.Property<string>("StringColumn")
                                 .HasColumnType("TEXT");
 
-                            b1.HasKey("TestEntityOwningOneSeparateEntityId");
+                            b1.HasKey("TestEntity_Owns_SeparateOneId");
 
-                            b1.ToTable("SeparateEntities_One");
+                            b1.ToTable("SeparateEntitiesOne");
 
                             b1.WithOwner()
-                                .HasForeignKey("TestEntityOwningOneSeparateEntityId");
+                                .HasForeignKey("TestEntity_Owns_SeparateOneId");
+                        });
+
+                    b.Navigation("SeparateEntity")
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Thinktecture.TestDatabaseContext.TestEntity_Owns_SeparateOne_Inline", b =>
+                {
+                    b.OwnsOne("Thinktecture.TestDatabaseContext.OwnedEntity_Owns_Inline", "SeparateEntity", b1 =>
+                        {
+                            b1.Property<Guid>("TestEntity_Owns_SeparateOne_InlineId")
+                                .HasColumnType("TEXT");
+
+                            b1.Property<int>("IntColumn")
+                                .HasColumnType("INTEGER");
+
+                            b1.Property<string>("StringColumn")
+                                .HasColumnType("TEXT");
+
+                            b1.HasKey("TestEntity_Owns_SeparateOne_InlineId");
+
+                            b1.ToTable("SeparateEntitiesOne_Inline");
+
+                            b1.WithOwner()
+                                .HasForeignKey("TestEntity_Owns_SeparateOne_InlineId");
+
+                            b1.OwnsOne("Thinktecture.TestDatabaseContext.OwnedEntity", "InlineEntity", b2 =>
+                                {
+                                    b2.Property<Guid>("OwnedEntity_Owns_InlineTestEntity_Owns_SeparateOne_InlineId")
+                                        .HasColumnType("TEXT");
+
+                                    b2.Property<int>("IntColumn")
+                                        .HasColumnType("INTEGER");
+
+                                    b2.Property<string>("StringColumn")
+                                        .HasColumnType("TEXT");
+
+                                    b2.HasKey("OwnedEntity_Owns_InlineTestEntity_Owns_SeparateOne_InlineId");
+
+                                    b2.ToTable("SeparateEntitiesOne_Inline");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("OwnedEntity_Owns_InlineTestEntity_Owns_SeparateOne_InlineId");
+                                });
+
+                            b1.Navigation("InlineEntity")
+                                .IsRequired();
+                        });
+
+                    b.Navigation("SeparateEntity")
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Thinktecture.TestDatabaseContext.TestEntity_Owns_SeparateOne_SeparateMany", b =>
+                {
+                    b.OwnsOne("Thinktecture.TestDatabaseContext.OwnedEntity_Owns_SeparateMany", "SeparateEntity", b1 =>
+                        {
+                            b1.Property<Guid>("TestEntity_Owns_SeparateOne_SeparateManyId")
+                                .HasColumnType("TEXT");
+
+                            b1.Property<int>("IntColumn")
+                                .HasColumnType("INTEGER");
+
+                            b1.Property<string>("StringColumn")
+                                .HasColumnType("TEXT");
+
+                            b1.HasKey("TestEntity_Owns_SeparateOne_SeparateManyId");
+
+                            b1.ToTable("SeparateEntitiesOne_SeparateMany");
+
+                            b1.WithOwner()
+                                .HasForeignKey("TestEntity_Owns_SeparateOne_SeparateManyId");
+
+                            b1.OwnsMany("Thinktecture.TestDatabaseContext.OwnedEntity", "SeparateEntities", b2 =>
+                                {
+                                    b2.Property<Guid>("OwnedEntity_Owns_SeparateManyTestEntity_Owns_SeparateOne_SeparateManyId")
+                                        .HasColumnType("TEXT");
+
+                                    b2.Property<int>("Id")
+                                        .ValueGeneratedOnAdd()
+                                        .HasColumnType("INTEGER");
+
+                                    b2.Property<int>("IntColumn")
+                                        .HasColumnType("INTEGER");
+
+                                    b2.Property<string>("StringColumn")
+                                        .HasColumnType("TEXT");
+
+                                    b2.HasKey("OwnedEntity_Owns_SeparateManyTestEntity_Owns_SeparateOne_SeparateManyId", "Id");
+
+                                    b2.ToTable("SeparateEntitiesOne_SeparateMany_Inner");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("OwnedEntity_Owns_SeparateManyTestEntity_Owns_SeparateOne_SeparateManyId");
+                                });
+
+                            b1.Navigation("SeparateEntities");
+                        });
+
+                    b.Navigation("SeparateEntity")
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Thinktecture.TestDatabaseContext.TestEntity_Owns_SeparateOne_SeparateOne", b =>
+                {
+                    b.OwnsOne("Thinktecture.TestDatabaseContext.OwnedEntity_Owns_SeparateOne", "SeparateEntity", b1 =>
+                        {
+                            b1.Property<Guid>("TestEntity_Owns_SeparateOne_SeparateOneId")
+                                .HasColumnType("TEXT");
+
+                            b1.Property<int>("IntColumn")
+                                .HasColumnType("INTEGER");
+
+                            b1.Property<string>("StringColumn")
+                                .HasColumnType("TEXT");
+
+                            b1.HasKey("TestEntity_Owns_SeparateOne_SeparateOneId");
+
+                            b1.ToTable("SeparateEntitiesOne_SeparateOne");
+
+                            b1.WithOwner()
+                                .HasForeignKey("TestEntity_Owns_SeparateOne_SeparateOneId");
+
+                            b1.OwnsOne("Thinktecture.TestDatabaseContext.OwnedEntity", "SeparateEntity", b2 =>
+                                {
+                                    b2.Property<Guid>("OwnedEntity_Owns_SeparateOneTestEntity_Owns_SeparateOne_SeparateOneId")
+                                        .HasColumnType("TEXT");
+
+                                    b2.Property<int>("IntColumn")
+                                        .HasColumnType("INTEGER");
+
+                                    b2.Property<string>("StringColumn")
+                                        .HasColumnType("TEXT");
+
+                                    b2.HasKey("OwnedEntity_Owns_SeparateOneTestEntity_Owns_SeparateOne_SeparateOneId");
+
+                                    b2.ToTable("SeparateEntitiesOne_SeparateOne_Inner");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("OwnedEntity_Owns_SeparateOneTestEntity_Owns_SeparateOne_SeparateOneId");
+                                });
+
+                            b1.Navigation("SeparateEntity")
+                                .IsRequired();
                         });
 
                     b.Navigation("SeparateEntity")

@@ -1,6 +1,6 @@
 namespace Thinktecture.TestDatabaseContext
 {
-   public class OwnedInlineEntity
+   public class OwnedEntity
    {
       public string? StringColumn { get; set; }
       public int IntColumn { get; set; }

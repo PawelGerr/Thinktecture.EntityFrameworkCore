@@ -274,7 +274,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
       [Fact]
       public void Should_throw_if_required_inlined_owned_type_is_null()
       {
-         var testEntity = new TestEntityOwningInlineEntity
+         var testEntity = new TestEntity_Owns_Inline
                           {
                              Id = new Guid("3A1B2FFF-8E11-44E5-80E5-8C7FEEDACEB3"),
                              InlineEntity = null!
@@ -288,22 +288,22 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
       [Fact]
       public async Task Should_insert_inlined_owned_type_if_it_has_default_values_only()
       {
-         var testEntity = new TestEntityOwningInlineEntity
+         var testEntity = new TestEntity_Owns_Inline
                           {
                              Id = new Guid("3A1B2FFF-8E11-44E5-80E5-8C7FEEDACEB3"),
-                             InlineEntity = new OwnedInlineEntity()
+                             InlineEntity = new OwnedEntity()
                           };
          var testEntities = new[] { testEntity };
 
          await SUT.BulkInsertAsync(testEntities, new SqlServerBulkInsertOptions());
 
-         var loadedEntities = await AssertDbContext.TestEntitiesOwningInlineEntity.ToListAsync();
+         var loadedEntities = await AssertDbContext.TestEntities_Own_Inline.ToListAsync();
          loadedEntities.Should().HaveCount(1);
          var loadedEntity = loadedEntities[0];
-         loadedEntity.Should().BeEquivalentTo(new TestEntityOwningInlineEntity
+         loadedEntity.Should().BeEquivalentTo(new TestEntity_Owns_Inline
                                               {
                                                  Id = new Guid("3A1B2FFF-8E11-44E5-80E5-8C7FEEDACEB3"),
-                                                 InlineEntity = new OwnedInlineEntity
+                                                 InlineEntity = new OwnedEntity
                                                                 {
                                                                    IntColumn = 0,
                                                                    StringColumn = null
@@ -314,10 +314,10 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
       [Fact]
       public async Task Should_insert_inlined_owned_types()
       {
-         var testEntity = new TestEntityOwningInlineEntity
+         var testEntity = new TestEntity_Owns_Inline
                           {
                              Id = new Guid("3A1B2FFF-8E11-44E5-80E5-8C7FEEDACEB3"),
-                             InlineEntity = new OwnedInlineEntity
+                             InlineEntity = new OwnedEntity
                                             {
                                                IntColumn = 42,
                                                StringColumn = "value"
@@ -327,13 +327,13 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
 
          await SUT.BulkInsertAsync(testEntities, new SqlServerBulkInsertOptions());
 
-         var loadedEntities = await AssertDbContext.TestEntitiesOwningInlineEntity.ToListAsync();
+         var loadedEntities = await AssertDbContext.TestEntities_Own_Inline.ToListAsync();
          loadedEntities.Should().HaveCount(1);
          var loadedEntity = loadedEntities[0];
-         loadedEntity.Should().BeEquivalentTo(new TestEntityOwningInlineEntity
+         loadedEntity.Should().BeEquivalentTo(new TestEntity_Owns_Inline
                                               {
                                                  Id = new Guid("3A1B2FFF-8E11-44E5-80E5-8C7FEEDACEB3"),
-                                                 InlineEntity = new OwnedInlineEntity
+                                                 InlineEntity = new OwnedEntity
                                                                 {
                                                                    IntColumn = 42,
                                                                    StringColumn = "value"

@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Thinktecture.EntityFrameworkCore;
 using Thinktecture.EntityFrameworkCore.TempTables;
 
+// ReSharper disable InconsistentNaming
 namespace Thinktecture.TestDatabaseContext
 {
    public class TestDbContext : DbContext, IDbDefaultSchema
@@ -20,9 +21,18 @@ namespace Thinktecture.TestDatabaseContext
       public DbSet<TestEntityWithShadowProperties> TestEntitiesWithShadowProperties { get; set; }
       public DbSet<TestEntityWithSqlDefaultValues> TestEntitiesWithDefaultValues { get; set; }
       public DbSet<TestEntityWithDotnetDefaultValues> TestEntitiesWithDotnetDefaultValues { get; set; }
-      public DbSet<TestEntityOwningInlineEntity> TestEntitiesOwningInlineEntity { get; set; }
-      public DbSet<TestEntityOwningOneSeparateEntity> TestEntitiesOwningOneSeparateEntity { get; set; }
-      public DbSet<TestEntityOwningManyEntities> TestEntitiesOwningManyEntities { get; set; }
+      public DbSet<TestEntity_Owns_Inline> TestEntities_Own_Inline { get; set; }
+      public DbSet<TestEntity_Owns_Inline_Inline> TestEntities_Own_Inline_Inline { get; set; }
+      public DbSet<TestEntity_Owns_Inline_SeparateOne> TestEntities_Own_Inline_SeparateOne { get; set; }
+      public DbSet<TestEntity_Owns_Inline_SeparateMany> TestEntities_Own_Inline_SeparateMany { get; set; }
+      public DbSet<TestEntity_Owns_SeparateOne> TestEntities_Own_SeparateOne { get; set; }
+      public DbSet<TestEntity_Owns_SeparateOne_Inline> TestEntities_Own_SeparateOne_Inline { get; set; }
+      public DbSet<TestEntity_Owns_SeparateOne_SeparateOne> TestEntities_Own_SeparateOne_SeparateOne { get; set; }
+      public DbSet<TestEntity_Owns_SeparateOne_SeparateMany> TestEntities_Own_SeparateOne_SeparateMany { get; set; }
+      public DbSet<TestEntity_Owns_SeparateMany> TestEntities_Own_SeparateMany { get; set; }
+      public DbSet<TestEntity_Owns_SeparateMany_Inline> TestEntities_Own_SeparateMany_Inline { get; set; }
+      public DbSet<TestEntity_Owns_SeparateMany_SeparateOne> TestEntities_Own_SeparateMany_SeparateOne { get; set; }
+      public DbSet<TestEntity_Owns_SeparateMany_SeparateMany> TestEntities_Own_SeparateMany_SeparateMany { get; set; }
       public IQueryable<TestViewEntity> TestView => Set<TestViewEntity>();
 #nullable enable
 
@@ -54,9 +64,18 @@ namespace Thinktecture.TestDatabaseContext
          modelBuilder.Entity<TestEntityWithSqlDefaultValues>(builder => builder.Property(e => e.Id).HasDefaultValueSql("newid()"));
 
          TestEntityWithDotnetDefaultValues.Configure(modelBuilder);
-         TestEntityOwningInlineEntity.Configure(modelBuilder);
-         TestEntityOwningOneSeparateEntity.Configure(modelBuilder);
-         TestEntityOwningManyEntities.Configure(modelBuilder);
+         TestEntity_Owns_Inline.Configure(modelBuilder);
+         TestEntity_Owns_SeparateOne.Configure(modelBuilder);
+         TestEntity_Owns_SeparateMany.Configure(modelBuilder);
+         TestEntity_Owns_SeparateOne_SeparateOne.Configure(modelBuilder);
+         TestEntity_Owns_SeparateOne_Inline.Configure(modelBuilder);
+         TestEntity_Owns_SeparateOne_SeparateMany.Configure(modelBuilder);
+         TestEntity_Owns_Inline_SeparateOne.Configure(modelBuilder);
+         TestEntity_Owns_Inline_Inline.Configure(modelBuilder);
+         TestEntity_Owns_Inline_SeparateMany.Configure(modelBuilder);
+         TestEntity_Owns_SeparateMany_SeparateOne.Configure(modelBuilder);
+         TestEntity_Owns_SeparateMany_Inline.Configure(modelBuilder);
+         TestEntity_Owns_SeparateMany_SeparateMany.Configure(modelBuilder);
 
          ConfigureModel?.Invoke(modelBuilder);
 
