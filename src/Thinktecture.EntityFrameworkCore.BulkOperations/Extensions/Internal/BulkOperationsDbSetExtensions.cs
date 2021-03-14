@@ -26,7 +26,7 @@ namespace Thinktecture.Internal
             throw new ArgumentNullException(nameof(name));
 
          var methodInfo = _fromTempTable.MakeGenericMethod(typeof(T));
-         var expression = Expression.Call(null, methodInfo, source.Expression, new SqlFragmentExpression(name));
+         var expression = Expression.Call(null, methodInfo, source.Expression, new NonEvaluatableConstantExpression(name));
 
          return source.Provider.CreateQuery<T>(expression);
       }

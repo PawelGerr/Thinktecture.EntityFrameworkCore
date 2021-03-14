@@ -67,9 +67,9 @@ namespace Thinktecture
          QueryCompilationContext queryCompilationContext)
       {
          var tableExpression = (TableExpression)((SelectExpression)shapedQueryExpression.QueryExpression).Tables.Single();
-         var tempTableName = ((SqlFragmentExpression)methodCallExpression.Arguments[1]).Sql;
+         var tempTableName = ((NonEvaluatableConstantExpression)methodCallExpression.Arguments[1]).Value;
 
-         var ctx = new TempTableQueryContext(tableExpression, tempTableName);
+         var ctx = new TempTableQueryContext(tableExpression, (string)(tempTableName ?? throw new Exception("No temp table name provided.")));
          var extractor = Expression.Lambda<Func<QueryContext, TempTableQueryContext>>(Expression.Constant(ctx), QueryCompilationContext.QueryContextParameter);
 
          queryCompilationContext.RegisterRuntimeParameter(ctx.ParameterName, extractor);
