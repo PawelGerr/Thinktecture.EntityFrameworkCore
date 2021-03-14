@@ -55,6 +55,20 @@ namespace Thinktecture
       }
 
       /// <summary>
+      /// Adds support for "Table Hints".
+      /// </summary>
+      /// <param name="builder">Options builder.</param>
+      /// <param name="addTableHintSupport">Indication whether to enable or disable the feature.</param>
+      /// <returns>Provided <paramref name="builder"/>.</returns>
+      public static SqlServerDbContextOptionsBuilder AddTableHintSupport(
+         this SqlServerDbContextOptionsBuilder builder,
+         bool addTableHintSupport = true)
+      {
+         builder.AddOrUpdateExtension(extension => extension.AddTableHintSupport = addTableHintSupport);
+         return builder;
+      }
+
+      /// <summary>
       /// Adds 'tenant database support'.
       /// </summary>
       /// <param name="builder">Options builder.</param>

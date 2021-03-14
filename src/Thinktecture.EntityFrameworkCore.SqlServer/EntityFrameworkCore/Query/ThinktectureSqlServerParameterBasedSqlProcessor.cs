@@ -34,8 +34,15 @@ namespace Thinktecture.EntityFrameworkCore.Query
       {
          selectExpression = base.Optimize(selectExpression, parametersValues, out canCache);
 
-         if (TempTableQueryContext.TryGetTempTableContexts(parametersValues, out var ctxs))
-            selectExpression = new TempTableNameReplacingVisitor(ctxs).Process(selectExpression);
+         var hasTempTables = TempTableQueryContext.TryGetTempTableContexts(parametersValues, out var tempTableCtxs);
+         var hasTableHints = TableHintContext.TryGetTableHintContext(parametersValues, out var tableHintCtxs);
+
+         if (hasTempTables || hasTableHints)
+         {
+            selectExpression = new BulkOperationOptimizingVisitor(parametersValues,
+                                                                   tempTableCtxs ?? Array.Empty<TempTableQueryContext>(),
+                                                                   tableHintCtxs ?? Array.Empty<TableHintContext>()).Process(selectExpression);
+         }
 
          return selectExpression;
       }

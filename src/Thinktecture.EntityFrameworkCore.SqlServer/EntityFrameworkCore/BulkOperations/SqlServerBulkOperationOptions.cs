@@ -30,7 +30,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       /// Table hints for the MERGE command.
       /// </summary>
       [AllowNull]
-      public List<TableHintLimited> MergeTableHints { get; }
+      public List<SqlServerTableHintLimited> MergeTableHints { get; }
 
       /// <summary>
       /// Initializes new instance of <see cref="SqlServerBulkOperationOptions"/>.
@@ -46,7 +46,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
          if (options is null)
          {
             TempTableOptions = new ConcreteSqlServerTempTableBulkOperationOptions { PrimaryKeyCreation = PrimaryKeyPropertiesProviders.None };
-            MergeTableHints = new List<TableHintLimited> { TableHintLimited.HoldLock };
+            MergeTableHints = new List<SqlServerTableHintLimited> { SqlServerTableHintLimited.HoldLock };
          }
          else
          {

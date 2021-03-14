@@ -5,6 +5,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using Microsoft.EntityFrameworkCore.Query.Internal;
 using Thinktecture.EntityFrameworkCore;
+using Thinktecture.Internal;
 
 // ReSharper disable once CheckNamespace
 namespace Thinktecture
@@ -16,6 +17,42 @@ namespace Thinktecture
    {
       private static readonly MethodInfo _asSubQuery = typeof(RelationalQueryableExtensions).GetMethods(BindingFlags.Public | BindingFlags.Static)
                                                                                             .Single(m => m.Name == nameof(AsSubQuery) && m.IsGenericMethod);
+
+      private static readonly MethodInfo _withTableHints = typeof(RelationalQueryableExtensions).GetMethods(BindingFlags.Public | BindingFlags.Static)
+                                                                                                .Single(m => m.Name == nameof(WithTableHints)
+                                                                                                             && m.IsGenericMethod
+                                                                                                             && m.GetParameters()[1].ParameterType == typeof(IReadOnlyList<ITableHint>));
+
+      /// <summary>
+      /// Adds table hints to a table specified in <paramref name="source"/>.
+      /// </summary>
+      /// <param name="source">Query using a table to apply table hints to.</param>
+      /// <param name="hints">Table hints.</param>
+      /// <typeparam name="T">Entity type.</typeparam>
+      /// <returns>Query with table hints applied.</returns>
+      public static IQueryable<T> WithTableHints<T>(this IQueryable<T> source, params ITableHint[] hints)
+      {
+         return source.WithTableHints((IReadOnlyList<ITableHint>)hints);
+      }
+
+      /// <summary>
+      /// Adds table hints to a table specified in <paramref name="source"/>.
+      /// </summary>
+      /// <param name="source">Query using a table to apply table hints to.</param>
+      /// <param name="hints">Table hints.</param>
+      /// <typeparam name="T">Entity type.</typeparam>
+      /// <returns>Query with table hints applied.</returns>
+      public static IQueryable<T> WithTableHints<T>(this IQueryable<T> source, IReadOnlyList<ITableHint> hints)
+      {
+         if (source == null)
+            throw new ArgumentNullException(nameof(source));
+         if (hints == null)
+            throw new ArgumentNullException(nameof(hints));
+
+         var methodInfo = _withTableHints.MakeGenericMethod(typeof(T));
+         var expression = Expression.Call(null, methodInfo, source.Expression, new NonEvaluatableConstantExpression(hints));
+         return source.Provider.CreateQuery<T>(expression);
+      }
 
       /// <summary>
       /// Performs a LEFT JOIN.
@@ -62,7 +99,7 @@ namespace Thinktecture
 
          return left
                 .GroupJoin(right, leftKeySelector, rightKeySelector, (o, i) => new { Outer = o, Inner = i })
-                .SelectMany(g => g.Inner.DefaultIfEmpty(), (o, i) => new LeftJoinResult<TLeft, TRight>{ Left = o.Outer, Right = i})
+                .SelectMany(g => g.Inner.DefaultIfEmpty(), (o, i) => new LeftJoinResult<TLeft, TRight> { Left = o.Outer, Right = i })
                 .Select(resultSelector);
       }
 

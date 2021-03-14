@@ -56,7 +56,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       /// </summary>
       public bool AddCustomQueryableMethodTranslatingExpressionVisitorFactory
       {
-         get => _addCustomQueryableMethodTranslatingExpressionVisitorFactory || AddBulkOperationSupport || AddRowNumberSupport;
+         get => _addCustomQueryableMethodTranslatingExpressionVisitorFactory || AddBulkOperationSupport || AddRowNumberSupport || AddTableHintSupport;
          set => _addCustomQueryableMethodTranslatingExpressionVisitorFactory = value;
       }
 
@@ -68,7 +68,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       /// </summary>
       public bool AddCustomRelationalParameterBasedSqlProcessorFactory
       {
-         get => _addCustomRelationalParameterBasedSqlProcessorFactory || AddBulkOperationSupport || AddRowNumberSupport;
+         get => _addCustomRelationalParameterBasedSqlProcessorFactory || AddBulkOperationSupport || AddRowNumberSupport || AddTableHintSupport;
          set => _addCustomRelationalParameterBasedSqlProcessorFactory = value;
       }
 
@@ -80,9 +80,14 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       /// </summary>
       public bool AddCustomQuerySqlGeneratorFactory
       {
-         get => _addCustomQuerySqlGeneratorFactory || AddBulkOperationSupport || AddTenantDatabaseSupport;
+         get => _addCustomQuerySqlGeneratorFactory || AddBulkOperationSupport || AddTenantDatabaseSupport || AddTableHintSupport;
          set => _addCustomQuerySqlGeneratorFactory = value;
       }
+
+      /// <summary>
+      /// Enables and disables support for table hints.
+      /// </summary>
+      public bool AddTableHintSupport { get; set; }
 
       /// <summary>
       /// Enables and disables support for bulk operations and temp tables.

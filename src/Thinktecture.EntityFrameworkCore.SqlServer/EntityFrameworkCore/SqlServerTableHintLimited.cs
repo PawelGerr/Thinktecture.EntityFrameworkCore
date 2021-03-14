@@ -5,106 +5,106 @@ namespace Thinktecture.EntityFrameworkCore
    /// <summary>
    /// SQL Server table hints.
    /// </summary>
-   public class TableHintLimited : IEquatable<TableHintLimited>
+   public class SqlServerTableHintLimited : IEquatable<SqlServerTableHintLimited>
    {
       /// <summary>
       /// KEEPIDENTITY
       /// </summary>
-      public static readonly TableHintLimited KeepIdentity = new("KEEPIDENTITY");
+      public static readonly SqlServerTableHintLimited KeepIdentity = new("KEEPIDENTITY");
 
       /// <summary>
       /// KEEPDEFAULTS
       /// </summary>
-      public static readonly TableHintLimited KeepDefaults = new("KEEPDEFAULTS");
+      public static readonly SqlServerTableHintLimited KeepDefaults = new("KEEPDEFAULTS");
 
       /// <summary>
       /// HOLDLOCK
       /// </summary>
-      public static readonly TableHintLimited HoldLock = new("HOLDLOCK");
+      public static readonly SqlServerTableHintLimited HoldLock = new("HOLDLOCK");
 
       /// <summary>
       /// IGNORE_CONSTRAINTS
       /// </summary>
-      public static readonly TableHintLimited IgnoreConstraints = new("IGNORE_CONSTRAINTS");
+      public static readonly SqlServerTableHintLimited IgnoreConstraints = new("IGNORE_CONSTRAINTS");
 
       /// <summary>
       /// IGNORE_TRIGGERS
       /// </summary>
-      public static readonly TableHintLimited IgnoreTriggers = new("IGNORE_TRIGGERS");
+      public static readonly SqlServerTableHintLimited IgnoreTriggers = new("IGNORE_TRIGGERS");
 
       /// <summary>
       /// NOLOCK
       /// </summary>
-      public static readonly TableHintLimited NoLock = new("NOLOCK");
+      public static readonly SqlServerTableHintLimited NoLock = new("NOLOCK");
 
       /// <summary>
       /// NOWAIT
       /// </summary>
-      public static readonly TableHintLimited NoWait = new("NOWAIT");
+      public static readonly SqlServerTableHintLimited NoWait = new("NOWAIT");
 
       /// <summary>
       /// PAGLOCK
       /// </summary>
-      public static readonly TableHintLimited PagLock = new("PAGLOCK");
+      public static readonly SqlServerTableHintLimited PagLock = new("PAGLOCK");
 
       /// <summary>
       /// READCOMMITTED
       /// </summary>
-      public static readonly TableHintLimited ReadCommitted = new("READCOMMITTED");
+      public static readonly SqlServerTableHintLimited ReadCommitted = new("READCOMMITTED");
 
       /// <summary>
       /// READCOMMITTEDLOCK
       /// </summary>
-      public static readonly TableHintLimited ReadCommittedLock = new("READCOMMITTEDLOCK");
+      public static readonly SqlServerTableHintLimited ReadCommittedLock = new("READCOMMITTEDLOCK");
 
       /// <summary>
       /// READPAST
       /// </summary>
-      public static readonly TableHintLimited ReadPast = new("READPAST");
+      public static readonly SqlServerTableHintLimited ReadPast = new("READPAST");
 
       /// <summary>
       /// REPEATABLEREAD
       /// </summary>
-      public static readonly TableHintLimited RepeatableRead = new("REPEATABLEREAD");
+      public static readonly SqlServerTableHintLimited RepeatableRead = new("REPEATABLEREAD");
 
       /// <summary>
       /// ROWLOCK
       /// </summary>
-      public static readonly TableHintLimited RowLock = new("ROWLOCK");
+      public static readonly SqlServerTableHintLimited RowLock = new("ROWLOCK");
 
       /// <summary>
       /// SERIALIZABLE
       /// </summary>
-      public static readonly TableHintLimited Serializable = new("SERIALIZABLE");
+      public static readonly SqlServerTableHintLimited Serializable = new("SERIALIZABLE");
 
       /// <summary>
       /// SNAPSHOT
       /// </summary>
-      public static readonly TableHintLimited Snapshot = new("SNAPSHOT");
+      public static readonly SqlServerTableHintLimited Snapshot = new("SNAPSHOT");
 
       /// <summary>
       /// TABLOCK
       /// </summary>
-      public static readonly TableHintLimited TabLock = new("TABLOCK");
+      public static readonly SqlServerTableHintLimited TabLock = new("TABLOCK");
 
       /// <summary>
       /// TABLOCKX
       /// </summary>
-      public static readonly TableHintLimited TabLockx = new("TABLOCKX");
+      public static readonly SqlServerTableHintLimited TabLockx = new("TABLOCKX");
 
       /// <summary>
       /// UPDLOCK
       /// </summary>
-      public static readonly TableHintLimited UpdLock = new("UPDLOCK");
+      public static readonly SqlServerTableHintLimited UpdLock = new("UPDLOCK");
 
       /// <summary>
       /// XLOCK
       /// </summary>
-      public static readonly TableHintLimited XLock = new("XLOCK");
+      public static readonly SqlServerTableHintLimited XLock = new("XLOCK");
 
       private readonly string _value;
 
-      private TableHintLimited(string value)
+      private SqlServerTableHintLimited(string value)
       {
          _value = value ?? throw new ArgumentNullException(nameof(value));
       }
@@ -118,11 +118,11 @@ namespace Thinktecture.EntityFrameworkCore
             return true;
          if (obj.GetType() != this.GetType())
             return false;
-         return Equals((TableHintLimited)obj);
+         return Equals((SqlServerTableHintLimited)obj);
       }
 
       /// <inheritdoc />
-      public bool Equals(TableHintLimited? other)
+      public bool Equals(SqlServerTableHintLimited? other)
       {
          if (ReferenceEquals(null, other))
             return false;

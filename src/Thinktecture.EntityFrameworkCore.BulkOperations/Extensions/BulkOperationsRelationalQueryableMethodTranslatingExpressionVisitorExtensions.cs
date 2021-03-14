@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 using Microsoft.EntityFrameworkCore.Storage;
+using Thinktecture.EntityFrameworkCore.Query;
 using Thinktecture.EntityFrameworkCore.Query.SqlExpressions;
 using Thinktecture.EntityFrameworkCore.TempTables;
 using Thinktecture.Internal;
@@ -60,8 +61,10 @@ namespace Thinktecture
          return null;
       }
 
-      private static Expression TranslateFromTempTable(ShapedQueryExpression shapedQueryExpression, MethodCallExpression methodCallExpression,
-                                                       QueryCompilationContext queryCompilationContext)
+      private static Expression TranslateFromTempTable(
+         ShapedQueryExpression shapedQueryExpression,
+         MethodCallExpression methodCallExpression,
+         QueryCompilationContext queryCompilationContext)
       {
          var tableExpression = (TableExpression)((SelectExpression)shapedQueryExpression.QueryExpression).Tables.Single();
          var tempTableName = ((SqlFragmentExpression)methodCallExpression.Arguments[1]).Sql;

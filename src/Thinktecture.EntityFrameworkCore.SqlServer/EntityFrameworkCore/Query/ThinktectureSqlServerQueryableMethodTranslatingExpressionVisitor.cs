@@ -44,7 +44,7 @@ namespace Thinktecture.EntityFrameworkCore.Query
       /// <inheritdoc />
       protected override Expression VisitMethodCall(MethodCallExpression methodCallExpression)
       {
-         return this.TranslateRelationalMethods(methodCallExpression) ??
+         return this.TranslateRelationalMethods(methodCallExpression, QueryCompilationContext) ??
                 this.TranslateBulkMethods(methodCallExpression, _typeMappingSource, QueryCompilationContext) ??
                 base.VisitMethodCall(methodCallExpression);
       }

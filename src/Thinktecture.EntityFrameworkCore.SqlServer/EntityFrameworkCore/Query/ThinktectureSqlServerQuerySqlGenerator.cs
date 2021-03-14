@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore.Query;
@@ -28,14 +29,44 @@ namespace Thinktecture.EntityFrameworkCore.Query
       {
          if (expression is TempTableExpression tempTableExpression)
          {
-            Sql.Append(Dependencies.SqlGenerationHelper.DelimitIdentifier(tempTableExpression.Name))
-               .Append(AliasSeparator)
-               .Append(Dependencies.SqlGenerationHelper.DelimitIdentifier(tempTableExpression.Alias));
+            VisitTempTable(tempTableExpression);
+            return expression;
+         }
 
+         if (expression is TableWithHintsExpression tableWithHints)
+         {
+            VisitTableWithHints(tableWithHints);
             return expression;
          }
 
          return base.VisitExtension(expression);
+      }
+
+      private void VisitTableWithHints(TableWithHintsExpression tableWithHints)
+      {
+         Visit(tableWithHints.Table);
+
+         if (tableWithHints.TableHints.Count == 0)
+            return;
+
+         Sql.Append(" ").Append("WITH (");
+
+         for (var i = 0; i < tableWithHints.TableHints.Count; i++)
+         {
+            if (i != 0)
+               Sql.Append(", ");
+
+            Sql.Append(tableWithHints.TableHints[i].ToString()!);
+         }
+
+         Sql.Append(")");
+      }
+
+      private void VisitTempTable(TempTableExpression tempTableExpression)
+      {
+         Sql.Append(Dependencies.SqlGenerationHelper.DelimitIdentifier(tempTableExpression.Name))
+            .Append(AliasSeparator)
+            .Append(Dependencies.SqlGenerationHelper.DelimitIdentifier(tempTableExpression.Alias));
       }
 
       /// <inheritdoc />
@@ -105,7 +136,9 @@ namespace Thinktecture.EntityFrameworkCore.Query
                .Append(String.IsNullOrWhiteSpace(tableExpression.Schema) ? ".." : ".");
          }
 
-         return base.VisitTable(tableExpression);
+         var expression = base.VisitTable(tableExpression);
+
+         return expression;
       }
    }
 }

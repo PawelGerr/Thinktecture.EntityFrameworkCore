@@ -15,6 +15,6 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       /// <summary>
       /// Table hints for the MERGE command.
       /// </summary>
-      List<TableHintLimited> MergeTableHints { get; }
+      List<SqlServerTableHintLimited> MergeTableHints { get; }
    }
 }

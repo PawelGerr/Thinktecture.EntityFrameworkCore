@@ -4,37 +4,14 @@ using System.Linq;
 using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
-using Thinktecture.EntityFrameworkCore.Query.SqlExpressions;
-using Thinktecture.EntityFrameworkCore.TempTables;
 
 namespace Thinktecture.EntityFrameworkCore.Query
 {
    /// <summary>
-   /// Replaces specific occurrences of <see cref="TableExpression"/> with a <see cref="TempTableExpression"/>.
+   /// Base class.
    /// </summary>
-   public class TempTableNameReplacingVisitor : SqlExpressionVisitor
+   public abstract class DefaultSqlExpressionVisitor : SqlExpressionVisitor
    {
-      private readonly IReadOnlyList<TempTableQueryContext> _tempTableQueryContext;
-
-      /// <summary>
-      /// Initializes new instance of <see cref="TempTableNameReplacingVisitor"/>.
-      /// </summary>
-      /// <param name="tempTableQueryContext">Temp table contexts to use for finding and replacing of <see cref="TableExpression"/>.</param>
-      public TempTableNameReplacingVisitor(IReadOnlyList<TempTableQueryContext> tempTableQueryContext)
-      {
-         _tempTableQueryContext = tempTableQueryContext ?? throw new ArgumentNullException(nameof(tempTableQueryContext));
-      }
-
-      /// <summary>
-      /// Replaces tables with temp tables.
-      /// </summary>
-      /// <param name="selectExpression">Select expression to visit.</param>
-      /// <returns>Visited select expression.</returns>
-      public SelectExpression Process(SelectExpression selectExpression)
-      {
-         return (SelectExpression)VisitSelect(selectExpression);
-      }
-
       /// <inheritdoc />
       protected override Expression VisitCase(CaseExpression caseExpression)
       {
@@ -119,7 +96,7 @@ namespace Thinktecture.EntityFrameworkCore.Query
          for (var i = 0; i < selectExpression.Tables.Count; i++)
          {
             var table = selectExpression.Tables[i];
-            var newTable = (TableExpressionBase)Visit(table);
+            var newTable = VisitTableExpressionBase(table);
             changed |= newTable != table;
             tables.Add(newTable);
          }
@@ -160,6 +137,17 @@ namespace Thinktecture.EntityFrameworkCore.Query
                    ? selectExpression.Update(projections, tables, predicate, groupBy, havingExpression, orderings, limit, offset)
                    : selectExpression;
       }
+
+      /// <summary>
+      /// Visits a <see cref="TableExpressionBase"/> of the <see cref="SelectExpression"/>.
+      /// </summary>
+      /// <param name="table">Table to visit.</param>
+      /// <returns>Visited table.</returns>
+      protected virtual TableExpressionBase VisitTableExpressionBase(TableExpressionBase table)
+      {
+         return (TableExpressionBase)Visit(table);
+      }
+
       // ReSharper restore PossibleUnintendedReferenceComparison
 
       /// <inheritdoc />
@@ -222,11 +210,6 @@ namespace Thinktecture.EntityFrameworkCore.Query
       /// <inheritdoc />
       protected override Expression VisitTable(TableExpression tableExpression)
       {
-         var ctx = _tempTableQueryContext.FirstOrDefault(c => c.Table.Equals(tableExpression));
-
-         if (ctx is not null)
-            return new TempTableExpression(ctx.TempTableName, tableExpression.Alias);
-
          return tableExpression;
       }
 
