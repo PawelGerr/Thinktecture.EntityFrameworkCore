@@ -171,6 +171,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
    'Custom RelationalParameterBasedSqlProcessorFactory'={_extension.AddCustomRelationalParameterBasedSqlProcessorFactory},
    'BulkOperationSupport'={_extension.AddBulkOperationSupport},
    'TenantDatabaseSupport'={_extension.AddTenantDatabaseSupport},
+   'TableHintSupport'={_extension.AddTableHintSupport},
    'UseThinktectureSqlServerMigrationsSqlGenerator'={_extension.UseThinktectureSqlServerMigrationsSqlGenerator}
 }}";
 
@@ -189,6 +190,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
                                     _extension.AddCustomRelationalParameterBasedSqlProcessorFactory,
                                     _extension.AddBulkOperationSupport,
                                     _extension.AddTenantDatabaseSupport,
+                                    _extension.AddTableHintSupport,
                                     _extension.UseThinktectureSqlServerMigrationsSqlGenerator);
          }
 
@@ -200,6 +202,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
             debugInfo["Thinktecture:CustomRelationalParameterBasedSqlProcessorFactory"] = _extension.AddCustomRelationalParameterBasedSqlProcessorFactory.ToString(CultureInfo.InvariantCulture);
             debugInfo["Thinktecture:BulkOperationSupport"] = _extension.AddBulkOperationSupport.ToString(CultureInfo.InvariantCulture);
             debugInfo["Thinktecture:TenantDatabaseSupport"] = _extension.AddTenantDatabaseSupport.ToString(CultureInfo.InvariantCulture);
+            debugInfo["Thinktecture:TableHintSupport"] = _extension.AddTableHintSupport.ToString(CultureInfo.InvariantCulture);
             debugInfo["Thinktecture:UseThinktectureSqlServerMigrationsSqlGenerator"] = _extension.UseThinktectureSqlServerMigrationsSqlGenerator.ToString(CultureInfo.InvariantCulture);
          }
       }

@@ -59,6 +59,46 @@ namespace Thinktecture.Extensions.QueryableExtensionsTests
       }
 
       [Fact]
+      public async Task Should_work_with_joins_on_itself()
+      {
+         var query = ActDbContext.TestEntities.WithTableHints(SqlServerTableHint.NoLock)
+                                 .Join(ActDbContext.TestEntities, e => e.Id, e => e.Id, (e1, e2) => new { e1, e2 });
+
+         query.ToQueryString().Should().Be("SELECT [t].[Id], [t].[ConvertibleClass], [t].[Count], [t].[Name], [t].[ParentId], [t].[PropertyWithBackingField], [t].[_privateField], [t0].[Id], [t0].[ConvertibleClass], [t0].[Count], [t0].[Name], [t0].[ParentId], [t0].[PropertyWithBackingField], [t0].[_privateField]" + Environment.NewLine +
+                                           "FROM [_tests].[TestEntities] AS [t] WITH (NOLOCK)" + Environment.NewLine +
+                                           "INNER JOIN [_tests].[TestEntities] AS [t0] ON [t].[Id] = [t0].[Id]");
+
+         (await query.ToListAsync()).Should().BeEmpty();
+
+         query = ActDbContext.TestEntities
+                             .Join(ActDbContext.TestEntities.WithTableHints(SqlServerTableHint.NoLock), e => e.Id, e => e.Id, (e1, e2) => new { e1, e2 });
+
+         query.ToQueryString().Should().Be("SELECT [t].[Id], [t].[ConvertibleClass], [t].[Count], [t].[Name], [t].[ParentId], [t].[PropertyWithBackingField], [t].[_privateField], [t0].[Id], [t0].[ConvertibleClass], [t0].[Count], [t0].[Name], [t0].[ParentId], [t0].[PropertyWithBackingField], [t0].[_privateField]" + Environment.NewLine +
+                                           "FROM [_tests].[TestEntities] AS [t]" + Environment.NewLine +
+                                           "INNER JOIN [_tests].[TestEntities] AS [t0] WITH (NOLOCK) ON [t].[Id] = [t0].[Id]");
+
+         (await query.ToListAsync()).Should().BeEmpty();
+
+         query = ActDbContext.TestEntities.WithTableHints(SqlServerTableHint.NoLock)
+                             .Join(ActDbContext.TestEntities.WithTableHints(SqlServerTableHint.NoLock), e => e.Id, e => e.Id, (e1, e2) => new { e1, e2 });
+
+         query.ToQueryString().Should().Be("SELECT [t].[Id], [t].[ConvertibleClass], [t].[Count], [t].[Name], [t].[ParentId], [t].[PropertyWithBackingField], [t].[_privateField], [t0].[Id], [t0].[ConvertibleClass], [t0].[Count], [t0].[Name], [t0].[ParentId], [t0].[PropertyWithBackingField], [t0].[_privateField]" + Environment.NewLine +
+                                           "FROM [_tests].[TestEntities] AS [t] WITH (NOLOCK)" + Environment.NewLine +
+                                           "INNER JOIN [_tests].[TestEntities] AS [t0] WITH (NOLOCK) ON [t].[Id] = [t0].[Id]");
+
+         (await query.ToListAsync()).Should().BeEmpty();
+
+         query = ActDbContext.TestEntities.WithTableHints(SqlServerTableHint.NoLock)
+                             .Join(ActDbContext.TestEntities.WithTableHints(SqlServerTableHint.UpdLock), e => e.Id, e => e.Id, (e1, e2) => new { e1, e2 });
+
+         query.ToQueryString().Should().Be("SELECT [t].[Id], [t].[ConvertibleClass], [t].[Count], [t].[Name], [t].[ParentId], [t].[PropertyWithBackingField], [t].[_privateField], [t0].[Id], [t0].[ConvertibleClass], [t0].[Count], [t0].[Name], [t0].[ParentId], [t0].[PropertyWithBackingField], [t0].[_privateField]" + Environment.NewLine +
+                                           "FROM [_tests].[TestEntities] AS [t] WITH (NOLOCK)" + Environment.NewLine +
+                                           "INNER JOIN [_tests].[TestEntities] AS [t0] WITH (UPDLOCK) ON [t].[Id] = [t0].[Id]");
+
+         (await query.ToListAsync()).Should().BeEmpty();
+      }
+
+      [Fact]
       public async Task Should_add_table_hints_to_table_without_touching_owned_entities()
       {
          var query = ActDbContext.TestEntities_Own_SeparateMany_SeparateMany.WithTableHints(SqlServerTableHint.NoLock);

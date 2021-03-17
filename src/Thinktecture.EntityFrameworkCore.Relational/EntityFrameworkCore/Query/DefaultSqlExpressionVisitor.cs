@@ -228,32 +228,32 @@ namespace Thinktecture.EntityFrameworkCore.Query
       /// <inheritdoc />
       protected override Expression VisitCrossJoin(CrossJoinExpression crossJoinExpression)
       {
-         return crossJoinExpression.Update((TableExpressionBase)Visit(crossJoinExpression.Table));
+         return crossJoinExpression.Update(VisitTableExpressionBase(crossJoinExpression.Table));
       }
 
       /// <inheritdoc />
       protected override Expression VisitCrossApply(CrossApplyExpression crossApplyExpression)
       {
-         return crossApplyExpression.Update((TableExpressionBase)Visit(crossApplyExpression.Table));
+         return crossApplyExpression.Update(VisitTableExpressionBase(crossApplyExpression.Table));
       }
 
       /// <inheritdoc />
       protected override Expression VisitOuterApply(OuterApplyExpression outerApplyExpression)
       {
-         return outerApplyExpression.Update((TableExpressionBase)Visit(outerApplyExpression.Table));
+         return outerApplyExpression.Update(VisitTableExpressionBase(outerApplyExpression.Table));
       }
 
       /// <inheritdoc />
       protected override Expression VisitInnerJoin(InnerJoinExpression innerJoinExpression)
       {
-         return innerJoinExpression.Update((TableExpressionBase)Visit(innerJoinExpression.Table),
+         return innerJoinExpression.Update(VisitTableExpressionBase(innerJoinExpression.Table),
                                            (SqlExpression)Visit(innerJoinExpression.JoinPredicate));
       }
 
       /// <inheritdoc />
       protected override Expression VisitLeftJoin(LeftJoinExpression leftJoinExpression)
       {
-         return leftJoinExpression.Update((TableExpressionBase)Visit(leftJoinExpression.Table),
+         return leftJoinExpression.Update(VisitTableExpressionBase(leftJoinExpression.Table),
                                           (SqlExpression)Visit(leftJoinExpression.JoinPredicate));
       }
 

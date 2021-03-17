@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 
 namespace Thinktecture.EntityFrameworkCore.Query
@@ -28,11 +27,11 @@ namespace Thinktecture.EntityFrameworkCore.Query
       /// </summary>
       public string ParameterName { get; }
 
-      internal TableHintContext(TableExpressionBase table, IReadOnlyList<ITableHint> tableHints)
+      internal TableHintContext(TableExpressionBase table, IReadOnlyList<ITableHint> tableHints, int index)
       {
          Table = table;
          TableHints = tableHints;
-         ParameterName = $"{_PREFIX}:{String.Join(",", tableHints)}";
+         ParameterName = $"{_PREFIX}{index}";
       }
 
       /// <summary>

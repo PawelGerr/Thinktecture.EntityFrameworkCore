@@ -14,6 +14,7 @@ namespace Thinktecture.EntityFrameworkCore.Query
       : RelationalQueryableMethodTranslatingExpressionVisitor
    {
       private readonly IRelationalTypeMappingSource _typeMappingSource;
+      private readonly TableHintContextFactory _tableHintContextFactory;
 
       /// <inheritdoc />
       public ThinktectureSqlServerQueryableMethodTranslatingExpressionVisitor(
@@ -24,6 +25,7 @@ namespace Thinktecture.EntityFrameworkCore.Query
          : base(dependencies, relationalDependencies, queryCompilationContext)
       {
          _typeMappingSource = typeMappingSource ?? throw new ArgumentNullException(nameof(typeMappingSource));
+         _tableHintContextFactory = new TableHintContextFactory();
       }
 
       /// <inheritdoc />
@@ -33,6 +35,7 @@ namespace Thinktecture.EntityFrameworkCore.Query
          : base(parentVisitor)
       {
          _typeMappingSource = typeMappingSource ?? throw new ArgumentNullException(nameof(typeMappingSource));
+         _tableHintContextFactory = parentVisitor._tableHintContextFactory;
       }
 
       /// <inheritdoc />
@@ -44,7 +47,7 @@ namespace Thinktecture.EntityFrameworkCore.Query
       /// <inheritdoc />
       protected override Expression VisitMethodCall(MethodCallExpression methodCallExpression)
       {
-         return this.TranslateRelationalMethods(methodCallExpression, QueryCompilationContext) ??
+         return this.TranslateRelationalMethods(methodCallExpression, QueryCompilationContext, _tableHintContextFactory) ??
                 this.TranslateBulkMethods(methodCallExpression, _typeMappingSource, QueryCompilationContext) ??
                 base.VisitMethodCall(methodCallExpression);
       }
