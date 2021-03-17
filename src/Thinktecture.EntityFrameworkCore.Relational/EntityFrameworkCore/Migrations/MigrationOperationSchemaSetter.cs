@@ -52,7 +52,9 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
             throw new ArgumentNullException(nameof(op));
 
          op.Schema = schema;
-         SetSchema(op.PrimaryKey, schema);
+
+         if (op.PrimaryKey is not null)
+            SetSchema(op.PrimaryKey, schema);
 
          foreach (var column in op.Columns)
          {
