@@ -130,6 +130,22 @@ namespace Thinktecture.Extensions.QueryableExtensionsTests
          var result = await query.ToListAsync();
          result.Should().HaveCount(1);
          result[0].Column1.Should().Be(Guid.Empty);
+
+         var joinQuery = tempTable.Query.WithTableHints(SqlServerTableHint.UpdLock, SqlServerTableHint.RowLock)
+                                  .LeftJoin(tempTable.Query.WithTableHints(SqlServerTableHint.UpdLock),
+                                            e => e.Column1, e => e.Column1, res => new { res.Left, res.Right });
+
+         joinQuery.ToQueryString().Should().Be(@"SELECT [#].[Column1], [#0].[Column1]" + Environment.NewLine +
+                                               "FROM [_tests].[#TempTable<Guid>] AS [#] WITH (UPDLOCK, ROWLOCK)" + Environment.NewLine +
+                                               "LEFT JOIN [#TempTable<Guid>_1] AS [#0] WITH (UPDLOCK) ON [#].[Column1] = [#0].[Column1]");
+
+         joinQuery = tempTable.Query.WithTableHints(SqlServerTableHint.UpdLock, SqlServerTableHint.RowLock)
+                              .LeftJoin(tempTable.Query.WithTableHints(SqlServerTableHint.UpdLock, SqlServerTableHint.RowLock),
+                                        e => e.Column1, e => e.Column1, res => new { res.Left, res.Right });
+
+         joinQuery.ToQueryString().Should().Be(@"SELECT [#].[Column1], [#0].[Column1]" + Environment.NewLine +
+                                               "FROM [_tests].[#TempTable<Guid>] AS [#] WITH (UPDLOCK, ROWLOCK)" + Environment.NewLine +
+                                               "LEFT JOIN [#TempTable<Guid>_1] AS [#0] WITH (UPDLOCK, ROWLOCK) ON [#].[Column1] = [#0].[Column1]");
       }
    }
 }
