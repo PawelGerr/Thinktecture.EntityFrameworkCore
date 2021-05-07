@@ -115,9 +115,7 @@ namespace Thinktecture
          if (source == null)
             throw new ArgumentNullException(nameof(source));
 
-         return source.Provider is EntityQueryProvider
-                   ? source.Provider.CreateQuery<TEntity>(Expression.Call(null, _asSubQuery.MakeGenericMethod(typeof(TEntity)), source.Expression))
-                   : source;
+         return source.Provider.CreateQuery<TEntity>(Expression.Call(null, _asSubQuery.MakeGenericMethod(typeof(TEntity)), source.Expression));
       }
    }
 }
