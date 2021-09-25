@@ -13,8 +13,7 @@ namespace Thinktecture.Extensions.EnumerableExtensionsTests
       [Fact]
       public void Should_throw_if_collection_is_null()
       {
-         ((IEnumerable<int>?)null).Invoking(sut => sut!.AsAsyncQueryable())
-                                  .Should().Throw<ArgumentNullException>();
+         Assert.Throws<ArgumentNullException>(() => ((IEnumerable<int>)null!).AsAsyncQueryable());
       }
 
       [Fact]

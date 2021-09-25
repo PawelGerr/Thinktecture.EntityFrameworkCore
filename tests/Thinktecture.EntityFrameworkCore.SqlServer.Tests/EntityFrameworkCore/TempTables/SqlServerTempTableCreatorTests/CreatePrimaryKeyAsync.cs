@@ -86,8 +86,8 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
          var keyProperties = PrimaryKeyPropertiesProviders.AdaptiveForced.GetPrimaryKeyProperties(entityType, allProperties);
          await SUT.CreatePrimaryKeyAsync(ArrangeDbContext, keyProperties, tempTableReference.Name);
 
-         SUT.Awaiting(sut => sut.CreatePrimaryKeyAsync(ActDbContext, keyProperties, tempTableReference.Name, true))
-            .Should().NotThrow();
+         await SUT.Awaiting(sut => sut.CreatePrimaryKeyAsync(ActDbContext, keyProperties, tempTableReference.Name, true))
+                  .Should().NotThrowAsync();
       }
 
       [Fact]
@@ -105,9 +105,9 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
          await SUT.CreatePrimaryKeyAsync(ArrangeDbContext, keyProperties, tempTableReference.Name);
 
          // ReSharper disable once RedundantArgumentDefaultValue
-         SUT.Awaiting(sut => sut.CreatePrimaryKeyAsync(ActDbContext, keyProperties, tempTableReference.Name, false))
-            .Should()
-            .Throw<SqlException>();
+         await SUT.Awaiting(sut => sut.CreatePrimaryKeyAsync(ActDbContext, keyProperties, tempTableReference.Name, false))
+                  .Should()
+                  .ThrowAsync<SqlException>();
       }
    }
 }

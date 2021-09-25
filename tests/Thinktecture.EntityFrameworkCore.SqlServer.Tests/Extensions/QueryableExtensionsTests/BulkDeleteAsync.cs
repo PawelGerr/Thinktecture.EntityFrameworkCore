@@ -60,7 +60,7 @@ namespace Thinktecture.Extensions.QueryableExtensionsTests
          affectedRows.Should().Be(1);
 
          var loadedEntities = await AssertDbContext.TestEntities.ToListAsync();
-         loadedEntities.Should().BeEquivalentTo(new TestEntity { Id = new Guid("6C410EFE-2A40-4348-8BD6-8E9B9B72F0D0") });
+         loadedEntities.Should().BeEquivalentTo(new[] { new TestEntity { Id = new Guid("6C410EFE-2A40-4348-8BD6-8E9B9B72F0D0") } });
       }
 
       [Fact]
@@ -76,7 +76,7 @@ namespace Thinktecture.Extensions.QueryableExtensionsTests
          affectedRows.Should().Be(1);
 
          var loadedEntities = await AssertDbContext.TestEntities.ToListAsync();
-         loadedEntities.Should().BeEquivalentTo(new TestEntity { Id = new Guid("C004AB82-803E-4A90-B254-6032B9BBB70E") });
+         loadedEntities.Should().BeEquivalentTo(new[] { new TestEntity { Id = new Guid("C004AB82-803E-4A90-B254-6032B9BBB70E") } });
       }
 
       [Fact]
@@ -100,8 +100,8 @@ namespace Thinktecture.Extensions.QueryableExtensionsTests
          ArrangeDbContext.Add(new TestEntity { Id = new Guid("C004AB82-803E-4A90-B254-6032B9BBB70E") });
          await ArrangeDbContext.SaveChangesAsync();
 
-         ActDbContext.TestEntities.Skip(1).Awaiting(q => q.BulkDeleteAsync())
-                     .Should().Throw<NotSupportedException>("An OFFSET clause (i.e. Skip(x)) is not supported in a DELETE statement.");
+         await ActDbContext.TestEntities.Skip(1).Awaiting(q => q.BulkDeleteAsync())
+                           .Should().ThrowAsync<NotSupportedException>("An OFFSET clause (i.e. Skip(x)) is not supported in a DELETE statement.");
 
          var loadedEntities = await AssertDbContext.TestEntities.ToListAsync();
          loadedEntities.Should().HaveCount(2);

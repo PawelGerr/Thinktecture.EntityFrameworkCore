@@ -59,7 +59,7 @@ namespace Thinktecture.Extensions.QueryableExtensionsTests
          affectedRows.Should().Be(1);
 
          var loadedEntities = AssertDbContext.TestEntities.ToList();
-         loadedEntities.Should().BeEquivalentTo(new TestEntity { Id = new Guid("6C410EFE-2A40-4348-8BD6-8E9B9B72F0D0") });
+         loadedEntities.Should().BeEquivalentTo(new[] { new TestEntity { Id = new Guid("6C410EFE-2A40-4348-8BD6-8E9B9B72F0D0") } });
       }
 
       [Fact]
@@ -75,7 +75,7 @@ namespace Thinktecture.Extensions.QueryableExtensionsTests
          affectedRows.Should().Be(1);
 
          var loadedEntities = AssertDbContext.TestEntities.ToList();
-         loadedEntities.Should().BeEquivalentTo(new TestEntity { Id = new Guid("C004AB82-803E-4A90-B254-6032B9BBB70E") });
+         loadedEntities.Should().BeEquivalentTo(new[] { new TestEntity { Id = new Guid("C004AB82-803E-4A90-B254-6032B9BBB70E") } });
       }
 
       [Fact]

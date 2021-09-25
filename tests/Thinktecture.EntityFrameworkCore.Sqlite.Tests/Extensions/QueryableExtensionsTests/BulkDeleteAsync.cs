@@ -54,9 +54,9 @@ namespace Thinktecture.Extensions.QueryableExtensionsTests
          ArrangeDbContext.Add(child);
          await ArrangeDbContext.SaveChangesAsync();
 
-         ActDbContext.TestEntities.SelectMany(e => e.Children)
-                     .Awaiting(q => q.BulkDeleteAsync())
-                     .Should().Throw<NotSupportedException>().WithMessage("SQLite supports only 1 outermost table in a DELETE statement.");
+         await ActDbContext.TestEntities.SelectMany(e => e.Children)
+                           .Awaiting(q => q.BulkDeleteAsync())
+                           .Should().ThrowAsync<NotSupportedException>().WithMessage("SQLite supports only 1 outermost table in a DELETE statement.");
 
          var loadedEntities = await AssertDbContext.TestEntities.ToListAsync();
          loadedEntities.Should().HaveCount(2);
@@ -75,7 +75,7 @@ namespace Thinktecture.Extensions.QueryableExtensionsTests
          affectedRows.Should().Be(1);
 
          var loadedEntities = await AssertDbContext.TestEntities.ToListAsync();
-         loadedEntities.Should().BeEquivalentTo(new TestEntity { Id = new Guid("C004AB82-803E-4A90-B254-6032B9BBB70E") });
+         loadedEntities.Should().BeEquivalentTo(new[] { new TestEntity { Id = new Guid("C004AB82-803E-4A90-B254-6032B9BBB70E") } });
       }
 
       [Fact]
@@ -85,8 +85,8 @@ namespace Thinktecture.Extensions.QueryableExtensionsTests
          ArrangeDbContext.Add(new TestEntity { Id = new Guid("C004AB82-803E-4A90-B254-6032B9BBB70E") });
          await ArrangeDbContext.SaveChangesAsync();
 
-         ActDbContext.TestEntities.Take(2).Awaiting(q => q.BulkDeleteAsync())
-                     .Should().Throw<NotSupportedException>().WithMessage("A TOP/LIMIT clause (i.e. Take(x)) is not supported in a DELETE statement.");
+         await ActDbContext.TestEntities.Take(2).Awaiting(q => q.BulkDeleteAsync())
+                           .Should().ThrowAsync<NotSupportedException>().WithMessage("A TOP/LIMIT clause (i.e. Take(x)) is not supported in a DELETE statement.");
 
          var loadedEntities = await AssertDbContext.TestEntities.ToListAsync();
          loadedEntities.Should().HaveCount(2);
@@ -99,8 +99,8 @@ namespace Thinktecture.Extensions.QueryableExtensionsTests
          ArrangeDbContext.Add(new TestEntity { Id = new Guid("C004AB82-803E-4A90-B254-6032B9BBB70E") });
          await ArrangeDbContext.SaveChangesAsync();
 
-         ActDbContext.TestEntities.Skip(1).Awaiting(q => q.BulkDeleteAsync())
-                     .Should().Throw<NotSupportedException>().WithMessage("An OFFSET clause (i.e. Skip(x)) is not supported in a DELETE statement.");
+         await ActDbContext.TestEntities.Skip(1).Awaiting(q => q.BulkDeleteAsync())
+                           .Should().ThrowAsync<NotSupportedException>().WithMessage("An OFFSET clause (i.e. Skip(x)) is not supported in a DELETE statement.");
 
          var loadedEntities = await AssertDbContext.TestEntities.ToListAsync();
          loadedEntities.Should().HaveCount(2);

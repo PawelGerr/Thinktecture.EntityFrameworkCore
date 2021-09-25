@@ -26,13 +26,13 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
       }
 
       [Fact]
-      public void Should_throw_when_inserting_temp_table_entities_without_creating_table_first()
+      public async Task Should_throw_when_inserting_temp_table_entities_without_creating_table_first()
       {
          ConfigureModel = builder => builder.ConfigureTempTable<int>();
 
-         SUT.Invoking(sut => sut.BulkInsertAsync(new List<TempTable<int>> { new(0) }, new SqlServerBulkInsertOptions()))
-            .Should().Throw<InvalidOperationException>()
-            .WithMessage("Cannot access destination table '[*].[#TempTable<int>]'.");
+         await SUT.Invoking(sut => sut.BulkInsertAsync(new List<TempTable<int>> { new(0) }, new SqlServerBulkInsertOptions()))
+                  .Should().ThrowAsync<InvalidOperationException>()
+                  .WithMessage("Cannot access destination table '[*].[#TempTable<int>]'.");
       }
 
       [Fact]
@@ -104,14 +104,14 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
       }
 
       [Fact]
-      public void Should_throw_because_sqlbulkcopy_dont_support_null_for_NOT_NULL_despite_sql_default_value()
+      public async Task Should_throw_because_sqlbulkcopy_dont_support_null_for_NOT_NULL_despite_sql_default_value()
       {
          var testEntity = new TestEntityWithSqlDefaultValues { String = null! };
          var testEntities = new[] { testEntity };
 
-         SUT.Awaiting(sut => sut.BulkInsertAsync(testEntities, new SqlServerBulkInsertOptions()))
-            .Should().Throw<InvalidOperationException>()
-            .WithMessage("Column 'String' does not allow DBNull.Value.");
+         await SUT.Awaiting(sut => sut.BulkInsertAsync(testEntities, new SqlServerBulkInsertOptions()))
+                  .Should().ThrowAsync<InvalidOperationException>()
+                  .WithMessage("Column 'String' does not allow DBNull.Value.");
       }
 
       [Fact]
@@ -153,14 +153,14 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
       }
 
       [Fact]
-      public void Should_throw_because_sqlbulkcopy_dont_support_null_for_NOT_NULL_despite_dotnet_default_value()
+      public async Task Should_throw_because_sqlbulkcopy_dont_support_null_for_NOT_NULL_despite_dotnet_default_value()
       {
          var testEntity = new TestEntityWithDotnetDefaultValues { String = null! };
          var testEntities = new[] { testEntity };
 
-         SUT.Awaiting(sut => sut.BulkInsertAsync(testEntities, new SqlServerBulkInsertOptions()))
-            .Should().Throw<InvalidOperationException>()
-            .WithMessage("Column 'String' does not allow DBNull.Value.");
+         await SUT.Awaiting(sut => sut.BulkInsertAsync(testEntities, new SqlServerBulkInsertOptions()))
+                  .Should().ThrowAsync<InvalidOperationException>()
+                  .WithMessage("Column 'String' does not allow DBNull.Value.");
       }
 
       [Fact]
@@ -271,7 +271,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
       }
 
       [Fact]
-      public void Should_throw_if_required_inlined_owned_type_is_null()
+      public async Task Should_throw_if_required_inlined_owned_type_is_null()
       {
          var testEntity = new TestEntity_Owns_Inline
                           {
@@ -279,8 +279,8 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
                              InlineEntity = null!
                           };
 
-         ActDbContext.Awaiting(ctx => ctx.BulkInsertIntoTempTableAsync(new[] { testEntity }))
-                     .Should().Throw<InvalidOperationException>().WithMessage("Column 'InlineEntity_IntColumn' does not allow DBNull.Value.");
+         await ActDbContext.Awaiting(ctx => ctx.BulkInsertIntoTempTableAsync(new[] { testEntity }))
+                           .Should().ThrowAsync<InvalidOperationException>().WithMessage("Column 'InlineEntity_IntColumn' does not allow DBNull.Value.");
       }
 
       [Fact]
@@ -338,7 +338,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
       }
 
       [Fact]
-      public void Should_throw_if_separated_owned_type_uses_shadow_property_id_and_is_detached()
+      public async Task Should_throw_if_separated_owned_type_uses_shadow_property_id_and_is_detached()
       {
          var testEntity = new TestEntity_Owns_SeparateOne
                           {
@@ -350,9 +350,9 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
                                               }
                           };
 
-         SUT.Awaiting(sut => sut.BulkInsertAsync(new[] { testEntity }, new SqlServerBulkInsertOptions()))
-            .Should().Throw<InvalidOperationException>()
-            .WithMessage("The entity type 'OwnedEntity' has a defining navigation and the supplied entity is currently not being tracked. To start tracking this entity, call '.Reference().TargetEntry' or '.Collection().FindEntry()' on the owner entry.");
+         await SUT.Awaiting(sut => sut.BulkInsertAsync(new[] { testEntity }, new SqlServerBulkInsertOptions()))
+                  .Should().ThrowAsync<InvalidOperationException>()
+                  .WithMessage("The entity type 'OwnedEntity' has a defining navigation and the supplied entity is currently not being tracked. To start tracking this entity, call '.Reference().TargetEntry' or '.Collection().FindEntry()' on the owner entry.");
       }
 
       [Fact]
@@ -378,7 +378,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
       }
 
       [Fact]
-      public void Should_throw_if_separated_owned_types_uses_shadow_property_id_and_is_detached()
+      public async Task Should_throw_if_separated_owned_types_uses_shadow_property_id_and_is_detached()
       {
          var testEntity = new TestEntity_Owns_SeparateMany
                           {
@@ -393,9 +393,9 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
                                                 }
                           };
 
-         SUT.Awaiting(sut => sut.BulkInsertAsync(new[] { testEntity }, new SqlServerBulkInsertOptions()))
-            .Should().Throw<InvalidOperationException>()
-            .WithMessage("The entity type 'OwnedEntity' has a defining navigation and the supplied entity is currently not being tracked. To start tracking this entity, call '.Reference().TargetEntry' or '.Collection().FindEntry()' on the owner entry.");
+         await SUT.Awaiting(sut => sut.BulkInsertAsync(new[] { testEntity }, new SqlServerBulkInsertOptions()))
+                  .Should().ThrowAsync<InvalidOperationException>()
+                  .WithMessage("The entity type 'OwnedEntity' has a defining navigation and the supplied entity is currently not being tracked. To start tracking this entity, call '.Reference().TargetEntry' or '.Collection().FindEntry()' on the owner entry.");
       }
 
       [Fact]
@@ -450,8 +450,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
          await SUT.BulkInsertAsync(new[] { testEntity }, new SqlServerBulkInsertOptions());
 
          var loadedEntities = await AssertDbContext.TestEntities_Own_Inline_Inline.ToListAsync();
-         loadedEntities.Should().HaveCount(1)
-                       .And.BeEquivalentTo(testEntity);
+         loadedEntities.Should().BeEquivalentTo(new[] { testEntity });
       }
 
       [Fact]
@@ -484,8 +483,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
          await SUT.BulkInsertAsync(new[] { testEntity }, new SqlServerBulkInsertOptions());
 
          var loadedEntities = await AssertDbContext.TestEntities_Own_Inline_SeparateMany.ToListAsync();
-         loadedEntities.Should().HaveCount(1)
-                       .And.BeEquivalentTo(testEntity);
+         loadedEntities.Should().BeEquivalentTo(new[] { testEntity });
       }
 
       [Fact]
@@ -514,8 +512,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
                                    }, new SqlServerBulkInsertOptions());
 
          var loadedEntities = await AssertDbContext.TestEntities_Own_Inline_SeparateOne.ToListAsync();
-         loadedEntities.Should().HaveCount(1)
-                       .And.BeEquivalentTo(testEntity);
+         loadedEntities.Should().BeEquivalentTo(new[] { testEntity });
       }
 
       [Fact]
@@ -554,12 +551,11 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
          await SUT.BulkInsertAsync(new[] { testEntity }, new SqlServerBulkInsertOptions());
 
          var loadedEntities = await AssertDbContext.TestEntities_Own_SeparateMany_Inline.ToListAsync();
-         loadedEntities.Should().HaveCount(1)
-                       .And.BeEquivalentTo(testEntity);
+         loadedEntities.Should().BeEquivalentTo(new[] { testEntity });
       }
 
       [Fact]
-      public void Should_throw_on_insert_of_TestEntity_Owns_SeparateMany_SeparateMany()
+      public async Task Should_throw_on_insert_of_TestEntity_Owns_SeparateMany_SeparateMany()
       {
          var testEntity = new TestEntity_Owns_SeparateMany_SeparateMany
                           {
@@ -607,12 +603,12 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
 
          ActDbContext.Add(testEntity);
 
-         SUT.Awaiting(sut => sut.BulkInsertAsync(new[] { testEntity }, new SqlServerBulkInsertOptions()))
-            .Should().Throw<NotSupportedException>().WithMessage("Non-inlined (i.e. with its own table) nested owned type 'Thinktecture.TestDatabaseContext.OwnedEntity_Owns_SeparateMany.SeparateEntities' inside another owned type collection 'Thinktecture.TestDatabaseContext.TestEntity_Owns_SeparateMany_SeparateMany.SeparateEntities' is not supported.");
+         await SUT.Awaiting(sut => sut.BulkInsertAsync(new[] { testEntity }, new SqlServerBulkInsertOptions()))
+                  .Should().ThrowAsync<NotSupportedException>().WithMessage("Non-inlined (i.e. with its own table) nested owned type 'Thinktecture.TestDatabaseContext.OwnedEntity_Owns_SeparateMany.SeparateEntities' inside another owned type collection 'Thinktecture.TestDatabaseContext.TestEntity_Owns_SeparateMany_SeparateMany.SeparateEntities' is not supported.");
       }
 
       [Fact]
-      public void Should_throw_on_insert_of_TestEntity_Owns_SeparateMany_SeparateOne()
+      public async Task Should_throw_on_insert_of_TestEntity_Owns_SeparateMany_SeparateOne()
       {
          var testEntity = new TestEntity_Owns_SeparateMany_SeparateOne
                           {
@@ -644,8 +640,8 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
 
          ActDbContext.Add(testEntity);
 
-         SUT.Awaiting(sut => sut.BulkInsertAsync(new[] { testEntity }, new SqlServerBulkInsertOptions()))
-            .Should().Throw<NotSupportedException>().WithMessage("Non-inlined (i.e. with its own table) nested owned type 'Thinktecture.TestDatabaseContext.OwnedEntity_Owns_SeparateOne.SeparateEntity' inside another owned type collection 'Thinktecture.TestDatabaseContext.TestEntity_Owns_SeparateMany_SeparateOne.SeparateEntities' is not supported.");
+         await SUT.Awaiting(sut => sut.BulkInsertAsync(new[] { testEntity }, new SqlServerBulkInsertOptions()))
+                  .Should().ThrowAsync<NotSupportedException>().WithMessage("Non-inlined (i.e. with its own table) nested owned type 'Thinktecture.TestDatabaseContext.OwnedEntity_Owns_SeparateOne.SeparateEntity' inside another owned type collection 'Thinktecture.TestDatabaseContext.TestEntity_Owns_SeparateMany_SeparateOne.SeparateEntities' is not supported.");
       }
 
       [Fact]
@@ -671,8 +667,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
          await SUT.BulkInsertAsync(new[] { testEntity }, new SqlServerBulkInsertOptions());
 
          var loadedEntities = await AssertDbContext.TestEntities_Own_SeparateOne_Inline.ToListAsync();
-         loadedEntities.Should().HaveCount(1)
-                       .And.BeEquivalentTo(testEntity);
+         loadedEntities.Should().BeEquivalentTo(new[] { testEntity });
       }
 
       [Fact]
@@ -706,8 +701,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
          await SUT.BulkInsertAsync(new[] { testEntity }, new SqlServerBulkInsertOptions());
 
          var loadedEntities = await AssertDbContext.TestEntities_Own_SeparateOne_SeparateMany.ToListAsync();
-         loadedEntities.Should().HaveCount(1)
-                       .And.BeEquivalentTo(testEntity);
+         loadedEntities.Should().BeEquivalentTo(new[] { testEntity });
       }
 
       [Fact]
@@ -733,8 +727,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
          await SUT.BulkInsertAsync(new[] { testEntity }, new SqlServerBulkInsertOptions());
 
          var loadedEntities = await AssertDbContext.TestEntities_Own_SeparateOne_SeparateOne.ToListAsync();
-         loadedEntities.Should().HaveCount(1)
-                       .And.BeEquivalentTo(testEntity);
+         loadedEntities.Should().BeEquivalentTo(new[] { testEntity });
       }
    }
 }

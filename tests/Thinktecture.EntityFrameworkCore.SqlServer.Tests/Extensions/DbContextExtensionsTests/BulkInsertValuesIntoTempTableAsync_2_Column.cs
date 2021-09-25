@@ -28,9 +28,7 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
          await using var query = await ActDbContext.BulkInsertValuesIntoTempTableAsync(values, new SqlServerTempTableBulkInsertOptions { PrimaryKeyCreation = PrimaryKeyPropertiesProviders.None });
 
          var tempTable = await query.Query.ToListAsync();
-         tempTable.Should()
-                  .HaveCount(1).And
-                  .BeEquivalentTo(new TempTable<int, int?>(1, null));
+         tempTable.Should().BeEquivalentTo(new[] { new TempTable<int, int?>(1, null) });
       }
 
       [Fact]
@@ -42,9 +40,7 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
          await using var query = await ActDbContext.BulkInsertValuesIntoTempTableAsync(values, new SqlServerTempTableBulkInsertOptions { PrimaryKeyCreation = PrimaryKeyPropertiesProviders.None });
 
          var tempTable = await query.Query.ToListAsync();
-         tempTable.Should()
-                  .HaveCount(1).And
-                  .BeEquivalentTo(new TempTable<string, string?>("value1", null));
+         tempTable.Should().BeEquivalentTo(new[] { new TempTable<string, string?>("value1", null) });
       }
 
       [Fact]

@@ -29,9 +29,7 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
          await using var query = await ActDbContext.BulkInsertIntoTempTableAsync(entities);
 
          var tempTable = await query.Query.ToListAsync();
-         tempTable.Should()
-                  .HaveCount(1).And
-                  .BeEquivalentTo(new CustomTempTable(1, "value"));
+         tempTable.Should().BeEquivalentTo(new[] { new CustomTempTable(1, "value") });
       }
 
       [Fact]
@@ -51,15 +49,16 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
          await using var query = await ActDbContext.BulkInsertIntoTempTableAsync(entities);
 
          var tempTable = await query.Query.ToListAsync();
-         tempTable.Should()
-                  .HaveCount(1).And
-                  .BeEquivalentTo(new TestEntity
-                                  {
-                                     Id = new Guid("577BFD36-21BC-4F9E-97B4-367B8F29B730"),
-                                     Name = "Name",
-                                     Count = 42,
-                                     ConvertibleClass = new ConvertibleClass(43)
-                                  });
+         tempTable.Should().BeEquivalentTo(new[]
+                                           {
+                                              new TestEntity
+                                              {
+                                                 Id = new Guid("577BFD36-21BC-4F9E-97B4-367B8F29B730"),
+                                                 Name = "Name",
+                                                 Count = 42,
+                                                 ConvertibleClass = new ConvertibleClass(43)
+                                              }
+                                           });
       }
 
       [Fact]
@@ -68,8 +67,8 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
          await using var tempTableQuery = await ActDbContext.BulkInsertIntoTempTableAsync(Array.Empty<TestEntity>());
          tempTableQuery.Dispose();
 
-         tempTableQuery.Awaiting(t => t.Query.ToListAsync())
-                       .Should().Throw<SqliteException>().WithMessage("SQLite Error 1: 'no such table: TestEntities_1'.");
+         await tempTableQuery.Awaiting(t => t.Query.ToListAsync())
+                             .Should().ThrowAsync<SqliteException>().WithMessage("SQLite Error 1: 'no such table: TestEntities_1'.");
       }
 
       [Fact]
@@ -89,16 +88,18 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
 
          var entities = await tempTable.Query.ToListAsync();
 
-         entities.Should().HaveCount(1)
-                 .And.BeEquivalentTo(new TestEntity_Owns_Inline
-                                     {
-                                        Id = new Guid("3A1B2FFF-8E11-44E5-80E5-8C7FEEDACEB3"),
-                                        InlineEntity = new OwnedEntity
-                                                       {
-                                                          IntColumn = 42,
-                                                          StringColumn = "value"
-                                                       }
-                                     });
+         entities.Should().BeEquivalentTo(new[]
+                                          {
+                                             new TestEntity_Owns_Inline
+                                             {
+                                                Id = new Guid("3A1B2FFF-8E11-44E5-80E5-8C7FEEDACEB3"),
+                                                InlineEntity = new OwnedEntity
+                                                               {
+                                                                  IntColumn = 42,
+                                                                  StringColumn = "value"
+                                                               }
+                                             }
+                                          });
       }
 
       [Fact]
@@ -150,13 +151,13 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
                                         .Join(tempTable2.Query, e => e.Id, e => e.Id, (temp1, temp2) => new { temp1, temp2 })
                                         .ToListAsync();
 
-         entities.Should().HaveCount(1).And.BeEquivalentTo(new { temp1 = testEntity1, temp2 = testEntity2 });
+         entities.Should().BeEquivalentTo(new[] { new { temp1 = testEntity1, temp2 = testEntity2 } });
 
          entities = await tempTable1.Query
                                     .Join(tempTable2.Query, e => e.Id, e => e.Id, (temp1, temp2) => new { temp1, temp2 })
                                     .ToListAsync();
 
-         entities.Should().HaveCount(1).And.BeEquivalentTo(new { temp1 = testEntity1, temp2 = testEntity2 });
+         entities.Should().BeEquivalentTo(new[] { new { temp1 = testEntity1, temp2 = testEntity2 } });
       }
 
       [Fact]
@@ -186,10 +187,10 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
          await using var tempTable1_2 = await ActDbContext.BulkInsertIntoTempTableAsync(new[] { testEntity1 });
          await using var tempTable2_2 = await ActDbContext.BulkInsertIntoTempTableAsync(new[] { testEntity2 });
 
-         tempTable1_1.Query.ToList().Should().HaveCount(1).And.BeEquivalentTo(testEntity1);
-         tempTable1_2.Query.ToList().Should().HaveCount(1).And.BeEquivalentTo(testEntity1);
-         tempTable2_1.Query.ToList().Should().HaveCount(1).And.BeEquivalentTo(testEntity2);
-         tempTable2_2.Query.ToList().Should().HaveCount(1).And.BeEquivalentTo(testEntity2);
+         tempTable1_1.Query.ToList().Should().BeEquivalentTo(new[] { testEntity1 });
+         tempTable1_2.Query.ToList().Should().BeEquivalentTo(new[] { testEntity1 });
+         tempTable2_1.Query.ToList().Should().BeEquivalentTo(new[] { testEntity2 });
+         tempTable2_2.Query.ToList().Should().BeEquivalentTo(new[] { testEntity2 });
       }
 
       [Fact]
@@ -217,15 +218,15 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
          await using (var tempTable1 = await ActDbContext.BulkInsertIntoTempTableAsync(new[] { testEntity1 }))
          await using (var tempTable2 = await ActDbContext.BulkInsertIntoTempTableAsync(new[] { testEntity2 }))
          {
-            tempTable1.Query.ToList().Should().HaveCount(1).And.BeEquivalentTo(testEntity1);
-            tempTable2.Query.ToList().Should().HaveCount(1).And.BeEquivalentTo(testEntity2);
+            tempTable1.Query.ToList().Should().BeEquivalentTo(new[] { testEntity1 });
+            tempTable2.Query.ToList().Should().BeEquivalentTo(new[] { testEntity2 });
          }
 
          await using (var tempTable1 = await ActDbContext.BulkInsertIntoTempTableAsync(new[] { testEntity1 }))
          await using (var tempTable2 = await ActDbContext.BulkInsertIntoTempTableAsync(new[] { testEntity2 }))
          {
-            tempTable1.Query.ToList().Should().HaveCount(1).And.BeEquivalentTo(testEntity1);
-            tempTable2.Query.ToList().Should().HaveCount(1).And.BeEquivalentTo(testEntity2);
+            tempTable1.Query.ToList().Should().BeEquivalentTo(new[] { testEntity1 });
+            tempTable2.Query.ToList().Should().BeEquivalentTo(new[] { testEntity2 });
          }
       }
 
@@ -260,17 +261,17 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
                                        .Join(ActDbContext.TestEntities_Own_Inline, e => e.Id, e => e.Id, (temp, real) => new { temp, real })
                                        .ToListAsync();
 
-         entities.Should().HaveCount(1).And.BeEquivalentTo(new { temp = tempEntity, real = realEntity });
+         entities.Should().BeEquivalentTo(new[] { new { temp = tempEntity, real = realEntity } });
 
          entities = await tempTable.Query
                                    .Join(ActDbContext.TestEntities_Own_Inline, e => e.Id, e => e.Id, (temp, real) => new { temp, real })
                                    .ToListAsync();
 
-         entities.Should().HaveCount(1).And.BeEquivalentTo(new { temp = tempEntity, real = realEntity });
+         entities.Should().BeEquivalentTo(new[] { new { temp = tempEntity, real = realEntity } });
       }
 
       [Fact]
-      public void Should_throw_if_required_inlined_owned_type_is_null()
+      public async Task Should_throw_if_required_inlined_owned_type_is_null()
       {
          var testEntity = new TestEntity_Owns_Inline
                           {
@@ -279,13 +280,13 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
                           };
          var testEntities = new[] { testEntity };
 
-         ActDbContext.Awaiting(ctx => ctx.BulkInsertIntoTempTableAsync(testEntities))
-                     .Should().Throw<SqliteException>()
-                     .WithMessage("SQLite Error 19: 'NOT NULL constraint failed: TestEntities_Own_Inline_1.InlineEntity_IntColumn'.");
+         await ActDbContext.Awaiting(ctx => ctx.BulkInsertIntoTempTableAsync(testEntities))
+                           .Should().ThrowAsync<SqliteException>()
+                           .WithMessage("SQLite Error 19: 'NOT NULL constraint failed: TestEntities_Own_Inline_1.InlineEntity_IntColumn'.");
       }
 
       [Fact]
-      public void Should_throw_for_entities_with_separated_owned_type()
+      public async Task Should_throw_for_entities_with_separated_owned_type()
       {
          var testEntity = new TestEntity_Owns_SeparateOne
                           {
@@ -297,9 +298,9 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
                                               }
                           };
 
-         ActDbContext.Awaiting(sut => sut.BulkInsertIntoTempTableAsync(new[] { testEntity }))
-                     .Should().Throw<NotSupportedException>()
-                     .WithMessage("Bulk insert of separate owned types into temp tables is not supported. Properties of separate owned types: SeparateEntity.IntColumn, SeparateEntity.StringColumn");
+         await ActDbContext.Awaiting(sut => sut.BulkInsertIntoTempTableAsync(new[] { testEntity }))
+                           .Should().ThrowAsync<NotSupportedException>()
+                           .WithMessage("Bulk insert of separate owned types into temp tables is not supported. Properties of separate owned types: SeparateEntity.IntColumn, SeparateEntity.StringColumn");
       }
 
       [Fact]
@@ -319,12 +320,14 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
 
          var entities = await tempTable.Query.ToListAsync();
 
-         entities.Should().HaveCount(1)
-                 .And.BeEquivalentTo(new TestEntity_Owns_SeparateOne
-                                     {
-                                        Id = new Guid("3A1B2FFF-8E11-44E5-80E5-8C7FEEDACEB3"),
-                                        SeparateEntity = null!
-                                     });
+         entities.Should().BeEquivalentTo(new[]
+                                          {
+                                             new TestEntity_Owns_SeparateOne
+                                             {
+                                                Id = new Guid("3A1B2FFF-8E11-44E5-80E5-8C7FEEDACEB3"),
+                                                SeparateEntity = null!
+                                             }
+                                          });
       }
    }
 }

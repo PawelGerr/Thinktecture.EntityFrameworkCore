@@ -34,13 +34,14 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
          affectedRows.Should().Be(1);
 
          var loadedEntities = await AssertDbContext.TestEntities.ToListAsync();
-         loadedEntities.Should().HaveCount(1)
-                       .And.Subject
-                       .Should().BeEquivalentTo(new TestEntity
+         loadedEntities.Should().BeEquivalentTo(new[]
                                                 {
-                                                   Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
-                                                   Name = "Name",
-                                                   Count = 42
+                                                   new TestEntity
+                                                   {
+                                                      Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
+                                                      Name = "Name",
+                                                      Count = 42
+                                                   }
                                                 });
       }
 
@@ -64,13 +65,14 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
          affectedRows.Should().Be(1);
 
          var loadedEntities = await AssertDbContext.TestEntities.ToListAsync();
-         loadedEntities.Should().HaveCount(1)
-                       .And.Subject
-                       .Should().BeEquivalentTo(new TestEntity
+         loadedEntities.Should().BeEquivalentTo(new[]
                                                 {
-                                                   Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
-                                                   Name = "changed",
-                                                   Count = 43
+                                                   new TestEntity
+                                                   {
+                                                      Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
+                                                      Name = "changed",
+                                                      Count = 43
+                                                   }
                                                 });
       }
 
@@ -107,19 +109,20 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
          affectedRows.Should().Be(2);
 
          var loadedEntities = await AssertDbContext.TestEntities.ToListAsync();
-         loadedEntities.Should().HaveCount(2)
-                       .And.Subject
-                       .Should().BeEquivalentTo(new TestEntity
+         loadedEntities.Should().BeEquivalentTo(new[]
                                                 {
-                                                   Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
-                                                   Name = "changed",
-                                                   Count = 42
-                                                },
-                                                new TestEntity
-                                                {
-                                                   Id = new Guid("3AA6D70D-C619-4EB5-9819-8030506EA637"),
-                                                   Name = null, // is not a required property
-                                                   Count = 1
+                                                   new TestEntity
+                                                   {
+                                                      Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
+                                                      Name = "changed",
+                                                      Count = 42
+                                                   },
+                                                   new TestEntity
+                                                   {
+                                                      Id = new Guid("3AA6D70D-C619-4EB5-9819-8030506EA637"),
+                                                      Name = null, // is not a required property
+                                                      Count = 1
+                                                   }
                                                 });
       }
 
@@ -155,19 +158,20 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
          affectedRows.Should().Be(1);
 
          var loadedEntities = await AssertDbContext.TestEntities.ToListAsync();
-         loadedEntities.Should().HaveCount(2)
-                       .And.Subject
-                       .Should().BeEquivalentTo(new TestEntity
+         loadedEntities.Should().BeEquivalentTo(new[]
                                                 {
-                                                   Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
-                                                   Name = "Name",
-                                                   Count = 100 // the only updated value
-                                                },
-                                                new TestEntity
-                                                {
-                                                   Id = new Guid("3AA6D70D-C619-4EB5-9819-8030506EA637"),
-                                                   Name = "other",
-                                                   Count = 1
+                                                   new TestEntity
+                                                   {
+                                                      Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
+                                                      Name = "Name",
+                                                      Count = 100 // the only updated value
+                                                   },
+                                                   new TestEntity
+                                                   {
+                                                      Id = new Guid("3AA6D70D-C619-4EB5-9819-8030506EA637"),
+                                                      Name = "other",
+                                                      Count = 1
+                                                   }
                                                 });
       }
    }

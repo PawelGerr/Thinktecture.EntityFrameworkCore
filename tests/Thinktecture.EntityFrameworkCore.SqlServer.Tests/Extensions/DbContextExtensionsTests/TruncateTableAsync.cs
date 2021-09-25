@@ -19,10 +19,10 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
       }
 
       [Fact]
-      public void Should_not_throw_if_table_is_empty()
+      public async Task Should_not_throw_if_table_is_empty()
       {
-         ActDbContext.Awaiting(ctx => ctx.TruncateTableAsync<TestEntity>())
-                     .Should().NotThrow();
+         await ActDbContext.Awaiting(ctx => ctx.TruncateTableAsync<TestEntity>())
+                           .Should().NotThrowAsync();
       }
 
       [Fact]

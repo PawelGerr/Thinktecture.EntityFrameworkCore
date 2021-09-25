@@ -93,9 +93,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqliteBulkOperationExe
          affectedRows.Should().Be(2);
 
          var loadedEntities = await AssertDbContext.TestEntities.ToListAsync();
-         loadedEntities.Should().HaveCount(2)
-                       .And.Subject
-                       .Should().BeEquivalentTo(entity_1, entity_2);
+         loadedEntities.Should().BeEquivalentTo(new[] { entity_1, entity_2 });
       }
 
       [Fact]
@@ -124,9 +122,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqliteBulkOperationExe
          entity_2.Count = 1;
 
          var loadedEntities = await AssertDbContext.TestEntities.ToListAsync();
-         loadedEntities.Should().HaveCount(2)
-                       .And.Subject
-                       .Should().BeEquivalentTo(entity_1, entity_2);
+         loadedEntities.Should().BeEquivalentTo(new[] { entity_1, entity_2 });
       }
 
       [Fact]
@@ -150,9 +146,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqliteBulkOperationExe
          entity_2.Count = default;
 
          var loadedEntities = await AssertDbContext.TestEntities.ToListAsync();
-         loadedEntities.Should().HaveCount(2)
-                       .And.Subject
-                       .Should().BeEquivalentTo(entity_1, entity_2);
+         loadedEntities.Should().BeEquivalentTo(new[] { entity_1, entity_2 });
       }
 
       [Fact]

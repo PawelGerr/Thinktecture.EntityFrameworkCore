@@ -30,19 +30,17 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
          await using var query = await ActDbContext.BulkInsertValuesIntoTempTableAsync(values);
 
          var tempTable = await query.Query.ToListAsync();
-         tempTable.Should()
-                  .HaveCount(2).And
-                  .BeEquivalentTo(new TempTable<int>(1), new TempTable<int>(2));
+         tempTable.Should().BeEquivalentTo(new[] { new TempTable<int>(1), new TempTable<int>(2) });
       }
 
       [Fact]
-      public void Should_throw_if_inserting_duplicates()
+      public async Task Should_throw_if_inserting_duplicates()
       {
          ConfigureModel = builder => builder.ConfigureTempTable<int>(false);
 
          var values = new List<int> { 1, 1 };
-         ActDbContext.Awaiting(ctx => ctx.BulkInsertValuesIntoTempTableAsync(values))
-                     .Should().Throw<SqlException>().Where(ex => ex.Message.StartsWith("The CREATE UNIQUE INDEX statement terminated because a duplicate key was found", StringComparison.Ordinal));
+         await ActDbContext.Awaiting(ctx => ctx.BulkInsertValuesIntoTempTableAsync(values))
+                           .Should().ThrowAsync<SqlException>().Where(ex => ex.Message.StartsWith("The CREATE UNIQUE INDEX statement terminated because a duplicate key was found", StringComparison.Ordinal));
       }
 
       [Fact]
@@ -55,9 +53,7 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
          await using var query = await ActDbContext.BulkInsertValuesIntoTempTableAsync(values, options);
 
          var tempTable = await query.Query.ToListAsync();
-         tempTable.Should()
-                  .HaveCount(2).And
-                  .BeEquivalentTo(new TempTable<int>(1), new TempTable<int>(2));
+         tempTable.Should().BeEquivalentTo(new[] { new TempTable<int>(1), new TempTable<int>(2) });
       }
 
       [Fact]
@@ -69,9 +65,7 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
          await using var query = await ActDbContext.BulkInsertValuesIntoTempTableAsync(values, new SqlServerTempTableBulkInsertOptions { PrimaryKeyCreation = PrimaryKeyPropertiesProviders.None });
 
          var tempTable = await query.Query.ToListAsync();
-         tempTable.Should()
-                  .HaveCount(2).And
-                  .BeEquivalentTo(new TempTable<int?>(1), new TempTable<int?>(null));
+         tempTable.Should().BeEquivalentTo(new[] { new TempTable<int?>(1), new TempTable<int?>(null) });
       }
 
       [Fact]
@@ -88,9 +82,7 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
          await using var query = await ActDbContext.BulkInsertValuesIntoTempTableAsync(values, new SqlServerTempTableBulkInsertOptions { PrimaryKeyCreation = PrimaryKeyPropertiesProviders.None });
 
          var tempTable = await query.Query.ToListAsync();
-         tempTable.Should()
-                  .HaveCount(2).And
-                  .BeEquivalentTo(new TempTable<int?>(1), new TempTable<int?>(2));
+         tempTable.Should().BeEquivalentTo(new[] { new TempTable<int?>(1), new TempTable<int?>(2) });
       }
 
       [Fact]
@@ -102,9 +94,7 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
          await using var query = await ActDbContext.BulkInsertValuesIntoTempTableAsync(values, new SqlServerTempTableBulkInsertOptions { PrimaryKeyCreation = PrimaryKeyPropertiesProviders.None });
 
          var tempTable = await query.Query.ToListAsync();
-         tempTable.Should()
-                  .HaveCount(2).And
-                  .BeEquivalentTo(new TempTable<string?>("value1"), new TempTable<string?>(null));
+         tempTable.Should().BeEquivalentTo(new[] { new TempTable<string?>("value1"), new TempTable<string?>(null) });
       }
 
       [Fact]
@@ -124,12 +114,12 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
       }
 
       [Fact]
-      public void Should_throw_when_trying_to_create_pk_on_nullable_column()
+      public async Task Should_throw_when_trying_to_create_pk_on_nullable_column()
       {
          ConfigureModel = builder => builder.ConfigureTempTable<int?>();
 
-         ActDbContext.Awaiting(ctx => ctx.BulkInsertValuesIntoTempTableAsync(new List<int?> { 1 }, new SqlServerTempTableBulkInsertOptions { PrimaryKeyCreation = PrimaryKeyPropertiesProviders.AdaptiveForced }))
-                     .Should().Throw<SqlException>();
+         await ActDbContext.Awaiting(ctx => ctx.BulkInsertValuesIntoTempTableAsync(new List<int?> { 1 }, new SqlServerTempTableBulkInsertOptions { PrimaryKeyCreation = PrimaryKeyPropertiesProviders.AdaptiveForced }))
+                           .Should().ThrowAsync<SqlException>();
       }
 
       [Fact]

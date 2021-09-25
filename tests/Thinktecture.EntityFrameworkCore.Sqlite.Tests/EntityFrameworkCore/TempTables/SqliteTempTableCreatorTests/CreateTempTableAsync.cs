@@ -274,7 +274,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqliteTempTableCreatorTest
       }
 
       [Fact]
-      public void Should_throw_if_some_pk_columns_are_missing()
+      public async Task Should_throw_if_some_pk_columns_are_missing()
       {
          _optionsWithNonUniqueNameAndNoPrimaryKey.PrimaryKeyCreation = PrimaryKeyPropertiesProviders.EntityTypeConfiguration;
          _optionsWithNonUniqueNameAndNoPrimaryKey.PropertiesToInclude = EntityPropertiesProvider.From<CustomTempTable>(t => t.Column1);
@@ -287,8 +287,8 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqliteTempTableCreatorTest
                           };
 
          // ReSharper disable once RedundantArgumentDefaultValue
-         SUT.Awaiting(sut => sut.CreateTempTableAsync(ActDbContext.GetEntityType<CustomTempTable>(), _optionsWithNonUniqueNameAndNoPrimaryKey))
-            .Should().Throw<ArgumentException>().WithMessage(@"Cannot create PRIMARY KEY because not all key columns are part of the temp table.
+         await SUT.Awaiting(sut => sut.CreateTempTableAsync(ActDbContext.GetEntityType<CustomTempTable>(), _optionsWithNonUniqueNameAndNoPrimaryKey))
+                  .Should().ThrowAsync<ArgumentException>().WithMessage(@"Cannot create PRIMARY KEY because not all key columns are part of the temp table.
 You may use other key properties providers like 'PrimaryKeyPropertiesProviders.AdaptiveEntityTypeConfiguration' instead of 'PrimaryKeyPropertiesProviders.EntityTypeConfiguration' to get different behaviors.
 Missing columns: Column2.");
       }
@@ -483,20 +483,20 @@ Missing columns: Column2.");
       }
 
       [Fact]
-      public void Should_throw_when_creating_temp_table_with_autoincrement_if_it_is_not_primary_key()
+      public async Task Should_throw_when_creating_temp_table_with_autoincrement_if_it_is_not_primary_key()
       {
          // ReSharper disable once RedundantArgumentDefaultValue
-         SUT.Awaiting(sut => sut.CreateTempTableAsync(ActDbContext.GetEntityType<TestEntityWithAutoIncrement>(), _optionsWithNonUniqueNameAndNoPrimaryKey))
-            .Should().Throw<NotSupportedException>()
-            .WithMessage(@"SQLite does not allow the property 'Id' of the entity 'Thinktecture.TestDatabaseContext.TestEntityWithAutoIncrement' to be an AUTOINCREMENT column unless this column is the PRIMARY KEY.
+         await SUT.Awaiting(sut => sut.CreateTempTableAsync(ActDbContext.GetEntityType<TestEntityWithAutoIncrement>(), _optionsWithNonUniqueNameAndNoPrimaryKey))
+                  .Should().ThrowAsync<NotSupportedException>()
+                  .WithMessage(@"SQLite does not allow the property 'Id' of the entity 'Thinktecture.TestDatabaseContext.TestEntityWithAutoIncrement' to be an AUTOINCREMENT column unless this column is the PRIMARY KEY.
 Currently configured primary keys: []");
       }
 
       [Fact]
-      public void Should_throw_if_temp_table_is_not_introduced()
+      public async Task Should_throw_if_temp_table_is_not_introduced()
       {
-         SUT.Awaiting(c => c.CreateTempTableAsync(ActDbContext.GetEntityType<TempTable<int>>(), _optionsWithNonUniqueNameAndNoPrimaryKey))
-            .Should().Throw<ArgumentException>();
+         await SUT.Awaiting(c => c.CreateTempTableAsync(ActDbContext.GetEntityType<TempTable<int>>(), _optionsWithNonUniqueNameAndNoPrimaryKey))
+                  .Should().ThrowAsync<ArgumentException>();
       }
 
       [Fact]
@@ -651,10 +651,10 @@ Currently configured primary keys: []");
       public async Task Should_create_temp_table_for_entity_by_selecting_inlined_owned_type()
       {
          _optionsWithNonUniqueNameAndNoPrimaryKey.PropertiesToInclude = EntityPropertiesProvider.From<TestEntity_Owns_Inline>(e => new
-                                                                                                                                         {
-                                                                                                                                            e.Id,
-                                                                                                                                            e.InlineEntity
-                                                                                                                                         });
+                                                                                                                                   {
+                                                                                                                                      e.Id,
+                                                                                                                                      e.InlineEntity
+                                                                                                                                   });
          await using var tempTable = await SUT.CreateTempTableAsync(ActDbContext.GetEntityType<TestEntity_Owns_Inline>(), _optionsWithNonUniqueNameAndNoPrimaryKey);
 
          var columns = AssertDbContext.GetTempTableColumns<TestEntity_Owns_Inline>().ToList();
@@ -687,16 +687,16 @@ Currently configured primary keys: []");
       }
 
       [Fact]
-      public void Should_throw_when_selecting_separated_owned_type()
+      public async Task Should_throw_when_selecting_separated_owned_type()
       {
          _optionsWithNonUniqueNameAndNoPrimaryKey.PropertiesToInclude = EntityPropertiesProvider.From<TestEntity_Owns_SeparateOne>(e => new
-                                                                                                                                              {
-                                                                                                                                                 e.Id,
-                                                                                                                                                 e.SeparateEntity
-                                                                                                                                              });
-         SUT.Awaiting(sut => sut.CreateTempTableAsync(ActDbContext.GetEntityType<TestEntity_Owns_SeparateOne>(), _optionsWithNonUniqueNameAndNoPrimaryKey))
-            .Should().Throw<NotSupportedException>()
-            .WithMessage("Properties of owned types that are saved in a separate table are not supported. Property: SeparateEntity");
+                                                                                                                                        {
+                                                                                                                                           e.Id,
+                                                                                                                                           e.SeparateEntity
+                                                                                                                                        });
+         await SUT.Awaiting(sut => sut.CreateTempTableAsync(ActDbContext.GetEntityType<TestEntity_Owns_SeparateOne>(), _optionsWithNonUniqueNameAndNoPrimaryKey))
+                  .Should().ThrowAsync<NotSupportedException>()
+                  .WithMessage("Properties of owned types that are saved in a separate table are not supported. Property: SeparateEntity");
       }
 
       [Fact]

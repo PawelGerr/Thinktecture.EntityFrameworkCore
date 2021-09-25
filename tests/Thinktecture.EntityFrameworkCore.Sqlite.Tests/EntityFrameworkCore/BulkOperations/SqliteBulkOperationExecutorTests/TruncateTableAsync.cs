@@ -23,10 +23,10 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqliteBulkOperationExe
       }
 
       [Fact]
-      public void Should_not_throw_if_table_is_empty()
+      public async Task Should_not_throw_if_table_is_empty()
       {
-         SUT.Awaiting(sut => sut.TruncateTableAsync<TestEntity>())
-            .Should().NotThrow();
+         await SUT.Awaiting(sut => sut.TruncateTableAsync<TestEntity>())
+            .Should().NotThrowAsync();
       }
 
       [Fact]

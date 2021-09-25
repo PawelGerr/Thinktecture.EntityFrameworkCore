@@ -24,12 +24,12 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqliteBulkOperationExe
       }
 
       [Fact]
-      public void Should_throw_when_inserting_entities_without_creating_table_first()
+      public async Task Should_throw_when_inserting_entities_without_creating_table_first()
       {
          ConfigureModel = builder => builder.Entity<CustomTempTable>().HasNoKey();
 
-         SUT.Awaiting(sut => sut.BulkInsertAsync(new List<CustomTempTable>(), new SqliteBulkInsertOptions()))
-            .Should().Throw<InvalidOperationException>().WithMessage("Error during bulk operation on table '\"CustomTempTable\"'. See inner exception for more details.");
+         await SUT.Awaiting(sut => sut.BulkInsertAsync(new List<CustomTempTable>(), new SqliteBulkInsertOptions()))
+                  .Should().ThrowAsync<InvalidOperationException>().WithMessage("Error during bulk operation on table '\"CustomTempTable\"'. See inner exception for more details.");
       }
 
       [Fact]
@@ -88,14 +88,14 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqliteBulkOperationExe
       }
 
       [Fact]
-      public void Should_throw_because_sqlite_dont_support_null_for_NOT_NULL_despite_sql_default_value()
+      public async Task Should_throw_because_sqlite_dont_support_null_for_NOT_NULL_despite_sql_default_value()
       {
          var testEntity = new TestEntityWithSqlDefaultValues { String = null! };
          var testEntities = new[] { testEntity };
 
-         SUT.Awaiting(sut => sut.BulkInsertAsync(testEntities, new SqliteBulkInsertOptions()))
-            .Should().Throw<SqliteException>()
-            .WithMessage("SQLite Error 19: 'NOT NULL constraint failed: TestEntitiesWithDefaultValues.String'.");
+         await SUT.Awaiting(sut => sut.BulkInsertAsync(testEntities, new SqliteBulkInsertOptions()))
+                  .Should().ThrowAsync<SqliteException>()
+                  .WithMessage("SQLite Error 19: 'NOT NULL constraint failed: TestEntitiesWithDefaultValues.String'.");
       }
 
       [Fact]
@@ -137,14 +137,14 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqliteBulkOperationExe
       }
 
       [Fact]
-      public void Should_throw_because_sqlite_dont_support_null_for_NOT_NULL_despite_dotnet_default_value()
+      public async Task Should_throw_because_sqlite_dont_support_null_for_NOT_NULL_despite_dotnet_default_value()
       {
          var testEntity = new TestEntityWithDotnetDefaultValues { String = null! };
          var testEntities = new[] { testEntity };
 
-         SUT.Awaiting(sut => sut.BulkInsertAsync(testEntities, new SqliteBulkInsertOptions()))
-            .Should().Throw<SqliteException>()
-            .WithMessage("SQLite Error 19: 'NOT NULL constraint failed: TestEntitiesWithDotnetDefaultValues.String'.");
+         await SUT.Awaiting(sut => sut.BulkInsertAsync(testEntities, new SqliteBulkInsertOptions()))
+                  .Should().ThrowAsync<SqliteException>()
+                  .WithMessage("SQLite Error 19: 'NOT NULL constraint failed: TestEntitiesWithDotnetDefaultValues.String'.");
       }
 
       [Fact]
@@ -235,7 +235,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqliteBulkOperationExe
       }
 
       [Fact]
-      public void Should_throw_if_required_inlined_owned_type_is_null()
+      public async Task Should_throw_if_required_inlined_owned_type_is_null()
       {
          var testEntity = new TestEntity_Owns_Inline
                           {
@@ -244,8 +244,8 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqliteBulkOperationExe
                           };
          var testEntities = new[] { testEntity };
 
-         ActDbContext.Awaiting(ctx => ctx.BulkInsertIntoTempTableAsync(testEntities))
-                     .Should().Throw<SqliteException>().WithMessage("SQLite Error 19: 'NOT NULL constraint failed: TestEntities_Own_Inline_1.InlineEntity_IntColumn'.");
+         await ActDbContext.Awaiting(ctx => ctx.BulkInsertIntoTempTableAsync(testEntities))
+                           .Should().ThrowAsync<SqliteException>().WithMessage("SQLite Error 19: 'NOT NULL constraint failed: TestEntities_Own_Inline_1.InlineEntity_IntColumn'.");
       }
 
       [Fact]
@@ -305,7 +305,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqliteBulkOperationExe
       }
 
       [Fact]
-      public void Should_throw_if_separated_owned_type_uses_shadow_property_id_and_is_detached()
+      public async Task Should_throw_if_separated_owned_type_uses_shadow_property_id_and_is_detached()
       {
          var testEntity = new TestEntity_Owns_SeparateOne
                           {
@@ -317,9 +317,9 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqliteBulkOperationExe
                                               }
                           };
 
-         SUT.Awaiting(sut => sut.BulkInsertAsync(new[] { testEntity }, new SqliteBulkInsertOptions()))
-            .Should().Throw<InvalidOperationException>()
-            .WithMessage("The entity type 'OwnedEntity' has a defining navigation and the supplied entity is currently not being tracked. To start tracking this entity, call '.Reference().TargetEntry' or '.Collection().FindEntry()' on the owner entry.");
+         await SUT.Awaiting(sut => sut.BulkInsertAsync(new[] { testEntity }, new SqliteBulkInsertOptions()))
+                  .Should().ThrowAsync<InvalidOperationException>()
+                  .WithMessage("The entity type 'OwnedEntity' has a defining navigation and the supplied entity is currently not being tracked. To start tracking this entity, call '.Reference().TargetEntry' or '.Collection().FindEntry()' on the owner entry.");
       }
 
       [Fact]
@@ -345,7 +345,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqliteBulkOperationExe
       }
 
       [Fact]
-      public void Should_throw_if_separated_owned_types_uses_shadow_property_id_and_is_detached()
+      public async Task Should_throw_if_separated_owned_types_uses_shadow_property_id_and_is_detached()
       {
          var testEntity = new TestEntity_Owns_SeparateMany
                           {
@@ -360,9 +360,9 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqliteBulkOperationExe
                                                 }
                           };
 
-         SUT.Awaiting(sut => sut.BulkInsertAsync(new[] { testEntity }, new SqliteBulkInsertOptions()))
-            .Should().Throw<InvalidOperationException>()
-            .WithMessage("The entity type 'OwnedEntity' has a defining navigation and the supplied entity is currently not being tracked. To start tracking this entity, call '.Reference().TargetEntry' or '.Collection().FindEntry()' on the owner entry.");
+         await SUT.Awaiting(sut => sut.BulkInsertAsync(new[] { testEntity }, new SqliteBulkInsertOptions()))
+                  .Should().ThrowAsync<InvalidOperationException>()
+                  .WithMessage("The entity type 'OwnedEntity' has a defining navigation and the supplied entity is currently not being tracked. To start tracking this entity, call '.Reference().TargetEntry' or '.Collection().FindEntry()' on the owner entry.");
       }
 
       [Fact]
@@ -412,8 +412,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqliteBulkOperationExe
          await SUT.BulkInsertAsync(new[] { testEntity }, new SqliteBulkInsertOptions());
 
          var loadedEntities = await AssertDbContext.TestEntities_Own_Inline_Inline.ToListAsync();
-         loadedEntities.Should().HaveCount(1)
-                       .And.BeEquivalentTo(testEntity);
+         loadedEntities.Should().BeEquivalentTo(new[] { testEntity });
       }
 
       [Fact]
@@ -446,8 +445,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqliteBulkOperationExe
          await SUT.BulkInsertAsync(new[] { testEntity }, new SqliteBulkInsertOptions());
 
          var loadedEntities = await AssertDbContext.TestEntities_Own_Inline_SeparateMany.ToListAsync();
-         loadedEntities.Should().HaveCount(1)
-                       .And.BeEquivalentTo(testEntity);
+         loadedEntities.Should().BeEquivalentTo(new[] { testEntity });
       }
 
       [Fact]
@@ -476,8 +474,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqliteBulkOperationExe
                                    }, new SqliteBulkInsertOptions());
 
          var loadedEntities = await AssertDbContext.TestEntities_Own_Inline_SeparateOne.ToListAsync();
-         loadedEntities.Should().HaveCount(1)
-                       .And.BeEquivalentTo(testEntity);
+         loadedEntities.Should().BeEquivalentTo(new[] { testEntity });
       }
 
       [Fact]
@@ -516,12 +513,11 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqliteBulkOperationExe
          await SUT.BulkInsertAsync(new[] { testEntity }, new SqliteBulkInsertOptions());
 
          var loadedEntities = await AssertDbContext.TestEntities_Own_SeparateMany_Inline.ToListAsync();
-         loadedEntities.Should().HaveCount(1)
-                       .And.BeEquivalentTo(testEntity);
+         loadedEntities.Should().BeEquivalentTo(new[] { testEntity });
       }
 
       [Fact]
-      public void Should_throw_on_insert_of_TestEntity_Owns_SeparateMany_SeparateMany()
+      public async Task Should_throw_on_insert_of_TestEntity_Owns_SeparateMany_SeparateMany()
       {
          var testEntity = new TestEntity_Owns_SeparateMany_SeparateMany
                           {
@@ -569,12 +565,12 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqliteBulkOperationExe
 
          ActDbContext.Add(testEntity);
 
-         SUT.Awaiting(sut => sut.BulkInsertAsync(new[] { testEntity }, new SqliteBulkInsertOptions()))
-            .Should().Throw<NotSupportedException>().WithMessage("Non-inlined (i.e. with its own table) nested owned type 'Thinktecture.TestDatabaseContext.OwnedEntity_Owns_SeparateMany.SeparateEntities' inside another owned type collection 'Thinktecture.TestDatabaseContext.TestEntity_Owns_SeparateMany_SeparateMany.SeparateEntities' is not supported.");
+         await SUT.Awaiting(sut => sut.BulkInsertAsync(new[] { testEntity }, new SqliteBulkInsertOptions()))
+                  .Should().ThrowAsync<NotSupportedException>().WithMessage("Non-inlined (i.e. with its own table) nested owned type 'Thinktecture.TestDatabaseContext.OwnedEntity_Owns_SeparateMany.SeparateEntities' inside another owned type collection 'Thinktecture.TestDatabaseContext.TestEntity_Owns_SeparateMany_SeparateMany.SeparateEntities' is not supported.");
       }
 
       [Fact]
-      public void Should_throw_on_insert_of_TestEntity_Owns_SeparateMany_SeparateOne()
+      public async Task Should_throw_on_insert_of_TestEntity_Owns_SeparateMany_SeparateOne()
       {
          var testEntity = new TestEntity_Owns_SeparateMany_SeparateOne
                           {
@@ -606,8 +602,8 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqliteBulkOperationExe
 
          ActDbContext.Add(testEntity);
 
-         SUT.Awaiting(sut => sut.BulkInsertAsync(new[] { testEntity }, new SqliteBulkInsertOptions()))
-            .Should().Throw<NotSupportedException>().WithMessage("Non-inlined (i.e. with its own table) nested owned type 'Thinktecture.TestDatabaseContext.OwnedEntity_Owns_SeparateOne.SeparateEntity' inside another owned type collection 'Thinktecture.TestDatabaseContext.TestEntity_Owns_SeparateMany_SeparateOne.SeparateEntities' is not supported.");
+         await SUT.Awaiting(sut => sut.BulkInsertAsync(new[] { testEntity }, new SqliteBulkInsertOptions()))
+                  .Should().ThrowAsync<NotSupportedException>().WithMessage("Non-inlined (i.e. with its own table) nested owned type 'Thinktecture.TestDatabaseContext.OwnedEntity_Owns_SeparateOne.SeparateEntity' inside another owned type collection 'Thinktecture.TestDatabaseContext.TestEntity_Owns_SeparateMany_SeparateOne.SeparateEntities' is not supported.");
       }
 
       [Fact]
@@ -633,8 +629,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqliteBulkOperationExe
          await SUT.BulkInsertAsync(new[] { testEntity }, new SqliteBulkInsertOptions());
 
          var loadedEntities = await AssertDbContext.TestEntities_Own_SeparateOne_Inline.ToListAsync();
-         loadedEntities.Should().HaveCount(1)
-                       .And.BeEquivalentTo(testEntity);
+         loadedEntities.Should().BeEquivalentTo(new[] { testEntity });
       }
 
       [Fact]
@@ -668,8 +663,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqliteBulkOperationExe
          await SUT.BulkInsertAsync(new[] { testEntity }, new SqliteBulkInsertOptions());
 
          var loadedEntities = await AssertDbContext.TestEntities_Own_SeparateOne_SeparateMany.ToListAsync();
-         loadedEntities.Should().HaveCount(1)
-                       .And.BeEquivalentTo(testEntity);
+         loadedEntities.Should().BeEquivalentTo(new[] { testEntity });
       }
 
       [Fact]
@@ -695,8 +689,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqliteBulkOperationExe
          await SUT.BulkInsertAsync(new[] { testEntity }, new SqliteBulkInsertOptions());
 
          var loadedEntities = await AssertDbContext.TestEntities_Own_SeparateOne_SeparateOne.ToListAsync();
-         loadedEntities.Should().HaveCount(1)
-                       .And.BeEquivalentTo(testEntity);
+         loadedEntities.Should().BeEquivalentTo(new[] { testEntity });
       }
    }
 }
