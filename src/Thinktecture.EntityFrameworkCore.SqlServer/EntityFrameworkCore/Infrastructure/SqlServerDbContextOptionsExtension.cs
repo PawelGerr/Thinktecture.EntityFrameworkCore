@@ -125,6 +125,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
          if (AddBulkOperationSupport)
          {
             services.AddSingleton<TempTableStatementCache<SqlServerTempTableCreatorCacheKey>>();
+            services.AddSingleton<TempTableStatementCache<SqlServerTempTablePrimaryKeyCacheKey>>();
             services.TryAddScoped<ISqlServerTempTableCreator, SqlServerTempTableCreator>();
             services.TryAddScoped<ITempTableCreator>(provider => provider.GetRequiredService<ISqlServerTempTableCreator>());
             services.AddTempTableSuffixComponents();

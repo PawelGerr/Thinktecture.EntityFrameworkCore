@@ -27,7 +27,8 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
       private readonly IDiagnosticsLogger<DbLoggerCategory.Query> _logger;
       private readonly ISqlGenerationHelper _sqlGenerationHelper;
       private readonly IRelationalTypeMappingSource _typeMappingSource;
-      private readonly TempTableStatementCache<SqlServerTempTableCreatorCacheKey> _cache;
+      private readonly TempTableStatementCache<SqlServerTempTableCreatorCacheKey> _tempTableCache;
+      private readonly TempTableStatementCache<SqlServerTempTablePrimaryKeyCacheKey> _primaryKeyCache;
 
       /// <summary>
       /// Initializes <see cref="SqlServerTempTableCreator"/>.
@@ -37,12 +38,14 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
       /// <param name="sqlGenerationHelper">SQL generation helper.</param>
       /// <param name="typeMappingSource">Type mappings.</param>
       /// <param name="cache">SQL statement cache.</param>
+      /// <param name="primaryKeyCache">Cache for primary keys.</param>
       public SqlServerTempTableCreator(
          ICurrentDbContext ctx,
          IDiagnosticsLogger<DbLoggerCategory.Query> logger,
          ISqlGenerationHelper sqlGenerationHelper,
          IRelationalTypeMappingSource typeMappingSource,
-         TempTableStatementCache<SqlServerTempTableCreatorCacheKey> cache)
+         TempTableStatementCache<SqlServerTempTableCreatorCacheKey> cache,
+         TempTableStatementCache<SqlServerTempTablePrimaryKeyCacheKey> primaryKeyCache)
       {
          if (ctx == null)
             throw new ArgumentNullException(nameof(ctx));
@@ -51,7 +54,8 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
          _logger = logger ?? throw new ArgumentNullException(nameof(logger));
          _sqlGenerationHelper = sqlGenerationHelper ?? throw new ArgumentNullException(nameof(sqlGenerationHelper));
          _typeMappingSource = typeMappingSource ?? throw new ArgumentNullException(nameof(typeMappingSource));
-         _cache = cache ?? throw new ArgumentNullException(nameof(cache));
+         _tempTableCache = cache ?? throw new ArgumentNullException(nameof(cache));
+         _primaryKeyCache = primaryKeyCache ?? throw new ArgumentNullException(nameof(primaryKeyCache));
       }
 
       /// <inheritdoc />
@@ -129,29 +133,42 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
          if (keyProperties.Count == 0)
             return;
 
-         var columnNames = keyProperties.Select(p =>
-                                                {
-                                                   var storeObject = StoreObjectIdentifier.Create(p.Property.DeclaringEntityType, StoreObjectType.Table)
-                                                                     ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{p.Property.DeclaringEntityType.Name}'.");
-                                                   return p.Property.GetColumnName(storeObject);
-                                                });
-
-         var sql = $@"
-ALTER TABLE {_sqlGenerationHelper.DelimitIdentifier(tableName)}
-ADD CONSTRAINT {_sqlGenerationHelper.DelimitIdentifier($"PK_{tableName}_{Guid.NewGuid():N}")} PRIMARY KEY CLUSTERED ({String.Join(", ", columnNames)});
-";
-
-         if (checkForExistence)
-         {
-            sql = $@"
-IF(NOT EXISTS (SELECT * FROM tempdb.INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE CONSTRAINT_TYPE = 'PRIMARY KEY' AND OBJECT_ID(TABLE_CATALOG + '..' + TABLE_NAME) = OBJECT_ID('tempdb..{tableName}')))
-BEGIN
-{sql}
-END
-";
-         }
+         var cachedStatement = _primaryKeyCache.GetOrAdd(new SqlServerTempTablePrimaryKeyCacheKey(keyProperties, checkForExistence), CreatePrimaryKeyStatement);
+         var sql = cachedStatement.GetSqlStatement(tableName);
 
          await ctx.Database.ExecuteSqlRawAsync(sql, cancellationToken).ConfigureAwait(false);
+      }
+
+      private CachedTempTableStatement CreatePrimaryKeyStatement(SqlServerTempTablePrimaryKeyCacheKey cacheKey)
+      {
+         var columnNames = cacheKey.KeyProperties.Select(p =>
+                                                         {
+                                                            var storeObject = StoreObjectIdentifier.Create(p.Property.DeclaringEntityType, StoreObjectType.Table)
+                                                                              ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{p.Property.DeclaringEntityType.Name}'.");
+                                                            return p.Property.GetColumnName(storeObject);
+                                                         });
+
+         var commaSeparatedColumns = String.Join(", ", columnNames);
+
+         if (cacheKey.CheckForExistence)
+         {
+            return new CachedTempTableStatement(delegate(string name)
+                                                {
+                                                   var escapedTableName = _sqlGenerationHelper.DelimitIdentifier(name);
+                                                   return $@"
+IF(NOT EXISTS (SELECT * FROM tempdb.INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE CONSTRAINT_TYPE = 'PRIMARY KEY' AND OBJECT_ID(TABLE_CATALOG + '..' + TABLE_NAME) = OBJECT_ID('tempdb..{escapedTableName}')))
+BEGIN
+   ALTER TABLE {_sqlGenerationHelper.DelimitIdentifier(escapedTableName)}
+   ADD CONSTRAINT {_sqlGenerationHelper.DelimitIdentifier($"PK_{name}_{Guid.NewGuid():N}")} PRIMARY KEY CLUSTERED ({commaSeparatedColumns});
+END
+";
+                                                });
+         }
+
+         return new CachedTempTableStatement(name => $@"
+ALTER TABLE {_sqlGenerationHelper.DelimitIdentifier(name)}
+ADD CONSTRAINT {_sqlGenerationHelper.DelimitIdentifier($"PK_{name}_{Guid.NewGuid():N}")} PRIMARY KEY CLUSTERED ({commaSeparatedColumns});
+");
       }
 
       private string GetTempTableCreationSql(IEntityType entityType, string tableName, ISqlServerTempTableCreationOptions options)
@@ -159,7 +176,7 @@ END
          if (tableName == null)
             throw new ArgumentNullException(nameof(tableName));
 
-         var cachedStatement = _cache.GetOrAdd(new SqlServerTempTableCreatorCacheKey(options, entityType), CreateCachedStatement);
+         var cachedStatement = _tempTableCache.GetOrAdd(new SqlServerTempTableCreatorCacheKey(options, entityType), CreateCachedStatement);
 
          return cachedStatement.GetSqlStatement(tableName);
       }
@@ -173,7 +190,7 @@ END
             return new CachedTempTableStatement(name => $@"
 CREATE TABLE {_sqlGenerationHelper.DelimitIdentifier(name)}
 (
-" + columnDefinitions + @"
+{columnDefinitions}
 );");
          }
 
@@ -184,7 +201,7 @@ ELSE
 BEGIN
 CREATE TABLE {_sqlGenerationHelper.DelimitIdentifier(name)}
 (
-" + columnDefinitions + @"
+{columnDefinitions}
 );
 END
 ");

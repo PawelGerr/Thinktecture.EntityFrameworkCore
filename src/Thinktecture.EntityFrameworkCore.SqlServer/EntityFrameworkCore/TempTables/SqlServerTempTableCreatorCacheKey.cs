@@ -47,26 +47,8 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
       {
          return TruncateTableIfExists == other.TruncateTableIfExists &&
                 UseDefaultDatabaseCollation == other.UseDefaultDatabaseCollation &&
-                Equals(Properties, other.Properties) &&
-                Equals(PrimaryKeys, other.PrimaryKeys);
-      }
-
-      private static bool Equals(IReadOnlyCollection<PropertyWithNavigations> collection, IReadOnlyCollection<PropertyWithNavigations> other)
-      {
-         if (collection.Count != other.Count)
-            return false;
-
-         using var otherEnumerator = other.GetEnumerator();
-
-         foreach (var item in collection)
-         {
-            otherEnumerator.MoveNext();
-
-            if (!item.Equals(otherEnumerator.Current))
-               return false;
-         }
-
-         return true;
+                Properties.AreEqual(other.Properties) &&
+                PrimaryKeys.AreEqual(other.PrimaryKeys);
       }
 
       /// <inheritdoc />
@@ -82,20 +64,10 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
          hashCode.Add(TruncateTableIfExists);
          hashCode.Add(UseDefaultDatabaseCollation);
 
-         ComputeHashCode(hashCode, Properties);
-         ComputeHashCode(hashCode, PrimaryKeys);
+         Properties.ComputeHashCode(hashCode);
+         PrimaryKeys.ComputeHashCode(hashCode);
 
          return hashCode.ToHashCode();
-      }
-
-      private static void ComputeHashCode(
-         HashCode hashCode,
-         IEnumerable<PropertyWithNavigations> properties)
-      {
-         foreach (var property in properties)
-         {
-            hashCode.Add(property);
-         }
       }
    }
 }

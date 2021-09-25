@@ -105,6 +105,10 @@ namespace Thinktecture
                                  .Include(c => c.Orders)
                                  .ToListAsync();
          }
+         catch
+         {
+            Console.WriteLine("For this demo we need 2 databases: demo and demo2");
+         }
          finally
          {
             CurrentTenant.Value = null;
@@ -122,9 +126,9 @@ namespace Thinktecture
 
          await ctx.SaveChangesAsync();
 
-         innerTx.Commit();
+         await innerTx.CommitAsync();
 
-         tx.Commit();
+         await tx.CommitAsync();
       }
 
       private static async Task FetchRowVersionsAsync(DemoDbContext ctx)
