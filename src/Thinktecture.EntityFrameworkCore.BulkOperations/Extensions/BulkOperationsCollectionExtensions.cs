@@ -17,11 +17,11 @@ namespace Thinktecture
       internal static IReadOnlyList<PropertyWithNavigations> ConvertToEntityProperties(
          this IReadOnlyList<MemberInfo> members,
          IEntityType entityType,
-         IReadOnlyList<INavigation> navigations,
          bool? inlinedOwnTypes,
          Func<IProperty, IReadOnlyList<INavigation>, bool> filter)
       {
          var properties = new List<PropertyWithNavigations>();
+         var navigations = Array.Empty<INavigation>();
 
          foreach (var memberInfo in members)
          {
@@ -41,10 +41,7 @@ namespace Thinktecture
                if (ownedNavi == null)
                   throw new Exception($"The member '{memberInfo.Name}' has not been found on entity '{entityType.Name}'.");
 
-               var innerNavigations = navigations.ToList();
-               innerNavigations.Add(ownedNavi);
-
-               properties.AddPropertiesAndOwnedTypesRecursively(ownedNavi.TargetEntityType, innerNavigations, inlinedOwnTypes, filter);
+               properties.AddPropertiesAndOwnedTypesRecursively(ownedNavi.TargetEntityType, new[] { ownedNavi }, inlinedOwnTypes, filter);
             }
          }
 

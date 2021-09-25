@@ -70,7 +70,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
          bool? inlinedOwnTypes,
          Func<IProperty, IReadOnlyList<INavigation>, bool> filter)
       {
-         return _members.ConvertToEntityProperties(entityType, Array.Empty<INavigation>(), inlinedOwnTypes, filter);
+         return _members.ConvertToEntityProperties(entityType, inlinedOwnTypes, filter);
       }
 
       /// <summary>

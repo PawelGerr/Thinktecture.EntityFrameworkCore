@@ -149,7 +149,7 @@ Missing columns: {String.Join(", ", missingColumns.Select(p => p.Property.GetCol
 
          public IReadOnlyCollection<PropertyWithNavigations> GetPrimaryKeyProperties(IEntityType entityType, IReadOnlyCollection<PropertyWithNavigations> tempTableProperties)
          {
-            var keyProperties = _members.ConvertToEntityProperties(entityType, Array.Empty<INavigation>(), true, NoFilter);
+            var keyProperties = _members.ConvertToEntityProperties(entityType, true, NoFilter);
             var missingColumns = keyProperties.Except(tempTableProperties);
 
             if (missingColumns.Any())
