@@ -47,5 +47,22 @@ namespace Thinktecture.EntityFrameworkCore.Query.SqlExpressions
          expressionPrinter.Append("1;").AppendLine()
                           .Append("DELETE ").Append(Table.Alias).Append(" ");
       }
+
+      /// <inheritdoc />
+      public override bool Equals(object? obj)
+      {
+         return obj != null && (ReferenceEquals(this, obj) || Equals(obj as DeleteExpression));
+      }
+
+      private bool Equals(DeleteExpression? expression)
+      {
+         return base.Equals(expression) && Table.Equals(expression.Table);
+      }
+
+      /// <inheritdoc />
+      public override int GetHashCode()
+      {
+         return HashCode.Combine(base.GetHashCode(), Table);
+      }
    }
 }

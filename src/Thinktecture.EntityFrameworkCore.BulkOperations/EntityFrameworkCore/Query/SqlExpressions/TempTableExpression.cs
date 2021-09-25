@@ -34,10 +34,10 @@ namespace Thinktecture.EntityFrameworkCore.Query.SqlExpressions
       /// <inheritdoc />
       public override bool Equals(object obj)
       {
-         return ReferenceEquals(this, obj) || obj is TempTableExpression tempTableExpression && Equals(tempTableExpression);
+         return ReferenceEquals(this, obj) || Equals(obj as TempTableExpression);
       }
 
-      private bool Equals(TempTableExpression tempTableExpression)
+      private bool Equals(TempTableExpression? tempTableExpression)
       {
          return base.Equals(tempTableExpression) && string.Equals(Name, tempTableExpression.Name);
       }

@@ -2,7 +2,6 @@ using System;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 
 // ReSharper disable once CheckNamespace
 namespace Thinktecture.Internal
@@ -26,7 +25,7 @@ namespace Thinktecture.Internal
             throw new ArgumentNullException(nameof(name));
 
          var methodInfo = _fromTempTable.MakeGenericMethod(typeof(T));
-         var expression = Expression.Call(null, methodInfo, source.Expression, new NonEvaluatableConstantExpression(name));
+         var expression = Expression.Call(null, methodInfo, source.Expression, new TempTableNameExpression(name));
 
          return source.Provider.CreateQuery<T>(expression);
       }

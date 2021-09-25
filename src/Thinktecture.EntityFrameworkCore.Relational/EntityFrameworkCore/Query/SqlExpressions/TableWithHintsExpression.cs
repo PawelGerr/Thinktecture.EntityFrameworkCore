@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 
@@ -53,10 +54,10 @@ namespace Thinktecture.EntityFrameworkCore.Query.SqlExpressions
       /// <inheritdoc />
       public override bool Equals(object obj)
       {
-         return ReferenceEquals(this, obj) || obj is TableWithHintsExpression tableWithHintsExpression && Equals(tableWithHintsExpression);
+         return ReferenceEquals(this, obj) || Equals(obj as TableWithHintsExpression);
       }
 
-      private bool Equals(TableWithHintsExpression tableWithHintsExpression)
+      private bool Equals(TableWithHintsExpression? tableWithHintsExpression)
       {
          return base.Equals(tableWithHintsExpression)
                 && Table.Equals(tableWithHintsExpression.Table)
@@ -68,9 +69,9 @@ namespace Thinktecture.EntityFrameworkCore.Query.SqlExpressions
          if (hints.Count != otherHints.Count)
             return false;
 
-         for (var i = 0; i < hints.Count; i++)
+         foreach (var tableHint in hints)
          {
-            if (!StringComparer.Ordinal.Equals(hints[i], otherHints[i]))
+            if (!otherHints.Contains(tableHint))
                return false;
          }
 

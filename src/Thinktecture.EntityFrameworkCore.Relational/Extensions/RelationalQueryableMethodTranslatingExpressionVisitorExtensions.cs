@@ -6,7 +6,6 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
-using Thinktecture.EntityFrameworkCore;
 using Thinktecture.EntityFrameworkCore.Query;
 using Thinktecture.Internal;
 
@@ -66,7 +65,7 @@ namespace Thinktecture
          QueryCompilationContext queryCompilationContext,
          TableHintContextFactory tableHintContextFactory)
       {
-         var tableHints = (NonEvaluatableConstantExpression)methodCallExpression.Arguments[1] ?? throw new InvalidOperationException("Table hints cannot be null.");
+         var tableHints = (TableHintsExpression)methodCallExpression.Arguments[1] ?? throw new InvalidOperationException("Table hints cannot be null.");
          var tables = ((SelectExpression)shapedQueryExpression.QueryExpression).Tables;
 
          if (tables.Count == 0)
@@ -77,7 +76,7 @@ namespace Thinktecture
 
          var tableExpression = ((SelectExpression)shapedQueryExpression.QueryExpression).Tables[0];
 
-         var ctx = tableHintContextFactory.Create(tableExpression, (IReadOnlyList<ITableHint>)(tableHints.Value ?? throw new Exception("No table hints provided.")));
+         var ctx = tableHintContextFactory.Create(tableExpression, tableHints.Value ?? throw new Exception("No table hints provided."));
          var extractor = Expression.Lambda<Func<QueryContext, TableHintContext>>(Expression.Constant(ctx), QueryCompilationContext.QueryContextParameter);
 
          queryCompilationContext.RegisterRuntimeParameter(ctx.ParameterName, extractor);

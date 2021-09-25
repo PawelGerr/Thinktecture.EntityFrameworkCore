@@ -49,7 +49,7 @@ namespace Thinktecture
             throw new ArgumentNullException(nameof(hints));
 
          var methodInfo = _withTableHints.MakeGenericMethod(typeof(T));
-         var expression = Expression.Call(null, methodInfo, source.Expression, new NonEvaluatableConstantExpression(hints));
+         var expression = Expression.Call(null, methodInfo, source.Expression, new TableHintsExpression(hints));
          return source.Provider.CreateQuery<T>(expression);
       }
 

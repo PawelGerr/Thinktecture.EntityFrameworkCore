@@ -7,7 +7,6 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 using Microsoft.EntityFrameworkCore.Storage;
-using Thinktecture.EntityFrameworkCore.Query;
 using Thinktecture.EntityFrameworkCore.Query.SqlExpressions;
 using Thinktecture.EntityFrameworkCore.TempTables;
 using Thinktecture.Internal;
@@ -67,9 +66,9 @@ namespace Thinktecture
          QueryCompilationContext queryCompilationContext)
       {
          var tableExpression = (TableExpression)((SelectExpression)shapedQueryExpression.QueryExpression).Tables.Single();
-         var tempTableName = ((NonEvaluatableConstantExpression)methodCallExpression.Arguments[1]).Value;
+         var tempTableName = ((TempTableNameExpression)methodCallExpression.Arguments[1]).Value;
 
-         var ctx = new TempTableQueryContext(tableExpression, (string)(tempTableName ?? throw new Exception("No temp table name provided.")));
+         var ctx = new TempTableQueryContext(tableExpression, tempTableName ?? throw new Exception("No temp table name provided."));
          var extractor = Expression.Lambda<Func<QueryContext, TempTableQueryContext>>(Expression.Constant(ctx), QueryCompilationContext.QueryContextParameter);
 
          queryCompilationContext.RegisterRuntimeParameter(ctx.ParameterName, extractor);
