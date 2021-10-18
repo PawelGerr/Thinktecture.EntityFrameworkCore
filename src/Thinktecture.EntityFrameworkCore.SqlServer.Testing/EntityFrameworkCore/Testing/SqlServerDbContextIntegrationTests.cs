@@ -19,7 +19,7 @@ namespace Thinktecture.EntityFrameworkCore.Testing
    /// </summary>
    /// <typeparam name="T">Type of the database context.</typeparam>
    // ReSharper disable once UnusedMember.Global
-   public abstract class SqlServerDbContextIntegrationTests<T> : IDisposable
+   public abstract class SqlServerDbContextIntegrationTests<T> : IDbContextFactory<T>, IDisposable
       where T : DbContext
    {
       private const string _HISTORY_TABLE_NAME = "__EFMigrationsHistory";
@@ -53,17 +53,17 @@ namespace Thinktecture.EntityFrameworkCore.Testing
       /// <summary>
       /// Database context for setting up the test data.
       /// </summary>
-      protected T ArrangeDbContext => _arrangeDbContext ??= CreateContext();
+      protected T ArrangeDbContext => _arrangeDbContext ??= CreateDbContext();
 
       /// <summary>
       /// Database context for the actual test.
       /// </summary>
-      protected T ActDbContext => _actDbContext ??= CreateContext();
+      protected T ActDbContext => _actDbContext ??= CreateDbContext();
 
       /// <summary>
       /// Database context for making assertions.
       /// </summary>
-      protected T AssertDbContext => _assertDbContext ??= CreateContext();
+      protected T AssertDbContext => _assertDbContext ??= CreateDbContext();
 
       /// <summary>
       /// Indication whether the EF model cache should be disabled or not.
@@ -130,7 +130,8 @@ namespace Thinktecture.EntityFrameworkCore.Testing
          LoggerFactory = loggerFactory;
       }
 
-      private T CreateContext()
+      /// <inheritdoc />
+      public T CreateDbContext()
       {
          var isFirstCtx = _dbConnection == null;
 
