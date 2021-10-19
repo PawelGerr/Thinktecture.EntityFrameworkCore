@@ -35,7 +35,7 @@ namespace Thinktecture
          UseLoggerFactory(loggerFactory);
       }
 
-      protected override DbContextOptionsBuilder<DbContextWithSchema> CreateOptionsBuilder(DbConnection connection)
+      protected override DbContextOptionsBuilder<DbContextWithSchema> CreateOptionsBuilder(DbConnection? connection)
       {
          var builder = base.CreateOptionsBuilder(connection);
          ConfigureOptionsBuilder?.Invoke(builder);

@@ -317,7 +317,7 @@ Missing columns: Column2.");
       [Fact]
       public async Task Should_open_connection()
       {
-         await using var con = new SqliteConnection("DataSource=:memory:");
+         await using var con = new SqliteConnection(ConnectionString);
 
          var builder = CreateOptionsBuilder(con);
 
@@ -335,7 +335,7 @@ Missing columns: Column2.");
       [Fact]
       public async Task Should_return_reference_to_be_able_to_close_connection()
       {
-         await using var con = new SqliteConnection("DataSource=:memory:");
+         await using var con = new SqliteConnection(ConnectionString);
 
          var builder = CreateOptionsBuilder(con);
 
@@ -354,7 +354,7 @@ Missing columns: Column2.");
       [Fact]
       public async Task Should_return_reference_to_be_able_to_close_connection_event_if_ctx_is_disposed()
       {
-         await using var con = new SqliteConnection("DataSource=:memory:");
+         await using var con = new SqliteConnection(ConnectionString);
 
          var builder = CreateOptionsBuilder(con);
 
@@ -377,7 +377,7 @@ Missing columns: Column2.");
       [Fact]
       public async Task Should_return_table_ref_that_does_nothing_after_connection_is_disposed()
       {
-         await using var con = new SqliteConnection("DataSource=:memory:");
+         await using var con = new SqliteConnection(ConnectionString);
 
          var builder = CreateOptionsBuilder(con);
 
@@ -398,7 +398,7 @@ Missing columns: Column2.");
       [Fact]
       public async Task Should_return_table_ref_that_does_nothing_after_connection_is_disposedAsync()
       {
-         await using var con = new SqliteConnection("DataSource=:memory:");
+         await using var con = new SqliteConnection(ConnectionString);
 
          var builder = CreateOptionsBuilder(con);
 
@@ -419,7 +419,7 @@ Missing columns: Column2.");
       [Fact]
       public async Task Should_return_table_ref_that_does_nothing_after_connection_is_closed()
       {
-         await using var con = new SqliteConnection("DataSource=:memory:");
+         await using var con = new SqliteConnection(ConnectionString);
 
          var builder = CreateOptionsBuilder(con);
 

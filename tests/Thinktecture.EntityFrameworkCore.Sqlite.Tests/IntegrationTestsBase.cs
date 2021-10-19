@@ -49,7 +49,7 @@ namespace Thinktecture
                                                  new NullDbContextLogger());
       }
 
-      protected override DbContextOptionsBuilder<TestDbContext> CreateOptionsBuilder(DbConnection connection)
+      protected override DbContextOptionsBuilder<TestDbContext> CreateOptionsBuilder(DbConnection? connection)
       {
          var builder = base.CreateOptionsBuilder(connection);
          ConfigureOptionsBuilder?.Invoke(builder);
