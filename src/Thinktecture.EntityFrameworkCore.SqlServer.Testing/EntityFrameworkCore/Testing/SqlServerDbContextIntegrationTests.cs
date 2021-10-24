@@ -35,8 +35,7 @@ namespace Thinktecture.EntityFrameworkCore.Testing
       private T? _arrangeDbContext;
       private T? _actDbContext;
       private T? _assertDbContext;
-      private DbConnection? _dbConnection;
-      private DbContextOptionsBuilder<T>? _optionsBuilder;
+      private DbConnection? _masterConnection;
       private IDbContextTransaction? _tx;
 
       /// <summary>
@@ -53,17 +52,17 @@ namespace Thinktecture.EntityFrameworkCore.Testing
       /// <summary>
       /// Database context for setting up the test data.
       /// </summary>
-      protected T ArrangeDbContext => _arrangeDbContext ??= CreateDbContext();
+      protected T ArrangeDbContext => _arrangeDbContext ??= CreateDbContext(true);
 
       /// <summary>
       /// Database context for the actual test.
       /// </summary>
-      protected T ActDbContext => _actDbContext ??= CreateDbContext();
+      protected T ActDbContext => _actDbContext ??= CreateDbContext(true);
 
       /// <summary>
       /// Database context for making assertions.
       /// </summary>
-      protected T AssertDbContext => _assertDbContext ??= CreateDbContext();
+      protected T AssertDbContext => _assertDbContext ??= CreateDbContext(true);
 
       /// <summary>
       /// Indication whether the EF model cache should be disabled or not.
@@ -133,12 +132,34 @@ namespace Thinktecture.EntityFrameworkCore.Testing
       /// <inheritdoc />
       public T CreateDbContext()
       {
-         var isFirstCtx = _dbConnection == null;
+         return CreateDbContext(false);
+      }
 
-         _dbConnection ??= CreateConnection(_connectionString);
-         _optionsBuilder ??= CreateOptionsBuilder(_dbConnection);
+      /// <summary>
+      /// Creates a new <see cref="DbContext"/>.
+      /// </summary>
+      /// <param name="useMasterConnection">
+      /// Indication whether to use the master connection or a new one.
+      /// </param>
+      /// <returns>A new instance of <typeparamref name="T"/>.</returns>
+      public T CreateDbContext(bool useMasterConnection)
+      {
+         if (!useMasterConnection && _useSharedTables)
+            throw new NotSupportedException($"A database transaction cannot be shared among different connections. Set 'useSharedTables' to 'false' or use '{nameof(ArrangeDbContext)}/{nameof(ActDbContext)}/{nameof(AssertDbContext)}' which use the same database connection.");
 
-         var ctx = CreateContext(_optionsBuilder.Options, new DbDefaultSchema(Schema));
+         bool isFirstCtx;
+
+         lock (_locks.GetOrAdd(Schema, _ => new object()))
+         {
+            isFirstCtx = _masterConnection == null;
+            _masterConnection ??= CreateConnection(_connectionString);
+         }
+
+         var optionsBuilder = useMasterConnection
+                                 ? CreateOptionsBuilder(_masterConnection)
+                                 : CreateOptionsBuilder(null);
+
+         var ctx = CreateContext(optionsBuilder.Options, new DbDefaultSchema(Schema));
 
          if (isFirstCtx)
          {
@@ -201,14 +222,20 @@ namespace Thinktecture.EntityFrameworkCore.Testing
       /// <param name="connection">Database connection to use.</param>
       /// <returns>An instance of <see cref="DbContextOptionsBuilder{TContext}"/></returns>
       /// <exception cref="ArgumentNullException"><paramref name="connection"/> is null.</exception>
-      protected virtual DbContextOptionsBuilder<T> CreateOptionsBuilder(DbConnection connection)
+      protected virtual DbContextOptionsBuilder<T> CreateOptionsBuilder(DbConnection? connection)
       {
-         if (connection == null)
-            throw new ArgumentNullException(nameof(connection));
+         var builder = new DbContextOptionsBuilder<T>();
 
-         var builder = new DbContextOptionsBuilder<T>()
-                       .UseSqlServer(connection, ConfigureSqlServer)
-                       .AddSchemaRespectingComponents();
+         if (connection is null)
+         {
+            builder.UseSqlServer(_connectionString, ConfigureSqlServer);
+         }
+         else
+         {
+            builder.UseSqlServer(connection, ConfigureSqlServer);
+         }
+
+         builder.AddSchemaRespectingComponents();
 
          if (DisableModelCache)
             builder.ReplaceService<IModelCacheKeyFactory, CachePerContextModelCacheKeyFactory>();
@@ -257,7 +284,7 @@ namespace Thinktecture.EntityFrameworkCore.Testing
          if (!disposing)
             return;
 
-         if (_dbConnection == null)
+         if (_masterConnection == null)
             return;
 
          if (_useSharedTables)
@@ -279,7 +306,12 @@ namespace Thinktecture.EntityFrameworkCore.Testing
          _arrangeDbContext?.Dispose();
          _actDbContext?.Dispose();
          _assertDbContext?.Dispose();
-         _dbConnection?.Dispose();
+         _masterConnection?.Dispose();
+
+         _arrangeDbContext = null;
+         _actDbContext = null;
+         _assertDbContext = null;
+         _masterConnection = null;
       }
 
       private static void RollbackMigrations(T ctx)

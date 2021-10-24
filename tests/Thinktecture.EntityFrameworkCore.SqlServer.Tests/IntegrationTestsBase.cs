@@ -64,7 +64,7 @@ namespace Thinktecture
       }
 
       /// <inheritdoc />
-      protected override DbContextOptionsBuilder<TestDbContext> CreateOptionsBuilder(DbConnection connection)
+      protected override DbContextOptionsBuilder<TestDbContext> CreateOptionsBuilder(DbConnection? connection)
       {
          var builder = base.CreateOptionsBuilder(connection)
                            .AddNestedTransactionSupport()

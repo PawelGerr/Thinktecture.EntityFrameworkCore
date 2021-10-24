@@ -50,7 +50,7 @@ namespace Thinktecture
          return _loggerFactoryCache.GetOrAdd(testOutputHelper, helper =>
                                                                {
                                                                   var loggerConfig = new LoggerConfiguration()
-                                                                                     .WriteTo.TestOutput(testOutputHelper, outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}");
+                                                                                     .WriteTo.TestOutput(helper, outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}");
 
                                                                   return new LoggerFactory()
                                                                      .AddSerilog(loggerConfig.CreateLogger());
