@@ -8,6 +8,9 @@ variables:
   solution: 'Thinktecture.EntityFrameworkCore.sln'
   buildConfiguration: 'Release'
 
+pool:
+  vmImage: 'ubuntu-latest'
+
 steps:
 
 - task: UseDotNet@2
