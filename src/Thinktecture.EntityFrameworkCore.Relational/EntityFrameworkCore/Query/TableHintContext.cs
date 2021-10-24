@@ -38,7 +38,7 @@ namespace Thinktecture.EntityFrameworkCore.Query
       /// This is an internal API.
       /// </summary>
       public static bool TryGetTableHintContext(
-         IReadOnlyDictionary<string, object> parametersValues,
+         IReadOnlyDictionary<string, object?> parametersValues,
          [NotNullWhen(true)] out IReadOnlyList<TableHintContext>? tableHintContexts)
       {
          List<TableHintContext>? ctxs = null;

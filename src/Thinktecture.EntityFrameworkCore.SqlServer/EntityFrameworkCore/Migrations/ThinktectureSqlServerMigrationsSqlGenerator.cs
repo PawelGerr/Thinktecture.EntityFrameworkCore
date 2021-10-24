@@ -28,7 +28,7 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
       }
 
       /// <inheritdoc />
-      protected override void Generate(CreateTableOperation operation, IModel model, MigrationCommandListBuilder builder, bool terminate = true)
+      protected override void Generate(CreateTableOperation operation, IModel? model, MigrationCommandListBuilder builder, bool terminate = true)
       {
          if (builder == null)
             throw new ArgumentNullException(nameof(builder));
@@ -60,7 +60,7 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
       }
 
       /// <inheritdoc />
-      protected override void Generate(DropTableOperation operation, IModel model, MigrationCommandListBuilder builder, bool terminate = true)
+      protected override void Generate(DropTableOperation operation, IModel? model, MigrationCommandListBuilder builder, bool terminate = true)
       {
          if (builder == null)
             throw new ArgumentNullException(nameof(builder));
@@ -90,7 +90,7 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
       }
 
       /// <inheritdoc />
-      protected override void Generate(AddColumnOperation operation, IModel model, MigrationCommandListBuilder builder, bool terminate)
+      protected override void Generate(AddColumnOperation operation, IModel? model, MigrationCommandListBuilder builder, bool terminate)
       {
          if (builder == null)
             throw new ArgumentNullException(nameof(builder));
@@ -125,7 +125,7 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
       }
 
       /// <inheritdoc />
-      protected override void Generate(DropColumnOperation operation, IModel model, MigrationCommandListBuilder builder, bool terminate = true)
+      protected override void Generate(DropColumnOperation operation, IModel? model, MigrationCommandListBuilder builder, bool terminate = true)
       {
          if (builder == null)
             throw new ArgumentNullException(nameof(builder));
@@ -155,7 +155,7 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
       }
 
       /// <inheritdoc />
-      protected override void Generate(CreateIndexOperation operation, IModel model, MigrationCommandListBuilder builder, bool terminate = true)
+      protected override void Generate(CreateIndexOperation operation, IModel? model, MigrationCommandListBuilder builder, bool terminate = true)
       {
          if (builder == null)
             throw new ArgumentNullException(nameof(builder));
@@ -185,7 +185,7 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
       }
 
       /// <inheritdoc />
-      protected override void Generate(DropIndexOperation operation, IModel model, MigrationCommandListBuilder builder, bool terminate)
+      protected override void Generate(DropIndexOperation operation, IModel? model, MigrationCommandListBuilder builder, bool terminate)
       {
          if (builder == null)
             throw new ArgumentNullException(nameof(builder));
@@ -199,7 +199,9 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
             return;
          }
 
-         builder.AppendLine($"IF(IndexProperty(OBJECT_ID('{DelimitIdentifier(operation.Table, operation.Schema)}'), {GenerateSqlLiteral(operation.Name)}, 'IndexId') IS NOT NULL)")
+         var table = operation.Table ?? throw new InvalidOperationException($"The {nameof(DropIndexOperation)} for index '{operation.Name}' has no table name.");
+
+         builder.AppendLine($"IF(IndexProperty(OBJECT_ID('{DelimitIdentifier(table, operation.Schema)}'), {GenerateSqlLiteral(operation.Name)}, 'IndexId') IS NOT NULL)")
                 .AppendLine("BEGIN");
 
          using (builder.Indent())
@@ -215,7 +217,7 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
       }
 
       /// <inheritdoc />
-      protected override void Generate(AddUniqueConstraintOperation operation, IModel model, MigrationCommandListBuilder builder)
+      protected override void Generate(AddUniqueConstraintOperation operation, IModel? model, MigrationCommandListBuilder builder)
       {
          if (builder == null)
             throw new ArgumentNullException(nameof(builder));
@@ -239,7 +241,7 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
       }
 
       /// <inheritdoc />
-      protected override void Generate(DropUniqueConstraintOperation operation, IModel model, MigrationCommandListBuilder builder)
+      protected override void Generate(DropUniqueConstraintOperation operation, IModel? model, MigrationCommandListBuilder builder)
       {
          if (builder == null)
             throw new ArgumentNullException(nameof(builder));

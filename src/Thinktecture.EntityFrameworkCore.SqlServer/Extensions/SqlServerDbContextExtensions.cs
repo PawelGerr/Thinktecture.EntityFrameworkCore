@@ -59,9 +59,9 @@ namespace Thinktecture
          try
          {
             var result = await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
-            var bytes = (byte[]) result!;
+            var bytes = (byte[])result!;
 
-            return (long)_rowVersionConverter.ConvertFromProvider(bytes);
+            return (long)_rowVersionConverter.ConvertFromProvider(bytes)!;
          }
          finally
          {

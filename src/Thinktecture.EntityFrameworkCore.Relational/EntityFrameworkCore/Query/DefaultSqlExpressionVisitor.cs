@@ -25,9 +25,9 @@ namespace Thinktecture.EntityFrameworkCore.Query
             whenClauses.Add(new CaseWhenClause(test, result));
          }
 
-         return caseExpression.Update((SqlExpression)Visit(caseExpression.Operand),
+         return caseExpression.Update((SqlExpression?)Visit(caseExpression.Operand),
                                       whenClauses,
-                                      (SqlExpression)Visit(caseExpression.ElseResult));
+                                      (SqlExpression?)Visit(caseExpression.ElseResult));
       }
 
       /// <inheritdoc />
@@ -64,8 +64,8 @@ namespace Thinktecture.EntityFrameworkCore.Query
       protected override Expression VisitIn(InExpression inExpression)
       {
          return inExpression.Update((SqlExpression)Visit(inExpression.Item),
-                                    (SqlExpression)Visit(inExpression.Values),
-                                    (SelectExpression)Visit(inExpression.Subquery));
+                                    (SqlExpression?)Visit(inExpression.Values),
+                                    (SelectExpression?)Visit(inExpression.Subquery));
       }
 
       /// <inheritdoc />
@@ -73,7 +73,7 @@ namespace Thinktecture.EntityFrameworkCore.Query
       {
          return likeExpression.Update((SqlExpression)Visit(likeExpression.Match),
                                       (SqlExpression)Visit(likeExpression.Pattern),
-                                      (SqlExpression)Visit(likeExpression.EscapeChar));
+                                      (SqlExpression?)Visit(likeExpression.EscapeChar));
       }
 
       /// <inheritdoc />
@@ -101,7 +101,7 @@ namespace Thinktecture.EntityFrameworkCore.Query
             tables.Add(newTable);
          }
 
-         var predicate = (SqlExpression)Visit(selectExpression.Predicate);
+         var predicate = (SqlExpression?)Visit(selectExpression.Predicate);
          changed |= predicate != selectExpression.Predicate;
 
          var groupBy = new List<SqlExpression>();
@@ -114,7 +114,7 @@ namespace Thinktecture.EntityFrameworkCore.Query
             groupBy.Add(newGroupingKey);
          }
 
-         var havingExpression = (SqlExpression)Visit(selectExpression.Having);
+         var havingExpression = (SqlExpression?)Visit(selectExpression.Having);
          changed |= havingExpression != selectExpression.Having;
 
          var orderings = new List<OrderingExpression>();
@@ -127,10 +127,10 @@ namespace Thinktecture.EntityFrameworkCore.Query
             orderings.Add(ordering.Update(orderingExpression));
          }
 
-         var offset = (SqlExpression)Visit(selectExpression.Offset);
+         var offset = (SqlExpression?)Visit(selectExpression.Offset);
          changed |= offset != selectExpression.Offset;
 
-         var limit = (SqlExpression)Visit(selectExpression.Limit);
+         var limit = (SqlExpression?)Visit(selectExpression.Limit);
          changed |= limit != selectExpression.Limit;
 
          return changed
@@ -178,14 +178,19 @@ namespace Thinktecture.EntityFrameworkCore.Query
       /// <inheritdoc />
       protected override Expression VisitSqlFunction(SqlFunctionExpression sqlFunctionExpression)
       {
-         var arguments = new SqlExpression[sqlFunctionExpression.Arguments.Count];
+         SqlExpression[]? arguments = null;
 
-         for (var i = 0; i < arguments.Length; i++)
+         if (sqlFunctionExpression.Arguments is not null)
          {
-            arguments[i] = (SqlExpression)Visit(sqlFunctionExpression.Arguments[i]);
+            arguments = new SqlExpression[sqlFunctionExpression.Arguments.Count];
+
+            for (var i = 0; i < arguments.Length; i++)
+            {
+               arguments[i] = (SqlExpression)Visit(sqlFunctionExpression.Arguments[i]);
+            }
          }
 
-         return sqlFunctionExpression.Update((SqlExpression)Visit(sqlFunctionExpression.Instance), arguments);
+         return sqlFunctionExpression.Update((SqlExpression?)Visit(sqlFunctionExpression.Instance), arguments);
       }
 
       /// <inheritdoc />

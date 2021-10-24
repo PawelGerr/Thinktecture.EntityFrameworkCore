@@ -102,8 +102,9 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
          where T : class
       {
          var entityType = _ctx.Model.GetEntityType(typeof(T));
+         var tableName = entityType.GetTableName() ?? throw new InvalidOperationException($"The entity '{entityType.Name}' has no table name.");
 
-         return BulkInsertAsync(entityType, entities, entityType.GetSchema(), entityType.GetTableName(), options, cancellationToken);
+         return BulkInsertAsync(entityType, entities, entityType.GetSchema(), tableName, options, cancellationToken);
       }
 
       private async Task BulkInsertAsync<T>(
@@ -171,8 +172,10 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
                                          (SqliteConnection)_ctx.Database.GetDbConnection(),
                                          options.KeyProperties.DetermineKeyProperties(entityType, true),
                                          options.PropertiesToUpdate.DeterminePropertiesForUpdate(entityType, null));
+         var tableName = entityType.GetTableName()
+                         ?? throw new Exception($"The entity '{entityType.Name}' has no table name.");
 
-         return await ExecuteBulkOperationAsync(entities, entityType.GetSchema(), entityType.GetTableName(), ctx, cancellationToken);
+         return await ExecuteBulkOperationAsync(entities, entityType.GetSchema(), tableName, ctx, cancellationToken);
       }
 
       /// <inheritdoc />
@@ -196,8 +199,10 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
                                                  sqliteOptions.KeyProperties.DetermineKeyProperties(entityType, true),
                                                  sqliteOptions.PropertiesToInsert.DeterminePropertiesForInsert(entityType, null),
                                                  sqliteOptions.PropertiesToUpdate.DeterminePropertiesForUpdate(entityType, true));
+         var tableName = entityType.GetTableName()
+                         ?? throw new Exception($"The entity '{entityType.Name}' has no table name.");
 
-         return await ExecuteBulkOperationAsync(entities, entityType.GetSchema(), entityType.GetTableName(), ctx, cancellationToken);
+         return await ExecuteBulkOperationAsync(entities, entityType.GetSchema(), tableName, ctx, cancellationToken);
       }
 
       private async Task<int> ExecuteBulkOperationAsync<T>(
@@ -243,9 +248,12 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
 
          foreach (var childContext in parentBulkOperationContext.GetChildren(parentEntities))
          {
+            var childTableName = childContext.EntityType.GetTableName()
+                                 ?? throw new InvalidOperationException($"The entity '{childContext.EntityType.Name}' has no table name.");
+
             numberOfAffectedRows += await ExecuteBulkOperationAsync(childContext.Entities,
                                                                     childContext.EntityType.GetSchema(),
-                                                                    childContext.EntityType.GetTableName(),
+                                                                    childTableName,
                                                                     childContext,
                                                                     cancellationToken).ConfigureAwait(false);
          }
@@ -382,7 +390,10 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
          where T : class
       {
          var entityType = _ctx.Model.GetEntityType(typeof(T));
-         var tableIdentifier = _sqlGenerationHelper.DelimitIdentifier(entityType.GetTableName(), entityType.GetSchema());
+         var tableName = entityType.GetTableName()
+                         ?? throw new InvalidOperationException($"The entity '{entityType.Name}' has no table name.");
+
+         var tableIdentifier = _sqlGenerationHelper.DelimitIdentifier(tableName, entityType.GetSchema());
          var truncateStatement = $"DELETE FROM {tableIdentifier};";
 
          await _ctx.Database.ExecuteSqlRawAsync(truncateStatement, cancellationToken);

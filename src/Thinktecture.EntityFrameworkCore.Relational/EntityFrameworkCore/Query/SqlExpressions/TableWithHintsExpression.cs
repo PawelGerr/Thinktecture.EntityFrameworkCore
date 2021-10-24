@@ -52,7 +52,7 @@ namespace Thinktecture.EntityFrameworkCore.Query.SqlExpressions
       }
 
       /// <inheritdoc />
-      public override bool Equals(object obj)
+      public override bool Equals(object? obj)
       {
          return ReferenceEquals(this, obj) || Equals(obj as TableWithHintsExpression);
       }

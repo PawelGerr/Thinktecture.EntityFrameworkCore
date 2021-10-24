@@ -20,7 +20,7 @@ namespace Thinktecture.EntityFrameworkCore.Query
       }
 
       /// <inheritdoc />
-      protected override SelectExpression ProcessSqlNullability(SelectExpression selectExpression, IReadOnlyDictionary<string, object> parametersValues, out bool canCache)
+      protected override SelectExpression ProcessSqlNullability(SelectExpression selectExpression, IReadOnlyDictionary<string, object?> parametersValues, out bool canCache)
       {
          if (selectExpression == null)
             throw new ArgumentNullException(nameof(selectExpression));
@@ -31,7 +31,7 @@ namespace Thinktecture.EntityFrameworkCore.Query
       }
 
       /// <inheritdoc />
-      public override SelectExpression Optimize(SelectExpression selectExpression, IReadOnlyDictionary<string, object> parametersValues, out bool canCache)
+      public override SelectExpression Optimize(SelectExpression selectExpression, IReadOnlyDictionary<string, object?> parametersValues, out bool canCache)
       {
          selectExpression = base.Optimize(selectExpression, parametersValues, out canCache);
 

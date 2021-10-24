@@ -43,8 +43,10 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
             var property = propertiesToInsert[i];
             var storeObject = StoreObjectIdentifier.Create(property.Property.DeclaringEntityType, StoreObjectType.Table)
                               ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.Property.DeclaringEntityType.Name}'.");
+            var columnName = property.Property.GetColumnName(storeObject)
+                             ?? throw new Exception($"The property '{property.Property.Name}' has no column name.");
 
-            sb.Append(sqlGenerationHelper.DelimitIdentifier(property.Property.GetColumnName(storeObject)));
+            sb.Append(sqlGenerationHelper.DelimitIdentifier(columnName));
          }
 
          sb.AppendLine(")")
@@ -132,8 +134,9 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
 
                var storeObject = StoreObjectIdentifier.Create(property.Property.DeclaringEntityType, StoreObjectType.Table)
                                  ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.Property.DeclaringEntityType.Name}'.");
-
-               sb.Append(sqlGenerationHelper.DelimitIdentifier(property.Property.GetColumnName(storeObject)))
+               var columnName = property.Property.GetColumnName(storeObject)
+                               ?? throw new Exception($"The property '{property.Property.Name}' has no column name.");
+               sb.Append(sqlGenerationHelper.DelimitIdentifier(columnName))
                  .Append(" = $p").Append(reader.GetPropertyIndex(property));
 
                isFirst = false;
@@ -150,8 +153,9 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
                var index = reader.GetPropertyIndex(property);
                var storeObject = StoreObjectIdentifier.Create(property.Property.DeclaringEntityType, StoreObjectType.Table)
                                  ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.Property.DeclaringEntityType.Name}'.");
-
-               var escapedColumnName = sqlGenerationHelper.DelimitIdentifier(property.Property.GetColumnName(storeObject));
+               var columnName = property.Property.GetColumnName(storeObject)
+                                ?? throw new Exception($"The property '{property.Property.Name}' has no column name.");
+               var escapedColumnName = sqlGenerationHelper.DelimitIdentifier(columnName);
 
                sb.Append("(").Append(escapedColumnName).Append(" = $p").Append(index);
 
@@ -195,8 +199,10 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
                var property = _keyProperties[i];
                var storeObject = StoreObjectIdentifier.Create(property.Property.DeclaringEntityType, StoreObjectType.Table)
                                  ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.Property.DeclaringEntityType.Name}'.");
+               var columnName = property.Property.GetColumnName(storeObject)
+                                ?? throw new Exception($"The property '{property.Property.Name}' has no column name.");
 
-               var escapedColumnName = sqlGenerationHelper.DelimitIdentifier(property.Property.GetColumnName(storeObject));
+               var escapedColumnName = sqlGenerationHelper.DelimitIdentifier(columnName);
                sb.Append(escapedColumnName);
             }
 

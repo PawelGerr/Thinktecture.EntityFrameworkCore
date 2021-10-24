@@ -156,9 +156,9 @@ namespace Thinktecture.EntityFrameworkCore.Data
       int IDataRecord.GetOrdinal(string name) => throw new NotSupportedException();
       bool IDataRecord.GetBoolean(int i) => throw new NotSupportedException();
       byte IDataRecord.GetByte(int i) => throw new NotSupportedException();
-      long IDataRecord.GetBytes(int i, long fieldOffset, byte[] buffer, int bufferOffset, int length) => throw new NotSupportedException();
+      long IDataRecord.GetBytes(int i, long fieldOffset, byte[]? buffer, int bufferOffset, int length) => throw new NotSupportedException();
       char IDataRecord.GetChar(int i) => throw new NotSupportedException();
-      long IDataRecord.GetChars(int i, long fieldOffset, char[] buffer, int bufferOffset, int length) => throw new NotSupportedException();
+      long IDataRecord.GetChars(int i, long fieldOffset, char[]? buffer, int bufferOffset, int length) => throw new NotSupportedException();
       Guid IDataRecord.GetGuid(int i) => throw new NotSupportedException();
       short IDataRecord.GetInt16(int i) => throw new NotSupportedException();
       int IDataRecord.GetInt32(int i) => throw new NotSupportedException();

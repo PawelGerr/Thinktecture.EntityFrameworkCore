@@ -143,7 +143,8 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
          affectedRows.Should().Be(1);
 
          var loadedEntity = await AssertDbContext.TestEntities.FirstOrDefaultAsync();
-         loadedEntity.GetPrivateField().Should().Be(1);
+         loadedEntity.Should().NotBeNull();
+         loadedEntity!.GetPrivateField().Should().Be(1);
       }
 
       [Fact]
@@ -161,8 +162,9 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
          affectedRows.Should().Be(1);
 
          var loadedEntity = await AssertDbContext.TestEntitiesWithShadowProperties.FirstOrDefaultAsync();
-         AssertDbContext.Entry(loadedEntity).Property("ShadowStringProperty").CurrentValue.Should().Be("value");
-         AssertDbContext.Entry(loadedEntity).Property("ShadowIntProperty").CurrentValue.Should().Be(42);
+         loadedEntity.Should().NotBeNull();
+         AssertDbContext.Entry(loadedEntity!).Property("ShadowStringProperty").CurrentValue.Should().Be("value");
+         AssertDbContext.Entry(loadedEntity!).Property("ShadowIntProperty").CurrentValue.Should().Be(42);
       }
 
       [Fact]
@@ -213,7 +215,8 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
          affectedRows.Should().Be(1);
 
          var loadedEntity = await AssertDbContext.TestEntitiesWithRowVersion.FirstOrDefaultAsync();
-         loadedEntity.Id.Should().Be(new Guid("EBC95620-4D80-4318-9B92-AD7528B2965C"));
+         loadedEntity.Should().NotBeNull();
+         loadedEntity!.Id.Should().Be(new Guid("EBC95620-4D80-4318-9B92-AD7528B2965C"));
          loadedEntity.RowVersion.Should().NotBe(Int32.MaxValue);
       }
 

@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 
@@ -13,6 +14,10 @@ namespace Thinktecture.EntityFrameworkCore.Query.SqlExpressions
       /// The name of the table or view.
       /// </summary>
       public string Name { get; }
+
+      /// <inheritdoc />
+      [NotNull]
+      public override string? Alias => base.Alias!;
 
       /// <summary>
       /// Initializes new instance of <see cref="TempTableExpression"/>.
@@ -32,7 +37,7 @@ namespace Thinktecture.EntityFrameworkCore.Query.SqlExpressions
       }
 
       /// <inheritdoc />
-      public override bool Equals(object obj)
+      public override bool Equals(object? obj)
       {
          return ReferenceEquals(this, obj) || Equals(obj as TempTableExpression);
       }

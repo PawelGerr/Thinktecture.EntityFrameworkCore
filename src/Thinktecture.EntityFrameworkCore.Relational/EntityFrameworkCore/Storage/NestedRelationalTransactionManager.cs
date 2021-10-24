@@ -47,7 +47,7 @@ namespace Thinktecture.EntityFrameworkCore.Storage
       }
 
       /// <inheritdoc />
-      public IDbContextTransaction? UseTransaction(DbTransaction transaction, Guid transactionId)
+      public IDbContextTransaction? UseTransaction(DbTransaction? transaction, Guid transactionId)
       {
          return UseTransactionInternal(transaction, transactionId);
       }
@@ -96,7 +96,7 @@ namespace Thinktecture.EntityFrameworkCore.Storage
 
       /// <inheritdoc />
       public Task<IDbContextTransaction?> UseTransactionAsync(
-         DbTransaction transaction,
+         DbTransaction? transaction,
          CancellationToken cancellationToken = default)
       {
          return UseTransactionInternalAsync(transaction, null, cancellationToken);

@@ -18,7 +18,7 @@ namespace Thinktecture.EntityFrameworkCore.Query.ExpressionTranslators
    {
       /// <inheritdoc />
       public SqlExpression? Translate(
-         SqlExpression instance,
+         SqlExpression? instance,
          MethodInfo method,
          IReadOnlyList<SqlExpression> arguments,
          IDiagnosticsLogger<DbLoggerCategory.Query> logger)

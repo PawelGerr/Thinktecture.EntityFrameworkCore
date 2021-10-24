@@ -222,8 +222,11 @@ END
             var storeObject = StoreObjectIdentifier.Create(property.Property.DeclaringEntityType, StoreObjectType.Table)
                               ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.Property.DeclaringEntityType.Name}'.");
 
+            var columnName = property.Property.GetColumnName(storeObject)
+                             ?? throw new InvalidOperationException($"The property '{property.Property.Name}' has no column name.");
+
             sb.Append('\t')
-              .Append(_sqlGenerationHelper.DelimitIdentifier(property.Property.GetColumnName(storeObject))).Append(' ')
+              .Append(_sqlGenerationHelper.DelimitIdentifier(columnName)).Append(' ')
               .Append(columnType);
 
             if (options.UseDefaultDatabaseCollation && _stringColumnTypes.Any(t => columnType.StartsWith(t, StringComparison.OrdinalIgnoreCase)))
@@ -266,7 +269,7 @@ END
                                                    var storeObject = StoreObjectIdentifier.Create(p.Property.DeclaringEntityType, StoreObjectType.Table)
                                                                      ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{p.Property.DeclaringEntityType.Name}'.");
 
-                                                   return p.Property.GetColumnName(storeObject);
+                                                   return p.Property.GetColumnName(storeObject) ?? throw new Exception($"The property '{p.Property.Name}' has no column name.");
                                                 });
 
          sb.AppendLine(",");

@@ -68,7 +68,8 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqliteBulkOperationExe
          await SUT.BulkInsertAsync(testEntities, new SqliteBulkInsertOptions());
 
          var loadedEntity = await AssertDbContext.TestEntities.FirstOrDefaultAsync();
-         loadedEntity.GetPrivateField().Should().Be(3);
+         loadedEntity.Should().NotBeNull();
+         loadedEntity!.GetPrivateField().Should().Be(3);
       }
 
       [Fact]
@@ -83,8 +84,9 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqliteBulkOperationExe
          await SUT.BulkInsertAsync(testEntities, new SqliteBulkInsertOptions());
 
          var loadedEntity = await AssertDbContext.TestEntitiesWithShadowProperties.FirstOrDefaultAsync();
-         AssertDbContext.Entry(loadedEntity).Property("ShadowStringProperty").CurrentValue.Should().Be("value");
-         AssertDbContext.Entry(loadedEntity).Property("ShadowIntProperty").CurrentValue.Should().Be(42);
+         loadedEntity.Should().NotBeNull();
+         AssertDbContext.Entry(loadedEntity!).Property("ShadowStringProperty").CurrentValue.Should().Be("value");
+         AssertDbContext.Entry(loadedEntity!).Property("ShadowIntProperty").CurrentValue.Should().Be(42);
       }
 
       [Fact]
@@ -199,7 +201,8 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqliteBulkOperationExe
          await SUT.BulkInsertAsync(testEntities, options);
 
          var loadedEntity = await AssertDbContext.TestEntitiesWithAutoIncrement.FirstOrDefaultAsync();
-         loadedEntity.Id.Should().Be(expectedId);
+         loadedEntity.Should().NotBeNull();
+         loadedEntity!.Id.Should().Be(expectedId);
          loadedEntity.Name.Should().BeNull();
       }
 

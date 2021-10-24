@@ -160,7 +160,8 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqliteBulkOperationExe
                                                          });
 
          var loadedEntity = await AssertDbContext.TestEntitiesWithAutoIncrement.FirstOrDefaultAsync();
-         loadedEntity.Id.Should().NotBe(0);
+         loadedEntity.Should().NotBeNull();
+         loadedEntity!.Id.Should().NotBe(0);
       }
 
       [Fact]

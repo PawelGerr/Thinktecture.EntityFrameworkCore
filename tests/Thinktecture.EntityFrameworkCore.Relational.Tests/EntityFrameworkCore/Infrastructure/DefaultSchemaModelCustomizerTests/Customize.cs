@@ -26,7 +26,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure.DefaultSchemaModelCust
       {
          Schema = "BA3C32B0-D7EC-422C-AE3B-3206E7D67735";
 
-         ActDbContext.Model.FindEntityType(typeof(TestEntity)).GetSchema().Should().Be(Schema);
+         ActDbContext.Model.FindEntityType(typeof(TestEntity))!.GetSchema().Should().Be(Schema);
       }
 
       [Fact]
@@ -34,7 +34,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure.DefaultSchemaModelCust
       {
          Schema = "E2FBA720-E24C-46C9-B326-46C3C91707F5";
 
-         ActDbContext.Model.FindEntityType(typeof(TestQuery)).GetSchema().Should().Be(Schema);
+         ActDbContext.Model.FindEntityType(typeof(TestQuery))!.GetSchema().Should().Be(Schema);
       }
 
       [Fact]
@@ -43,7 +43,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure.DefaultSchemaModelCust
          Schema = "E2FBA720-E24C-46C9-B326-46C3C91707F5";
 
          ActDbContext.Model.GetDbFunctions()
-                     .Single(f => f.MethodInfo.Name == nameof(DbContextWithSchema.TestDbFunction))
+                     .Single(f => f.MethodInfo!.Name == nameof(DbContextWithSchema.TestDbFunction))
                      .Schema.Should().Be(Schema);
       }
 
@@ -53,7 +53,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure.DefaultSchemaModelCust
          Schema = "4BA05B95-7FEA-4F32-A1E0-ACA9CB486EB9";
          ConfigureModel = builder => builder.Entity<TestEntity>().ToTable("Table", "Schema");
 
-         ActDbContext.Model.FindEntityType(typeof(TestEntity)).GetSchema().Should().Be("Schema");
+         ActDbContext.Model.FindEntityType(typeof(TestEntity))!.GetSchema().Should().Be("Schema");
       }
 
       [Fact]
@@ -62,7 +62,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure.DefaultSchemaModelCust
          Schema = null;
          ConfigureModel = builder => builder.Entity<TestEntity>().ToTable("Table", "Schema");
 
-         ActDbContext.Model.FindEntityType(typeof(TestEntity)).GetSchema().Should().Be("Schema");
+         ActDbContext.Model.FindEntityType(typeof(TestEntity))!.GetSchema().Should().Be("Schema");
       }
    }
 }

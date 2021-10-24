@@ -77,7 +77,10 @@ namespace Thinktecture.Collections
                var entityType = expression.Type.GetGenericArguments()[0];
 
                if (entityType != typeof(T))
-                  return (IQueryable)_genericCreateQuery.MakeGenericMethod(entityType).Invoke(this, new object[] { expression });
+               {
+                  return (IQueryable?)_genericCreateQuery.MakeGenericMethod(entityType).Invoke(this, new object[] { expression })
+                         ?? throw new Exception($"Could not make a generic query using the method '{nameof(AsyncQueryProvider)}.{nameof(CreateQuery)}' and expression '{expression}'");
+               }
             }
 
             return new AsyncEnumerable<T>(expression);
@@ -96,7 +99,7 @@ namespace Thinktecture.Collections
             return new AsyncEnumerable<TElement>(expression);
          }
 
-         public object Execute(Expression expression)
+         public object? Execute(Expression expression)
          {
             return _queryProvider.Execute(expression);
          }

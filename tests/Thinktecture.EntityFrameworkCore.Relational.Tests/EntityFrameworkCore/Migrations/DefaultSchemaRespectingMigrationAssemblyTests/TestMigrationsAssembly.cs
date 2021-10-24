@@ -19,7 +19,7 @@ namespace Thinktecture.EntityFrameworkCore.Migrations.DefaultSchemaRespectingMig
       }
 
       /// <inheritdoc />
-      public string FindMigrationId(string nameOrId)
+      public string? FindMigrationId(string nameOrId)
       {
          return _migrationsAssembly.FindMigrationId(nameOrId);
       }
@@ -34,7 +34,7 @@ namespace Thinktecture.EntityFrameworkCore.Migrations.DefaultSchemaRespectingMig
       public IReadOnlyDictionary<string, TypeInfo> Migrations => _migrationsAssembly.Migrations;
 
       /// <inheritdoc />
-      public ModelSnapshot ModelSnapshot => _migrationsAssembly.ModelSnapshot;
+      public ModelSnapshot? ModelSnapshot => _migrationsAssembly.ModelSnapshot;
 
       /// <inheritdoc />
       public Assembly Assembly => _migrationsAssembly.Assembly;

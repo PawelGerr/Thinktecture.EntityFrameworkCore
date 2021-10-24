@@ -35,7 +35,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.PropertiesProviderTest
       public void Should_extract_property_accessor()
       {
          var entityType = GetEntityType<TestEntity>();
-         var idProperty = new PropertyWithNavigations(entityType.FindProperty(nameof(TestEntity.Id)), Array.Empty<INavigation>());
+         var idProperty = new PropertyWithNavigations(entityType.FindProperty(nameof(TestEntity.Id))!, Array.Empty<INavigation>());
          var propertiesProvider = EntityPropertiesProvider.From<TestEntity>(entity => entity.Id);
 
          var properties = propertiesProvider.GetPropertiesForTempTable(entityType, null, (_, _) => true);
@@ -47,8 +47,8 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.PropertiesProviderTest
       public void Should_extract_properties()
       {
          var entityType = GetEntityType<TestEntity>();
-         var idProperty = new PropertyWithNavigations(entityType.FindProperty(nameof(TestEntity.Id)), Array.Empty<INavigation>());
-         var countProperty = new PropertyWithNavigations(entityType.FindProperty(nameof(TestEntity.Count)), Array.Empty<INavigation>());
+         var idProperty = new PropertyWithNavigations(entityType.FindProperty(nameof(TestEntity.Id))!, Array.Empty<INavigation>());
+         var countProperty = new PropertyWithNavigations(entityType.FindProperty(nameof(TestEntity.Count))!, Array.Empty<INavigation>());
          var propertiesProvider = EntityPropertiesProvider.From<TestEntity>(entity => new { entity.Id, entity.Count });
 
          var properties = propertiesProvider.GetPropertiesForTempTable(entityType, null, (_, _) => true);

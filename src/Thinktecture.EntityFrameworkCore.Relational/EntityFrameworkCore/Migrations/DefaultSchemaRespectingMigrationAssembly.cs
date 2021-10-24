@@ -27,7 +27,7 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
       public IReadOnlyDictionary<string, TypeInfo> Migrations => _innerMigrationsAssembly.Migrations;
 
       /// <inheritdoc />
-      public ModelSnapshot ModelSnapshot => _innerMigrationsAssembly.ModelSnapshot;
+      public ModelSnapshot? ModelSnapshot => _innerMigrationsAssembly.ModelSnapshot;
 
       /// <inheritdoc />
       public Assembly Assembly => _innerMigrationsAssembly.Assembly;
@@ -41,14 +41,17 @@ namespace Thinktecture.EntityFrameworkCore.Migrations
          ICurrentDbContext currentContext,
          IServiceProvider serviceProvider)
       {
+         if (currentContext == null)
+            throw new ArgumentNullException(nameof(currentContext));
+
          _innerMigrationsAssembly = migrationsAssembly ?? throw new ArgumentNullException(nameof(migrationsAssembly));
          _schemaSetter = schemaSetter ?? throw new ArgumentNullException(nameof(schemaSetter));
          _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
-         _context = currentContext?.Context ?? throw new ArgumentNullException(nameof(currentContext));
+         _context = currentContext.Context ?? throw new ArgumentNullException(nameof(currentContext));
       }
 
       /// <inheritdoc />
-      public string FindMigrationId(string nameOrId)
+      public string? FindMigrationId(string nameOrId)
       {
          return _innerMigrationsAssembly.FindMigrationId(nameOrId);
       }

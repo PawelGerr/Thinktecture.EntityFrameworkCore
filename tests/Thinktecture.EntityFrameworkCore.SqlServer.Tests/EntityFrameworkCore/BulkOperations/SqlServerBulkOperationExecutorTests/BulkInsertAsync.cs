@@ -84,7 +84,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
          await SUT.BulkInsertAsync(testEntities, new SqlServerBulkInsertOptions());
 
          var loadedEntity = await AssertDbContext.TestEntities.FirstOrDefaultAsync();
-         loadedEntity.GetPrivateField().Should().Be(3);
+         loadedEntity!.GetPrivateField().Should().Be(3);
       }
 
       [Fact]
@@ -99,8 +99,9 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
          await SUT.BulkInsertAsync(testEntities, new SqlServerBulkInsertOptions());
 
          var loadedEntity = await AssertDbContext.TestEntitiesWithShadowProperties.FirstOrDefaultAsync();
-         AssertDbContext.Entry(loadedEntity).Property("ShadowStringProperty").CurrentValue.Should().Be("value");
-         AssertDbContext.Entry(loadedEntity).Property("ShadowIntProperty").CurrentValue.Should().Be(42);
+         loadedEntity.Should().NotBeNull();
+         AssertDbContext.Entry(loadedEntity!).Property("ShadowStringProperty").CurrentValue.Should().Be("value");
+         AssertDbContext.Entry(loadedEntity!).Property("ShadowIntProperty").CurrentValue.Should().Be(42);
       }
 
       [Fact]
@@ -211,7 +212,8 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
          await SUT.BulkInsertAsync(testEntities, options);
 
          var loadedEntity = await AssertDbContext.TestEntitiesWithAutoIncrement.FirstOrDefaultAsync();
-         loadedEntity.Id.Should().Be(42);
+         loadedEntity.Should().NotBeNull();
+         loadedEntity!.Id.Should().Be(42);
       }
 
       [Fact]
@@ -223,7 +225,8 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
          await SUT.BulkInsertAsync(testEntities, new SqlServerBulkInsertOptions());
 
          var loadedEntity = await AssertDbContext.TestEntitiesWithAutoIncrement.FirstOrDefaultAsync();
-         loadedEntity.Id.Should().NotBe(0);
+         loadedEntity.Should().NotBeNull();
+         loadedEntity!.Id.Should().NotBe(0);
          loadedEntity.Name.Should().Be("value");
       }
 
@@ -236,7 +239,8 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperation
          await SUT.BulkInsertAsync(testEntities, new SqlServerBulkInsertOptions());
 
          var loadedEntity = await AssertDbContext.TestEntitiesWithRowVersion.FirstOrDefaultAsync();
-         loadedEntity.Id.Should().Be(new Guid("EBC95620-4D80-4318-9B92-AD7528B2965C"));
+         loadedEntity.Should().NotBeNull();
+         loadedEntity!.Id.Should().Be(new Guid("EBC95620-4D80-4318-9B92-AD7528B2965C"));
          loadedEntity.RowVersion.Should().NotBe(Int32.MaxValue);
       }
 

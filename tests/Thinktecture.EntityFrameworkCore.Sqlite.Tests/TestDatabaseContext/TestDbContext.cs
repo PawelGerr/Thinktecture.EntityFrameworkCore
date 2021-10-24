@@ -77,7 +77,7 @@ namespace Thinktecture.TestDatabaseContext
 
       public IQueryable<SqliteTableInfo> GetTempTableColumns(IEntityType entityType)
       {
-         var tableName = entityType.GetTableName();
+         var tableName = entityType.GetTableName() ?? throw new Exception($"The entity '{entityType.Name}' has no table name.");
 
          return GetTempTableColumns(tableName);
       }

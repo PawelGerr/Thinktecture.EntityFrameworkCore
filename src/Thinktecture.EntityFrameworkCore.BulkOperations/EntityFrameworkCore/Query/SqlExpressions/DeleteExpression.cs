@@ -45,7 +45,10 @@ namespace Thinktecture.EntityFrameworkCore.Query.SqlExpressions
       protected override void Print(ExpressionPrinter expressionPrinter)
       {
          expressionPrinter.Append("1;").AppendLine()
-                          .Append("DELETE ").Append(Table.Alias).Append(" ");
+                          .Append("DELETE ");
+
+         if (Table.Alias is not null)
+            expressionPrinter.Append(Table.Alias).Append(" ");
       }
 
       /// <inheritdoc />

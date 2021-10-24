@@ -20,7 +20,8 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
          if (entityType == null)
             throw new ArgumentNullException(nameof(entityType));
 
-         var tableName = entityType.GetTableName();
+         var tableName = entityType.GetTableName()
+                         ?? throw new InvalidOperationException($"The entity '{entityType.Name}' has no table name.");
 
          return new TempTableName(tableName);
       }

@@ -14,7 +14,7 @@ namespace Thinktecture.EntityFrameworkCore.Query
       /// <summary>
       /// Runtime parameters.
       /// </summary>
-      protected IReadOnlyDictionary<string, object> ParametersValues { get; }
+      protected IReadOnlyDictionary<string, object?> ParametersValues { get; }
 
       /// <summary>
       /// Table hints.
@@ -27,7 +27,7 @@ namespace Thinktecture.EntityFrameworkCore.Query
       /// <param name="parametersValues">Runtime parameters.</param>
       /// <param name="tableHintContexts">Table hints.</param>
       public RelationalOptimizingVisitor(
-         IReadOnlyDictionary<string, object> parametersValues,
+         IReadOnlyDictionary<string, object?> parametersValues,
          IReadOnlyList<TableHintContext> tableHintContexts)
       {
          ParametersValues = parametersValues;

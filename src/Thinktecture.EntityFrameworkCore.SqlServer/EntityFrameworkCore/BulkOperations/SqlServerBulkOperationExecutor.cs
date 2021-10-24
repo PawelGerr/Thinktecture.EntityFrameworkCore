@@ -100,8 +100,9 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
          where T : class
       {
          var entityType = _ctx.Model.GetEntityType(typeof(T));
+         var tableName = entityType.GetTableName() ?? throw new InvalidOperationException($"The entity '{entityType.Name}' has no table name.");
 
-         return BulkInsertAsync(entityType, entities, entityType.GetSchema(), entityType.GetTableName(), options, cancellationToken);
+         return BulkInsertAsync(entityType, entities, entityType.GetSchema(), tableName, options, cancellationToken);
       }
 
       private async Task BulkInsertAsync<T>(
@@ -195,9 +196,11 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
 
          foreach (var childContext in parentBulkOperationContext.GetChildren(parentEntities))
          {
+            var childTableName = childContext.EntityType.GetTableName() ?? throw new InvalidOperationException($"The entity '{childContext.EntityType.Name}' has no table name.");
+
             await BulkInsertAsync(childContext.Entities,
                                   childContext.EntityType.GetSchema(),
-                                  childContext.EntityType.GetTableName(),
+                                  childTableName,
                                   childContext,
                                   cancellationToken).ConfigureAwait(false);
          }
@@ -336,7 +339,9 @@ INSERT BULK {Table} ({Columns})", (long)duration.TotalMilliseconds,
          where T : class
       {
          var entityType = _ctx.Model.GetEntityType(typeof(T));
-         var tableIdentifier = _sqlGenerationHelper.DelimitIdentifier(entityType.GetTableName(), entityType.GetSchema());
+         var tableName = entityType.GetTableName() ?? throw new InvalidOperationException($"The entity '{entityType.Name}' has no table name.");
+
+         var tableIdentifier = _sqlGenerationHelper.DelimitIdentifier(tableName, entityType.GetSchema());
          var truncateStatement = $"TRUNCATE TABLE {tableIdentifier};";
 
          await _ctx.Database.ExecuteSqlRawAsync(truncateStatement, cancellationToken);
@@ -432,8 +437,10 @@ INSERT BULK {Table} ({Columns})", (long)duration.TotalMilliseconds,
       {
          var sb = new StringBuilder();
 
+         var tableName = entityType.GetTableName() ?? throw new Exception($"The entity '{entityType.Name}' has no table name.");
+
          sb.Append("MERGE INTO ")
-           .Append(_sqlGenerationHelper.DelimitIdentifier(entityType.GetTableName(), entityType.GetSchema()));
+           .Append(_sqlGenerationHelper.DelimitIdentifier(tableName, entityType.GetSchema()));
 
          if (options.MergeTableHints.Count != 0)
          {
@@ -464,7 +471,10 @@ INSERT BULK {Table} ({Columns})", (long)duration.TotalMilliseconds,
 
             var storeObject = StoreObjectIdentifier.Create(property.Property.DeclaringEntityType, StoreObjectType.Table)
                               ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.Property.DeclaringEntityType.Name}'.");
-            var escapedColumnName = _sqlGenerationHelper.DelimitIdentifier(property.Property.GetColumnName(storeObject));
+            var columnName = property.Property.GetColumnName(storeObject)
+                             ?? throw new Exception($"The property '{property.Property.Name}' has no column name.");
+
+            var escapedColumnName = _sqlGenerationHelper.DelimitIdentifier(columnName);
 
             sb.Append("(d.").Append(escapedColumnName).Append(" = s.").Append(escapedColumnName);
 
@@ -488,7 +498,10 @@ INSERT BULK {Table} ({Columns})", (long)duration.TotalMilliseconds,
 
             var storeObject = StoreObjectIdentifier.Create(property.Property.DeclaringEntityType, StoreObjectType.Table)
                               ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.Property.DeclaringEntityType.Name}'.");
-            var escapedColumnName = _sqlGenerationHelper.DelimitIdentifier(property.Property.GetColumnName(storeObject));
+            var columnName = property.Property.GetColumnName(storeObject)
+                             ?? throw new Exception($"The property '{property.Property.Name}' has no column name.");
+
+            var escapedColumnName = _sqlGenerationHelper.DelimitIdentifier(columnName);
 
             sb.Append("d.").Append(escapedColumnName).Append(" = s.").Append(escapedColumnName);
             isFirstIteration = false;
@@ -509,7 +522,9 @@ INSERT BULK {Table} ({Columns})", (long)duration.TotalMilliseconds,
 
                var storeObject = StoreObjectIdentifier.Create(property.Property.DeclaringEntityType, StoreObjectType.Table)
                                  ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.Property.DeclaringEntityType.Name}'.");
-               var escapedColumnName = _sqlGenerationHelper.DelimitIdentifier(property.Property.GetColumnName(storeObject));
+               var columnName = property.Property.GetColumnName(storeObject)
+                                ?? throw new Exception($"The property '{property.Property.Name}' has no column name.");
+               var escapedColumnName = _sqlGenerationHelper.DelimitIdentifier(columnName);
 
                sb.Append(escapedColumnName);
                isFirstIteration = false;
@@ -527,7 +542,9 @@ INSERT BULK {Table} ({Columns})", (long)duration.TotalMilliseconds,
 
                var storeObject = StoreObjectIdentifier.Create(property.Property.DeclaringEntityType, StoreObjectType.Table)
                                  ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.Property.DeclaringEntityType.Name}'.");
-               var escapedColumnName = _sqlGenerationHelper.DelimitIdentifier(property.Property.GetColumnName(storeObject));
+               var columnName = property.Property.GetColumnName(storeObject)
+                                ?? throw new Exception($"The property '{property.Property.Name}' has no column name.");
+               var escapedColumnName = _sqlGenerationHelper.DelimitIdentifier(columnName);
 
                sb.Append("s.").Append(escapedColumnName);
                isFirstIteration = false;

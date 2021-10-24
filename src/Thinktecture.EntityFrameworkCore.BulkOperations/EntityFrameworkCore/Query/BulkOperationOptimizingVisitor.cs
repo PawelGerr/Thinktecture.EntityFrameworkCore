@@ -22,7 +22,7 @@ namespace Thinktecture.EntityFrameworkCore.Query
       /// <param name="tempTableQueryContext">Temp table contexts to use for finding and replacing of <see cref="TableExpression"/>.</param>
       /// <param name="tableHintContexts"></param>
       public BulkOperationOptimizingVisitor(
-         IReadOnlyDictionary<string, object> parametersValues,
+         IReadOnlyDictionary<string, object?> parametersValues,
          IReadOnlyList<TempTableQueryContext> tempTableQueryContext,
          IReadOnlyList<TableHintContext> tableHintContexts)
          : base(parametersValues, tableHintContexts)

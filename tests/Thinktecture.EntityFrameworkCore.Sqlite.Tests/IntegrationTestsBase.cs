@@ -42,7 +42,9 @@ namespace Thinktecture
       protected IDiagnosticsLogger<TCategory> CreateDiagnosticsLogger<TCategory>(ILoggingOptions? options = null, DiagnosticSource? diagnosticSource = null)
          where TCategory : LoggerCategory<TCategory>, new()
       {
-         return new DiagnosticsLogger<TCategory>(LoggerFactory, options ?? new LoggingOptions(),
+         var loggerFactory = LoggerFactory ?? throw new InvalidOperationException($"The '{nameof(LoggerFactory)}' must be set first.");
+
+         return new DiagnosticsLogger<TCategory>(loggerFactory, options ?? new LoggingOptions(),
                                                  diagnosticSource ?? new DiagnosticListener(typeof(TCategory).ShortDisplayName()),
                                                  new SqliteLoggingDefinitions(),
                                                  new NullDbContextLogger());

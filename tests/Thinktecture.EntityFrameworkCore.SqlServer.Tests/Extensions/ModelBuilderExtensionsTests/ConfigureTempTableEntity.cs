@@ -21,7 +21,8 @@ namespace Thinktecture.Extensions.ModelBuilderExtensionsTests
          ConfigureModel = builder => builder.ConfigureTempTableEntity<CustomTempTable>();
 
          var entityType = ActDbContext.Model.FindEntityType(typeof(CustomTempTable));
-         entityType.Name.Should().Be("Thinktecture.TestDatabaseContext.CustomTempTable");
+         entityType.Should().NotBeNull();
+         entityType!.Name.Should().Be("Thinktecture.TestDatabaseContext.CustomTempTable");
 
          var properties = entityType.GetProperties().ToList();
          properties.Should().HaveCount(2);
@@ -43,7 +44,8 @@ namespace Thinktecture.Extensions.ModelBuilderExtensionsTests
          ConfigureModel = builder => builder.ConfigureTempTableEntity<CustomTempTable>();
 
          var entityType = ActDbContext.Model.FindEntityType(typeof(CustomTempTable));
-         entityType.GetTableName().Should().Be("#CustomTempTable");
+         entityType.Should().NotBeNull();
+         entityType!.GetTableName().Should().Be("#CustomTempTable");
       }
    }
 }

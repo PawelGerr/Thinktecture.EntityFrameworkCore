@@ -123,9 +123,11 @@ CREATE TEMPORARY TABLE {_sqlGenerationHelper.DelimitIdentifier(name)}
 
             var storeObject = StoreObjectIdentifier.Create(property.Property.DeclaringEntityType, StoreObjectType.Table)
                               ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.Property.DeclaringEntityType.Name}'.");
+            var columnName = property.Property.GetColumnName(storeObject)
+                             ?? throw new Exception($"The property '{property.Property.Name}' has no column name.");
 
             sb.Append("\t\t")
-              .Append(_sqlGenerationHelper.DelimitIdentifier(property.Property.GetColumnName(storeObject))).Append(' ')
+              .Append(_sqlGenerationHelper.DelimitIdentifier(columnName)).Append(' ')
               .Append(property.Property.GetColumnType())
               .Append(property.Property.IsNullable ? " NULL" : " NOT NULL");
 
@@ -172,7 +174,8 @@ Currently configured primary keys: [{String.Join(", ", options.PrimaryKeys.Selec
                                                    var storeObject = StoreObjectIdentifier.Create(p.Property.DeclaringEntityType, StoreObjectType.Table)
                                                                      ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{p.Property.DeclaringEntityType.Name}'.");
 
-                                                   return p.Property.GetColumnName(storeObject);
+                                                   return p.Property.GetColumnName(storeObject)
+                                                          ?? throw new Exception($"The property '{p.Property.Name}' has no column name.");
                                                 });
 
          sb.AppendLine(",");

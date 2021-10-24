@@ -95,7 +95,7 @@ namespace Thinktecture.TestDatabaseContext
 
       public IQueryable<InformationSchemaColumn> GetTempTableColumns(IEntityType entityType)
       {
-         var tableName = entityType.GetTableName();
+         var tableName = entityType.GetTableName() ?? throw new Exception($"The entity '{entityType.Name}' has no table name.");
 
          return GetTempTableColumns(tableName);
       }
@@ -119,7 +119,8 @@ WHERE
 
       public IQueryable<InformationSchemaTableConstraint> GetTempTableConstraints<T>()
       {
-         var tableName = this.GetEntityType<T>().GetTableName();
+         var tableName = this.GetEntityType<T>().GetTableName()
+                         ?? throw new Exception("No table name");
 
          if (!tableName.StartsWith("#", StringComparison.Ordinal))
             tableName = $"#{tableName}";
@@ -135,7 +136,7 @@ WHERE
 
       public IQueryable<InformationSchemaConstraintColumn> GetTempTableConstraintsColumns<T>()
       {
-         var tableName = this.GetEntityType<T>().GetTableName();
+         var tableName = this.GetEntityType<T>().GetTableName() ?? throw new Exception("No table name.");
 
          if (!tableName.StartsWith("#", StringComparison.Ordinal))
             tableName = $"#{tableName}";
@@ -151,14 +152,14 @@ WHERE
 
       public IQueryable<InformationSchemaKeyColumn> GetTempTableKeyColumns<T>()
       {
-         var tableName = this.GetEntityType<T>().GetTableName();
+         var tableName = this.GetEntityType<T>().GetTableName() ?? throw new Exception("No table name.");
 
          return GetTempTableKeyColumns(tableName);
       }
 
       public IQueryable<InformationSchemaKeyColumn> GetTempTableKeyColumns<TColumn1, TColumn2>()
       {
-         var tableName = this.GetEntityType<TempTable<TColumn1, TColumn2>>().GetTableName();
+         var tableName = this.GetEntityType<TempTable<TColumn1, TColumn2>>().GetTableName() ?? throw new Exception("No table name.");
 
          return GetTempTableKeyColumns(tableName);
       }

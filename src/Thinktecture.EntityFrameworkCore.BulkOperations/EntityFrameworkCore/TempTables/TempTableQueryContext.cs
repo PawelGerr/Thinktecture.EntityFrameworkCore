@@ -38,7 +38,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
       /// This is an internal API.
       /// </summary>
       public static bool TryGetTempTableContexts(
-         IReadOnlyDictionary<string, object> parametersValues,
+         IReadOnlyDictionary<string, object?> parametersValues,
          [NotNullWhen(true)] out IReadOnlyList<TempTableQueryContext>? tempTableQueryContexts)
       {
          List<TempTableQueryContext>? ctxs = null;

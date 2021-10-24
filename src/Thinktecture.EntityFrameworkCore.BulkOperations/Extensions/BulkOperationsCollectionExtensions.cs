@@ -120,9 +120,9 @@ namespace Thinktecture
 
       private static IEnumerable<object> ProjectEntities(IEnumerable<object> ownedEntities, INavigation navigation)
       {
-         var getter = navigation.GetGetter() ?? throw new Exception($"No property-getter for the navigational property '{navigation.ClrType.Name}.{navigation.PropertyInfo.Name}' found.");
+         var getter = navigation.GetGetter() ?? throw new Exception($"No property-getter for the navigational property '{navigation.ClrType.Name}.{navigation.PropertyInfo?.Name ?? navigation.Name}' found.");
 
-         ownedEntities = ownedEntities.Select(getter.GetClrValue);
+         ownedEntities = ownedEntities.Select(getter.GetClrValue).Where(e => e != null)!;
 
          if (navigation.IsCollection)
             ownedEntities = ownedEntities.SelectMany(c => (IEnumerable<object>)c);
@@ -137,7 +137,7 @@ namespace Thinktecture
    internal class DroppedInlineNavigationsComparer
       : IEqualityComparer<(IReadOnlyList<INavigation> DroppedNavigations, PropertyWithNavigations Property)>
    {
-      public static DroppedInlineNavigationsComparer Instance = new();
+      public static readonly DroppedInlineNavigationsComparer Instance = new();
 
       public bool Equals(
          (IReadOnlyList<INavigation> DroppedNavigations, PropertyWithNavigations Property) x,

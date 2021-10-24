@@ -101,7 +101,7 @@ namespace Thinktecture.EntityFrameworkCore.Migrations.MigrationOperationSchemaSe
          var op = Operations[0].As<CreateTableOperation>();
          op.Schema.Should().Be("Schema1");
          op.Columns[0].Schema.Should().Be("Schema1");
-         op.PrimaryKey.Schema.Should().Be("Schema1");
+         op.PrimaryKey!.Schema.Should().Be("Schema1");
          op.UniqueConstraints[0].Schema.Should().Be("Schema1");
          op.ForeignKeys[0].Schema.Should().Be("Schema1");
          op.ForeignKeys[0].PrincipalSchema.Should().Be("Schema1");
