@@ -36,7 +36,18 @@ function Set-VersionSuffix([string]$dir, [string]$suffix)
 
         $versionSuffix = $content.CreateElement("VersionSuffix");
         $versionSuffix.set_InnerXML($suffix)
-        [void] $content.Project.PropertyGroup.AppendChild($versionSuffix)
+
+        if ($content.Project.PropertyGroup -eq $null)
+        {
+            $propertyGroup = $content.CreateElement("PropertyGroup");
+            $content.Project.AppendChild($propertyGroup);
+        }
+        else
+        {
+            $propertyGroup = $content.Project.PropertyGroup;
+        }
+
+        [void] $propertyGroup.AppendChild($versionSuffix)
         $content.Save($file.FullName);
     }
 }
