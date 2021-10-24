@@ -9,7 +9,7 @@ variables:
   buildConfiguration: 'Release'
 
 pool:
-  vmImage: 'ubuntu-latest'
+  vmImage: 'windows-latest'
 
 steps:
 
