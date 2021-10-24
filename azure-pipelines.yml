@@ -14,10 +14,11 @@ pool:
 steps:
 
 - task: UseDotNet@2
-  displayName: 'Use .NET 5.0'
+  displayName: 'Use .NET 6.0'
   inputs:
     packageType: sdk
-    version: 5.0.100
+    version: 6.0.x
+    includePreviewVersions: true
     installationPath: $(Agent.ToolsDirectory)/dotnet
       
 - script: |
