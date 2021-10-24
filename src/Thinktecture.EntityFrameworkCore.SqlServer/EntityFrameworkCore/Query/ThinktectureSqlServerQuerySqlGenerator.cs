@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
@@ -72,13 +73,13 @@ namespace Thinktecture.EntityFrameworkCore.Query
       /// <inheritdoc />
       protected override Expression VisitSelect(SelectExpression selectExpression)
       {
-         if (selectExpression.TryGetDeleteExpression(out var deleteExpression))
-            return GenerateDeleteStatement(selectExpression, deleteExpression);
+         if (selectExpression.TryGetDeleteExpression(out var table))
+            return GenerateDeleteStatement(table, selectExpression);
 
          return base.VisitSelect(selectExpression);
       }
 
-      private Expression GenerateDeleteStatement(SelectExpression selectExpression, DeleteExpression deleteExpression)
+      private Expression GenerateDeleteStatement(TableExpressionBase tableToDeleteIn, SelectExpression selectExpression)
       {
          if (selectExpression.IsDistinct)
             throw new NotSupportedException("A DISTINCT clause is not supported in a DELETE statement.");
@@ -99,7 +100,9 @@ namespace Thinktecture.EntityFrameworkCore.Query
 
          GenerateTop(selectExpression);
 
-         Sql.Append(Dependencies.SqlGenerationHelper.DelimitIdentifier(deleteExpression.Table.Alias)).AppendLine()
+         var tableAlias = tableToDeleteIn.Alias ?? throw new InvalidOperationException($"The table to execute DELETE on has no alias. Make sure the operation is executed on a real entity. Provided type: {tableToDeleteIn.Type.Name}");
+
+         Sql.Append(Dependencies.SqlGenerationHelper.DelimitIdentifier(tableAlias)).AppendLine()
             .Append("FROM ");
 
          for (var i = 0; i < selectExpression.Tables.Count; i++)

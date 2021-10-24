@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Query;
@@ -79,27 +80,65 @@ namespace Thinktecture
       private static Expression TranslateBulkDelete(ShapedQueryExpression shapedQueryExpression, IRelationalTypeMappingSource typeMappingSource)
       {
          var selectExpression = (SelectExpression)shapedQueryExpression.QueryExpression;
-         selectExpression.ApplyProjection();
+         var intTypeMapping = typeMappingSource.FindMapping(typeof(int)) ?? throw new Exception($"The type mapping source '{typeMappingSource.GetType().Name}' has no mapping for 'int'.");
 
-         if (selectExpression.Projection.Count == 0)
-            throw new NotSupportedException("A DELETE statement is not supported if the table has no columns.");
+#pragma warning disable EF1001
+         var clone = selectExpression.Clone();
+#pragma warning restore EF1001
+         clone.ApplyProjection(shapedQueryExpression.ShaperExpression, shapedQueryExpression.ResultCardinality, QuerySplittingBehavior.SingleQuery);
+         var tableToDeleteIn = GetTableForDeleteOperation(clone);
 
-         var firstProjectionExpression = selectExpression.Projection.First();
-
-         if (firstProjectionExpression.Expression is not ColumnExpression columnExpression)
-            throw new NotSupportedException($"The projection '{firstProjectionExpression.Print()}' was expected to be a column but is a '{firstProjectionExpression.GetType().Name}'.");
-
-         selectExpression.ClearProjection();
-
-         var intTypeMapping = typeMappingSource.FindMapping(typeof(int));
-         var projectionMapping = new Dictionary<ProjectionMember, Expression> { { new ProjectionMember(), new DeleteExpression(columnExpression.Table, intTypeMapping) } };
-
-         selectExpression.ReplaceProjectionMapping(projectionMapping);
+         var projectionMapping = new Dictionary<ProjectionMember, Expression> { { new ProjectionMember(), new DeleteExpression(tableToDeleteIn, intTypeMapping) } };
+         selectExpression.ReplaceProjection(Array.Empty<Expression>());
+         selectExpression.ReplaceProjection(projectionMapping);
 
          var conversionToInt = Expression.Convert(new ProjectionBindingExpression(shapedQueryExpression.QueryExpression, new ProjectionMember(), typeof(int)), typeof(int));
 
          return shapedQueryExpression.UpdateResultCardinality(ResultCardinality.Single)
                                      .UpdateShaperExpression(conversionToInt);
+      }
+
+      private static TableExpressionBase GetTableForDeleteOperation(SelectExpression selectExpression)
+      {
+         TableExpressionBase? table = null;
+
+         if (selectExpression.Projection.Count == 0 && selectExpression.Tables.Count == 1)
+            return selectExpression.Tables[0];
+
+         foreach (ProjectionExpression projection in selectExpression.Projection)
+         {
+            if (projection.Expression is not ColumnExpression columnExpression)
+               throw new NotSupportedException($"The projection '{projection.Print()}' was expected to be a column but is a '{projection.Expression.GetType().Name}'.");
+
+            if (table is null)
+            {
+               table = columnExpression.Table;
+            }
+            else
+            {
+               if (!table.Equals(columnExpression.Table))
+                  throw new NotSupportedException($"The provided query is referencing more than 1 table. Found tables: [{GetDisplayName(table)}, {GetDisplayName(columnExpression.Table)}].");
+            }
+         }
+
+         if (table == null)
+            throw new NotSupportedException("A DELETE statement is not supported if the table has no columns.");
+
+         if (table is JoinExpressionBase join)
+            return join.Table;
+
+         return table;
+      }
+
+      private static string GetDisplayName(TableExpressionBase table)
+      {
+         if (table is TableExpression realTable)
+            return $"{realTable.Name} AS {realTable.Alias}";
+
+         if (table is JoinExpressionBase join)
+            return GetDisplayName(join.Table);
+
+         return table.Type.Name;
       }
 
       private static ShapedQueryExpression GetShapedQueryExpression(

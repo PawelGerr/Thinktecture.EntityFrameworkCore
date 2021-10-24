@@ -8,9 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Diagnostics.Internal;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.SqlServer.Diagnostics.Internal;
-using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using Thinktecture.EntityFrameworkCore;
 using Thinktecture.EntityFrameworkCore.Infrastructure;
@@ -70,7 +68,7 @@ namespace Thinktecture
                            .AddNestedTransactionSupport()
                            .ConfigureWarnings(warningsBuilder => warningsBuilder.Ignore(CoreEventId.ManyServiceProvidersCreatedWarning));
 
-         builder.AddOrUpdateExtension<RelationalDbContextOptionsExtension>(extension => extension.Add(ServiceDescriptor.Singleton(TenantDatabaseProviderMock)));
+         builder.AddOrUpdateExtension<RelationalDbContextOptionsExtension>(extension => extension.Register(typeof(Mock<ITenantDatabaseProvider>), TenantDatabaseProviderMock));
 
          return builder;
       }

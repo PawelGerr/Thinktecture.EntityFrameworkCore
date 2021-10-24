@@ -41,8 +41,10 @@ namespace Thinktecture.EntityFrameworkCore.Data
          where TEntity : class
       {
          var property = cacheKey.Property;
-         var hasSqlDefaultValue = property.GetDefaultValueSql() != null;
-         var hasDefaultValue = property.GetDefaultValue() != null;
+         var storeObject = StoreObjectIdentifier.Create(property.DeclaringEntityType, StoreObjectType.Table)
+                           ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.DeclaringEntityType.Name}'.");
+         var hasSqlDefaultValue = property.GetDefaultValueSql(storeObject) != null;
+         var hasDefaultValue = property.TryGetDefaultValue(storeObject, out _);
 
          if ((hasSqlDefaultValue || hasDefaultValue) && !property.IsNullable)
          {

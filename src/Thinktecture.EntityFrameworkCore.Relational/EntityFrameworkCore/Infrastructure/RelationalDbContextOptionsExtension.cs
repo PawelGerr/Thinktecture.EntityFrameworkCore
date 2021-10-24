@@ -149,20 +149,42 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
          if (!typeof(IRelationalTypeMappingSourcePlugin).IsAssignableFrom(type))
             throw new ArgumentException($"The provided type '{type.ShortDisplayName()}' must implement '{nameof(IRelationalTypeMappingSourcePlugin)}'.", nameof(type));
 
-         Add(ServiceDescriptor.Singleton(typeof(IRelationalTypeMappingSourcePlugin), type));
+         Register(typeof(IRelationalTypeMappingSourcePlugin), type, ServiceLifetime.Singleton);
       }
 
       /// <summary>
-      /// Adds a service descriptor for registration of custom services with internal dependency injection container of Entity Framework Core.
+      /// Registers a custom service with internal dependency injection container of Entity Framework Core.
       /// </summary>
-      /// <param name="serviceDescriptor">Service descriptor to add.</param>
-      /// <exception cref="ArgumentNullException"><paramref name="serviceDescriptor"/> is <c>null</c>.</exception>
-      public void Add(ServiceDescriptor serviceDescriptor)
+      /// <param name="serviceType">Service type.</param>
+      /// <param name="implementationType">Implementation type.</param>
+      /// <param name="lifetime">Service lifetime.</param>
+      /// <exception cref="ArgumentNullException"><paramref name="serviceType"/> or <paramref name="implementationType"/> is <c>null</c>.</exception>
+      public void Register(Type serviceType, Type implementationType, ServiceLifetime lifetime)
       {
-         if (serviceDescriptor == null)
-            throw new ArgumentNullException(nameof(serviceDescriptor));
+         if (serviceType == null)
+            throw new ArgumentNullException(nameof(serviceType));
 
-         _serviceDescriptors.Add(serviceDescriptor);
+         if (implementationType == null)
+            throw new ArgumentNullException(nameof(implementationType));
+
+         _serviceDescriptors.Add(ServiceDescriptor.Describe(serviceType, implementationType, lifetime));
+      }
+
+      /// <summary>
+      /// Registers a custom service instance with internal dependency injection container of Entity Framework Core.
+      /// </summary>
+      /// <param name="serviceType">Service type.</param>
+      /// <param name="implementationInstance">Implementation instance.</param>
+      /// <exception cref="ArgumentNullException"><paramref name="serviceType"/> or <paramref name="implementationInstance"/> is <c>null</c>.</exception>
+      public void Register(Type serviceType, object implementationInstance)
+      {
+         if (serviceType == null)
+            throw new ArgumentNullException(nameof(serviceType));
+
+         if (implementationInstance == null)
+            throw new ArgumentNullException(nameof(implementationInstance));
+
+         _serviceDescriptors.Add(ServiceDescriptor.Singleton(serviceType, implementationInstance));
       }
 
       /// <summary>
@@ -203,7 +225,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
             _extension = extension ?? throw new ArgumentNullException(nameof(extension));
          }
 
-         public override long GetServiceProviderHashCode()
+         public override int GetServiceProviderHashCode()
          {
             var hashCode = new HashCode();
             hashCode.Add(_extension.AddCustomRelationalQueryContextFactory);
@@ -222,6 +244,48 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
             return hashCode.ToHashCode();
          }
 
+         /// <inheritdoc />
+         public override bool ShouldUseSameServiceProvider(DbContextOptionsExtensionInfo other)
+         {
+            if (other is not RelationalDbContextOptionsExtensionInfo otherRelationalInfo)
+               return false;
+
+            var areEqual = _extension.AddCustomRelationalQueryContextFactory == otherRelationalInfo._extension.AddCustomRelationalQueryContextFactory
+                           && _extension.AddSchemaRespectingComponents == otherRelationalInfo._extension.AddSchemaRespectingComponents
+                           && _extension.AddNestedTransactionsSupport == otherRelationalInfo._extension.AddNestedTransactionsSupport
+                           && _extension.AddTenantDatabaseSupport == otherRelationalInfo._extension.AddTenantDatabaseSupport
+                           && _extension.AddRowNumberSupport == otherRelationalInfo._extension.AddRowNumberSupport
+                           && _extension.ComponentDecorator.Equals(otherRelationalInfo._extension.ComponentDecorator);
+
+            if (!areEqual)
+               return false;
+
+            if (_extension._evaluatableExpressionFilterPlugins.Count != otherRelationalInfo._extension._evaluatableExpressionFilterPlugins.Count)
+               return false;
+
+            if (_extension._evaluatableExpressionFilterPlugins.Except(otherRelationalInfo._extension._evaluatableExpressionFilterPlugins).Any())
+               return false;
+
+            if (_extension._serviceDescriptors.Count != otherRelationalInfo._extension._serviceDescriptors.Count)
+               return false;
+
+            return _extension._serviceDescriptors.All(d => otherRelationalInfo._extension._serviceDescriptors.Any(o => AreEqual(d, o)));
+         }
+
+         private static bool AreEqual(ServiceDescriptor serviceDescriptor, ServiceDescriptor other)
+         {
+            if (serviceDescriptor.Lifetime != other.Lifetime || serviceDescriptor.ServiceType != other.ServiceType)
+               return false;
+
+            if (serviceDescriptor.ImplementationType is not null)
+               return serviceDescriptor.ImplementationType == other.ImplementationType;
+
+            if (serviceDescriptor.ImplementationInstance is not null)
+               return serviceDescriptor.ImplementationInstance.Equals(other.ImplementationInstance);
+
+            throw new NotSupportedException("Implementation factories are not supported.");
+         }
+
          private static int GetHashCode(ServiceDescriptor descriptor)
          {
             int implHashcode;
@@ -236,8 +300,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
             }
             else
             {
-               implHashcode = descriptor.ImplementationFactory?.GetHashCode()
-                              ?? throw new ArgumentException("The service descriptor has no ImplementationType, ImplementationInstance and ImplementationFactory.");
+               throw new NotSupportedException("Implementation factories are not supported.");
             }
 
             return HashCode.Combine(descriptor.Lifetime, descriptor.ServiceType, implHashcode);

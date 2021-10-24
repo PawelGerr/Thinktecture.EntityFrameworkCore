@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore.Query;
+using Microsoft.EntityFrameworkCore.SqlServer.Query.Internal;
 using Microsoft.EntityFrameworkCore.Storage;
 
 namespace Thinktecture.EntityFrameworkCore.Query
@@ -11,7 +12,7 @@ namespace Thinktecture.EntityFrameworkCore.Query
    /// </summary>
    [SuppressMessage("ReSharper", "EF1001")]
    public class ThinktectureSqlServerQueryableMethodTranslatingExpressionVisitor
-      : RelationalQueryableMethodTranslatingExpressionVisitor
+      : SqlServerQueryableMethodTranslatingExpressionVisitor
    {
       private readonly IRelationalTypeMappingSource _typeMappingSource;
       private readonly TableHintContextFactory _tableHintContextFactory;

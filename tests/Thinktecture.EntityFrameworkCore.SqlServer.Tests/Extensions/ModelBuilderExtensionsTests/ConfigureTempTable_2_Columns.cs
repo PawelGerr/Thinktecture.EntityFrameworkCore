@@ -33,7 +33,7 @@ namespace Thinktecture.Extensions.ModelBuilderExtensionsTests
          ConfigureModel = builder => builder.ConfigureTempTable<int, int?>();
 
          var entityType = ActDbContext.Model.FindEntityType(typeof(TempTable<int, int?>));
-         entityType.Name.Should().Be("Thinktecture.EntityFrameworkCore.TempTables.TempTable<int, System.Nullable<int>>");
+         entityType.Name.Should().Be("Thinktecture.EntityFrameworkCore.TempTables.TempTable<int, int?>");
 
          var properties = entityType.GetProperties().ToList();
          properties.Should().HaveCount(2);
@@ -75,7 +75,7 @@ namespace Thinktecture.Extensions.ModelBuilderExtensionsTests
          ConfigureModel = builder => builder.ConfigureTempTable<int, int?>();
 
          var entityType = ActDbContext.Model.FindEntityType(typeof(TempTable<int, int?>));
-         entityType.GetTableName().Should().Be("#TempTable<int, Nullable<int>>");
+         entityType.GetTableName().Should().Be("#TempTable<int, int?>");
       }
 
       [Fact]

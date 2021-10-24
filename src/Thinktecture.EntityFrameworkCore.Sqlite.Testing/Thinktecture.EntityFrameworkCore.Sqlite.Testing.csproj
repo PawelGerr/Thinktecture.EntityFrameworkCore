@@ -1,9 +1,5 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-    <PropertyGroup>
-        <TargetFrameworks>netstandard2.1;net5.0</TargetFrameworks>
-    </PropertyGroup>
-
     <ItemGroup>
         <ProjectReference Include="..\Thinktecture.EntityFrameworkCore.Sqlite\Thinktecture.EntityFrameworkCore.Sqlite.csproj" />
         <ProjectReference Include="..\Thinktecture.EntityFrameworkCore.Testing\Thinktecture.EntityFrameworkCore.Testing.csproj" />

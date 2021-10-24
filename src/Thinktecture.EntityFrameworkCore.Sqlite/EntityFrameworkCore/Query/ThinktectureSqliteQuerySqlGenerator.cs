@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
@@ -36,13 +37,13 @@ namespace Thinktecture.EntityFrameworkCore.Query
       /// <inheritdoc />
       protected override Expression VisitSelect(SelectExpression selectExpression)
       {
-         if (selectExpression.TryGetDeleteExpression(out var deleteExpression))
-            return GenerateDeleteStatement(selectExpression);
+         if (selectExpression.TryGetDeleteExpression(out var tableToDeleteIn))
+            return GenerateDeleteStatement(tableToDeleteIn, selectExpression);
 
          return base.VisitSelect(selectExpression);
       }
 
-      private Expression GenerateDeleteStatement(SelectExpression selectExpression)
+      private Expression GenerateDeleteStatement(TableExpressionBase tableToDeleteIn, SelectExpression selectExpression)
       {
          if (selectExpression.IsDistinct)
             throw new NotSupportedException("A DISTINCT clause is not supported in a DELETE statement.");
@@ -65,9 +66,12 @@ namespace Thinktecture.EntityFrameworkCore.Query
          if (selectExpression.Limit is not null)
             throw new NotSupportedException("A TOP/LIMIT clause (i.e. Take(x)) is not supported in a DELETE statement.");
 
+         if (selectExpression.Tables.Count != 1)
+            throw new NotSupportedException($"A DELETE statement must reference exactly 1 table. Provided table references: [{String.Join(", ", selectExpression.Tables.Select(t => t.Alias))}]");
+
          Sql.Append("DELETE FROM ");
 
-         Visit(selectExpression.Tables[0]);
+         Visit(tableToDeleteIn);
 
          if (selectExpression.Predicate is not null)
          {

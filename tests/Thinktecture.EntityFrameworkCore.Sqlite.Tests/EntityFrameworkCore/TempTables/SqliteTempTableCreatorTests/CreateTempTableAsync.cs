@@ -21,7 +21,6 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqliteTempTableCreatorTest
    public class CreateTempTableAsync : IntegrationTestsBase
    {
       private readonly Mock<ISqlGenerationHelper> _sqlGenerationHelperMock;
-      private readonly Mock<IRelationalTypeMappingSource> _relationalTypeMappingSourceMock;
       private readonly TempTableCreationOptions _optionsWithNonUniqueNameAndNoPrimaryKey;
 
       private SqliteTempTableCreator? _sut;
@@ -29,7 +28,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqliteTempTableCreatorTest
       private SqliteTempTableCreator SUT => _sut ??= new SqliteTempTableCreator(ActDbContext.GetService<ICurrentDbContext>(),
                                                                                 ActDbContext.GetService<IDiagnosticsLogger<DbLoggerCategory.Query>>(),
                                                                                 _sqlGenerationHelperMock.Object,
-                                                                                _relationalTypeMappingSourceMock.Object,
+                                                                                ActDbContext.GetService<IRelationalTypeMappingSource>(),
                                                                                 new TempTableStatementCache<SqliteTempTableCreatorCacheKey>());
 
       public CreateTempTableAsync(ITestOutputHelper testOutputHelper)
@@ -40,7 +39,6 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqliteTempTableCreatorTest
                                  .Returns<string, string>((name, schema) => schema == null ? $"\"{name}\"" : $"\"{schema}\".\"{name}\"");
          _sqlGenerationHelperMock.Setup(h => h.DelimitIdentifier(It.IsAny<string>()))
                                  .Returns<string>(name => $"\"{name}\"");
-         _relationalTypeMappingSourceMock = new Mock<IRelationalTypeMappingSource>();
 
          _optionsWithNonUniqueNameAndNoPrimaryKey = new TempTableCreationOptions { TableNameProvider = DefaultTempTableNameProvider.Instance, PrimaryKeyCreation = PrimaryKeyPropertiesProviders.None };
       }

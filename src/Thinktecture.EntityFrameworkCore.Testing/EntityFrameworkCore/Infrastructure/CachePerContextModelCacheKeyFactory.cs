@@ -12,7 +12,13 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       /// <inheritdoc />
       public object Create(DbContext context)
       {
-         return context;
+         return Create(context, false);
+      }
+
+      /// <inheritdoc />
+      public object Create(DbContext context, bool designTime)
+      {
+         return (context, designTime);
       }
    }
 }

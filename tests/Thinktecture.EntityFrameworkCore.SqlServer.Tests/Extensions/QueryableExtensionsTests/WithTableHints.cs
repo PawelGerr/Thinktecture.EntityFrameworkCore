@@ -52,7 +52,7 @@ namespace Thinktecture.Extensions.QueryableExtensionsTests
          query.ToQueryString().Should().Be("SELECT [t].[Id], [t].[ConvertibleClass], [t].[Count], [t].[Name], [t].[ParentId], [t].[PropertyWithBackingField], [t].[_privateField], [t0].[Id], [t0].[ConvertibleClass], [t0].[Count], [t0].[Name], [t0].[ParentId], [t0].[PropertyWithBackingField], [t0].[_privateField]" + Environment.NewLine +
                                            "FROM [_tests].[TestEntities] AS [t] WITH (NOLOCK)" + Environment.NewLine +
                                            "LEFT JOIN [_tests].[TestEntities] AS [t0] ON [t].[Id] = [t0].[ParentId]" + Environment.NewLine +
-                                           "ORDER BY [t].[Id], [t0].[Id]");
+                                           "ORDER BY [t].[Id]");
 
          var result = await query.ToListAsync();
          result.Should().BeEmpty();
@@ -110,7 +110,7 @@ namespace Thinktecture.Extensions.QueryableExtensionsTests
                                            "    FROM [_tests].[SeparateEntitiesMany_SeparateEntitiesMany] AS [s]" + Environment.NewLine +
                                            "    LEFT JOIN [_tests].[SeparateEntitiesMany_SeparateEntitiesMany_Inner] AS [s0] ON ([s].[TestEntity_Owns_SeparateMany_SeparateManyId] = [s0].[OwnedEntity_Owns_SeparateManyTestEntity_Owns_SeparateMany_SeparateManyId]) AND ([s].[Id] = [s0].[OwnedEntity_Owns_SeparateManyId])" + Environment.NewLine +
                                            ") AS [t0] ON [t].[Id] = [t0].[TestEntity_Owns_SeparateMany_SeparateManyId]" + Environment.NewLine +
-                                           "ORDER BY [t].[Id], [t0].[TestEntity_Owns_SeparateMany_SeparateManyId], [t0].[Id], [t0].[OwnedEntity_Owns_SeparateManyTestEntity_Owns_SeparateMany_SeparateManyId], [t0].[OwnedEntity_Owns_SeparateManyId], [t0].[Id0]");
+                                           "ORDER BY [t].[Id], [t0].[TestEntity_Owns_SeparateMany_SeparateManyId], [t0].[Id], [t0].[OwnedEntity_Owns_SeparateManyTestEntity_Owns_SeparateMany_SeparateManyId], [t0].[OwnedEntity_Owns_SeparateManyId]");
 
          var result = await query.ToListAsync();
          result.Should().BeEmpty();

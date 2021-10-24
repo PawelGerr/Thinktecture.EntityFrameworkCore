@@ -6,7 +6,6 @@ using System.Linq;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Query;
-using Microsoft.EntityFrameworkCore.Query.Internal;
 using Microsoft.EntityFrameworkCore.SqlServer.Query.Internal;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -114,7 +113,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
          services.TryAddSingleton(this);
 
          if (AddCustomQueryableMethodTranslatingExpressionVisitorFactory)
-            AddWithCheck<IQueryableMethodTranslatingExpressionVisitorFactory, ThinktectureSqlServerQueryableMethodTranslatingExpressionVisitorFactory, RelationalQueryableMethodTranslatingExpressionVisitorFactory>(services);
+            AddWithCheck<IQueryableMethodTranslatingExpressionVisitorFactory, ThinktectureSqlServerQueryableMethodTranslatingExpressionVisitorFactory, SqlServerQueryableMethodTranslatingExpressionVisitorFactory>(services);
 
          if (AddCustomQuerySqlGeneratorFactory)
             AddWithCheck<IQuerySqlGeneratorFactory, ThinktectureSqlServerQuerySqlGeneratorFactory, SqlServerQuerySqlGeneratorFactory>(services);
@@ -144,13 +143,26 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       }
 
       /// <summary>
-      /// Adds a service descriptor for registration of custom services with internal dependency injection container of Entity Framework Core.
+      /// Registers a custom service with internal dependency injection container of Entity Framework Core.
       /// </summary>
-      /// <param name="serviceDescriptor">Service descriptor to add.</param>
-      /// <exception cref="ArgumentNullException"><paramref name="serviceDescriptor"/> is <c>null</c>.</exception>
-      public void Add(ServiceDescriptor serviceDescriptor)
+      /// <param name="serviceType">Service type.</param>
+      /// <param name="implementationType">Implementation type.</param>
+      /// <param name="lifetime">Service lifetime.</param>
+      /// <exception cref="ArgumentNullException"><paramref name="serviceType"/> or <paramref name="implementationType"/> is <c>null</c>.</exception>
+      public void Register(Type serviceType, Type implementationType, ServiceLifetime lifetime)
       {
-         _relationalOptions.Add(serviceDescriptor);
+         _relationalOptions.Register(serviceType, implementationType, lifetime);
+      }
+
+      /// <summary>
+      /// Registers a custom service instance with internal dependency injection container of Entity Framework Core.
+      /// </summary>
+      /// <param name="serviceType">Service type.</param>
+      /// <param name="implementationInstance">Implementation instance.</param>
+      /// <exception cref="ArgumentNullException"><paramref name="serviceType"/> or <paramref name="implementationInstance"/> is <c>null</c>.</exception>
+      public void Register(Type serviceType, object implementationInstance)
+      {
+         _relationalOptions.Register(serviceType, implementationInstance);
       }
 
       /// <inheritdoc />
@@ -184,7 +196,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
          }
 
          /// <inheritdoc />
-         public override long GetServiceProviderHashCode()
+         public override int GetServiceProviderHashCode()
          {
             return HashCode.Combine(_extension.AddCustomQueryableMethodTranslatingExpressionVisitorFactory,
                                     _extension.AddCustomQuerySqlGeneratorFactory,
@@ -193,6 +205,19 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
                                     _extension.AddTenantDatabaseSupport,
                                     _extension.AddTableHintSupport,
                                     _extension.UseThinktectureSqlServerMigrationsSqlGenerator);
+         }
+
+         /// <inheritdoc />
+         public override bool ShouldUseSameServiceProvider(DbContextOptionsExtensionInfo other)
+         {
+            return other is SqlServerDbContextOptionsExtensionInfo otherSqlServerInfo
+                   && _extension.AddCustomQueryableMethodTranslatingExpressionVisitorFactory == otherSqlServerInfo._extension.AddCustomQueryableMethodTranslatingExpressionVisitorFactory
+                   && _extension.AddCustomQuerySqlGeneratorFactory == otherSqlServerInfo._extension.AddCustomQuerySqlGeneratorFactory
+                   && _extension.AddCustomRelationalParameterBasedSqlProcessorFactory == otherSqlServerInfo._extension.AddCustomRelationalParameterBasedSqlProcessorFactory
+                   && _extension.AddBulkOperationSupport == otherSqlServerInfo._extension.AddBulkOperationSupport
+                   && _extension.AddTenantDatabaseSupport == otherSqlServerInfo._extension.AddTenantDatabaseSupport
+                   && _extension.AddTableHintSupport == otherSqlServerInfo._extension.AddTableHintSupport
+                   && _extension.UseThinktectureSqlServerMigrationsSqlGenerator == otherSqlServerInfo._extension.UseThinktectureSqlServerMigrationsSqlGenerator;
          }
 
          /// <inheritdoc />

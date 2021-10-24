@@ -84,7 +84,7 @@ namespace Thinktecture
          builder.AddOrUpdateExtension(extension =>
                                       {
                                          extension.AddTenantDatabaseSupport = addTenantSupport;
-                                         extension.Add(ServiceDescriptor.Describe(typeof(ITenantDatabaseProviderFactory), typeof(TTenantDatabaseProviderFactory), databaseProviderLifetime));
+                                         extension.Register(typeof(ITenantDatabaseProviderFactory), typeof(TTenantDatabaseProviderFactory), databaseProviderLifetime);
                                       });
          return builder;
       }

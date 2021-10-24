@@ -49,7 +49,7 @@ namespace Thinktecture.Extensions.ModelBuilderExtensionsTests
          ConfigureModel = builder => builder.ConfigureTempTable<int?>();
 
          var entityType = ActDbContext.Model.FindEntityType(typeof(TempTable<int?>));
-         entityType.Name.Should().Be("Thinktecture.EntityFrameworkCore.TempTables.TempTable<System.Nullable<int>>");
+         entityType.Name.Should().Be("Thinktecture.EntityFrameworkCore.TempTables.TempTable<int?>");
 
          var properties = entityType.GetProperties();
          properties.Should().HaveCount(1);
@@ -65,7 +65,7 @@ namespace Thinktecture.Extensions.ModelBuilderExtensionsTests
          ConfigureModel = builder => builder.ConfigureTempTable<int?>().Property(t => t.Column1).IsRequired();
 
          var entityType = ActDbContext.Model.FindEntityType(typeof(TempTable<int?>));
-         entityType.Name.Should().Be("Thinktecture.EntityFrameworkCore.TempTables.TempTable<System.Nullable<int>>");
+         entityType.Name.Should().Be("Thinktecture.EntityFrameworkCore.TempTables.TempTable<int?>");
 
          var properties = entityType.GetProperties();
          properties.First().IsNullable.Should().BeFalse();
@@ -102,7 +102,7 @@ namespace Thinktecture.Extensions.ModelBuilderExtensionsTests
          ConfigureModel = builder => builder.ConfigureTempTable<int?>();
 
          var entityType = ActDbContext.Model.FindEntityType(typeof(TempTable<int?>));
-         entityType.GetTableName().Should().Be("#TempTable<Nullable<int>>");
+         entityType.GetTableName().Should().Be("#TempTable<int?>");
       }
 
       [Fact]

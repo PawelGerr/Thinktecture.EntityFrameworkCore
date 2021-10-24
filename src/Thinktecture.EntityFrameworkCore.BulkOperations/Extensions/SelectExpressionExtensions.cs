@@ -15,22 +15,22 @@ namespace Thinktecture
       /// Determines whether the provided <paramref name="selectExpression"/> should be used for generation of a DELETE statement.
       /// </summary>
       /// <param name="selectExpression">Expression to check.</param>
-      /// <param name="deleteExpression">An instance of <see cref="DeleteExpression"/>.</param>
+      /// <param name="tableToDeleteIn">Table to execute DELETE on.</param>
       /// <returns><c>true</c> if a DELETE statement should be rendered; <c>false</c> otherwise.</returns>
       /// <exception cref="ArgumentNullException"><paramref name="selectExpression"/> is <c>null</c>.</exception>
-      public static bool TryGetDeleteExpression(this SelectExpression selectExpression, [NotNullWhen(true)] out DeleteExpression? deleteExpression)
+      public static bool TryGetDeleteExpression(this SelectExpression selectExpression, [NotNullWhen(true)] out TableExpressionBase? tableToDeleteIn)
       {
          if (selectExpression == null)
             throw new ArgumentNullException(nameof(selectExpression));
 
          if (selectExpression.Projection.Count == 1 &&
-             selectExpression.Projection[0].Expression is DeleteExpression deleteExpr)
+             selectExpression.Projection[0].Expression is DeleteExpression deleteExpression)
          {
-            deleteExpression = deleteExpr;
+            tableToDeleteIn = deleteExpression.Table;
             return true;
          }
 
-         deleteExpression = default;
+         tableToDeleteIn = default;
          return false;
       }
    }

@@ -144,12 +144,22 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
          }
 
          /// <inheritdoc />
-         public override long GetServiceProviderHashCode()
+         public override int GetServiceProviderHashCode()
          {
             return HashCode.Combine(_extension.AddCustomQueryableMethodTranslatingExpressionVisitorFactory,
                                     _extension.AddCustomQuerySqlGeneratorFactory,
                                     _extension.AddCustomRelationalParameterBasedSqlProcessorFactory,
                                     _extension.AddBulkOperationSupport);
+         }
+
+         /// <inheritdoc />
+         public override bool ShouldUseSameServiceProvider(DbContextOptionsExtensionInfo other)
+         {
+            return other is SqliteDbContextOptionsExtensionInfo otherSqliteInfo
+                   && _extension.AddCustomQueryableMethodTranslatingExpressionVisitorFactory == otherSqliteInfo._extension.AddCustomQueryableMethodTranslatingExpressionVisitorFactory
+                   && _extension.AddCustomQuerySqlGeneratorFactory == otherSqliteInfo._extension.AddCustomQuerySqlGeneratorFactory
+                   && _extension.AddCustomRelationalParameterBasedSqlProcessorFactory == otherSqliteInfo._extension.AddCustomRelationalParameterBasedSqlProcessorFactory
+                   && _extension.AddBulkOperationSupport == otherSqliteInfo._extension.AddBulkOperationSupport;
          }
 
          /// <inheritdoc />

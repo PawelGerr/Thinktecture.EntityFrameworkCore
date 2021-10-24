@@ -24,15 +24,21 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure
       /// <inheritdoc />
       public object Create(DbContext context)
       {
+         return Create(context, false);
+      }
+
+      /// <inheritdoc />
+      public object Create(DbContext context, bool designTime)
+      {
          if (context == null)
             throw new ArgumentNullException(nameof(context));
 
-         var key = _factory.Create(context);
+         var key = _factory.Create(context, designTime);
          // ReSharper disable once SuspiciousTypeConversion.Global
          var schema = context is IDbDefaultSchema dbSchema ? dbSchema.Schema : null;
 
          // compiler implements Equals and GetHashCode they way we need
-         return new { key, schema };
+         return new { key, schema, designTime };
       }
    }
 }

@@ -16,7 +16,7 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure.DefaultSchemaModelCust
       {
          ConfigureOptionsBuilder = builder =>
                                    {
-                                      builder.AddOrUpdateExtension<RelationalDbContextOptionsExtension>(extension => extension.Add(ServiceDescriptor.Singleton(typeof(ModelCustomizer), typeof(ModelCustomizer))));
+                                      builder.AddOrUpdateExtension<RelationalDbContextOptionsExtension>(extension => extension.Register(typeof(ModelCustomizer), typeof(ModelCustomizer), ServiceLifetime.Singleton));
                                       builder.ReplaceService<IModelCustomizer, DefaultSchemaModelCustomizer<ModelCustomizer>>();
                                    };
       }
@@ -43,8 +43,8 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure.DefaultSchemaModelCust
          Schema = "E2FBA720-E24C-46C9-B326-46C3C91707F5";
 
          ActDbContext.Model.GetDbFunctions()
-                            .Single(f => f.MethodInfo.Name == nameof(DbContextWithSchema.TestDbFunction))
-                            .Schema.Should().Be(Schema);
+                     .Single(f => f.MethodInfo.Name == nameof(DbContextWithSchema.TestDbFunction))
+                     .Schema.Should().Be(Schema);
       }
 
       [Fact]

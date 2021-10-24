@@ -234,21 +234,16 @@ END
             if (IsIdentityColumn(property))
                sb.Append(" IDENTITY");
 
-            var defaultValueSql = property.Property.GetDefaultValueSql();
+            var defaultValueSql = property.Property.GetDefaultValueSql(storeObject);
 
             if (!String.IsNullOrWhiteSpace(defaultValueSql))
             {
                sb.Append(" DEFAULT (").Append(defaultValueSql).Append(')');
             }
-            else
+            else if (property.Property.TryGetDefaultValue(storeObject, out var defaultValue))
             {
-               var defaultValue = property.Property.GetDefaultValue();
-
-               if (defaultValue != null && defaultValue != DBNull.Value)
-               {
-                  var mappingForValue = _typeMappingSource.GetMappingForValue(defaultValue);
-                  sb.Append(" DEFAULT ").Append(mappingForValue.GenerateSqlLiteral(defaultValue));
-               }
+               var mappingForValue = _typeMappingSource.GetMappingForValue(defaultValue);
+               sb.Append(" DEFAULT ").Append(mappingForValue.GenerateSqlLiteral(defaultValue));
             }
 
             isFirst = false;
