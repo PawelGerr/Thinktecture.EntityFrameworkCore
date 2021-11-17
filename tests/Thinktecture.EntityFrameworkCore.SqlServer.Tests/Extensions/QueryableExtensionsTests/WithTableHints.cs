@@ -136,7 +136,7 @@ namespace Thinktecture.Extensions.QueryableExtensionsTests
                                             e => e.Column1, e => e.Column1);
 
          joinQuery.ToQueryString().Should().Be(@"SELECT [#].[Column1], [#0].[Column1]" + Environment.NewLine +
-                                               "FROM [_tests].[#TempTable<Guid>] AS [#] WITH (UPDLOCK, ROWLOCK)" + Environment.NewLine +
+                                               "FROM [#TempTable<Guid>_1] AS [#] WITH (UPDLOCK, ROWLOCK)" + Environment.NewLine +
                                                "LEFT JOIN [#TempTable<Guid>_1] AS [#0] WITH (UPDLOCK) ON [#].[Column1] = [#0].[Column1]");
 
          joinQuery = tempTable.Query.WithTableHints(SqlServerTableHint.UpdLock, SqlServerTableHint.RowLock)
@@ -144,7 +144,7 @@ namespace Thinktecture.Extensions.QueryableExtensionsTests
                                         e => e.Column1, e => e.Column1);
 
          joinQuery.ToQueryString().Should().Be(@"SELECT [#].[Column1], [#0].[Column1]" + Environment.NewLine +
-                                               "FROM [_tests].[#TempTable<Guid>] AS [#] WITH (UPDLOCK, ROWLOCK)" + Environment.NewLine +
+                                               "FROM [#TempTable<Guid>_1] AS [#] WITH (UPDLOCK, ROWLOCK)" + Environment.NewLine +
                                                "LEFT JOIN [#TempTable<Guid>_1] AS [#0] WITH (UPDLOCK, ROWLOCK) ON [#].[Column1] = [#0].[Column1]");
       }
    }

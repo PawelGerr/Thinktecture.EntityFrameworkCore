@@ -3,6 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Storage;
+using Thinktecture.EntityFrameworkCore.TempTables;
 
 namespace Thinktecture.EntityFrameworkCore.Query
 {
@@ -15,6 +16,7 @@ namespace Thinktecture.EntityFrameworkCore.Query
    {
       private readonly IRelationalTypeMappingSource _typeMappingSource;
       private readonly TableHintContextFactory _tableHintContextFactory;
+      private readonly TempTableQueryContextFactory _tempTableQueryContextFactory;
 
       /// <inheritdoc />
       public ThinktectureSqlServerQueryableMethodTranslatingExpressionVisitor(
@@ -26,6 +28,7 @@ namespace Thinktecture.EntityFrameworkCore.Query
       {
          _typeMappingSource = typeMappingSource ?? throw new ArgumentNullException(nameof(typeMappingSource));
          _tableHintContextFactory = new TableHintContextFactory();
+         _tempTableQueryContextFactory = new TempTableQueryContextFactory();
       }
 
       /// <inheritdoc />
@@ -36,6 +39,7 @@ namespace Thinktecture.EntityFrameworkCore.Query
       {
          _typeMappingSource = typeMappingSource ?? throw new ArgumentNullException(nameof(typeMappingSource));
          _tableHintContextFactory = parentVisitor._tableHintContextFactory;
+         _tempTableQueryContextFactory = parentVisitor._tempTableQueryContextFactory;
       }
 
       /// <inheritdoc />
@@ -48,7 +52,7 @@ namespace Thinktecture.EntityFrameworkCore.Query
       protected override Expression VisitMethodCall(MethodCallExpression methodCallExpression)
       {
          return this.TranslateRelationalMethods(methodCallExpression, QueryCompilationContext, _tableHintContextFactory) ??
-                this.TranslateBulkMethods(methodCallExpression, _typeMappingSource, QueryCompilationContext) ??
+                this.TranslateBulkMethods(methodCallExpression, _typeMappingSource, QueryCompilationContext, _tempTableQueryContextFactory) ??
                 base.VisitMethodCall(methodCallExpression);
       }
    }

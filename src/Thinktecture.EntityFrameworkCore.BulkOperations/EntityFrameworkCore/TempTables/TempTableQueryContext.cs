@@ -10,8 +10,6 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
    /// </summary>
    public class TempTableQueryContext
    {
-      private const string _PREFIX = "Thinktecture:TempTableQueryContext:";
-
       /// <summary>
       /// Table expression to replace with a temp table.
       /// </summary>
@@ -27,11 +25,11 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
       /// </summary>
       public string ParameterName { get; }
 
-      internal TempTableQueryContext(TableExpression table, string tempTableName)
+      internal TempTableQueryContext(TableExpression table, string tempTableName, string parameterName)
       {
          Table = table;
          TempTableName = tempTableName;
-         ParameterName = $"{_PREFIX}:{tempTableName}";
+         ParameterName = parameterName;
       }
 
       /// <summary>

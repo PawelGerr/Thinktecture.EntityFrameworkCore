@@ -26,6 +26,7 @@ namespace Thinktecture
       /// <param name="methodCallExpression">Method call to translate.</param>
       /// <param name="typeMappingSource">Type mapping source.</param>
       /// <param name="queryCompilationContext"></param>
+      /// <param name="tempTableQueryContextFactory"></param>
       /// <returns>Translated method call if a custom method is found; otherwise <c>null</c>.</returns>
       /// <exception cref="ArgumentNullException">
       /// <paramref name="visitor"/> or <paramref name="methodCallExpression"/> is <c>null</c>.
@@ -34,7 +35,8 @@ namespace Thinktecture
          this RelationalQueryableMethodTranslatingExpressionVisitor visitor,
          MethodCallExpression methodCallExpression,
          IRelationalTypeMappingSource typeMappingSource,
-         QueryCompilationContext queryCompilationContext)
+         QueryCompilationContext queryCompilationContext,
+         TempTableQueryContextFactory tempTableQueryContextFactory)
       {
          if (visitor == null)
             throw new ArgumentNullException(nameof(visitor));
@@ -52,7 +54,7 @@ namespace Thinktecture
          if (methodCallExpression.Method.DeclaringType == typeof(BulkOperationsDbSetExtensions))
          {
             if (methodCallExpression.Method.Name == nameof(BulkOperationsDbSetExtensions.FromTempTable))
-               return TranslateFromTempTable(GetShapedQueryExpression(visitor, methodCallExpression), methodCallExpression, queryCompilationContext);
+               return TranslateFromTempTable(GetShapedQueryExpression(visitor, methodCallExpression), methodCallExpression, queryCompilationContext, tempTableQueryContextFactory);
 
             throw new InvalidOperationException(CoreStrings.TranslationFailed(methodCallExpression.Print()));
          }
@@ -63,12 +65,13 @@ namespace Thinktecture
       private static Expression TranslateFromTempTable(
          ShapedQueryExpression shapedQueryExpression,
          MethodCallExpression methodCallExpression,
-         QueryCompilationContext queryCompilationContext)
+         QueryCompilationContext queryCompilationContext,
+         TempTableQueryContextFactory tempTableQueryContextFactory)
       {
          var tableExpression = (TableExpression)((SelectExpression)shapedQueryExpression.QueryExpression).Tables.Single();
          var tempTableName = ((TempTableNameExpression)methodCallExpression.Arguments[1]).Value;
 
-         var ctx = new TempTableQueryContext(tableExpression, tempTableName ?? throw new Exception("No temp table name provided."));
+         var ctx = tempTableQueryContextFactory.Create(tableExpression, tempTableName ?? throw new Exception("No temp table name provided."));
          var extractor = Expression.Lambda<Func<QueryContext, TempTableQueryContext>>(Expression.Constant(ctx), QueryCompilationContext.QueryContextParameter);
 
          queryCompilationContext.RegisterRuntimeParameter(ctx.ParameterName, extractor);
