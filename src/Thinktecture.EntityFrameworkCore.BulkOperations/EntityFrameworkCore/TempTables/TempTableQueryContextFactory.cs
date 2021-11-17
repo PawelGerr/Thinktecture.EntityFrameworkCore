@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 
 namespace Thinktecture.EntityFrameworkCore.TempTables
@@ -10,7 +12,18 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
    {
       private const string _PREFIX = "Thinktecture:TempTableQueryContext:";
 
+      private readonly QuerySplittingBehavior? _querySplittingBehavior;
+
       private int _counter;
+
+      /// <summary>
+      /// Initializes a new instance of <see cref="TempTableQueryContextFactory"/>.
+      /// </summary>
+      /// <param name="querySplittingBehavior">Current query splitting behavior.</param>
+      public TempTableQueryContextFactory(QuerySplittingBehavior? querySplittingBehavior)
+      {
+         _querySplittingBehavior = querySplittingBehavior;
+      }
 
       /// <summary>
       /// Creates new <see cref="TempTableQueryContext"/>.
@@ -20,6 +33,9 @@ namespace Thinktecture.EntityFrameworkCore.TempTables
       /// <returns>A new instance of see <see cref="TempTableQueryContext"/>.</returns>
       public TempTableQueryContext Create(TableExpression table, string tempTableName)
       {
+         if (_querySplittingBehavior == QuerySplittingBehavior.SplitQuery)
+            throw new NotSupportedException("Temp tables are not supported in queries with QuerySplittingBehavior 'SplitQuery'.");
+
          return new(table, tempTableName, $"{_PREFIX}:{tempTableName}:{++_counter}");
       }
    }

@@ -29,7 +29,9 @@ namespace Thinktecture.EntityFrameworkCore.Query
       {
          _typeMappingSource = typeMappingSource ?? throw new ArgumentNullException(nameof(typeMappingSource));
          _tableHintContextFactory = new TableHintContextFactory();
-         _tempTableQueryContextFactory = new TempTableQueryContextFactory();
+
+         var querySplittingBehavior = ((RelationalQueryCompilationContext)QueryCompilationContext).QuerySplittingBehavior;
+         _tempTableQueryContextFactory = new TempTableQueryContextFactory(querySplittingBehavior);
       }
 
       /// <inheritdoc />
