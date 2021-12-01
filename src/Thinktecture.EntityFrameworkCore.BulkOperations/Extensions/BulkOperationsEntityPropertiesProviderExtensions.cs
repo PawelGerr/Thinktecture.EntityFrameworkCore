@@ -28,11 +28,9 @@ namespace Thinktecture
          if (entityType == null)
             throw new ArgumentNullException(nameof(entityType));
 
-         IReadOnlyList<PropertyWithNavigations> properties;
-
-         return entityPropertiesProvider == null || (properties = entityPropertiesProvider.GetPropertiesForTempTable(entityType, inlinedOwnTypes, TempTableFilter)).Count == 0
+         return entityPropertiesProvider == null
                    ? DetermineProperties(entityType, inlinedOwnTypes, TempTableFilter)
-                   : properties;
+                   : entityPropertiesProvider.GetPropertiesForTempTable(entityType, inlinedOwnTypes, TempTableFilter);
       }
 
       /// <summary>
@@ -52,7 +50,7 @@ namespace Thinktecture
 
          IReadOnlyList<PropertyWithNavigations>? properties;
 
-         if (entityPropertiesProvider is null || (properties = entityPropertiesProvider.GetKeyProperties(entityType, inlinedOwnTypes, KeyPropertyFilter)).Count == 0)
+         if (entityPropertiesProvider is null)
          {
             var pk = entityType.FindPrimaryKey()?.Properties;
 
@@ -63,6 +61,8 @@ namespace Thinktecture
          }
          else
          {
+            properties = entityPropertiesProvider.GetKeyProperties(entityType, inlinedOwnTypes, KeyPropertyFilter);
+
             if (properties is null or { Count: 0 })
                throw new ArgumentException("The number of key properties to perform JOIN/match on cannot be 0.");
          }
@@ -85,11 +85,9 @@ namespace Thinktecture
          if (entityType == null)
             throw new ArgumentNullException(nameof(entityType));
 
-         IReadOnlyList<PropertyWithNavigations> properties;
-
-         return entityPropertiesProvider == null || (properties = entityPropertiesProvider.GetPropertiesForInsert(entityType, inlinedOwnTypes, InsertAndUpdateFilter)).Count == 0
+         return entityPropertiesProvider == null
                    ? DetermineProperties(entityType, inlinedOwnTypes, InsertAndUpdateFilter)
-                   : properties;
+                   : entityPropertiesProvider.GetPropertiesForInsert(entityType, inlinedOwnTypes, InsertAndUpdateFilter);
       }
 
       /// <summary>
@@ -107,11 +105,9 @@ namespace Thinktecture
          if (entityType == null)
             throw new ArgumentNullException(nameof(entityType));
 
-         IReadOnlyList<PropertyWithNavigations> properties;
-
-         return entityPropertiesProvider == null || (properties = entityPropertiesProvider.GetPropertiesForUpdate(entityType, inlinedOwnTypes, InsertAndUpdateFilter)).Count == 0
+         return entityPropertiesProvider == null
                    ? DetermineProperties(entityType, inlinedOwnTypes, InsertAndUpdateFilter)
-                   : properties;
+                   : entityPropertiesProvider.GetPropertiesForUpdate(entityType, inlinedOwnTypes, InsertAndUpdateFilter);
       }
 
       private static IReadOnlyList<PropertyWithNavigations> DetermineProperties(

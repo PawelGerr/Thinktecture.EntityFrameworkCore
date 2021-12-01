@@ -174,5 +174,105 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests
                                                    }
                                                 });
       }
+
+      [Fact]
+      public async Task Should_skip_update_if_no_properties_to_update()
+      {
+         var existingEntity = new TestEntity
+                              {
+                                 Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
+                                 Name = "Name",
+                                 Count = 42
+                              };
+         ArrangeDbContext.Add(existingEntity);
+         await ArrangeDbContext.SaveChangesAsync();
+
+         var newEntity = new TestEntity
+                         {
+                            Id = new Guid("3AA6D70D-C619-4EB5-9819-8030506EA637"),
+                            Name = "new",
+                            Count = 1
+                         };
+
+         existingEntity.Name = "changed";
+         existingEntity.Count = 43;
+
+         var affectedRows = await ActDbContext.BulkInsertOrUpdateAsync(new[] { existingEntity, newEntity },
+                                                                       new SqlServerBulkInsertOrUpdateOptions
+                                                                       {
+                                                                          PropertiesToInsert = new EntityPropertiesProvider(TestEntity.GetRequiredProperties()),
+                                                                          PropertiesToUpdate = EntityPropertiesProvider.Empty
+                                                                       }
+                                                                      );
+
+         affectedRows.Should().Be(1);
+
+         var loadedEntities = await AssertDbContext.TestEntities.ToListAsync();
+         loadedEntities.Should().BeEquivalentTo(new[]
+                                                {
+                                                   new TestEntity
+                                                   {
+                                                      Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
+                                                      Name = "Name",
+                                                      Count = 42
+                                                   },
+                                                   new TestEntity
+                                                   {
+                                                      Id = new Guid("3AA6D70D-C619-4EB5-9819-8030506EA637"),
+                                                      Name = null, // is not a required property
+                                                      Count = 1
+                                                   }
+                                                });
+      }
+
+      [Fact]
+      public async Task Should_skip_update_if_provided_key_properties_only()
+      {
+         var existingEntity = new TestEntity
+                              {
+                                 Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
+                                 Name = "Name",
+                                 Count = 42
+                              };
+         ArrangeDbContext.Add(existingEntity);
+         await ArrangeDbContext.SaveChangesAsync();
+
+         var newEntity = new TestEntity
+                         {
+                            Id = new Guid("3AA6D70D-C619-4EB5-9819-8030506EA637"),
+                            Name = "new",
+                            Count = 1
+                         };
+
+         existingEntity.Name = "changed";
+         existingEntity.Count = 43;
+
+         var affectedRows = await ActDbContext.BulkInsertOrUpdateAsync(new[] { existingEntity, newEntity },
+                                                                       new SqlServerBulkInsertOrUpdateOptions
+                                                                       {
+                                                                          PropertiesToInsert = new EntityPropertiesProvider(TestEntity.GetRequiredProperties()),
+                                                                          PropertiesToUpdate = EntityPropertiesProvider.From<TestEntity>(entity => entity.Id)
+                                                                       }
+                                                                      );
+
+         affectedRows.Should().Be(1);
+
+         var loadedEntities = await AssertDbContext.TestEntities.ToListAsync();
+         loadedEntities.Should().BeEquivalentTo(new[]
+                                                {
+                                                   new TestEntity
+                                                   {
+                                                      Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
+                                                      Name = "Name",
+                                                      Count = 42
+                                                   },
+                                                   new TestEntity
+                                                   {
+                                                      Id = new Guid("3AA6D70D-C619-4EB5-9819-8030506EA637"),
+                                                      Name = null, // is not a required property
+                                                      Count = 1
+                                                   }
+                                                });
+      }
    }
 }

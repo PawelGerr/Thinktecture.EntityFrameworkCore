@@ -116,31 +116,39 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
             return sb.ToString();
          }
 
-         public static void GenerateSetAndWhereClause(
+         public static bool GenerateSetAndWhereClause(
             StringBuilder sb,
             ISqlGenerationHelper sqlGenerationHelper,
             IEntityDataReader reader,
             IReadOnlyList<PropertyWithNavigations> propertiesToUpdate,
             IReadOnlyList<PropertyWithNavigations> keyProperties)
          {
-            sb.Append("SET ");
-
             var isFirst = true;
 
             foreach (var property in propertiesToUpdate.Except(keyProperties))
             {
                if (!isFirst)
+               {
                   sb.Append(", ");
+               }
+               else
+               {
+                  sb.Append("SET ");
+               }
 
                var storeObject = StoreObjectIdentifier.Create(property.Property.DeclaringEntityType, StoreObjectType.Table)
                                  ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.Property.DeclaringEntityType.Name}'.");
                var columnName = property.Property.GetColumnName(storeObject)
-                               ?? throw new Exception($"The property '{property.Property.Name}' has no column name.");
+                                ?? throw new Exception($"The property '{property.Property.Name}' has no column name.");
                sb.Append(sqlGenerationHelper.DelimitIdentifier(columnName))
                  .Append(" = $p").Append(reader.GetPropertyIndex(property));
 
                isFirst = false;
             }
+
+            // if no properies to update return
+            if (isFirst)
+               return false;
 
             sb.Append(" WHERE ");
 
@@ -164,6 +172,8 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
 
                sb.Append(")");
             }
+
+            return true;
          }
       }
 
@@ -206,10 +216,17 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
                sb.Append(escapedColumnName);
             }
 
-            sb.AppendLine(") DO")
-              .Append("\tUPDATE ");
+            sb.AppendLine(") DO");
+            var sbIndexBeforeUpdate = sb.Length;
 
-            SqliteUpdateBuilder.GenerateSetAndWhereClause(sb, sqlGenerationHelper, reader, _propertiesToUpdate, _keyProperties);
+            sb.Append("\tUPDATE ");
+            var hasPropertiesToUpdate = SqliteUpdateBuilder.GenerateSetAndWhereClause(sb, sqlGenerationHelper, reader, _propertiesToUpdate, _keyProperties);
+
+            if (!hasPropertiesToUpdate)
+            {
+               sb.Length = sbIndexBeforeUpdate;
+               sb.Append("\tNOTHING");
+            }
 
             sb.Append(sqlGenerationHelper.StatementTerminator);
 

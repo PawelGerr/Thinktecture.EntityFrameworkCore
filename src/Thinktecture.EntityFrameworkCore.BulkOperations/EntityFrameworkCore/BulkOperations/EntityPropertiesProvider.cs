@@ -16,17 +16,17 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
       private readonly IReadOnlyList<MemberInfo> _members;
 
       /// <summary>
+      /// <see cref="IEntityPropertiesProvider"/> with 0 properties.
+      /// </summary>
+      public static readonly IEntityPropertiesProvider Empty = new EntityPropertiesProvider(Array.Empty<MemberInfo>());
+
+      /// <summary>
       /// Initializes new instance of <see cref="EntityPropertiesProvider"/>.
       /// </summary>
       /// <param name="members">Members to use.</param>
       public EntityPropertiesProvider(IReadOnlyList<MemberInfo> members)
       {
-         if (members == null)
-            throw new ArgumentNullException(nameof(members));
-         if (members.Count == 0)
-            throw new ArgumentException("The members collection cannot be empty.");
-
-         _members = members;
+         _members = members ?? throw new ArgumentNullException(nameof(members));
       }
 
       /// <inheritdoc />
@@ -89,10 +89,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations
 
          var members = projection.ExtractMembers();
 
-         if (members.Count == 0)
-            throw new ArgumentException("The provided projection contains no properties.");
-
-         return new EntityPropertiesProvider(members);
+         return members.Count == 0 ? Empty : new EntityPropertiesProvider(members);
       }
    }
 }

@@ -398,9 +398,6 @@ INSERT BULK {Table} ({Columns})", (long)duration.TotalMilliseconds,
 
          if (propertiesForInsert.Count == 0)
             throw new ArgumentException("The number of properties to insert cannot be 0.");
-         if (propertiesForUpdate.Count == 0)
-            throw new ArgumentException("The number of properties to update cannot be 0.");
-
          var tempTableOptions = GetSqlServerTempTableBulkInsertOptions(sqlServerOptions, options.PropertiesToInsert, sqlServerOptions.PropertiesToUpdate, sqlServerOptions.KeyProperties);
 
          await using var tempTable = await BulkInsertIntoTempTableAsync(entities, tempTableOptions, cancellationToken);
@@ -485,16 +482,20 @@ INSERT BULK {Table} ({Columns})", (long)duration.TotalMilliseconds,
             isFirstIteration = false;
          }
 
-         sb.AppendLine()
-           .AppendLine("WHEN MATCHED THEN")
-           .Append("\tUPDATE SET ");
-
          isFirstIteration = true;
 
          foreach (var property in propertiesToUpdate.Except(keyProperties))
          {
             if (!isFirstIteration)
+            {
                sb.Append(", ");
+            }
+            else
+            {
+               sb.AppendLine()
+                 .AppendLine("WHEN MATCHED THEN")
+                 .Append("\tUPDATE SET ");
+            }
 
             var storeObject = StoreObjectIdentifier.Create(property.Property.DeclaringEntityType, StoreObjectType.Table)
                               ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.Property.DeclaringEntityType.Name}'.");

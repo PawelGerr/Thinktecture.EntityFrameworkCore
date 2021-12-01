@@ -18,17 +18,20 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.PropertiesProviderTest
       }
 
       [Fact]
-      public void Should_throw_if_no_properties_provided()
-      {
-         Action action = () => EntityPropertiesProvider.From<TestEntity>(entity => new { });
-         action.Should().Throw<ArgumentException>();
-      }
-
-      [Fact]
       public void Should_throw_if_expression_return_constant()
       {
          Action action = () => EntityPropertiesProvider.From<TestEntity>(entity => null!);
          action.Should().Throw<NotSupportedException>();
+      }
+
+      [Fact]
+      public void Should_return_empty_collection_if_no_properties_provided()
+      {
+         var entityType = GetEntityType<TestEntity>();
+         var propertiesProvider = EntityPropertiesProvider.From<TestEntity>(entity => new { });
+         var properties = propertiesProvider.GetPropertiesForTempTable(entityType, null, (_, _) => true);
+
+         properties.Should().BeEmpty();
       }
 
       [Fact]
