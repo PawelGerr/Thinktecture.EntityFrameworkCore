@@ -21,8 +21,7 @@ public class MigrationExtensionsTestDbContext : DbContext
 
    public IQueryable<InformationSchemaColumn> GetTableColumns(string tableName)
    {
-      if (tableName == null)
-         throw new ArgumentNullException(nameof(tableName));
+      ArgumentNullException.ThrowIfNull(tableName);
 
       return Set<InformationSchemaColumn>().FromSqlInterpolated($@"
 SELECT
@@ -35,8 +34,7 @@ WHERE
 
    public IQueryable<SysIndex> GetIndexes(string tableName)
    {
-      if (tableName == null)
-         throw new ArgumentNullException(nameof(tableName));
+      ArgumentNullException.ThrowIfNull(tableName);
 
       return Set<SysIndex>().FromSqlInterpolated($@"
 SELECT
@@ -50,8 +48,7 @@ WHERE
 
    public IQueryable<SysIndexColumn> GetIndexColumns(string tableName, int indexId)
    {
-      if (tableName == null)
-         throw new ArgumentNullException(nameof(tableName));
+      ArgumentNullException.ThrowIfNull(tableName);
 
       return Set<SysIndexColumn>().FromSqlInterpolated($@"
 SELECT
@@ -69,8 +66,7 @@ WHERE
 
    public IQueryable<UniqueConstraint> GetUniqueConstraints(string constraintName)
    {
-      if (constraintName == null)
-         throw new ArgumentNullException(nameof(constraintName));
+      ArgumentNullException.ThrowIfNull(constraintName);
 
       return Set<UniqueConstraint>().FromSqlInterpolated($@"
 SELECT

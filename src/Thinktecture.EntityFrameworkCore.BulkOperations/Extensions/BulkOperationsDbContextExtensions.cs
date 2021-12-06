@@ -50,8 +50,7 @@ public static class BulkOperationsDbContextExtensions
       ITempTableCreationOptions options,
       CancellationToken cancellationToken)
    {
-      if (ctx == null)
-         throw new ArgumentNullException(nameof(ctx));
+      ArgumentNullException.ThrowIfNull(ctx);
 
       var entityType = ctx.Model.GetEntityType(type);
       return ctx.GetService<ITempTableCreator>().CreateTempTableAsync(entityType, options, cancellationToken);
@@ -214,8 +213,7 @@ public static class BulkOperationsDbContextExtensions
       ITempTableBulkInsertOptions? options = null,
       CancellationToken cancellationToken = default)
    {
-      if (values == null)
-         throw new ArgumentNullException(nameof(values));
+      ArgumentNullException.ThrowIfNull(values);
 
       var entities = values.Select(v => new TempTable<TColumn1>(v));
 
@@ -239,8 +237,7 @@ public static class BulkOperationsDbContextExtensions
       ITempTableBulkInsertOptions? options = null,
       CancellationToken cancellationToken = default)
    {
-      if (values == null)
-         throw new ArgumentNullException(nameof(values));
+      ArgumentNullException.ThrowIfNull(values);
 
       var entities = values.Select(t => new TempTable<TColumn1, TColumn2>(t.column1, t.column2));
 

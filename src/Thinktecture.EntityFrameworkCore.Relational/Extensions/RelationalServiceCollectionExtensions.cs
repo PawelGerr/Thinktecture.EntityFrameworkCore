@@ -22,8 +22,7 @@ public static class RelationalServiceCollectionExtensions
    public static void TryAdd<TService, TImplementation>(this IServiceCollection services, ServiceLifetime lifetime)
       where TImplementation : TService
    {
-      if (services == null)
-         throw new ArgumentNullException(nameof(services));
+      ArgumentNullException.ThrowIfNull(services);
 
       services.TryAdd(ServiceDescriptor.Describe(typeof(TService), typeof(TImplementation), lifetime));
    }
@@ -41,8 +40,7 @@ public static class RelationalServiceCollectionExtensions
    public static void Add<TService, TImplementation>(this IServiceCollection services, ServiceLifetime lifetime)
       where TImplementation : TService
    {
-      if (services == null)
-         throw new ArgumentNullException(nameof(services));
+      ArgumentNullException.ThrowIfNull(services);
 
       services.Add(ServiceDescriptor.Describe(typeof(TService), typeof(TImplementation), lifetime));
    }

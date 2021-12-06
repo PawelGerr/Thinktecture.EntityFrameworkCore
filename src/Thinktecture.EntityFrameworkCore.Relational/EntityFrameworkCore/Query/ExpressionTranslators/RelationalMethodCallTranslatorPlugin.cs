@@ -16,8 +16,7 @@ public sealed class RelationalMethodCallTranslatorPlugin : IMethodCallTranslator
    /// </summary>
    public RelationalMethodCallTranslatorPlugin(RelationalDbContextOptionsExtension extension)
    {
-      if (extension == null)
-         throw new ArgumentNullException(nameof(extension));
+      ArgumentNullException.ThrowIfNull(extension);
 
       var translators = new List<IMethodCallTranslator>();
 

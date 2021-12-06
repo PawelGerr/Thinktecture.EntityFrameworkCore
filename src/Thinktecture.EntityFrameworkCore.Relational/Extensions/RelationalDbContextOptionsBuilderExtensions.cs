@@ -141,8 +141,7 @@ public static class RelationalDbContextOptionsBuilderExtensions
    public static TExtension TryAddExtension<TExtension>(this DbContextOptionsBuilder optionsBuilder)
       where TExtension : class, IDbContextOptionsExtension, new()
    {
-      if (optionsBuilder == null)
-         throw new ArgumentNullException(nameof(optionsBuilder));
+      ArgumentNullException.ThrowIfNull(optionsBuilder);
 
       var extension = optionsBuilder.Options.FindExtension<TExtension>() ?? new TExtension();
       var builder = (IDbContextOptionsBuilderInfrastructure)optionsBuilder;
@@ -189,12 +188,9 @@ public static class RelationalDbContextOptionsBuilderExtensions
    )
       where TExtension : class, IDbContextOptionsExtension
    {
-      if (optionsBuilder == null)
-         throw new ArgumentNullException(nameof(optionsBuilder));
-      if (callback == null)
-         throw new ArgumentNullException(nameof(callback));
-      if (extensionFactory == null)
-         throw new ArgumentNullException(nameof(extensionFactory));
+      ArgumentNullException.ThrowIfNull(optionsBuilder);
+      ArgumentNullException.ThrowIfNull(callback);
+      ArgumentNullException.ThrowIfNull(extensionFactory);
 
       var extension = optionsBuilder.Options.FindExtension<TExtension>() ?? extensionFactory();
 

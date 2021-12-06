@@ -20,10 +20,8 @@ public static class RelationalExpressionVisitorExtensions
    public static IReadOnlyList<T> VisitExpressions<T>(this ExpressionVisitor visitor, IReadOnlyList<T> expressions)
       where T : Expression
    {
-      if (visitor == null)
-         throw new ArgumentNullException(nameof(visitor));
-      if (expressions == null)
-         throw new ArgumentNullException(nameof(expressions));
+      ArgumentNullException.ThrowIfNull(visitor);
+      ArgumentNullException.ThrowIfNull(expressions);
 
       var visitedExpressions = new List<T>();
       var hasChanges = false;

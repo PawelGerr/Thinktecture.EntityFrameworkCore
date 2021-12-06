@@ -19,8 +19,7 @@ public static class SelectExpressionExtensions
    /// <exception cref="ArgumentNullException"><paramref name="selectExpression"/> is <c>null</c>.</exception>
    public static bool TryGetDeleteExpression(this SelectExpression selectExpression, [NotNullWhen(true)] out TableExpressionBase? tableToDeleteIn)
    {
-      if (selectExpression == null)
-         throw new ArgumentNullException(nameof(selectExpression));
+      ArgumentNullException.ThrowIfNull(selectExpression);
 
       if (selectExpression.Projection.Count == 1 &&
           selectExpression.Projection[0].Expression is DeleteExpression deleteExpression)

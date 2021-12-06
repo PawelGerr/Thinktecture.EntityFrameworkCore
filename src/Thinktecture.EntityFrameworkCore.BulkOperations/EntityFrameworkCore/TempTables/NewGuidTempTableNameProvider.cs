@@ -18,8 +18,7 @@ public class NewGuidTempTableNameProvider : ITempTableNameProvider
    /// <inheritdoc />
    public ITempTableNameLease LeaseName(DbContext ctx, IEntityType entityType)
    {
-      if (entityType == null)
-         throw new ArgumentNullException(nameof(entityType));
+      ArgumentNullException.ThrowIfNull(entityType);
 
       var tableName = entityType.GetTableName();
       tableName = $"{tableName}_{Guid.NewGuid():N}";

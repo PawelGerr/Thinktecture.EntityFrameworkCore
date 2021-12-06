@@ -104,8 +104,7 @@ public static class SqlServerDbContextOptionsBuilderExtensions
    private static SqlServerDbContextOptionsBuilder AddOrUpdateExtension(this SqlServerDbContextOptionsBuilder sqlServerOptionsBuilder,
                                                                         Action<SqlServerDbContextOptionsExtension> callback)
    {
-      if (sqlServerOptionsBuilder == null)
-         throw new ArgumentNullException(nameof(sqlServerOptionsBuilder));
+      ArgumentNullException.ThrowIfNull(sqlServerOptionsBuilder);
 
       var infrastructure = (IRelationalDbContextOptionsBuilderInfrastructure)sqlServerOptionsBuilder;
       var relationalOptions = infrastructure.OptionsBuilder.TryAddExtension<RelationalDbContextOptionsExtension>();

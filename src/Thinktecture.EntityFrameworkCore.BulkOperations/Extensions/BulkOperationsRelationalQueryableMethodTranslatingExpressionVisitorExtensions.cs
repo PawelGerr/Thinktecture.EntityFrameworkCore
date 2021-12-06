@@ -35,10 +35,8 @@ public static class BulkOperationsRelationalQueryableMethodTranslatingExpression
       QueryCompilationContext queryCompilationContext,
       TempTableQueryContextFactory tempTableQueryContextFactory)
    {
-      if (visitor == null)
-         throw new ArgumentNullException(nameof(visitor));
-      if (methodCallExpression == null)
-         throw new ArgumentNullException(nameof(methodCallExpression));
+      ArgumentNullException.ThrowIfNull(visitor);
+      ArgumentNullException.ThrowIfNull(methodCallExpression);
 
       if (methodCallExpression.Method.DeclaringType == typeof(BulkOperationsQueryableExtensions))
       {

@@ -81,8 +81,7 @@ public class TestDbContext : DbContext
 
    public IQueryable<SqliteTableInfo> GetTempTableColumns(string tableName)
    {
-      if (tableName == null)
-         throw new ArgumentNullException(nameof(tableName));
+      ArgumentNullException.ThrowIfNull(tableName);
 
       var helper = this.GetService<ISqlGenerationHelper>();
 

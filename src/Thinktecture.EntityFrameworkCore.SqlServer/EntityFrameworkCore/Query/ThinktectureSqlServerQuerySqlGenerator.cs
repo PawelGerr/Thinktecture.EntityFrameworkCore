@@ -125,8 +125,7 @@ public class ThinktectureSqlServerQuerySqlGenerator : SqlServerQuerySqlGenerator
    /// <inheritdoc />
    protected override Expression VisitTable(TableExpression tableExpression)
    {
-      if (tableExpression == null)
-         throw new ArgumentNullException(nameof(tableExpression));
+      ArgumentNullException.ThrowIfNull(tableExpression);
 
       var databaseName = _databaseProvider.GetDatabaseName(tableExpression.Schema, tableExpression.Name);
 

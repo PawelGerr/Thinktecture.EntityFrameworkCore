@@ -57,8 +57,7 @@ public abstract class DbContextOptionsExtensionBase
       where TImplementation : TService
       where TExpectedImplementation : TService
    {
-      if (services == null)
-         throw new ArgumentNullException(nameof(services));
+      ArgumentNullException.ThrowIfNull(services);
 
       var serviceType = typeof(TService);
       var currentDescriptor = services.LastOrDefault(d => d.ServiceType == serviceType);

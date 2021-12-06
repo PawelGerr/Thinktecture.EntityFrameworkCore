@@ -22,8 +22,7 @@ public class LambdaExpressionSearchingVisitor : ExpressionVisitor
    /// <exception cref="ArgumentException">Provided <paramref name="expression"/> does not contain a lambda.</exception>
    public static LambdaExpression GetLambda(Expression expression)
    {
-      if (expression == null)
-         throw new ArgumentNullException(nameof(expression));
+      ArgumentNullException.ThrowIfNull(expression);
 
       var foundExpression = _instance.Visit(expression);
 
@@ -42,8 +41,7 @@ public class LambdaExpressionSearchingVisitor : ExpressionVisitor
    /// <inheritdoc />
    protected override Expression VisitUnary(UnaryExpression node)
    {
-      if (node == null)
-         throw new ArgumentNullException(nameof(node));
+      ArgumentNullException.ThrowIfNull(node);
 
       if (node.NodeType is ExpressionType.Convert or ExpressionType.Quote)
          return Visit(node.Operand) ?? throw NotSupported(node);
@@ -54,8 +52,7 @@ public class LambdaExpressionSearchingVisitor : ExpressionVisitor
    /// <inheritdoc />
    protected override Expression VisitMember(MemberExpression node)
    {
-      if (node == null)
-         throw new ArgumentNullException(nameof(node));
+      ArgumentNullException.ThrowIfNull(node);
 
       var instanceExpression = node.Expression;
 
@@ -81,8 +78,7 @@ public class LambdaExpressionSearchingVisitor : ExpressionVisitor
    /// <inheritdoc />
    protected override Expression VisitMethodCall(MethodCallExpression node)
    {
-      if (node == null)
-         throw new ArgumentNullException(nameof(node));
+      ArgumentNullException.ThrowIfNull(node);
 
       var instanceExpression = Visit(node.Object);
 
@@ -113,8 +109,7 @@ public class LambdaExpressionSearchingVisitor : ExpressionVisitor
 
    private static object? GetMemberValue(MemberExpression memberAccess, object instance)
    {
-      if (memberAccess == null)
-         throw new ArgumentNullException(nameof(memberAccess));
+      ArgumentNullException.ThrowIfNull(memberAccess);
 
       switch (memberAccess.Member.MemberType)
       {

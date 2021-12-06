@@ -17,10 +17,8 @@ public static class BulkOperationsDbSetExtensions
    /// </summary>
    public static IQueryable<T> FromTempTable<T>(this IQueryable<T> source, string name)
    {
-      if (source == null)
-         throw new ArgumentNullException(nameof(source));
-      if (name == null)
-         throw new ArgumentNullException(nameof(name));
+      ArgumentNullException.ThrowIfNull(source);
+      ArgumentNullException.ThrowIfNull(name);
 
       var methodInfo = _fromTempTable.MakeGenericMethod(typeof(T));
       var expression = Expression.Call(null, methodInfo, source.Expression, new TempTableNameExpression(name));

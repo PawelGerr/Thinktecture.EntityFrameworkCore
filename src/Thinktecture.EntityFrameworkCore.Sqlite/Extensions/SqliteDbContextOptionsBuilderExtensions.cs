@@ -52,8 +52,7 @@ public static class SqliteDbContextOptionsBuilderExtensions
    private static SqliteDbContextOptionsBuilder AddOrUpdateExtension(this SqliteDbContextOptionsBuilder sqliteOptionsBuilder,
                                                                      Action<SqliteDbContextOptionsExtension> callback)
    {
-      if (sqliteOptionsBuilder == null)
-         throw new ArgumentNullException(nameof(sqliteOptionsBuilder));
+      ArgumentNullException.ThrowIfNull(sqliteOptionsBuilder);
 
       var infrastructure = (IRelationalDbContextOptionsBuilderInfrastructure)sqliteOptionsBuilder;
       var relationalOptions = infrastructure.OptionsBuilder.TryAddExtension<RelationalDbContextOptionsExtension>();

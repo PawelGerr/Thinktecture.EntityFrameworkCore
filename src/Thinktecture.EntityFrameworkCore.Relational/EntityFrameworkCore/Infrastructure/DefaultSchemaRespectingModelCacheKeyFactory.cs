@@ -28,8 +28,7 @@ public sealed class DefaultSchemaRespectingModelCacheKeyFactory<TFactory> : IMod
    /// <inheritdoc />
    public object Create(DbContext context, bool designTime)
    {
-      if (context == null)
-         throw new ArgumentNullException(nameof(context));
+      ArgumentNullException.ThrowIfNull(context);
 
       var key = _factory.Create(context, designTime);
       // ReSharper disable once SuspiciousTypeConversion.Global

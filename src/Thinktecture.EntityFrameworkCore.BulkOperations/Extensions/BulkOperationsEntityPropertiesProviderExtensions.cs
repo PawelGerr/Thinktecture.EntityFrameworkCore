@@ -22,8 +22,7 @@ public static class BulkOperationsEntityPropertiesProviderExtensions
       IEntityType entityType,
       bool? inlinedOwnTypes)
    {
-      if (entityType == null)
-         throw new ArgumentNullException(nameof(entityType));
+      ArgumentNullException.ThrowIfNull(entityType);
 
       return entityPropertiesProvider == null
                 ? DetermineProperties(entityType, inlinedOwnTypes, TempTableFilter)
@@ -42,8 +41,7 @@ public static class BulkOperationsEntityPropertiesProviderExtensions
       IEntityType entityType,
       bool? inlinedOwnTypes)
    {
-      if (entityType == null)
-         throw new ArgumentNullException(nameof(entityType));
+      ArgumentNullException.ThrowIfNull(entityType);
 
       IReadOnlyList<PropertyWithNavigations>? properties;
 
@@ -79,8 +77,7 @@ public static class BulkOperationsEntityPropertiesProviderExtensions
       IEntityType entityType,
       bool? inlinedOwnTypes)
    {
-      if (entityType == null)
-         throw new ArgumentNullException(nameof(entityType));
+      ArgumentNullException.ThrowIfNull(entityType);
 
       return entityPropertiesProvider == null
                 ? DetermineProperties(entityType, inlinedOwnTypes, InsertAndUpdateFilter)
@@ -99,8 +96,7 @@ public static class BulkOperationsEntityPropertiesProviderExtensions
       IEntityType entityType,
       bool? inlinedOwnTypes)
    {
-      if (entityType == null)
-         throw new ArgumentNullException(nameof(entityType));
+      ArgumentNullException.ThrowIfNull(entityType);
 
       return entityPropertiesProvider == null
                 ? DetermineProperties(entityType, inlinedOwnTypes, InsertAndUpdateFilter)

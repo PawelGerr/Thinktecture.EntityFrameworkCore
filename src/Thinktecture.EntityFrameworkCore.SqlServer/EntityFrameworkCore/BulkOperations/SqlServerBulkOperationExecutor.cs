@@ -42,8 +42,7 @@ public sealed class SqlServerBulkOperationExecutor
       IDiagnosticsLogger<SqlServerDbLoggerCategory.BulkOperation> logger,
       ISqlGenerationHelper sqlGenerationHelper)
    {
-      if (ctx == null)
-         throw new ArgumentNullException(nameof(ctx));
+      ArgumentNullException.ThrowIfNull(ctx);
 
       _ctx = ctx.Context;
       _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -108,12 +107,9 @@ public sealed class SqlServerBulkOperationExecutor
       CancellationToken cancellationToken = default)
       where T : class
    {
-      if (entities == null)
-         throw new ArgumentNullException(nameof(entities));
-      if (tableName == null)
-         throw new ArgumentNullException(nameof(tableName));
-      if (options == null)
-         throw new ArgumentNullException(nameof(options));
+      ArgumentNullException.ThrowIfNull(entities);
+      ArgumentNullException.ThrowIfNull(tableName);
+      ArgumentNullException.ThrowIfNull(options);
 
       if (options is not ISqlServerBulkInsertOptions sqlServerOptions)
          sqlServerOptions = new SqlServerBulkInsertOptions(options);
@@ -282,10 +278,8 @@ INSERT BULK {Table} ({Columns})", (long)duration.TotalMilliseconds,
       CancellationToken cancellationToken = default)
       where T : class
    {
-      if (entities == null)
-         throw new ArgumentNullException(nameof(entities));
-      if (options == null)
-         throw new ArgumentNullException(nameof(options));
+      ArgumentNullException.ThrowIfNull(entities);
+      ArgumentNullException.ThrowIfNull(options);
 
       var entityType = _ctx.Model.GetEntityType(typeof(T));
       var selectedProperties = options.PropertiesToInsert.DeterminePropertiesForTempTable(entityType, null);
@@ -348,10 +342,8 @@ INSERT BULK {Table} ({Columns})", (long)duration.TotalMilliseconds,
       CancellationToken cancellationToken = default)
       where T : class
    {
-      if (entities == null)
-         throw new ArgumentNullException(nameof(entities));
-      if (options == null)
-         throw new ArgumentNullException(nameof(options));
+      ArgumentNullException.ThrowIfNull(entities);
+      ArgumentNullException.ThrowIfNull(options);
 
       if (options is not ISqlServerBulkUpdateOptions sqlServerOptions)
          sqlServerOptions = new SqlServerBulkUpdateOptions(options);
@@ -378,10 +370,8 @@ INSERT BULK {Table} ({Columns})", (long)duration.TotalMilliseconds,
       CancellationToken cancellationToken = default)
       where T : class
    {
-      if (entities == null)
-         throw new ArgumentNullException(nameof(entities));
-      if (options == null)
-         throw new ArgumentNullException(nameof(options));
+      ArgumentNullException.ThrowIfNull(entities);
+      ArgumentNullException.ThrowIfNull(options);
 
       if (options is not ISqlServerBulkInsertOrUpdateOptions sqlServerOptions)
          sqlServerOptions = new SqlServerBulkInsertOrUpdateOptions(options);

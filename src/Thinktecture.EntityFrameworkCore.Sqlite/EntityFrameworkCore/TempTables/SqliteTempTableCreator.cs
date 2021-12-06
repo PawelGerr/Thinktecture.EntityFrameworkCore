@@ -33,8 +33,7 @@ public sealed class SqliteTempTableCreator : ITempTableCreator
       IRelationalTypeMappingSource typeMappingSource,
       TempTableStatementCache<SqliteTempTableCreatorCacheKey> cache)
    {
-      if (ctx == null)
-         throw new ArgumentNullException(nameof(ctx));
+      ArgumentNullException.ThrowIfNull(ctx);
 
       _ctx = ctx.Context;
       _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -49,10 +48,8 @@ public sealed class SqliteTempTableCreator : ITempTableCreator
       ITempTableCreationOptions options,
       CancellationToken cancellationToken = default)
    {
-      if (entityType == null)
-         throw new ArgumentNullException(nameof(entityType));
-      if (options == null)
-         throw new ArgumentNullException(nameof(options));
+      ArgumentNullException.ThrowIfNull(entityType);
+      ArgumentNullException.ThrowIfNull(options);
 
       var (nameLease, tableName) = GetTableName(entityType, options.TableNameProvider);
       var sql = GetTempTableCreationSql(entityType, tableName, options);
@@ -74,8 +71,7 @@ public sealed class SqliteTempTableCreator : ITempTableCreator
 
    private string GetTempTableCreationSql(IEntityType entityType, string tableName, ITempTableCreationOptions options)
    {
-      if (tableName == null)
-         throw new ArgumentNullException(nameof(tableName));
+      ArgumentNullException.ThrowIfNull(tableName);
 
       var cachedStatement = _cache.GetOrAdd(new SqliteTempTableCreatorCacheKey(options, entityType), CreateCachedStatement);
 
@@ -192,8 +188,7 @@ Currently configured primary keys: [{String.Join(", ", options.PrimaryKeys.Selec
       IEntityType entityType,
       ITempTableNameProvider nameProvider)
    {
-      if (nameProvider == null)
-         throw new ArgumentNullException(nameof(nameProvider));
+      ArgumentNullException.ThrowIfNull(nameProvider);
 
       var nameLease = nameProvider.LeaseName(_ctx, entityType);
       var name = nameLease.Name;

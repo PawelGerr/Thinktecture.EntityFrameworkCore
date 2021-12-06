@@ -20,10 +20,8 @@ public class ThinktectureSqliteParameterBasedSqlProcessor : RelationalParameterB
    /// <inheritdoc />
    protected override SelectExpression ProcessSqlNullability(SelectExpression selectExpression, IReadOnlyDictionary<string, object?> parametersValues, out bool canCache)
    {
-      if (selectExpression == null)
-         throw new ArgumentNullException(nameof(selectExpression));
-      if (parametersValues == null)
-         throw new ArgumentNullException(nameof(parametersValues));
+      ArgumentNullException.ThrowIfNull(selectExpression);
+      ArgumentNullException.ThrowIfNull(parametersValues);
 
       return new ThinktectureSqlNullabilityProcessor(Dependencies, UseRelationalNulls).Process(selectExpression, parametersValues, out canCache);
    }

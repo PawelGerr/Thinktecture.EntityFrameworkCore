@@ -37,8 +37,7 @@ public sealed class DefaultSchemaRespectingMigrationAssembly<TMigrationsAssembly
       ICurrentDbContext currentContext,
       IServiceProvider serviceProvider)
    {
-      if (currentContext == null)
-         throw new ArgumentNullException(nameof(currentContext));
+      ArgumentNullException.ThrowIfNull(currentContext);
 
       _innerMigrationsAssembly = migrationsAssembly ?? throw new ArgumentNullException(nameof(migrationsAssembly));
       _schemaSetter = schemaSetter ?? throw new ArgumentNullException(nameof(schemaSetter));
@@ -55,10 +54,8 @@ public sealed class DefaultSchemaRespectingMigrationAssembly<TMigrationsAssembly
    /// <inheritdoc />
    public Migration CreateMigration(TypeInfo migrationClass, string activeProvider)
    {
-      if (migrationClass == null)
-         throw new ArgumentNullException(nameof(migrationClass));
-      if (activeProvider == null)
-         throw new ArgumentNullException(nameof(activeProvider));
+      ArgumentNullException.ThrowIfNull(migrationClass);
+      ArgumentNullException.ThrowIfNull(activeProvider);
 
       var hasCtorWithDefaultSchema = migrationClass.GetConstructors().Any(c => c.GetParameters().Any(p => p.ParameterType == typeof(IDbDefaultSchema)));
 

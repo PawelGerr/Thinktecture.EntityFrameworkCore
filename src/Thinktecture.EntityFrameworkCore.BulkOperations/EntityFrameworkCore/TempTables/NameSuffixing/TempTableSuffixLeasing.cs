@@ -31,8 +31,7 @@ internal class TempTableSuffixLeasing : IDisposable
 
    public TempTableSuffixLease Lease(IEntityType entityType)
    {
-      if (entityType == null)
-         throw new ArgumentNullException(nameof(entityType));
+      ArgumentNullException.ThrowIfNull(entityType);
 
       EnsureDisposed();
 

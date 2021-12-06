@@ -84,8 +84,7 @@ public sealed class RelationalDbContextOptionsExtension : DbContextOptionsExtens
    /// <inheritdoc />
    public void ApplyServices(IServiceCollection services)
    {
-      if (services == null)
-         throw new ArgumentNullException(nameof(services));
+      ArgumentNullException.ThrowIfNull(services);
 
       services.TryAddSingleton(this);
       services.TryAddSingleton<ITenantDatabaseProviderFactory>(DummyTenantDatabaseProviderFactory.Instance);
@@ -140,8 +139,7 @@ public sealed class RelationalDbContextOptionsExtension : DbContextOptionsExtens
    /// <exception cref="ArgumentNullException"><paramref name="type"/> is <c>null</c>.</exception>
    public void AddRelationalTypeMappingSourcePlugin(Type type)
    {
-      if (type == null)
-         throw new ArgumentNullException(nameof(type));
+      ArgumentNullException.ThrowIfNull(type);
 
       if (!typeof(IRelationalTypeMappingSourcePlugin).IsAssignableFrom(type))
          throw new ArgumentException($"The provided type '{type.ShortDisplayName()}' must implement '{nameof(IRelationalTypeMappingSourcePlugin)}'.", nameof(type));
@@ -158,11 +156,9 @@ public sealed class RelationalDbContextOptionsExtension : DbContextOptionsExtens
    /// <exception cref="ArgumentNullException"><paramref name="serviceType"/> or <paramref name="implementationType"/> is <c>null</c>.</exception>
    public void Register(Type serviceType, Type implementationType, ServiceLifetime lifetime)
    {
-      if (serviceType == null)
-         throw new ArgumentNullException(nameof(serviceType));
+      ArgumentNullException.ThrowIfNull(serviceType);
 
-      if (implementationType == null)
-         throw new ArgumentNullException(nameof(implementationType));
+      ArgumentNullException.ThrowIfNull(implementationType);
 
       _serviceDescriptors.Add(ServiceDescriptor.Describe(serviceType, implementationType, lifetime));
    }
@@ -175,11 +171,9 @@ public sealed class RelationalDbContextOptionsExtension : DbContextOptionsExtens
    /// <exception cref="ArgumentNullException"><paramref name="serviceType"/> or <paramref name="implementationInstance"/> is <c>null</c>.</exception>
    public void Register(Type serviceType, object implementationInstance)
    {
-      if (serviceType == null)
-         throw new ArgumentNullException(nameof(serviceType));
+      ArgumentNullException.ThrowIfNull(serviceType);
 
-      if (implementationInstance == null)
-         throw new ArgumentNullException(nameof(implementationInstance));
+      ArgumentNullException.ThrowIfNull(implementationInstance);
 
       _serviceDescriptors.Add(ServiceDescriptor.Singleton(serviceType, implementationInstance));
    }

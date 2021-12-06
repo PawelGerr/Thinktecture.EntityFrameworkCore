@@ -23,10 +23,8 @@ public sealed class DefaultSchemaModelCustomizer<TModelCustomizer> : IModelCusto
    /// <inheritdoc />
    public void Customize(ModelBuilder modelBuilder, DbContext context)
    {
-      if (modelBuilder == null)
-         throw new ArgumentNullException(nameof(modelBuilder));
-      if (context == null)
-         throw new ArgumentNullException(nameof(context));
+      ArgumentNullException.ThrowIfNull(modelBuilder);
+      ArgumentNullException.ThrowIfNull(context);
 
       _modelCustomizer.Customize(modelBuilder, context);
 

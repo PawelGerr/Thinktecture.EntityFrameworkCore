@@ -46,8 +46,7 @@ public class IntegrationTestsBase : SqliteDbContextIntegrationTests<DbContextWit
 
    private static ILoggerFactory CreateLoggerFactory(ITestOutputHelper testOutputHelper)
    {
-      if (testOutputHelper == null)
-         throw new ArgumentNullException(nameof(testOutputHelper));
+      ArgumentNullException.ThrowIfNull(testOutputHelper);
 
       return _loggerFactoryCache.GetOrAdd(testOutputHelper, _ =>
                                                             {

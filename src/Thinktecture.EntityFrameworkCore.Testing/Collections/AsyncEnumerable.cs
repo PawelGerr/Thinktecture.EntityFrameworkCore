@@ -12,15 +12,13 @@ internal sealed class AsyncEnumerable<T> : EnumerableQuery<T>, IAsyncEnumerable<
    public AsyncEnumerable(IEnumerable<T> enumerable)
       : base(enumerable)
    {
-      if (enumerable == null)
-         throw new ArgumentNullException(nameof(enumerable));
+      ArgumentNullException.ThrowIfNull(enumerable);
    }
 
    private AsyncEnumerable(Expression expression)
       : base(expression)
    {
-      if (expression == null)
-         throw new ArgumentNullException(nameof(expression));
+      ArgumentNullException.ThrowIfNull(expression);
    }
 
    public IAsyncEnumerator<T> GetAsyncEnumerator(CancellationToken cancellationToken)

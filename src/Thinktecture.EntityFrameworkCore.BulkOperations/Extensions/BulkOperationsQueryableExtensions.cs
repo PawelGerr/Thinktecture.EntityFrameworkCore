@@ -23,8 +23,7 @@ public static class BulkOperationsQueryableExtensions
    /// <exception cref="ArgumentNullException"><paramref name="source"/> is <c>null</c>.</exception>
    public static int BulkDelete<T>(this IQueryable<T> source)
    {
-      if (source == null)
-         throw new ArgumentNullException(nameof(source));
+      ArgumentNullException.ThrowIfNull(source);
 
       var methodInfo = _bulkDelete.MakeGenericMethod(typeof(T));
       var expression = Expression.Call(null, methodInfo, source.Expression);
@@ -44,8 +43,7 @@ public static class BulkOperationsQueryableExtensions
       this IQueryable<T> source,
       CancellationToken cancellationToken = default)
    {
-      if (source == null)
-         throw new ArgumentNullException(nameof(source));
+      ArgumentNullException.ThrowIfNull(source);
 
       if (source.Provider is not IAsyncQueryProvider provider)
          throw new InvalidOperationException(CoreStrings.IQueryableProviderNotAsync);

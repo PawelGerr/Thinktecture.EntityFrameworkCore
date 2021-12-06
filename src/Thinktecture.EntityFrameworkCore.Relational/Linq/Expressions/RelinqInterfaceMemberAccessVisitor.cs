@@ -40,8 +40,7 @@ public class RelinqInterfaceMemberAccessVisitor : ExpressionVisitor
    /// <inheritdoc />
    protected override Expression VisitMember(MemberExpression node)
    {
-      if (node == null)
-         throw new ArgumentNullException(nameof(node));
+      ArgumentNullException.ThrowIfNull(node);
 
       if (node.Expression is { NodeType: ExpressionType.Convert })
       {

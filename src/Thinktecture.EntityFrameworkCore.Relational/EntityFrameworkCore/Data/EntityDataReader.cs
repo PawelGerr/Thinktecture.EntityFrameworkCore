@@ -39,10 +39,8 @@ public sealed class EntityDataReader<TEntity> : IEntityDataReader<TEntity>
       IReadOnlyList<PropertyWithNavigations> properties,
       bool ensureReadEntitiesCollection)
    {
-      if (propertyGetterCache == null)
-         throw new ArgumentNullException(nameof(propertyGetterCache));
-      if (entities == null)
-         throw new ArgumentNullException(nameof(entities));
+      ArgumentNullException.ThrowIfNull(propertyGetterCache);
+      ArgumentNullException.ThrowIfNull(entities);
 
       _ctx = ctx ?? throw new ArgumentNullException(nameof(ctx));
       Properties = properties ?? throw new ArgumentNullException(nameof(properties));

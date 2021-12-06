@@ -42,8 +42,7 @@ public class TestContext
 
    public ILoggerFactory GetLoggerFactory(ITestOutputHelper testOutputHelper)
    {
-      if (testOutputHelper == null)
-         throw new ArgumentNullException(nameof(testOutputHelper));
+      ArgumentNullException.ThrowIfNull(testOutputHelper);
 
       return _loggerFactoryCache.GetOrAdd(testOutputHelper, helper =>
                                                             {

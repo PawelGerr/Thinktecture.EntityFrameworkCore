@@ -7,8 +7,7 @@ public static class DemoDbContextExtensions
 {
    public static async Task<Guid> EnsureCustomerAsync(this DemoDbContext ctx, Guid id)
    {
-      if (ctx == null)
-         throw new ArgumentNullException(nameof(ctx));
+      ArgumentNullException.ThrowIfNull(ctx);
 
       if (!await ctx.Customers.AnyAsync(c => c.Id == id))
       {
@@ -21,8 +20,7 @@ public static class DemoDbContextExtensions
 
    public static async Task<Guid> EnsureProductAsync(this DemoDbContext ctx, Guid id)
    {
-      if (ctx == null)
-         throw new ArgumentNullException(nameof(ctx));
+      ArgumentNullException.ThrowIfNull(ctx);
 
       if (!await ctx.Products.AnyAsync(c => c.Id == id))
       {
@@ -35,8 +33,7 @@ public static class DemoDbContextExtensions
 
    public static async Task<Guid> EnsureOrderAsync(this DemoDbContext ctx, Guid id, Guid customerId)
    {
-      if (ctx == null)
-         throw new ArgumentNullException(nameof(ctx));
+      ArgumentNullException.ThrowIfNull(ctx);
 
       if (!await ctx.Orders.AnyAsync(c => c.Id == id))
       {
@@ -49,8 +46,7 @@ public static class DemoDbContextExtensions
 
    public static async Task EnsureOrderItemAsync(this DemoDbContext ctx, Guid orderId, Guid productId, int count)
    {
-      if (ctx == null)
-         throw new ArgumentNullException(nameof(ctx));
+      ArgumentNullException.ThrowIfNull(ctx);
 
       var orderItem = await ctx.OrderItems.FirstOrDefaultAsync(c => c.OrderId == orderId && c.ProductId == productId);
 

@@ -21,8 +21,7 @@ public static class SqlServerMigrationOperationExtensions
    /// <exception cref="ArgumentNullException"><paramref name="operation"/> is <c>null</c>.</exception>
    public static bool IfNotExistsCheckRequired(this MigrationOperation operation)
    {
-      if (operation == null)
-         throw new ArgumentNullException(nameof(operation));
+      ArgumentNullException.ThrowIfNull(operation);
 
       return operation[SqlServerOperationBuilderExtensions.IfNotExistsKey] is bool ifNotExists && ifNotExists;
    }
@@ -39,8 +38,7 @@ public static class SqlServerMigrationOperationExtensions
    /// <exception cref="ArgumentNullException"><paramref name="operation"/> is <c>null</c>.</exception>
    public static bool IfExistsCheckRequired(this MigrationOperation operation)
    {
-      if (operation == null)
-         throw new ArgumentNullException(nameof(operation));
+      ArgumentNullException.ThrowIfNull(operation);
 
       return operation[SqlServerOperationBuilderExtensions.IfExistsKey] is bool ifNotExists && ifNotExists;
    }

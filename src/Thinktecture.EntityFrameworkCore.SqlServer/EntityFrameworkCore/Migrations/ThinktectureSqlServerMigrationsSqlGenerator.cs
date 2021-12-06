@@ -27,8 +27,7 @@ public class ThinktectureSqlServerMigrationsSqlGenerator : SqlServerMigrationsSq
    /// <inheritdoc />
    protected override void Generate(CreateTableOperation operation, IModel? model, MigrationCommandListBuilder builder, bool terminate = true)
    {
-      if (builder == null)
-         throw new ArgumentNullException(nameof(builder));
+      ArgumentNullException.ThrowIfNull(builder);
 
       if (operation.IfExistsCheckRequired())
          throw new InvalidOperationException($"The check '{nameof(SqlServerOperationBuilderExtensions.IfExists)}()' is not allowed with '{operation.GetType().Name}'");
@@ -59,8 +58,7 @@ public class ThinktectureSqlServerMigrationsSqlGenerator : SqlServerMigrationsSq
    /// <inheritdoc />
    protected override void Generate(DropTableOperation operation, IModel? model, MigrationCommandListBuilder builder, bool terminate = true)
    {
-      if (builder == null)
-         throw new ArgumentNullException(nameof(builder));
+      ArgumentNullException.ThrowIfNull(builder);
 
       if (operation.IfNotExistsCheckRequired())
          throw new InvalidOperationException($"The check '{nameof(SqlServerOperationBuilderExtensions.IfNotExists)}()' is not allowed with '{operation.GetType().Name}'");
@@ -89,8 +87,7 @@ public class ThinktectureSqlServerMigrationsSqlGenerator : SqlServerMigrationsSq
    /// <inheritdoc />
    protected override void Generate(AddColumnOperation operation, IModel? model, MigrationCommandListBuilder builder, bool terminate)
    {
-      if (builder == null)
-         throw new ArgumentNullException(nameof(builder));
+      ArgumentNullException.ThrowIfNull(builder);
 
       if (operation.IfExistsCheckRequired())
          throw new InvalidOperationException($"The check '{nameof(SqlServerOperationBuilderExtensions.IfExists)}()' is not allowed with '{operation.GetType().Name}'");
@@ -124,8 +121,7 @@ public class ThinktectureSqlServerMigrationsSqlGenerator : SqlServerMigrationsSq
    /// <inheritdoc />
    protected override void Generate(DropColumnOperation operation, IModel? model, MigrationCommandListBuilder builder, bool terminate = true)
    {
-      if (builder == null)
-         throw new ArgumentNullException(nameof(builder));
+      ArgumentNullException.ThrowIfNull(builder);
 
       if (operation.IfNotExistsCheckRequired())
          throw new InvalidOperationException($"The check '{nameof(SqlServerOperationBuilderExtensions.IfNotExists)}()' is not allowed with '{operation.GetType().Name}'");
@@ -154,8 +150,7 @@ public class ThinktectureSqlServerMigrationsSqlGenerator : SqlServerMigrationsSq
    /// <inheritdoc />
    protected override void Generate(CreateIndexOperation operation, IModel? model, MigrationCommandListBuilder builder, bool terminate = true)
    {
-      if (builder == null)
-         throw new ArgumentNullException(nameof(builder));
+      ArgumentNullException.ThrowIfNull(builder);
 
       if (operation.IfExistsCheckRequired())
          throw new InvalidOperationException($"The check '{nameof(SqlServerOperationBuilderExtensions.IfExists)}()' is not allowed with '{operation.GetType().Name}'");
@@ -184,8 +179,7 @@ public class ThinktectureSqlServerMigrationsSqlGenerator : SqlServerMigrationsSq
    /// <inheritdoc />
    protected override void Generate(DropIndexOperation operation, IModel? model, MigrationCommandListBuilder builder, bool terminate)
    {
-      if (builder == null)
-         throw new ArgumentNullException(nameof(builder));
+      ArgumentNullException.ThrowIfNull(builder);
 
       if (operation.IfNotExistsCheckRequired())
          throw new InvalidOperationException($"The check '{nameof(SqlServerOperationBuilderExtensions.IfNotExists)}()' is not allowed with '{operation.GetType().Name}'");
@@ -216,8 +210,7 @@ public class ThinktectureSqlServerMigrationsSqlGenerator : SqlServerMigrationsSq
    /// <inheritdoc />
    protected override void Generate(AddUniqueConstraintOperation operation, IModel? model, MigrationCommandListBuilder builder)
    {
-      if (builder == null)
-         throw new ArgumentNullException(nameof(builder));
+      ArgumentNullException.ThrowIfNull(builder);
 
       if (operation.IfExistsCheckRequired())
          throw new InvalidOperationException($"The check '{nameof(SqlServerOperationBuilderExtensions.IfExists)}()' is not allowed with '{operation.GetType().Name}'");
@@ -240,8 +233,7 @@ public class ThinktectureSqlServerMigrationsSqlGenerator : SqlServerMigrationsSq
    /// <inheritdoc />
    protected override void Generate(DropUniqueConstraintOperation operation, IModel? model, MigrationCommandListBuilder builder)
    {
-      if (builder == null)
-         throw new ArgumentNullException(nameof(builder));
+      ArgumentNullException.ThrowIfNull(builder);
 
       if (operation.IfNotExistsCheckRequired())
          throw new InvalidOperationException($"The check '{nameof(SqlServerOperationBuilderExtensions.IfNotExists)}()' is not allowed with '{operation.GetType().Name}'");
@@ -264,8 +256,7 @@ public class ThinktectureSqlServerMigrationsSqlGenerator : SqlServerMigrationsSq
    /// <inheritdoc />
    protected override void EndStatement(MigrationCommandListBuilder builder, bool suppressTransaction = false)
    {
-      if (builder == null)
-         throw new ArgumentNullException(nameof(builder));
+      ArgumentNullException.ThrowIfNull(builder);
 
       if (_closeScopeBeforeEndingStatement)
       {

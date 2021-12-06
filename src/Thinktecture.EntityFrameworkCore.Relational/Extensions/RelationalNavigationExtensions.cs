@@ -19,8 +19,7 @@ public static class RelationalNavigationExtensions
    public static bool IsInlined(
       this INavigation navigation)
    {
-      if (navigation == null)
-         throw new ArgumentNullException(nameof(navigation));
+      ArgumentNullException.ThrowIfNull(navigation);
 
       var sourceType = navigation.DeclaringEntityType;
       var targetType = navigation.TargetEntityType;

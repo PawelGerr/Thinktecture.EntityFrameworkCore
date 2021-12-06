@@ -17,10 +17,8 @@ public class ReusingTempTableNameProvider : ITempTableNameProvider
    /// <inheritdoc />
    public ITempTableNameLease LeaseName(DbContext ctx, IEntityType entityType)
    {
-      if (ctx == null)
-         throw new ArgumentNullException(nameof(ctx));
-      if (entityType == null)
-         throw new ArgumentNullException(nameof(entityType));
+      ArgumentNullException.ThrowIfNull(ctx);
+      ArgumentNullException.ThrowIfNull(entityType);
 
       var nameLeasing = ctx.GetService<TempTableSuffixLeasing>();
       var suffixLease = nameLeasing.Lease(entityType);

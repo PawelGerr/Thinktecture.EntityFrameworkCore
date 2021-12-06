@@ -38,8 +38,7 @@ public class ExpressionBodyExtractingVisitor : ExpressionVisitor
    /// <inheritdoc />
    protected override Expression VisitMethodCall(MethodCallExpression node)
    {
-      if (node == null)
-         throw new ArgumentNullException(nameof(node));
+      ArgumentNullException.ThrowIfNull(node);
 
       if (!node.Method.IsGenericMethod || node.Method.GetGenericMethodDefinition() != _extractBodyMethod)
          return base.VisitMethodCall(node);

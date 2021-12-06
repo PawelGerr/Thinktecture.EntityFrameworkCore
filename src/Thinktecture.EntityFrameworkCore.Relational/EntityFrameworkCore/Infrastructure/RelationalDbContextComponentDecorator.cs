@@ -15,10 +15,8 @@ public sealed class RelationalDbContextComponentDecorator : IRelationalDbContext
       IServiceCollection services,
       Type genericDecoratorTypeDefinition)
    {
-      if (services == null)
-         throw new ArgumentNullException(nameof(services));
-      if (genericDecoratorTypeDefinition == null)
-         throw new ArgumentNullException(nameof(genericDecoratorTypeDefinition));
+      ArgumentNullException.ThrowIfNull(services);
+      ArgumentNullException.ThrowIfNull(genericDecoratorTypeDefinition);
 
       var (implementationType, lifetime, index) = GetLatestRegistration<TService>(services);
 

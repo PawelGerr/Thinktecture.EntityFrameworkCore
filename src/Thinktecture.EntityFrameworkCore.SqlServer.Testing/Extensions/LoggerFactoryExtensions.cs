@@ -20,8 +20,7 @@ public static class LoggerFactoryExtensions
    public static IReadOnlyCollection<string> CollectExecutedCommands(
       this ILoggerFactory loggerFactory)
    {
-      if (loggerFactory == null)
-         throw new ArgumentNullException(nameof(loggerFactory));
+      ArgumentNullException.ThrowIfNull(loggerFactory);
 
       var sqlCommandLoggerProvider = new ExecutedCommandLoggerProvider();
       loggerFactory.AddProvider(sqlCommandLoggerProvider);

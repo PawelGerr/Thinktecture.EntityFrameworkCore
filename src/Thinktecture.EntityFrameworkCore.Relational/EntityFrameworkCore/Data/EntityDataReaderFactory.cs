@@ -25,12 +25,9 @@ public sealed class EntityDataReaderFactory : IEntityDataReaderFactory
       bool ensureReadEntitiesCollection)
       where T : class
    {
-      if (ctx == null)
-         throw new ArgumentNullException(nameof(ctx));
-      if (entities == null)
-         throw new ArgumentNullException(nameof(entities));
-      if (properties == null)
-         throw new ArgumentNullException(nameof(properties));
+      ArgumentNullException.ThrowIfNull(ctx);
+      ArgumentNullException.ThrowIfNull(entities);
+      ArgumentNullException.ThrowIfNull(properties);
 
       return new EntityDataReader<T>(ctx, _propertyGetterCache, entities, properties, ensureReadEntitiesCollection);
    }

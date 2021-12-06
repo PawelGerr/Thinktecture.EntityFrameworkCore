@@ -47,8 +47,7 @@ public static class PrimaryKeyPropertiesProviders
    /// <exception cref="NotSupportedException">The <paramref name="projection"/> contains unsupported expressions.</exception>
    public static IPrimaryKeyPropertiesProvider From<T>(Expression<Func<T, object?>> projection)
    {
-      if (projection == null)
-         throw new ArgumentNullException(nameof(projection));
+      ArgumentNullException.ThrowIfNull(projection);
 
       var members = projection.ExtractMembers();
 
@@ -62,10 +61,8 @@ public static class PrimaryKeyPropertiesProviders
    {
       public IReadOnlyCollection<PropertyWithNavigations> GetPrimaryKeyProperties(IEntityType entityType, IReadOnlyCollection<PropertyWithNavigations> tempTableProperties)
       {
-         if (entityType == null)
-            throw new ArgumentNullException(nameof(entityType));
-         if (tempTableProperties == null)
-            throw new ArgumentNullException(nameof(tempTableProperties));
+         ArgumentNullException.ThrowIfNull(entityType);
+         ArgumentNullException.ThrowIfNull(tempTableProperties);
 
          return Array.Empty<PropertyWithNavigations>();
       }
@@ -75,10 +72,8 @@ public static class PrimaryKeyPropertiesProviders
    {
       public IReadOnlyCollection<PropertyWithNavigations> GetPrimaryKeyProperties(IEntityType entityType, IReadOnlyCollection<PropertyWithNavigations> tempTableProperties)
       {
-         if (entityType == null)
-            throw new ArgumentNullException(nameof(entityType));
-         if (tempTableProperties == null)
-            throw new ArgumentNullException(nameof(tempTableProperties));
+         ArgumentNullException.ThrowIfNull(entityType);
+         ArgumentNullException.ThrowIfNull(tempTableProperties);
 
          var pk = entityType.FindPrimaryKey()?.Properties;
 

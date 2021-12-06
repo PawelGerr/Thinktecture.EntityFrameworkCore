@@ -73,8 +73,7 @@ public class IntegrationTestsBase : SqliteDbContextIntegrationTests<TestDbContex
 
    private ILoggerFactory CreateLoggerFactory(ITestOutputHelper testOutputHelper)
    {
-      if (testOutputHelper == null)
-         throw new ArgumentNullException(nameof(testOutputHelper));
+      ArgumentNullException.ThrowIfNull(testOutputHelper);
 
       return _loggerFactoryCache.GetOrAdd(testOutputHelper, helper =>
                                                             {

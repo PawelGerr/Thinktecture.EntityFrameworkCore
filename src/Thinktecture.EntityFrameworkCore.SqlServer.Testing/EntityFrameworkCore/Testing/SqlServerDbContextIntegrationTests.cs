@@ -191,8 +191,7 @@ public abstract class SqlServerDbContextIntegrationTests<T> : IDbContextFactory<
    /// <returns>An instance of <see cref="IDbContextTransaction"/>.</returns>
    protected virtual IDbContextTransaction BeginTransaction(T ctx)
    {
-      if (ctx == null)
-         throw new ArgumentNullException(nameof(ctx));
+      ArgumentNullException.ThrowIfNull(ctx);
 
       return ctx.Database.BeginTransaction(IsolationLevel.ReadCommitted);
    }
@@ -204,8 +203,7 @@ public abstract class SqlServerDbContextIntegrationTests<T> : IDbContextFactory<
    /// <exception cref="ArgumentNullException">The provided context is <c>null</c>.</exception>
    protected virtual void RunMigrations(T ctx)
    {
-      if (ctx == null)
-         throw new ArgumentNullException(nameof(ctx));
+      ArgumentNullException.ThrowIfNull(ctx);
 
       // concurrent execution is not supported by EF migrations
       lock (_locks.GetOrAdd(Schema, _ => new object()))
@@ -254,8 +252,7 @@ public abstract class SqlServerDbContextIntegrationTests<T> : IDbContextFactory<
    /// <exception cref="ArgumentNullException">The <paramref name="builder"/> is null.</exception>
    protected virtual void ConfigureSqlServer(SqlServerDbContextOptionsBuilder builder)
    {
-      if (builder == null)
-         throw new ArgumentNullException(nameof(builder));
+      ArgumentNullException.ThrowIfNull(builder);
 
       builder.MigrationsHistoryTable(_HISTORY_TABLE_NAME, Schema);
 
@@ -314,18 +311,15 @@ public abstract class SqlServerDbContextIntegrationTests<T> : IDbContextFactory<
 
    private static void RollbackMigrations(T ctx)
    {
-      if (ctx == null)
-         throw new ArgumentNullException(nameof(ctx));
+      ArgumentNullException.ThrowIfNull(ctx);
 
       ctx.GetService<IMigrator>().Migrate("0");
    }
 
    private static void CleanUpDatabase(T ctx, string schema)
    {
-      if (ctx == null)
-         throw new ArgumentNullException(nameof(ctx));
-      if (schema == null)
-         throw new ArgumentNullException(nameof(schema));
+      ArgumentNullException.ThrowIfNull(ctx);
+      ArgumentNullException.ThrowIfNull(schema);
 
       var sqlHelper = ctx.GetService<ISqlGenerationHelper>();
 
@@ -335,8 +329,7 @@ public abstract class SqlServerDbContextIntegrationTests<T> : IDbContextFactory<
 
    private static string GetDropSchemaSql(ISqlGenerationHelper sqlHelper, string schema)
    {
-      if (sqlHelper == null)
-         throw new ArgumentNullException(nameof(sqlHelper));
+      ArgumentNullException.ThrowIfNull(sqlHelper);
 
       return $"DROP SCHEMA {sqlHelper.DelimitIdentifier(schema)}";
    }

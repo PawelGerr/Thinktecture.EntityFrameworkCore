@@ -11,8 +11,7 @@ public static class BulkOperationsExpressionExtensions
 {
    internal static IReadOnlyList<MemberInfo> ExtractMembers<T>(this Expression<Func<T, object?>> projection)
    {
-      if (projection == null)
-         throw new ArgumentNullException(nameof(projection));
+      ArgumentNullException.ThrowIfNull(projection);
 
       var members = new List<MemberInfo>();
       ExtractMembers(members, projection.Parameters[0], projection.Body);

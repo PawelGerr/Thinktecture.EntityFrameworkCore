@@ -10,8 +10,7 @@ public sealed class MigrationOperationSchemaSetter : IMigrationOperationSchemaSe
    /// <inheritdoc />
    public void SetSchema(IReadOnlyList<MigrationOperation> operations, string? schema)
    {
-      if (operations == null)
-         throw new ArgumentNullException(nameof(operations));
+      ArgumentNullException.ThrowIfNull(operations);
 
       foreach (var operation in operations)
       {
@@ -21,8 +20,7 @@ public sealed class MigrationOperationSchemaSetter : IMigrationOperationSchemaSe
 
    private static void SetSchema(MigrationOperation operation, string? schema)
    {
-      if (operation == null)
-         throw new ArgumentNullException(nameof(operation));
+      ArgumentNullException.ThrowIfNull(operation);
 
       switch (operation)
       {
@@ -45,8 +43,7 @@ public sealed class MigrationOperationSchemaSetter : IMigrationOperationSchemaSe
 
    private static void SetSchema(CreateTableOperation op, string? schema)
    {
-      if (op == null)
-         throw new ArgumentNullException(nameof(op));
+      ArgumentNullException.ThrowIfNull(op);
 
       op.Schema = schema;
 
@@ -71,8 +68,7 @@ public sealed class MigrationOperationSchemaSetter : IMigrationOperationSchemaSe
 
    private static void SetSchema(RenameTableOperation op, string? schema)
    {
-      if (op == null)
-         throw new ArgumentNullException(nameof(op));
+      ArgumentNullException.ThrowIfNull(op);
 
       if (op.Schema == null)
          op.Schema = schema;
@@ -83,8 +79,7 @@ public sealed class MigrationOperationSchemaSetter : IMigrationOperationSchemaSe
 
    private static void SetSchema(AddForeignKeyOperation op, string? schema)
    {
-      if (op == null)
-         throw new ArgumentNullException(nameof(op));
+      ArgumentNullException.ThrowIfNull(op);
 
       if (op.Schema == null)
          op.Schema = schema;

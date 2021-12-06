@@ -10,8 +10,7 @@ public static class SqlitePropertyExtensions
 {
    internal static bool IsAutoIncrement(this IProperty property)
    {
-      if (property == null)
-         throw new ArgumentNullException(nameof(property));
+      ArgumentNullException.ThrowIfNull(property);
 
       return property.ValueGenerated == ValueGenerated.OnAdd
              && (property.ClrType == typeof(int) || property.ClrType == typeof(int?))

@@ -695,8 +695,7 @@ Missing columns: Column2.");
       int? numericScale = null,
       int? charMaxLength = null)
    {
-      if (column == null)
-         throw new ArgumentNullException(nameof(column));
+      ArgumentNullException.ThrowIfNull(column);
 
       column.COLUMN_NAME.Should().Be(name);
       column.DATA_TYPE.Should().Be(type);

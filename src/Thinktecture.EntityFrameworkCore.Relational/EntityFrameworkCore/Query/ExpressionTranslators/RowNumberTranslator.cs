@@ -19,10 +19,8 @@ public sealed class RowNumberTranslator : IMethodCallTranslator
       IReadOnlyList<SqlExpression> arguments,
       IDiagnosticsLogger<DbLoggerCategory.Query> logger)
    {
-      if (method == null)
-         throw new ArgumentNullException(nameof(method));
-      if (arguments == null)
-         throw new ArgumentNullException(nameof(arguments));
+      ArgumentNullException.ThrowIfNull(method);
+      ArgumentNullException.ThrowIfNull(arguments);
 
       if (method.DeclaringType != typeof(RelationalDbFunctionsExtensions))
          return null;

@@ -57,8 +57,7 @@ public static class BulkOperationsModelBuilderExtensions
    /// <exception cref="ArgumentNullException"><paramref name="modelBuilder"/> is <c>null</c>.</exception>
    public static EntityTypeBuilder<TempTable<TColumn1, TColumn2>> ConfigureTempTable<TColumn1, TColumn2>(this ModelBuilder modelBuilder, bool isKeyless = true)
    {
-      if (modelBuilder == null)
-         throw new ArgumentNullException(nameof(modelBuilder));
+      ArgumentNullException.ThrowIfNull(modelBuilder);
 
       var builder = modelBuilder.Configure<TempTable<TColumn1, TColumn2>>(isKeyless);
 
@@ -76,8 +75,7 @@ public static class BulkOperationsModelBuilderExtensions
    private static EntityTypeBuilder<T> Configure<T>(this ModelBuilder modelBuilder, bool isKeyless)
       where T : class
    {
-      if (modelBuilder == null)
-         throw new ArgumentNullException(nameof(modelBuilder));
+      ArgumentNullException.ThrowIfNull(modelBuilder);
 
       var builder = modelBuilder.Entity<T>().ToTable($"#{typeof(T).ShortDisplayName()}",
                                                      tableBuilder => tableBuilder.ExcludeFromMigrations());

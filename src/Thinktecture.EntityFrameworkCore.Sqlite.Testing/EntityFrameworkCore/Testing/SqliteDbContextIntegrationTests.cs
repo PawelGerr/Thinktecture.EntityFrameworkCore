@@ -145,8 +145,7 @@ public abstract class SqliteDbContextIntegrationTests<T> : IDbContextFactory<T>,
    /// <exception cref="ArgumentNullException">The provided context is <c>null</c>.</exception>
    protected virtual void RunMigrations(T ctx)
    {
-      if (ctx == null)
-         throw new ArgumentNullException(nameof(ctx));
+      ArgumentNullException.ThrowIfNull(ctx);
 
       // concurrent execution is not supported by EF migrations
       lock (_lock)

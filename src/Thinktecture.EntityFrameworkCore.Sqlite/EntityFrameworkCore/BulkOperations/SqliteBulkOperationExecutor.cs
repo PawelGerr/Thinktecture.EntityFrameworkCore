@@ -44,8 +44,7 @@ public sealed class
       IDiagnosticsLogger<SqliteDbLoggerCategory.BulkOperation> logger,
       ISqlGenerationHelper sqlGenerationHelper)
    {
-      if (ctx == null)
-         throw new ArgumentNullException(nameof(ctx));
+      ArgumentNullException.ThrowIfNull(ctx);
 
       _ctx = ctx.Context ?? throw new ArgumentNullException(nameof(ctx));
       _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -110,12 +109,9 @@ public sealed class
       CancellationToken cancellationToken = default)
       where T : class
    {
-      if (entities == null)
-         throw new ArgumentNullException(nameof(entities));
-      if (tableName == null)
-         throw new ArgumentNullException(nameof(tableName));
-      if (options == null)
-         throw new ArgumentNullException(nameof(options));
+      ArgumentNullException.ThrowIfNull(entities);
+      ArgumentNullException.ThrowIfNull(tableName);
+      ArgumentNullException.ThrowIfNull(options);
 
       if (!(options is ISqliteBulkInsertOptions sqliteOptions))
          sqliteOptions = new SqliteBulkInsertOptions(options);
@@ -155,10 +151,8 @@ public sealed class
       CancellationToken cancellationToken = default)
       where T : class
    {
-      if (entities == null)
-         throw new ArgumentNullException(nameof(entities));
-      if (options == null)
-         throw new ArgumentNullException(nameof(options));
+      ArgumentNullException.ThrowIfNull(entities);
+      ArgumentNullException.ThrowIfNull(options);
 
       var entityType = _ctx.Model.GetEntityType(typeof(T));
 
@@ -179,10 +173,8 @@ public sealed class
       CancellationToken cancellationToken = default)
       where T : class
    {
-      if (entities == null)
-         throw new ArgumentNullException(nameof(entities));
-      if (options == null)
-         throw new ArgumentNullException(nameof(options));
+      ArgumentNullException.ThrowIfNull(entities);
+      ArgumentNullException.ThrowIfNull(options);
 
       if (!(options is ISqliteBulkInsertOrUpdateOptions sqliteOptions))
          sqliteOptions = new SqliteBulkInsertOrUpdateOptions(options);
@@ -338,10 +330,8 @@ public sealed class
       CancellationToken cancellationToken = default)
       where T : class
    {
-      if (entities == null)
-         throw new ArgumentNullException(nameof(entities));
-      if (options == null)
-         throw new ArgumentNullException(nameof(options));
+      ArgumentNullException.ThrowIfNull(entities);
+      ArgumentNullException.ThrowIfNull(options);
 
       var entityType = _ctx.Model.GetEntityType(typeof(T));
 

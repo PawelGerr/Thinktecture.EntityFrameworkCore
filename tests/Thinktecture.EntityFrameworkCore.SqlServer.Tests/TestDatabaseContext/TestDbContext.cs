@@ -99,8 +99,7 @@ public class TestDbContext : DbContext, IDbDefaultSchema
 
    public IQueryable<InformationSchemaColumn> GetTempTableColumns(string tableName)
    {
-      if (tableName == null)
-         throw new ArgumentNullException(nameof(tableName));
+      ArgumentNullException.ThrowIfNull(tableName);
 
       if (!tableName.StartsWith("#", StringComparison.Ordinal))
          tableName = $"#{tableName}";

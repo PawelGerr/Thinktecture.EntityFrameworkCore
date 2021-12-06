@@ -31,10 +31,8 @@ public static class RelationalQueryableMethodTranslatingExpressionVisitorExtensi
       QueryCompilationContext queryCompilationContext,
       TableHintContextFactory tableHintContextFactory)
    {
-      if (visitor == null)
-         throw new ArgumentNullException(nameof(visitor));
-      if (methodCallExpression == null)
-         throw new ArgumentNullException(nameof(methodCallExpression));
+      ArgumentNullException.ThrowIfNull(visitor);
+      ArgumentNullException.ThrowIfNull(methodCallExpression);
 
       if (methodCallExpression.Method.DeclaringType == typeof(RelationalQueryableExtensions))
       {

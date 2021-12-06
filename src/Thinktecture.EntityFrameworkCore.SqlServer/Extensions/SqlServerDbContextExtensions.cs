@@ -38,8 +38,7 @@ public static class SqlServerDbContextExtensions
 
    private static async Task<long> GetRowVersionAsync(DbContext ctx, string dbFunction, CancellationToken cancellationToken)
    {
-      if (ctx == null)
-         throw new ArgumentNullException(nameof(ctx));
+      ArgumentNullException.ThrowIfNull(ctx);
 
       await using var command = ctx.Database.GetDbConnection().CreateCommand();
 

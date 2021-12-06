@@ -19,8 +19,7 @@ public static class BulkOperationsEntityTypeExtensions
       this IEntityType entityType,
       bool? inlinedOwnTypes)
    {
-      if (entityType == null)
-         throw new ArgumentNullException(nameof(entityType));
+      ArgumentNullException.ThrowIfNull(entityType);
 
       return entityType.GetNavigations()
                        .Where(n => n.ForeignKey.IsOwnership &&

@@ -17,8 +17,7 @@ internal class TempTableSuffixCache
    public Dictionary<IEntityType, TempTableSuffixes> LeaseSuffixLookup(
       DbConnection connection)
    {
-      if (connection == null)
-         throw new ArgumentNullException(nameof(connection));
+      ArgumentNullException.ThrowIfNull(connection);
 
       lock (_lock)
       {
@@ -37,8 +36,7 @@ internal class TempTableSuffixCache
    public void ReturnSuffixLookup(
       DbConnection connection)
    {
-      if (connection == null)
-         throw new ArgumentNullException(nameof(connection));
+      ArgumentNullException.ThrowIfNull(connection);
 
       lock (_lock)
       {

@@ -81,8 +81,7 @@ public sealed class EntityPropertiesProvider : IEntityPropertiesProvider
    /// <exception cref="NotSupportedException">The <paramref name="projection"/> contains unsupported expressions.</exception>
    public static IEntityPropertiesProvider From<T>(Expression<Func<T, object?>> projection)
    {
-      if (projection == null)
-         throw new ArgumentNullException(nameof(projection));
+      ArgumentNullException.ThrowIfNull(projection);
 
       var members = projection.ExtractMembers();
 

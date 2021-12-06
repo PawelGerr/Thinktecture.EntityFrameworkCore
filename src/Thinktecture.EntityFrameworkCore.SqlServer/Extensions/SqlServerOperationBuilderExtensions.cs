@@ -36,8 +36,7 @@ public static class SqlServerOperationBuilderExtensions
    public static void IfNotExists<T>(this OperationBuilder<T> builder)
       where T : MigrationOperation
    {
-      if (builder == null)
-         throw new ArgumentNullException(nameof(builder));
+      ArgumentNullException.ThrowIfNull(builder);
 
       builder.Annotation(IfNotExistsKey, true);
    }
@@ -55,8 +54,7 @@ public static class SqlServerOperationBuilderExtensions
    public static void IfExists<T>(this OperationBuilder<T> builder)
       where T : MigrationOperation
    {
-      if (builder == null)
-         throw new ArgumentNullException(nameof(builder));
+      ArgumentNullException.ThrowIfNull(builder);
 
       builder.Annotation(IfExistsKey, true);
    }
@@ -74,10 +72,8 @@ public static class SqlServerOperationBuilderExtensions
    /// <exception cref="ArgumentException"><paramref name="columns"/> collection is empty.</exception>
    public static OperationBuilder<CreateIndexOperation> IncludeColumns(this OperationBuilder<CreateIndexOperation> operation, params string[] columns)
    {
-      if (operation == null)
-         throw new ArgumentNullException(nameof(operation));
-      if (columns == null)
-         throw new ArgumentNullException(nameof(columns));
+      ArgumentNullException.ThrowIfNull(operation);
+      ArgumentNullException.ThrowIfNull(columns);
       if (columns.Length == 0)
          throw new ArgumentException("There must be at least one column in provided collection.", nameof(columns));
 
@@ -94,8 +90,7 @@ public static class SqlServerOperationBuilderExtensions
    /// <exception cref="ArgumentNullException">The provided <paramref name="operation"/> is <c>null</c>.</exception>
    public static OperationBuilder<AddColumnOperation> AsIdentityColumn(this OperationBuilder<AddColumnOperation> operation)
    {
-      if (operation == null)
-         throw new ArgumentNullException(nameof(operation));
+      ArgumentNullException.ThrowIfNull(operation);
 
       operation.Annotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
@@ -111,8 +106,7 @@ public static class SqlServerOperationBuilderExtensions
    /// <exception cref="ArgumentNullException">The <paramref name="operation"/> is <c>null</c>.</exception>
    public static OperationBuilder<AddPrimaryKeyOperation> IsClustered(this OperationBuilder<AddPrimaryKeyOperation> operation, bool isClustered = true)
    {
-      if (operation == null)
-         throw new ArgumentNullException(nameof(operation));
+      ArgumentNullException.ThrowIfNull(operation);
 
       operation.Annotation("SqlServer:Clustered", isClustered);
 

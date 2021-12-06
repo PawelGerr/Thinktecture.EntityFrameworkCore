@@ -41,8 +41,7 @@ public sealed class SqlServerTempTableCreator : ISqlServerTempTableCreator
       TempTableStatementCache<SqlServerTempTableCreatorCacheKey> cache,
       TempTableStatementCache<SqlServerTempTablePrimaryKeyCacheKey> primaryKeyCache)
    {
-      if (ctx == null)
-         throw new ArgumentNullException(nameof(ctx));
+      ArgumentNullException.ThrowIfNull(ctx);
 
       _ctx = ctx.Context ?? throw new ArgumentNullException(nameof(sqlGenerationHelper));
       _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -70,10 +69,8 @@ public sealed class SqlServerTempTableCreator : ISqlServerTempTableCreator
       ISqlServerTempTableCreationOptions options,
       CancellationToken cancellationToken = default)
    {
-      if (entityType == null)
-         throw new ArgumentNullException(nameof(entityType));
-      if (options == null)
-         throw new ArgumentNullException(nameof(options));
+      ArgumentNullException.ThrowIfNull(entityType);
+      ArgumentNullException.ThrowIfNull(options);
 
       var (nameLease, tableName) = GetTableName(entityType, options.TableNameProvider);
       var sql = GetTempTableCreationSql(entityType, tableName, options);
@@ -97,8 +94,7 @@ public sealed class SqlServerTempTableCreator : ISqlServerTempTableCreator
       IEntityType entityType,
       ITempTableNameProvider nameProvider)
    {
-      if (nameProvider == null)
-         throw new ArgumentNullException(nameof(nameProvider));
+      ArgumentNullException.ThrowIfNull(nameProvider);
 
       var nameLease = nameProvider.LeaseName(_ctx, entityType);
       var name = nameLease.Name;
@@ -117,12 +113,9 @@ public sealed class SqlServerTempTableCreator : ISqlServerTempTableCreator
       bool checkForExistence = false,
       CancellationToken cancellationToken = default)
    {
-      if (ctx == null)
-         throw new ArgumentNullException(nameof(ctx));
-      if (keyProperties == null)
-         throw new ArgumentNullException(nameof(keyProperties));
-      if (tableName == null)
-         throw new ArgumentNullException(nameof(tableName));
+      ArgumentNullException.ThrowIfNull(ctx);
+      ArgumentNullException.ThrowIfNull(keyProperties);
+      ArgumentNullException.ThrowIfNull(tableName);
 
       if (keyProperties.Count == 0)
          return;
@@ -167,8 +160,7 @@ ADD CONSTRAINT {_sqlGenerationHelper.DelimitIdentifier($"PK_{name}_{Guid.NewGuid
 
    private string GetTempTableCreationSql(IEntityType entityType, string tableName, ISqlServerTempTableCreationOptions options)
    {
-      if (tableName == null)
-         throw new ArgumentNullException(nameof(tableName));
+      ArgumentNullException.ThrowIfNull(tableName);
 
       var cachedStatement = _tempTableCache.GetOrAdd(new SqlServerTempTableCreatorCacheKey(options, entityType), CreateCachedStatement);
 

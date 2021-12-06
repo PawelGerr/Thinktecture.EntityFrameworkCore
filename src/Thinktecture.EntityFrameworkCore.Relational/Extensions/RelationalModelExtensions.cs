@@ -25,10 +25,8 @@ public static class RelationalModelExtensions
    [SuppressMessage("ReSharper", "EF1001")]
    public static IEntityType GetEntityType(this IModel model, Type type)
    {
-      if (model == null)
-         throw new ArgumentNullException(nameof(model));
-      if (type == null)
-         throw new ArgumentNullException(nameof(type));
+      ArgumentNullException.ThrowIfNull(model);
+      ArgumentNullException.ThrowIfNull(type);
 
       var entityType = model.FindEntityType(type);
 

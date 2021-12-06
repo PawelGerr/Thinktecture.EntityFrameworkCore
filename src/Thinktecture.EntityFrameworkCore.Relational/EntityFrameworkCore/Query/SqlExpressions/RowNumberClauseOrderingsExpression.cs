@@ -42,8 +42,7 @@ public sealed class RowNumberClauseOrderingsExpression : SqlExpression, INotNull
    /// <inheritdoc />
    protected override void Print(ExpressionPrinter expressionPrinter)
    {
-      if (expressionPrinter == null)
-         throw new ArgumentNullException(nameof(expressionPrinter));
+      ArgumentNullException.ThrowIfNull(expressionPrinter);
 
       expressionPrinter.VisitCollection(Orderings);
    }
@@ -55,8 +54,7 @@ public sealed class RowNumberClauseOrderingsExpression : SqlExpression, INotNull
    /// <returns>New instance of <see cref="RowNumberClauseOrderingsExpression"/>.</returns>
    public RowNumberClauseOrderingsExpression AddColumns(IEnumerable<OrderingExpression> orderings)
    {
-      if (orderings == null)
-         throw new ArgumentNullException(nameof(orderings));
+      ArgumentNullException.ThrowIfNull(orderings);
 
       return new RowNumberClauseOrderingsExpression(Orderings.Concat(orderings).ToList());
    }

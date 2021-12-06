@@ -712,8 +712,7 @@ Currently configured primary keys: []");
 
    private static void ValidateColumn(SqliteTableInfo column, string name, string type, bool isNullable)
    {
-      if (column == null)
-         throw new ArgumentNullException(nameof(column));
+      ArgumentNullException.ThrowIfNull(column);
 
       column.Name.Should().Be(name);
       column.Type.Should().Be(type);

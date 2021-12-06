@@ -40,10 +40,8 @@ public static class RelationalQueryableExtensions
    /// <returns>Query with table hints applied.</returns>
    public static IQueryable<T> WithTableHints<T>(this IQueryable<T> source, IReadOnlyList<ITableHint> hints)
    {
-      if (source == null)
-         throw new ArgumentNullException(nameof(source));
-      if (hints == null)
-         throw new ArgumentNullException(nameof(hints));
+      ArgumentNullException.ThrowIfNull(source);
+      ArgumentNullException.ThrowIfNull(hints);
 
       var methodInfo = _withTableHints.MakeGenericMethod(typeof(T));
       var expression = Expression.Call(null, methodInfo, source.Expression, new TableHintsExpression(hints));
@@ -256,16 +254,11 @@ public static class RelationalQueryableExtensions
       Expression<Func<LeftJoinResult<TLeft, TRight?>, TResult>> resultSelector)
       where TLeft : notnull
    {
-      if (left == null)
-         throw new ArgumentNullException(nameof(left));
-      if (right == null)
-         throw new ArgumentNullException(nameof(right));
-      if (leftKeySelector == null)
-         throw new ArgumentNullException(nameof(leftKeySelector));
-      if (rightKeySelector == null)
-         throw new ArgumentNullException(nameof(rightKeySelector));
-      if (resultSelector == null)
-         throw new ArgumentNullException(nameof(resultSelector));
+      ArgumentNullException.ThrowIfNull(left);
+      ArgumentNullException.ThrowIfNull(right);
+      ArgumentNullException.ThrowIfNull(leftKeySelector);
+      ArgumentNullException.ThrowIfNull(rightKeySelector);
+      ArgumentNullException.ThrowIfNull(resultSelector);
 
       return left
              .GroupJoin(right, leftKeySelector, rightKeySelector, (o, i) => new { Outer = o, Inner = i })
@@ -282,8 +275,7 @@ public static class RelationalQueryableExtensions
    /// <exception cref="ArgumentNullException"><paramref name="source"/> is <c>null</c>.</exception>
    public static IQueryable<TEntity> AsSubQuery<TEntity>(this IQueryable<TEntity> source)
    {
-      if (source == null)
-         throw new ArgumentNullException(nameof(source));
+      ArgumentNullException.ThrowIfNull(source);
 
       return source.Provider.CreateQuery<TEntity>(Expression.Call(null, _asSubQuery.MakeGenericMethod(typeof(TEntity)), source.Expression));
    }
