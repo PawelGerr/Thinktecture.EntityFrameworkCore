@@ -2,39 +2,38 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 
-namespace Thinktecture.EntityFrameworkCore.Infrastructure
+namespace Thinktecture.EntityFrameworkCore.Infrastructure;
+
+/// <summary>
+/// Sets default database schema.
+/// </summary>
+// ReSharper disable once ClassNeverInstantiated.Global
+public sealed class DefaultSchemaModelCustomizer<TModelCustomizer> : IModelCustomizer
+   where TModelCustomizer : class, IModelCustomizer
 {
+   private readonly TModelCustomizer _modelCustomizer;
+
    /// <summary>
-   /// Sets default database schema.
+   /// Initializes new instance <see cref="DefaultSchemaModelCustomizer{TModelCustomizer}"/>.
    /// </summary>
-   // ReSharper disable once ClassNeverInstantiated.Global
-   public sealed class DefaultSchemaModelCustomizer<TModelCustomizer> : IModelCustomizer
-      where TModelCustomizer : class, IModelCustomizer
+   /// <param name="modelCustomizer">Inner model customizer.</param>
+   public DefaultSchemaModelCustomizer(TModelCustomizer modelCustomizer)
    {
-      private readonly TModelCustomizer _modelCustomizer;
+      _modelCustomizer = modelCustomizer ?? throw new ArgumentNullException(nameof(modelCustomizer));
+   }
 
-      /// <summary>
-      /// Initializes new instance <see cref="DefaultSchemaModelCustomizer{TModelCustomizer}"/>.
-      /// </summary>
-      /// <param name="modelCustomizer">Inner model customizer.</param>
-      public DefaultSchemaModelCustomizer(TModelCustomizer modelCustomizer)
-      {
-         _modelCustomizer = modelCustomizer ?? throw new ArgumentNullException(nameof(modelCustomizer));
-      }
+   /// <inheritdoc />
+   public void Customize(ModelBuilder modelBuilder, DbContext context)
+   {
+      if (modelBuilder == null)
+         throw new ArgumentNullException(nameof(modelBuilder));
+      if (context == null)
+         throw new ArgumentNullException(nameof(context));
 
-      /// <inheritdoc />
-      public void Customize(ModelBuilder modelBuilder, DbContext context)
-      {
-         if (modelBuilder == null)
-            throw new ArgumentNullException(nameof(modelBuilder));
-         if (context == null)
-            throw new ArgumentNullException(nameof(context));
+      _modelCustomizer.Customize(modelBuilder, context);
 
-         _modelCustomizer.Customize(modelBuilder, context);
-
-         // ReSharper disable once SuspiciousTypeConversion.Global
-         if (context is IDbDefaultSchema { Schema: { } } schema)
-            modelBuilder.HasDefaultSchema(schema.Schema);
-      }
+      // ReSharper disable once SuspiciousTypeConversion.Global
+      if (context is IDbDefaultSchema { Schema: { } } schema)
+         modelBuilder.HasDefaultSchema(schema.Schema);
    }
 }

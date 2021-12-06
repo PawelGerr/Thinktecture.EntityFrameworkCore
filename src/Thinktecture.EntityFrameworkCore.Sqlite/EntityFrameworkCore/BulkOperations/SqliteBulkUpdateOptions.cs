@@ -1,27 +1,26 @@
-namespace Thinktecture.EntityFrameworkCore.BulkOperations
+namespace Thinktecture.EntityFrameworkCore.BulkOperations;
+
+/// <summary>
+/// Bulk update options for SQLite.
+/// </summary>
+public class SqliteBulkUpdateOptions : IBulkUpdateOptions
 {
+   /// <inheritdoc />
+   public IEntityPropertiesProvider? PropertiesToUpdate { get; set; }
+
+   /// <inheritdoc />
+   public IEntityPropertiesProvider? KeyProperties { get; set; }
+
    /// <summary>
-   /// Bulk update options for SQLite.
+   /// Initializes new instance of <see cref="SqliteBulkUpdateOptions"/>.
    /// </summary>
-   public class SqliteBulkUpdateOptions : IBulkUpdateOptions
+   /// <param name="optionsToInitializeFrom">Options to initialize from.</param>
+   public SqliteBulkUpdateOptions(IBulkUpdateOptions? optionsToInitializeFrom = null)
    {
-      /// <inheritdoc />
-      public IEntityPropertiesProvider? PropertiesToUpdate { get; set; }
+      if (optionsToInitializeFrom is null)
+         return;
 
-      /// <inheritdoc />
-      public IEntityPropertiesProvider? KeyProperties { get; set; }
-
-      /// <summary>
-      /// Initializes new instance of <see cref="SqliteBulkUpdateOptions"/>.
-      /// </summary>
-      /// <param name="optionsToInitializeFrom">Options to initialize from.</param>
-      public SqliteBulkUpdateOptions(IBulkUpdateOptions? optionsToInitializeFrom = null)
-      {
-         if (optionsToInitializeFrom is null)
-            return;
-
-         PropertiesToUpdate = optionsToInitializeFrom.PropertiesToUpdate;
-         KeyProperties = optionsToInitializeFrom.KeyProperties;
-      }
+      PropertiesToUpdate = optionsToInitializeFrom.PropertiesToUpdate;
+      KeyProperties = optionsToInitializeFrom.KeyProperties;
    }
 }

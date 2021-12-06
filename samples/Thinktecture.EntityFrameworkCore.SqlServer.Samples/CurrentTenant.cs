@@ -1,7 +1,6 @@
-namespace Thinktecture
+namespace Thinktecture;
+
+public static class CurrentTenant
 {
-   public static class CurrentTenant
-   {
-      public static string? Value { get; set; }
-   }
+   public static string? Value { get; set; }
 }

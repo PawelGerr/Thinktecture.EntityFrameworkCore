@@ -1,13 +1,12 @@
-namespace Thinktecture.Extensions.SqlServerOperationBuilderExtensionsTests
+namespace Thinktecture.Extensions.SqlServerOperationBuilderExtensionsTests;
+
+public class UniqueConstraint
 {
-   public class UniqueConstraint
-   {
-      public string Constraint_Name { get; set; }
+   public string Constraint_Name { get; set; }
 
 #nullable disable
-      private UniqueConstraint()
-      {
-      }
-#nullable enable
+   private UniqueConstraint()
+   {
    }
+#nullable enable
 }

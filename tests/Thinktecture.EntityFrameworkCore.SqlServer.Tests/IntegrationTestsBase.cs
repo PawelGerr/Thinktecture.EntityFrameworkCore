@@ -18,79 +18,78 @@ using Thinktecture.TestDatabaseContext;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Thinktecture
+namespace Thinktecture;
+
+[SuppressMessage("ReSharper", "EF1001")]
+[Collection("SqlServerTests")]
+public class IntegrationTestsBase : SqlServerDbContextIntegrationTests<TestDbContext>
 {
-   [SuppressMessage("ReSharper", "EF1001")]
-   [Collection("SqlServerTests")]
-   public class IntegrationTestsBase : SqlServerDbContextIntegrationTests<TestDbContext>
+   protected Action<ModelBuilder>? ConfigureModel { get; set; }
+   protected IReadOnlyCollection<string> SqlStatements { get; }
+
+   protected bool IsTenantDatabaseSupportEnabled { get; set; }
+   protected Mock<ITenantDatabaseProvider> TenantDatabaseProviderMock { get; }
+
+   protected IntegrationTestsBase(ITestOutputHelper testOutputHelper, bool useSharedTables)
+      : base(TestContext.Instance.ConnectionString, useSharedTables)
    {
-      protected Action<ModelBuilder>? ConfigureModel { get; set; }
-      protected IReadOnlyCollection<string> SqlStatements { get; }
+      DisableModelCache = true;
 
-      protected bool IsTenantDatabaseSupportEnabled { get; set; }
-      protected Mock<ITenantDatabaseProvider> TenantDatabaseProviderMock { get; }
+      var loggerFactory = TestContext.Instance.GetLoggerFactory(testOutputHelper);
+      SqlStatements = loggerFactory.CollectExecutedCommands();
 
-      protected IntegrationTestsBase(ITestOutputHelper testOutputHelper, bool useSharedTables)
-         : base(TestContext.Instance.ConnectionString, useSharedTables)
-      {
-         DisableModelCache = true;
+      UseLoggerFactory(loggerFactory);
 
-         var loggerFactory = TestContext.Instance.GetLoggerFactory(testOutputHelper);
-         SqlStatements = loggerFactory.CollectExecutedCommands();
+      TenantDatabaseProviderMock = new Mock<ITenantDatabaseProvider>(MockBehavior.Strict);
+   }
 
-         UseLoggerFactory(loggerFactory);
+   protected IDiagnosticsLogger<TCategory> CreateDiagnosticsLogger<TCategory>(ILoggingOptions? options = null, DiagnosticSource? diagnosticSource = null)
+      where TCategory : LoggerCategory<TCategory>, new()
+   {
+      var loggerFactory = LoggerFactory ?? throw new InvalidOperationException($"The {nameof(LoggerFactory)} must be set first.");
 
-         TenantDatabaseProviderMock = new Mock<ITenantDatabaseProvider>(MockBehavior.Strict);
-      }
+      return new DiagnosticsLogger<TCategory>(loggerFactory, options ?? new LoggingOptions(),
+                                              diagnosticSource ?? new DiagnosticListener(typeof(TCategory).ShortDisplayName()),
+                                              new SqlServerLoggingDefinitions(),
+                                              new NullDbContextLogger());
+   }
 
-      protected IDiagnosticsLogger<TCategory> CreateDiagnosticsLogger<TCategory>(ILoggingOptions? options = null, DiagnosticSource? diagnosticSource = null)
-         where TCategory : LoggerCategory<TCategory>, new()
-      {
-         var loggerFactory = LoggerFactory ?? throw new InvalidOperationException($"The {nameof(LoggerFactory)} must be set first.");
+   /// <inheritdoc />
+   protected override TestDbContext CreateContext(DbContextOptions<TestDbContext> options, IDbDefaultSchema schema)
+   {
+      var ctx = base.CreateContext(options, schema);
+      ctx.ConfigureModel = ConfigureModel;
 
-         return new DiagnosticsLogger<TCategory>(loggerFactory, options ?? new LoggingOptions(),
-                                                 diagnosticSource ?? new DiagnosticListener(typeof(TCategory).ShortDisplayName()),
-                                                 new SqlServerLoggingDefinitions(),
-                                                 new NullDbContextLogger());
-      }
+      return ctx;
+   }
 
-      /// <inheritdoc />
-      protected override TestDbContext CreateContext(DbContextOptions<TestDbContext> options, IDbDefaultSchema schema)
-      {
-         var ctx = base.CreateContext(options, schema);
-         ctx.ConfigureModel = ConfigureModel;
+   /// <inheritdoc />
+   protected override DbContextOptionsBuilder<TestDbContext> CreateOptionsBuilder(DbConnection? connection)
+   {
+      var builder = base.CreateOptionsBuilder(connection)
+                        .AddNestedTransactionSupport()
+                        .ConfigureWarnings(warningsBuilder => warningsBuilder.Ignore(CoreEventId.ManyServiceProvidersCreatedWarning));
 
-         return ctx;
-      }
+      builder.AddOrUpdateExtension<RelationalDbContextOptionsExtension>(extension => extension.Register(typeof(Mock<ITenantDatabaseProvider>), TenantDatabaseProviderMock));
 
-      /// <inheritdoc />
-      protected override DbContextOptionsBuilder<TestDbContext> CreateOptionsBuilder(DbConnection? connection)
-      {
-         var builder = base.CreateOptionsBuilder(connection)
-                           .AddNestedTransactionSupport()
-                           .ConfigureWarnings(warningsBuilder => warningsBuilder.Ignore(CoreEventId.ManyServiceProvidersCreatedWarning));
+      return builder;
+   }
 
-         builder.AddOrUpdateExtension<RelationalDbContextOptionsExtension>(extension => extension.Register(typeof(Mock<ITenantDatabaseProvider>), TenantDatabaseProviderMock));
+   /// <inheritdoc />
+   protected override void ConfigureSqlServer(SqlServerDbContextOptionsBuilder builder)
+   {
+      base.ConfigureSqlServer(builder);
 
-         return builder;
-      }
+      builder.AddBulkOperationSupport()
+             .AddRowNumberSupport();
 
-      /// <inheritdoc />
-      protected override void ConfigureSqlServer(SqlServerDbContextOptionsBuilder builder)
-      {
-         base.ConfigureSqlServer(builder);
+      if (IsTenantDatabaseSupportEnabled)
+         builder.AddTenantDatabaseSupport<TestTenantDatabaseProviderFactory>();
+   }
 
-         builder.AddBulkOperationSupport()
-                .AddRowNumberSupport();
-
-         if (IsTenantDatabaseSupportEnabled)
-            builder.AddTenantDatabaseSupport<TestTenantDatabaseProviderFactory>();
-      }
-
-      /// <inheritdoc />
-      protected override string DetermineSchema(bool useSharedTables)
-      {
-         return useSharedTables ? $"{TestContext.Instance.Configuration["SourceBranchName"]}_tests" : base.DetermineSchema(false);
-      }
+   /// <inheritdoc />
+   protected override string DetermineSchema(bool useSharedTables)
+   {
+      return useSharedTables ? $"{TestContext.Instance.Configuration["SourceBranchName"]}_tests" : base.DetermineSchema(false);
    }
 }

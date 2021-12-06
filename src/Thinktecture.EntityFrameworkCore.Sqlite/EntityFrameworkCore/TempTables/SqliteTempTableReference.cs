@@ -7,86 +7,85 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
 
-namespace Thinktecture.EntityFrameworkCore.TempTables
+namespace Thinktecture.EntityFrameworkCore.TempTables;
+
+/// <summary>
+/// A reference to SQLite temp table.
+/// </summary>
+public sealed class SqliteTempTableReference : ITempTableReference
 {
+   private readonly IDiagnosticsLogger<DbLoggerCategory.Query> _logger;
+   private readonly ISqlGenerationHelper _sqlGenerationHelper;
+   private readonly DatabaseFacade _database;
+   private readonly ITempTableNameLease _nameLease;
+   private readonly bool _dropTableOnDispose;
+
+   /// <inheritdoc />
+   public string Name { get; }
+
    /// <summary>
-   /// A reference to SQLite temp table.
+   /// Initializes new instance of <see cref="SqliteTempTableReference"/>.
    /// </summary>
-   public sealed class SqliteTempTableReference : ITempTableReference
+   /// <param name="logger">Logger</param>
+   /// <param name="sqlGenerationHelper">SQL generation helper.</param>
+   /// <param name="tableName">The name of the temp table.</param>
+   /// <param name="database">Database facade.</param>
+   /// <param name="nameLease">Leased table name that will be disposed along with the temp table.</param>
+   /// <param name="dropTableOnDispose">Indication whether to drop the temp table on dispose or not.</param>
+   public SqliteTempTableReference(IDiagnosticsLogger<DbLoggerCategory.Query> logger,
+                                   ISqlGenerationHelper sqlGenerationHelper,
+                                   string tableName,
+                                   DatabaseFacade database,
+                                   ITempTableNameLease nameLease,
+                                   bool dropTableOnDispose)
    {
-      private readonly IDiagnosticsLogger<DbLoggerCategory.Query> _logger;
-      private readonly ISqlGenerationHelper _sqlGenerationHelper;
-      private readonly DatabaseFacade _database;
-      private readonly ITempTableNameLease _nameLease;
-      private readonly bool _dropTableOnDispose;
+      Name = tableName ?? throw new ArgumentNullException(nameof(tableName));
+      _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+      _sqlGenerationHelper = sqlGenerationHelper ?? throw new ArgumentNullException(nameof(sqlGenerationHelper));
+      _database = database ?? throw new ArgumentNullException(nameof(database));
+      _nameLease = nameLease ?? throw new ArgumentNullException(nameof(nameLease));
+      _dropTableOnDispose = dropTableOnDispose;
+   }
 
-      /// <inheritdoc />
-      public string Name { get; }
-
-      /// <summary>
-      /// Initializes new instance of <see cref="SqliteTempTableReference"/>.
-      /// </summary>
-      /// <param name="logger">Logger</param>
-      /// <param name="sqlGenerationHelper">SQL generation helper.</param>
-      /// <param name="tableName">The name of the temp table.</param>
-      /// <param name="database">Database facade.</param>
-      /// <param name="nameLease">Leased table name that will be disposed along with the temp table.</param>
-      /// <param name="dropTableOnDispose">Indication whether to drop the temp table on dispose or not.</param>
-      public SqliteTempTableReference(IDiagnosticsLogger<DbLoggerCategory.Query> logger,
-                                      ISqlGenerationHelper sqlGenerationHelper,
-                                      string tableName,
-                                      DatabaseFacade database,
-                                      ITempTableNameLease nameLease,
-                                      bool dropTableOnDispose)
+   /// <inheritdoc />
+   public void Dispose()
+   {
+      try
       {
-         Name = tableName ?? throw new ArgumentNullException(nameof(tableName));
-         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-         _sqlGenerationHelper = sqlGenerationHelper ?? throw new ArgumentNullException(nameof(sqlGenerationHelper));
-         _database = database ?? throw new ArgumentNullException(nameof(database));
-         _nameLease = nameLease ?? throw new ArgumentNullException(nameof(nameLease));
-         _dropTableOnDispose = dropTableOnDispose;
+         if (!_dropTableOnDispose || _database.GetDbConnection().State != ConnectionState.Open)
+            return;
+
+         _database.ExecuteSqlRaw($"DROP TABLE IF EXISTS {_sqlGenerationHelper.DelimitIdentifier(Name, "temp")}");
+         _database.CloseConnection();
       }
-
-      /// <inheritdoc />
-      public void Dispose()
+      catch (ObjectDisposedException ex)
       {
-         try
-         {
-            if (!_dropTableOnDispose || _database.GetDbConnection().State != ConnectionState.Open)
-               return;
-
-            _database.ExecuteSqlRaw($"DROP TABLE IF EXISTS {_sqlGenerationHelper.DelimitIdentifier(Name, "temp")}");
-            _database.CloseConnection();
-         }
-         catch (ObjectDisposedException ex)
-         {
-            _logger.Logger.LogWarning(ex, $"Trying to dispose of the temp table reference '{Name}' after the corresponding DbContext has been disposed.");
-         }
-         finally
-         {
-            _nameLease.Dispose();
-         }
+         _logger.Logger.LogWarning(ex, $"Trying to dispose of the temp table reference '{Name}' after the corresponding DbContext has been disposed.");
       }
-
-      /// <inheritdoc />
-      public async ValueTask DisposeAsync()
+      finally
       {
-         try
-         {
-            if (!_dropTableOnDispose || _database.GetDbConnection().State != ConnectionState.Open)
-               return;
+         _nameLease.Dispose();
+      }
+   }
 
-            await _database.ExecuteSqlRawAsync($"DROP TABLE IF EXISTS {_sqlGenerationHelper.DelimitIdentifier(Name, "temp")}").ConfigureAwait(false);
-            await _database.CloseConnectionAsync().ConfigureAwait(false);
-         }
-         catch (ObjectDisposedException ex)
-         {
-            _logger.Logger.LogWarning(ex, $"Trying to dispose of the temp table reference '{Name}' after the corresponding DbContext has been disposed.");
-         }
-         finally
-         {
-            _nameLease.Dispose();
-         }
+   /// <inheritdoc />
+   public async ValueTask DisposeAsync()
+   {
+      try
+      {
+         if (!_dropTableOnDispose || _database.GetDbConnection().State != ConnectionState.Open)
+            return;
+
+         await _database.ExecuteSqlRawAsync($"DROP TABLE IF EXISTS {_sqlGenerationHelper.DelimitIdentifier(Name, "temp")}").ConfigureAwait(false);
+         await _database.CloseConnectionAsync().ConfigureAwait(false);
+      }
+      catch (ObjectDisposedException ex)
+      {
+         _logger.Logger.LogWarning(ex, $"Trying to dispose of the temp table reference '{Name}' after the corresponding DbContext has been disposed.");
+      }
+      finally
+      {
+         _nameLease.Dispose();
       }
    }
 }

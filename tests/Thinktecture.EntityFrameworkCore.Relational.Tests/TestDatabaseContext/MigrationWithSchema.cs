@@ -2,26 +2,25 @@ using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Thinktecture.EntityFrameworkCore;
 
-namespace Thinktecture.TestDatabaseContext
+namespace Thinktecture.TestDatabaseContext;
+
+public class MigrationWithSchema : Migration, IDbDefaultSchema
 {
-   public class MigrationWithSchema : Migration, IDbDefaultSchema
+   /// <inheritdoc />
+   public string? Schema { get; }
+
+   public MigrationWithSchema(IDbDefaultSchema? schema)
    {
-      /// <inheritdoc />
-      public string? Schema { get; }
+      Schema = schema?.Schema;
+   }
 
-      public MigrationWithSchema(IDbDefaultSchema? schema)
-      {
-         Schema = schema?.Schema;
-      }
+   protected override void Up(MigrationBuilder migrationBuilder)
+   {
+      migrationBuilder.AddColumn<string>("Table1", "Col1");
+   }
 
-      protected override void Up(MigrationBuilder migrationBuilder)
-      {
-         migrationBuilder.AddColumn<string>("Table1", "Col1");
-      }
-
-      protected override void Down(MigrationBuilder migrationBuilder)
-      {
-         migrationBuilder.DropColumn("Table1", "Col1");
-      }
+   protected override void Down(MigrationBuilder migrationBuilder)
+   {
+      migrationBuilder.DropColumn("Table1", "Col1");
    }
 }

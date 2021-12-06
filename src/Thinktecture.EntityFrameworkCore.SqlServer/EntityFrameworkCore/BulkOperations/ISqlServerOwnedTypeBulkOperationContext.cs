@@ -1,6 +1,5 @@
-namespace Thinktecture.EntityFrameworkCore.BulkOperations
+namespace Thinktecture.EntityFrameworkCore.BulkOperations;
+
+internal interface ISqlServerOwnedTypeBulkOperationContext : ISqlServerBulkOperationContext, IOwnedTypeBulkOperationContext
 {
-   internal interface ISqlServerOwnedTypeBulkOperationContext : ISqlServerBulkOperationContext, IOwnedTypeBulkOperationContext
-   {
-   }
 }

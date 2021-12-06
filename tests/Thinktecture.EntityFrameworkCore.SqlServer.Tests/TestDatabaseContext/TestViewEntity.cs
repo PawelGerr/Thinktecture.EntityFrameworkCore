@@ -1,10 +1,9 @@
 using System;
 
-namespace Thinktecture.TestDatabaseContext
+namespace Thinktecture.TestDatabaseContext;
+
+public class TestViewEntity
 {
-   public class TestViewEntity
-   {
-      public Guid Id { get; set; }
-      public string? Name { get; set; }
-   }
+   public Guid Id { get; set; }
+   public string? Name { get; set; }
 }

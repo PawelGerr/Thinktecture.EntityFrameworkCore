@@ -1,14 +1,13 @@
-namespace Thinktecture.EntityFrameworkCore.Query
+namespace Thinktecture.EntityFrameworkCore.Query;
+
+/// <summary>
+/// Factory for creation of <see cref="ITenantDatabaseProvider"/>.
+/// </summary>
+public interface ITenantDatabaseProviderFactory
 {
    /// <summary>
-   /// Factory for creation of <see cref="ITenantDatabaseProvider"/>.
+   /// Creates an instance of <see cref="ITenantDatabaseProvider"/>.
    /// </summary>
-   public interface ITenantDatabaseProviderFactory
-   {
-      /// <summary>
-      /// Creates an instance of <see cref="ITenantDatabaseProvider"/>.
-      /// </summary>
-      /// <returns>An instance of <see cref="ITenantDatabaseProvider"/>.</returns>
-      ITenantDatabaseProvider Create();
-   }
+   /// <returns>An instance of <see cref="ITenantDatabaseProvider"/>.</returns>
+   ITenantDatabaseProvider Create();
 }

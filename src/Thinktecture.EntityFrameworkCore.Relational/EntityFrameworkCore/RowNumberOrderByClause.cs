@@ -1,12 +1,11 @@
-namespace Thinktecture.EntityFrameworkCore
+namespace Thinktecture.EntityFrameworkCore;
+
+/// <summary>
+/// Helper class to attach extension methods to.
+/// </summary>
+public sealed class RowNumberOrderByClause
 {
-   /// <summary>
-   /// Helper class to attach extension methods to.
-   /// </summary>
-   public sealed class RowNumberOrderByClause
+   private RowNumberOrderByClause()
    {
-      private RowNumberOrderByClause()
-      {
-      }
    }
 }

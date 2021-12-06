@@ -1,18 +1,17 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 
-namespace Thinktecture.Database
-{
-   public class DemoDbContextDesignTimeDbContextFactory : IDesignTimeDbContextFactory<DemoDbContext>
-   {
-      public DemoDbContext CreateDbContext(string[] args)
-      {
-         var options = new DbContextOptionsBuilder<DemoDbContext>()
-                       .UseSqlServer(SamplesContext.Instance.ConnectionString)
-                       .AddSchemaRespectingComponents()
-                       .Options;
+namespace Thinktecture.Database;
 
-         return new DemoDbContext(options);
-      }
+public class DemoDbContextDesignTimeDbContextFactory : IDesignTimeDbContextFactory<DemoDbContext>
+{
+   public DemoDbContext CreateDbContext(string[] args)
+   {
+      var options = new DbContextOptionsBuilder<DemoDbContext>()
+                    .UseSqlServer(SamplesContext.Instance.ConnectionString)
+                    .AddSchemaRespectingComponents()
+                    .Options;
+
+      return new DemoDbContext(options);
    }
 }

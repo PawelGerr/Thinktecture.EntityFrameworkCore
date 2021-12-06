@@ -5,63 +5,62 @@ using Thinktecture.TestDatabaseContext;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Thinktecture.EntityFrameworkCore.Storage.NestedDbContextTransactionTests
+namespace Thinktecture.EntityFrameworkCore.Storage.NestedDbContextTransactionTests;
+
+public class Dispose : NestedRelationalTransactionManagerTestBase
 {
-   public class Dispose : NestedRelationalTransactionManagerTestBase
+   public Dispose(ITestOutputHelper testOutputHelper)
+      : base(testOutputHelper, MigrationExecutionStrategies.EnsureCreated)
    {
-      public Dispose(ITestOutputHelper testOutputHelper)
-         : base(testOutputHelper, MigrationExecutionStrategies.EnsureCreated)
-      {
-      }
+   }
 
-      [Fact]
-      public void Should_rollback_uncompleted_root_transaction()
-      {
-         var rootTx = SUT.BeginTransaction();
-         ActDbContext.Add(new TestEntity());
-         ActDbContext.SaveChanges();
+   [Fact]
+   public void Should_rollback_uncompleted_root_transaction()
+   {
+      var rootTx = SUT.BeginTransaction();
+      ActDbContext.Add(new TestEntity());
+      ActDbContext.SaveChanges();
 
-         rootTx.Dispose();
+      rootTx.Dispose();
 
-         SUT.CurrentTransaction.Should().BeNull();
-         IsTransactionUsable(rootTx.GetDbTransaction()).Should().BeFalse();
-         AssertDbContext.TestEntities.Should().HaveCount(0);
-      }
+      SUT.CurrentTransaction.Should().BeNull();
+      IsTransactionUsable(rootTx.GetDbTransaction()).Should().BeFalse();
+      AssertDbContext.TestEntities.Should().HaveCount(0);
+   }
 
-      [Fact]
-      public void Should_do_nothing_when_disposing_multiple_times()
-      {
-         var rootTx = SUT.BeginTransaction();
-         ActDbContext.Add(new TestEntity());
-         ActDbContext.SaveChanges();
+   [Fact]
+   public void Should_do_nothing_when_disposing_multiple_times()
+   {
+      var rootTx = SUT.BeginTransaction();
+      ActDbContext.Add(new TestEntity());
+      ActDbContext.SaveChanges();
 
-         rootTx.Dispose();
-         rootTx.Dispose();
+      rootTx.Dispose();
+      rootTx.Dispose();
 
-         SUT.CurrentTransaction.Should().BeNull();
-         IsTransactionUsable(rootTx.GetDbTransaction()).Should().BeFalse();
-         AssertDbContext.TestEntities.Should().HaveCount(0);
-      }
+      SUT.CurrentTransaction.Should().BeNull();
+      IsTransactionUsable(rootTx.GetDbTransaction()).Should().BeFalse();
+      AssertDbContext.TestEntities.Should().HaveCount(0);
+   }
 
-      [Fact]
-      public void Should_rollback_uncompleted_child_transaction()
-      {
-         var rootTx = SUT.BeginTransaction();
-         var childTx = SUT.BeginTransaction();
-         ActDbContext.Add(new TestEntity());
-         ActDbContext.SaveChanges();
+   [Fact]
+   public void Should_rollback_uncompleted_child_transaction()
+   {
+      var rootTx = SUT.BeginTransaction();
+      var childTx = SUT.BeginTransaction();
+      ActDbContext.Add(new TestEntity());
+      ActDbContext.SaveChanges();
 
-         childTx.Dispose();
+      childTx.Dispose();
 
-         SUT.CurrentTransaction.Should().Be(rootTx);
-         IsTransactionUsable(rootTx.GetDbTransaction()).Should().BeTrue();
-         AssertDbContext.TestEntities.Should().HaveCount(1);
+      SUT.CurrentTransaction.Should().Be(rootTx);
+      IsTransactionUsable(rootTx.GetDbTransaction()).Should().BeTrue();
+      AssertDbContext.TestEntities.Should().HaveCount(1);
 
-         rootTx.Dispose();
+      rootTx.Dispose();
 
-         SUT.CurrentTransaction.Should().BeNull();
-         IsTransactionUsable(rootTx.GetDbTransaction()).Should().BeFalse();
-         AssertDbContext.TestEntities.Should().HaveCount(0);
-      }
+      SUT.CurrentTransaction.Should().BeNull();
+      IsTransactionUsable(rootTx.GetDbTransaction()).Should().BeFalse();
+      AssertDbContext.TestEntities.Should().HaveCount(0);
    }
 }

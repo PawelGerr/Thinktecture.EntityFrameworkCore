@@ -1,30 +1,29 @@
 using System;
 using System.Reflection;
 
-namespace Thinktecture.EntityFrameworkCore.BulkOperations
+namespace Thinktecture.EntityFrameworkCore.BulkOperations;
+
+/// <summary>
+/// Options for bulk insert into temp tables.
+/// </summary>
+public sealed class SqlServerTempTableBulkInsertOptions : SqlServerTempTableBulkOperationOptions
 {
    /// <summary>
-   /// Options for bulk insert into temp tables.
+   /// Gets properties to insert.
    /// </summary>
-   public sealed class SqlServerTempTableBulkInsertOptions : SqlServerTempTableBulkOperationOptions
+   /// <returns>A collection of <see cref="MemberInfo"/>.</returns>
+   public new IEntityPropertiesProvider? PropertiesToInsert
    {
-      /// <summary>
-      /// Gets properties to insert.
-      /// </summary>
-      /// <returns>A collection of <see cref="MemberInfo"/>.</returns>
-      public new IEntityPropertiesProvider? PropertiesToInsert
-      {
-         get => base.PropertiesToInsert;
-         set => base.PropertiesToInsert = value;
-      }
+      get => base.PropertiesToInsert;
+      set => base.PropertiesToInsert = value;
+   }
 
-      /// <summary>
-      /// Initializes new instance of <see cref="SqlServerTempTableBulkInsertOptions"/>.
-      /// </summary>
-      /// <param name="optionsToInitializeFrom">Options to initialize from.</param>
-      public SqlServerTempTableBulkInsertOptions(ITempTableBulkInsertOptions? optionsToInitializeFrom = null)
-         : base(false, optionsToInitializeFrom)
-      {
-      }
+   /// <summary>
+   /// Initializes new instance of <see cref="SqlServerTempTableBulkInsertOptions"/>.
+   /// </summary>
+   /// <param name="optionsToInitializeFrom">Options to initialize from.</param>
+   public SqlServerTempTableBulkInsertOptions(ITempTableBulkInsertOptions? optionsToInitializeFrom = null)
+      : base(false, optionsToInitializeFrom)
+   {
    }
 }

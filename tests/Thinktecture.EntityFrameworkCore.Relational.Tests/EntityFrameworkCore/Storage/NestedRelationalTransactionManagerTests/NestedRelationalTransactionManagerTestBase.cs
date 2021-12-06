@@ -5,37 +5,36 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
 using Xunit.Abstractions;
 
-namespace Thinktecture.EntityFrameworkCore.Storage.NestedRelationalTransactionManagerTests
+namespace Thinktecture.EntityFrameworkCore.Storage.NestedRelationalTransactionManagerTests;
+
+public abstract class NestedRelationalTransactionManagerTestBase : IntegrationTestsBase
 {
-   public abstract class NestedRelationalTransactionManagerTestBase : IntegrationTestsBase
+   protected NestedRelationalTransactionManager SUT => (NestedRelationalTransactionManager)ActDbContext.GetService<IDbContextTransactionManager>();
+
+   protected NestedRelationalTransactionManagerTestBase(
+      ITestOutputHelper testOutputHelper,
+      IMigrationExecutionStrategy? migrationExecutionStrategy = null)
+      : base(testOutputHelper, migrationExecutionStrategy ?? MigrationExecutionStrategies.NoMigration)
    {
-      protected NestedRelationalTransactionManager SUT => (NestedRelationalTransactionManager)ActDbContext.GetService<IDbContextTransactionManager>();
+      ConfigureOptionsBuilder = builder => builder.AddNestedTransactionSupport();
+   }
 
-      protected NestedRelationalTransactionManagerTestBase(
-         ITestOutputHelper testOutputHelper,
-         IMigrationExecutionStrategy? migrationExecutionStrategy = null)
-         : base(testOutputHelper, migrationExecutionStrategy ?? MigrationExecutionStrategies.NoMigration)
+   protected bool IsTransactionUsable(DbTransaction tx)
+   {
+      try
       {
-         ConfigureOptionsBuilder = builder => builder.AddNestedTransactionSupport();
+         var connection = ActDbContext.Database.GetDbConnection();
+         var command = connection.CreateCommand();
+         command.Transaction = tx;
+         command.CommandText = "PRAGMA user_version;";
+         command.ExecuteNonQuery();
+      }
+      catch (InvalidOperationException ex)
+      {
+         if (ex.Message == "The transaction object is not associated with the same connection object as this command.")
+            return false;
       }
 
-      protected bool IsTransactionUsable(DbTransaction tx)
-      {
-         try
-         {
-            var connection = ActDbContext.Database.GetDbConnection();
-            var command = connection.CreateCommand();
-            command.Transaction = tx;
-            command.CommandText = "PRAGMA user_version;";
-            command.ExecuteNonQuery();
-         }
-         catch (InvalidOperationException ex)
-         {
-            if (ex.Message == "The transaction object is not associated with the same connection object as this command.")
-               return false;
-         }
-
-         return true;
-      }
+      return true;
    }
 }

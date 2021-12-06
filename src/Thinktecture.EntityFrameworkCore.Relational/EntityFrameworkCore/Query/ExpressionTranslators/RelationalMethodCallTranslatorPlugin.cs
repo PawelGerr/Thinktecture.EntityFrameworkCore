@@ -4,30 +4,29 @@ using System.Linq;
 using Microsoft.EntityFrameworkCore.Query;
 using Thinktecture.EntityFrameworkCore.Infrastructure;
 
-namespace Thinktecture.EntityFrameworkCore.Query.ExpressionTranslators
+namespace Thinktecture.EntityFrameworkCore.Query.ExpressionTranslators;
+
+/// <summary>
+/// Plugin registering method translators.
+/// </summary>
+public sealed class RelationalMethodCallTranslatorPlugin : IMethodCallTranslatorPlugin
 {
+   /// <inheritdoc />
+   public IEnumerable<IMethodCallTranslator> Translators { get; }
+
    /// <summary>
-   /// Plugin registering method translators.
+   /// Initializes new instance of <see cref="RelationalMethodCallTranslatorPlugin"/>.
    /// </summary>
-   public sealed class RelationalMethodCallTranslatorPlugin : IMethodCallTranslatorPlugin
+   public RelationalMethodCallTranslatorPlugin(RelationalDbContextOptionsExtension extension)
    {
-      /// <inheritdoc />
-      public IEnumerable<IMethodCallTranslator> Translators { get; }
+      if (extension == null)
+         throw new ArgumentNullException(nameof(extension));
 
-      /// <summary>
-      /// Initializes new instance of <see cref="RelationalMethodCallTranslatorPlugin"/>.
-      /// </summary>
-      public RelationalMethodCallTranslatorPlugin(RelationalDbContextOptionsExtension extension)
-      {
-         if (extension == null)
-            throw new ArgumentNullException(nameof(extension));
+      var translators = new List<IMethodCallTranslator>();
 
-         var translators = new List<IMethodCallTranslator>();
+      if (extension.AddRowNumberSupport)
+         translators.Add(new RowNumberTranslator());
 
-         if (extension.AddRowNumberSupport)
-            translators.Add(new RowNumberTranslator());
-
-         Translators = translators;
-      }
+      Translators = translators;
    }
 }

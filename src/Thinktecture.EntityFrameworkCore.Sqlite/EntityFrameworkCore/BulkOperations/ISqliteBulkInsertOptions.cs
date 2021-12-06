@@ -1,14 +1,13 @@
-namespace Thinktecture.EntityFrameworkCore.BulkOperations
+namespace Thinktecture.EntityFrameworkCore.BulkOperations;
+
+/// <summary>
+/// Bulk insert options for SQLite.
+/// </summary>
+public interface ISqliteBulkInsertOptions : IBulkInsertOptions
 {
    /// <summary>
-   /// Bulk insert options for SQLite.
+   /// Behavior for auto-increment columns.
+   /// Default is <see cref="SqliteAutoIncrementBehavior.SetZeroToNull"/>
    /// </summary>
-   public interface ISqliteBulkInsertOptions : IBulkInsertOptions
-   {
-      /// <summary>
-      /// Behavior for auto-increment columns.
-      /// Default is <see cref="SqliteAutoIncrementBehavior.SetZeroToNull"/>
-      /// </summary>
-      SqliteAutoIncrementBehavior AutoIncrementBehavior { get; }
-   }
+   SqliteAutoIncrementBehavior AutoIncrementBehavior { get; }
 }

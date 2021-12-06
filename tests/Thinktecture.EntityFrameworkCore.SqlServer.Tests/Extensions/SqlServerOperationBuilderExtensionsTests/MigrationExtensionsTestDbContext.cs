@@ -3,45 +3,45 @@ using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using Thinktecture.TestDatabaseContext;
 
-namespace Thinktecture.Extensions.SqlServerOperationBuilderExtensionsTests
+namespace Thinktecture.Extensions.SqlServerOperationBuilderExtensionsTests;
+
+public class MigrationExtensionsTestDbContext : DbContext
 {
-   public class MigrationExtensionsTestDbContext : DbContext
+   public MigrationExtensionsTestDbContext(DbContextOptions<MigrationExtensionsTestDbContext> options)
+      : base(options)
    {
-      public MigrationExtensionsTestDbContext(DbContextOptions<MigrationExtensionsTestDbContext> options)
-         : base(options)
-      {
-      }
+   }
 
-      protected override void OnModelCreating(ModelBuilder modelBuilder)
-      {
-         base.OnModelCreating(modelBuilder);
+   protected override void OnModelCreating(ModelBuilder modelBuilder)
+   {
+      base.OnModelCreating(modelBuilder);
 
-         modelBuilder.Entity<InformationSchemaColumn>().HasNoKey();
-         modelBuilder.Entity<SysIndex>().HasNoKey();
-         modelBuilder.Entity<SysIndexColumn>().HasNoKey();
-         modelBuilder.Entity<UniqueConstraint>().HasNoKey();
-      }
+      modelBuilder.Entity<InformationSchemaColumn>().HasNoKey();
+      modelBuilder.Entity<SysIndex>().HasNoKey();
+      modelBuilder.Entity<SysIndexColumn>().HasNoKey();
+      modelBuilder.Entity<UniqueConstraint>().HasNoKey();
+   }
 
-      public IQueryable<InformationSchemaColumn> GetTableColumns(string tableName)
-      {
-         if (tableName == null)
-            throw new ArgumentNullException(nameof(tableName));
+   public IQueryable<InformationSchemaColumn> GetTableColumns(string tableName)
+   {
+      if (tableName == null)
+         throw new ArgumentNullException(nameof(tableName));
 
-         return Set<InformationSchemaColumn>().FromSqlInterpolated($@"
+      return Set<InformationSchemaColumn>().FromSqlInterpolated($@"
 SELECT
    *
 FROM
    INFORMATION_SCHEMA.COLUMNS WITH (NOLOCK)
 WHERE
    OBJECT_ID(TABLE_NAME) = OBJECT_ID({tableName})");
-      }
+   }
 
-      public IQueryable<SysIndex> GetIndexes(string tableName)
-      {
-         if (tableName == null)
-            throw new ArgumentNullException(nameof(tableName));
+   public IQueryable<SysIndex> GetIndexes(string tableName)
+   {
+      if (tableName == null)
+         throw new ArgumentNullException(nameof(tableName));
 
-         return Set<SysIndex>().FromSqlInterpolated($@"
+      return Set<SysIndex>().FromSqlInterpolated($@"
 SELECT
    *
 FROM
@@ -49,14 +49,14 @@ FROM
 WHERE
    OBJECT_ID = OBJECT_ID({tableName})
    AND Index_Id <> 0");
-      }
+   }
 
-      public IQueryable<SysIndexColumn> GetIndexColumns(string tableName, int indexId)
-      {
-         if (tableName == null)
-            throw new ArgumentNullException(nameof(tableName));
+   public IQueryable<SysIndexColumn> GetIndexColumns(string tableName, int indexId)
+   {
+      if (tableName == null)
+         throw new ArgumentNullException(nameof(tableName));
 
-         return Set<SysIndexColumn>().FromSqlInterpolated($@"
+      return Set<SysIndexColumn>().FromSqlInterpolated($@"
 SELECT
    c.*
 FROM
@@ -67,15 +67,15 @@ FROM
 WHERE
 	i.object_id = OBJECT_ID({tableName})
    AND i.index_id = {indexId};");
-      }
+   }
 
 
-      public IQueryable<UniqueConstraint> GetUniqueConstraints(string constraintName)
-      {
-         if (constraintName == null)
-            throw new ArgumentNullException(nameof(constraintName));
+   public IQueryable<UniqueConstraint> GetUniqueConstraints(string constraintName)
+   {
+      if (constraintName == null)
+         throw new ArgumentNullException(nameof(constraintName));
 
-         return Set<UniqueConstraint>().FromSqlInterpolated($@"
+      return Set<UniqueConstraint>().FromSqlInterpolated($@"
 SELECT
    *
 FROM
@@ -83,6 +83,5 @@ FROM
 WHERE
    CONSTRAINT_TYPE = 'UNIQUE'
    AND CONSTRAINT_NAME = {constraintName};");
-      }
    }
 }

@@ -6,60 +6,59 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Thinktecture.EntityFrameworkCore.TempTables.NameSuffixing;
 
-namespace Thinktecture.EntityFrameworkCore.TempTables
+namespace Thinktecture.EntityFrameworkCore.TempTables;
+
+/// <summary>
+/// Re-uses the temp table names.
+/// </summary>
+public class ReusingTempTableNameProvider : ITempTableNameProvider
 {
    /// <summary>
-   /// Re-uses the temp table names.
+   /// An instance of <see cref="ReusingTempTableNameProvider"/>.
    /// </summary>
-   public class ReusingTempTableNameProvider : ITempTableNameProvider
+   public static readonly ITempTableNameProvider Instance = new ReusingTempTableNameProvider();
+
+   /// <inheritdoc />
+   public ITempTableNameLease LeaseName(DbContext ctx, IEntityType entityType)
    {
-      /// <summary>
-      /// An instance of <see cref="ReusingTempTableNameProvider"/>.
-      /// </summary>
-      public static readonly ITempTableNameProvider Instance = new ReusingTempTableNameProvider();
+      if (ctx == null)
+         throw new ArgumentNullException(nameof(ctx));
+      if (entityType == null)
+         throw new ArgumentNullException(nameof(entityType));
 
-      /// <inheritdoc />
-      public ITempTableNameLease LeaseName(DbContext ctx, IEntityType entityType)
+      var nameLeasing = ctx.GetService<TempTableSuffixLeasing>();
+      var suffixLease = nameLeasing.Lease(entityType);
+
+      try
       {
-         if (ctx == null)
-            throw new ArgumentNullException(nameof(ctx));
-         if (entityType == null)
-            throw new ArgumentNullException(nameof(entityType));
+         var tableName = entityType.GetTableName();
+         tableName = $"{tableName}_{suffixLease.Suffix}";
 
-         var nameLeasing = ctx.GetService<TempTableSuffixLeasing>();
-         var suffixLease = nameLeasing.Lease(entityType);
+         return new TempTableNameLease(tableName, suffixLease);
+      }
+      catch
+      {
+         suffixLease.Dispose();
+         throw;
+      }
+   }
 
-         try
-         {
-            var tableName = entityType.GetTableName();
-            tableName = $"{tableName}_{suffixLease.Suffix}";
+   private class TempTableNameLease : ITempTableNameLease
+   {
+      private TempTableSuffixLease _suffixLease;
 
-            return new TempTableNameLease(tableName, suffixLease);
-         }
-         catch
-         {
-            suffixLease.Dispose();
-            throw;
-         }
+      public string Name { get; }
+
+      public TempTableNameLease(string name, TempTableSuffixLease suffixLease)
+      {
+         Name = name ?? throw new ArgumentNullException(nameof(name));
+         _suffixLease = suffixLease;
       }
 
-      private class TempTableNameLease : ITempTableNameLease
+      public void Dispose()
       {
-         private TempTableSuffixLease _suffixLease;
-
-         public string Name { get; }
-
-         public TempTableNameLease(string name, TempTableSuffixLease suffixLease)
-         {
-            Name = name ?? throw new ArgumentNullException(nameof(name));
-            _suffixLease = suffixLease;
-         }
-
-         public void Dispose()
-         {
-            _suffixLease.Dispose();
-            _suffixLease = default;
-         }
+         _suffixLease.Dispose();
+         _suffixLease = default;
       }
    }
 }

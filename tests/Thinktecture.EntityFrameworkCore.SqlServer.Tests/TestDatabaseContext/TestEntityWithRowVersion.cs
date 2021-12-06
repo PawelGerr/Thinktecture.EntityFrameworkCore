@@ -1,11 +1,10 @@
 using System;
 
-namespace Thinktecture.TestDatabaseContext
+namespace Thinktecture.TestDatabaseContext;
+
+public class TestEntityWithRowVersion
 {
-   public class TestEntityWithRowVersion
-   {
-      public Guid Id { get; set; }
-      public string? Name { get; set; }
-      public long RowVersion { get; set; }
-   }
+   public Guid Id { get; set; }
+   public string? Name { get; set; }
+   public long RowVersion { get; set; }
 }

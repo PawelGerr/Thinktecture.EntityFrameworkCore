@@ -1,33 +1,32 @@
 using System.Collections.Generic;
 using Thinktecture.EntityFrameworkCore.Data;
 
-namespace Thinktecture.EntityFrameworkCore.BulkOperations
+namespace Thinktecture.EntityFrameworkCore.BulkOperations;
+
+/// <summary>
+/// Bulk operation context.
+/// </summary>
+public interface IBulkOperationContext
 {
    /// <summary>
-   /// Bulk operation context.
+   /// Factory for <see cref="IEntityDataReader{T}"/>.
    /// </summary>
-   public interface IBulkOperationContext
-   {
-      /// <summary>
-      /// Factory for <see cref="IEntityDataReader{T}"/>.
-      /// </summary>
-      IEntityDataReaderFactory ReaderFactory { get; }
+   IEntityDataReaderFactory ReaderFactory { get; }
 
-      /// <summary>
-      /// Properties participating in the bulk operation.
-      /// </summary>
-      IReadOnlyList<PropertyWithNavigations> Properties { get; }
+   /// <summary>
+   /// Properties participating in the bulk operation.
+   /// </summary>
+   IReadOnlyList<PropertyWithNavigations> Properties { get; }
 
-      /// <summary>
-      /// Indication whether there are properties that belongs to a different table.
-      /// </summary>
-      bool HasExternalProperties { get; }
+   /// <summary>
+   /// Indication whether there are properties that belongs to a different table.
+   /// </summary>
+   bool HasExternalProperties { get; }
 
-      /// <summary>
-      /// Gets bulk operation contexts for "external" properties, i.e. belonging to other tables.
-      /// </summary>
-      /// <param name="entities"></param>
-      /// <returns></returns>
-      IReadOnlyList<IOwnedTypeBulkOperationContext> GetContextsForExternalOwnedTypes(IReadOnlyList<object> entities);
-   }
+   /// <summary>
+   /// Gets bulk operation contexts for "external" properties, i.e. belonging to other tables.
+   /// </summary>
+   /// <param name="entities"></param>
+   /// <returns></returns>
+   IReadOnlyList<IOwnedTypeBulkOperationContext> GetContextsForExternalOwnedTypes(IReadOnlyList<object> entities);
 }

@@ -15,64 +15,63 @@ using Xunit.Abstractions;
 [assembly: SuppressMessage("ReSharper", "CA1816")]
 [assembly: SuppressMessage("ReSharper", "CA1822")]
 
-namespace Thinktecture
+namespace Thinktecture;
+
+public class IntegrationTestsBase : SqliteDbContextIntegrationTests<DbContextWithSchema>
 {
-   public class IntegrationTestsBase : SqliteDbContextIntegrationTests<DbContextWithSchema>
+   private static readonly ConcurrentDictionary<ITestOutputHelper, ILoggerFactory> _loggerFactoryCache = new();
+
+   protected Action<DbContextOptionsBuilder<DbContextWithSchema>>? ConfigureOptionsBuilder { get; set; }
+   protected Action<ModelBuilder>? ConfigureModel { get; set; }
+   protected string? Schema { get; set; }
+
+   protected IntegrationTestsBase(ITestOutputHelper testOutputHelper,
+                                  IMigrationExecutionStrategy? migrationExecutionStrategy = null)
+      : base(migrationExecutionStrategy ?? MigrationExecutionStrategies.NoMigration)
    {
-      private static readonly ConcurrentDictionary<ITestOutputHelper, ILoggerFactory> _loggerFactoryCache = new();
+      DisableModelCache = true;
 
-      protected Action<DbContextOptionsBuilder<DbContextWithSchema>>? ConfigureOptionsBuilder { get; set; }
-      protected Action<ModelBuilder>? ConfigureModel { get; set; }
-      protected string? Schema { get; set; }
+      var loggerFactory = CreateLoggerFactory(testOutputHelper);
+      UseLoggerFactory(loggerFactory);
+   }
 
-      protected IntegrationTestsBase(ITestOutputHelper testOutputHelper,
-                                     IMigrationExecutionStrategy? migrationExecutionStrategy = null)
-         : base(migrationExecutionStrategy ?? MigrationExecutionStrategies.NoMigration)
-      {
-         DisableModelCache = true;
+   protected override DbContextOptionsBuilder<DbContextWithSchema> CreateOptionsBuilder(DbConnection? connection)
+   {
+      var builder = base.CreateOptionsBuilder(connection);
+      ConfigureOptionsBuilder?.Invoke(builder);
 
-         var loggerFactory = CreateLoggerFactory(testOutputHelper);
-         UseLoggerFactory(loggerFactory);
-      }
+      return builder;
+   }
 
-      protected override DbContextOptionsBuilder<DbContextWithSchema> CreateOptionsBuilder(DbConnection? connection)
-      {
-         var builder = base.CreateOptionsBuilder(connection);
-         ConfigureOptionsBuilder?.Invoke(builder);
+   protected override DbContextWithSchema CreateContext(DbContextOptions<DbContextWithSchema> options)
+   {
+      return new(options, Schema) { ConfigureModel = ConfigureModel };
+   }
 
-         return builder;
-      }
+   private static ILoggerFactory CreateLoggerFactory(ITestOutputHelper testOutputHelper)
+   {
+      if (testOutputHelper == null)
+         throw new ArgumentNullException(nameof(testOutputHelper));
 
-      protected override DbContextWithSchema CreateContext(DbContextOptions<DbContextWithSchema> options)
-      {
-         return new(options, Schema) { ConfigureModel = ConfigureModel };
-      }
+      return _loggerFactoryCache.GetOrAdd(testOutputHelper, _ =>
+                                                            {
+                                                               var loggerConfig = new LoggerConfiguration()
+                                                                                  .WriteTo.TestOutput(testOutputHelper, outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}");
 
-      private static ILoggerFactory CreateLoggerFactory(ITestOutputHelper testOutputHelper)
-      {
-         if (testOutputHelper == null)
-            throw new ArgumentNullException(nameof(testOutputHelper));
+                                                               return new LoggerFactory()
+                                                                  .AddSerilog(loggerConfig.CreateLogger());
+                                                            });
+   }
 
-         return _loggerFactoryCache.GetOrAdd(testOutputHelper, _ =>
-                                                               {
-                                                                  var loggerConfig = new LoggerConfiguration()
-                                                                                     .WriteTo.TestOutput(testOutputHelper, outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}");
+   protected DbContextWithSchema CreateContextWithSchema(string schema)
+   {
+      var options = new DbContextOptionsBuilder<DbContextWithSchema>().Options;
+      return new DbContextWithSchema(options, schema) { ConfigureModel = ConfigureModel };
+   }
 
-                                                                  return new LoggerFactory()
-                                                                     .AddSerilog(loggerConfig.CreateLogger());
-                                                               });
-      }
-
-      protected DbContextWithSchema CreateContextWithSchema(string schema)
-      {
-         var options = new DbContextOptionsBuilder<DbContextWithSchema>().Options;
-         return new DbContextWithSchema(options, schema) { ConfigureModel = ConfigureModel };
-      }
-
-      protected DbContextWithoutSchema CreateContextWithoutSchema()
-      {
-         var options = new DbContextOptionsBuilder<DbContextWithoutSchema>().Options;
-         return new DbContextWithoutSchema(options) { ConfigureModel = ConfigureModel };
-      }
+   protected DbContextWithoutSchema CreateContextWithoutSchema()
+   {
+      var options = new DbContextOptionsBuilder<DbContextWithoutSchema>().Options;
+      return new DbContextWithoutSchema(options) { ConfigureModel = ConfigureModel };
    }
 }

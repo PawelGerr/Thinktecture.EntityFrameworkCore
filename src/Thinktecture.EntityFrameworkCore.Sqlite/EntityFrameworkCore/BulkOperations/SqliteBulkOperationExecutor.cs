@@ -17,398 +17,397 @@ using Thinktecture.EntityFrameworkCore.Data;
 using Thinktecture.EntityFrameworkCore.TempTables;
 using Thinktecture.Internal;
 
-namespace Thinktecture.EntityFrameworkCore.BulkOperations
+namespace Thinktecture.EntityFrameworkCore.BulkOperations;
+
+/// <summary>
+/// Executes bulk operations.
+/// </summary>
+// ReSharper disable once ClassNeverInstantiated.Global
+[SuppressMessage("ReSharper", "EF1001")]
+public sealed class
+   SqliteBulkOperationExecutor
+   : IBulkInsertExecutor, ITempTableBulkInsertExecutor, IBulkUpdateExecutor,
+     IBulkInsertOrUpdateExecutor, ITruncateTableExecutor
 {
-   /// <summary>
-   /// Executes bulk operations.
-   /// </summary>
-   // ReSharper disable once ClassNeverInstantiated.Global
-   [SuppressMessage("ReSharper", "EF1001")]
-   public sealed class
-      SqliteBulkOperationExecutor
-      : IBulkInsertExecutor, ITempTableBulkInsertExecutor, IBulkUpdateExecutor,
-        IBulkInsertOrUpdateExecutor, ITruncateTableExecutor
+   private readonly DbContext _ctx;
+   private readonly IDiagnosticsLogger<SqliteDbLoggerCategory.BulkOperation> _logger;
+   private readonly ISqlGenerationHelper _sqlGenerationHelper;
+
+   private static class EventIds
    {
-      private readonly DbContext _ctx;
-      private readonly IDiagnosticsLogger<SqliteDbLoggerCategory.BulkOperation> _logger;
-      private readonly ISqlGenerationHelper _sqlGenerationHelper;
+      public static readonly EventId Started = 0;
+      public static readonly EventId Finished = 1;
+   }
 
-      private static class EventIds
+   /// <summary>
+   /// Initializes new instance of <see cref="SqliteBulkOperationExecutor"/>.
+   /// </summary>
+   /// <param name="ctx">Current database context.</param>
+   /// <param name="logger">Logger.</param>
+   /// <param name="sqlGenerationHelper">SQL generation helper.</param>
+   public SqliteBulkOperationExecutor(
+      ICurrentDbContext ctx,
+      IDiagnosticsLogger<SqliteDbLoggerCategory.BulkOperation> logger,
+      ISqlGenerationHelper sqlGenerationHelper)
+   {
+      if (ctx == null)
+         throw new ArgumentNullException(nameof(ctx));
+
+      _ctx = ctx.Context ?? throw new ArgumentNullException(nameof(ctx));
+      _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+      _sqlGenerationHelper = sqlGenerationHelper ?? throw new ArgumentNullException(nameof(sqlGenerationHelper));
+   }
+
+   /// <inheritdoc />
+   IBulkInsertOptions IBulkInsertExecutor.CreateOptions(IEntityPropertiesProvider? propertiesToInsert)
+   {
+      return new SqliteBulkInsertOptions { PropertiesToInsert = propertiesToInsert };
+   }
+
+   /// <inheritdoc />
+   ITempTableBulkInsertOptions ITempTableBulkInsertExecutor.CreateOptions(IEntityPropertiesProvider? propertiesToInsert)
+   {
+      return new SqliteTempTableBulkInsertOptions { PropertiesToInsert = propertiesToInsert };
+   }
+
+   /// <inheritdoc />
+   IBulkUpdateOptions IBulkUpdateExecutor.CreateOptions(IEntityPropertiesProvider? propertiesToUpdate, IEntityPropertiesProvider? keyProperties)
+   {
+      return new SqliteBulkUpdateOptions
+             {
+                PropertiesToUpdate = propertiesToUpdate,
+                KeyProperties = keyProperties
+             };
+   }
+
+   /// <inheritdoc />
+   IBulkInsertOrUpdateOptions IBulkInsertOrUpdateExecutor.CreateOptions(
+      IEntityPropertiesProvider? propertiesToInsert,
+      IEntityPropertiesProvider? propertiesToUpdate,
+      IEntityPropertiesProvider? keyProperties)
+   {
+      return new SqliteBulkInsertOrUpdateOptions
+             {
+                PropertiesToInsert = propertiesToInsert,
+                PropertiesToUpdate = propertiesToUpdate,
+                KeyProperties = keyProperties
+             };
+   }
+
+   /// <inheritdoc />
+   public Task BulkInsertAsync<T>(
+      IEnumerable<T> entities,
+      IBulkInsertOptions options,
+      CancellationToken cancellationToken = default)
+      where T : class
+   {
+      var entityType = _ctx.Model.GetEntityType(typeof(T));
+      var tableName = entityType.GetTableName() ?? throw new InvalidOperationException($"The entity '{entityType.Name}' has no table name.");
+
+      return BulkInsertAsync(entityType, entities, entityType.GetSchema(), tableName, options, cancellationToken);
+   }
+
+   private async Task BulkInsertAsync<T>(
+      IEntityType entityType,
+      IEnumerable<T> entities,
+      string? schema,
+      string tableName,
+      IBulkInsertOptions options,
+      CancellationToken cancellationToken = default)
+      where T : class
+   {
+      if (entities == null)
+         throw new ArgumentNullException(nameof(entities));
+      if (tableName == null)
+         throw new ArgumentNullException(nameof(tableName));
+      if (options == null)
+         throw new ArgumentNullException(nameof(options));
+
+      if (!(options is ISqliteBulkInsertOptions sqliteOptions))
+         sqliteOptions = new SqliteBulkInsertOptions(options);
+
+      var properties = sqliteOptions.PropertiesToInsert.DeterminePropertiesForInsert(entityType, null);
+      var ctx = new BulkInsertContext(_ctx.GetService<IEntityDataReaderFactory>(),
+                                      (SqliteConnection)_ctx.Database.GetDbConnection(),
+                                      sqliteOptions,
+                                      properties);
+
+      EnsureNoSeparateOwnedTypesInsideCollectionOwnedType(properties);
+
+      await ExecuteBulkOperationAsync(entities, schema, tableName, ctx, cancellationToken);
+   }
+
+   private static void EnsureNoSeparateOwnedTypesInsideCollectionOwnedType(IReadOnlyList<PropertyWithNavigations> properties)
+   {
+      foreach (var property in properties)
       {
-         public static readonly EventId Started = 0;
-         public static readonly EventId Finished = 1;
-      }
+         INavigation? collection = null;
 
-      /// <summary>
-      /// Initializes new instance of <see cref="SqliteBulkOperationExecutor"/>.
-      /// </summary>
-      /// <param name="ctx">Current database context.</param>
-      /// <param name="logger">Logger.</param>
-      /// <param name="sqlGenerationHelper">SQL generation helper.</param>
-      public SqliteBulkOperationExecutor(
-         ICurrentDbContext ctx,
-         IDiagnosticsLogger<SqliteDbLoggerCategory.BulkOperation> logger,
-         ISqlGenerationHelper sqlGenerationHelper)
-      {
-         if (ctx == null)
-            throw new ArgumentNullException(nameof(ctx));
-
-         _ctx = ctx.Context ?? throw new ArgumentNullException(nameof(ctx));
-         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-         _sqlGenerationHelper = sqlGenerationHelper ?? throw new ArgumentNullException(nameof(sqlGenerationHelper));
-      }
-
-      /// <inheritdoc />
-      IBulkInsertOptions IBulkInsertExecutor.CreateOptions(IEntityPropertiesProvider? propertiesToInsert)
-      {
-         return new SqliteBulkInsertOptions { PropertiesToInsert = propertiesToInsert };
-      }
-
-      /// <inheritdoc />
-      ITempTableBulkInsertOptions ITempTableBulkInsertExecutor.CreateOptions(IEntityPropertiesProvider? propertiesToInsert)
-      {
-         return new SqliteTempTableBulkInsertOptions { PropertiesToInsert = propertiesToInsert };
-      }
-
-      /// <inheritdoc />
-      IBulkUpdateOptions IBulkUpdateExecutor.CreateOptions(IEntityPropertiesProvider? propertiesToUpdate, IEntityPropertiesProvider? keyProperties)
-      {
-         return new SqliteBulkUpdateOptions
-                {
-                   PropertiesToUpdate = propertiesToUpdate,
-                   KeyProperties = keyProperties
-                };
-      }
-
-      /// <inheritdoc />
-      IBulkInsertOrUpdateOptions IBulkInsertOrUpdateExecutor.CreateOptions(
-         IEntityPropertiesProvider? propertiesToInsert,
-         IEntityPropertiesProvider? propertiesToUpdate,
-         IEntityPropertiesProvider? keyProperties)
-      {
-         return new SqliteBulkInsertOrUpdateOptions
-                {
-                   PropertiesToInsert = propertiesToInsert,
-                   PropertiesToUpdate = propertiesToUpdate,
-                   KeyProperties = keyProperties
-                };
-      }
-
-      /// <inheritdoc />
-      public Task BulkInsertAsync<T>(
-         IEnumerable<T> entities,
-         IBulkInsertOptions options,
-         CancellationToken cancellationToken = default)
-         where T : class
-      {
-         var entityType = _ctx.Model.GetEntityType(typeof(T));
-         var tableName = entityType.GetTableName() ?? throw new InvalidOperationException($"The entity '{entityType.Name}' has no table name.");
-
-         return BulkInsertAsync(entityType, entities, entityType.GetSchema(), tableName, options, cancellationToken);
-      }
-
-      private async Task BulkInsertAsync<T>(
-         IEntityType entityType,
-         IEnumerable<T> entities,
-         string? schema,
-         string tableName,
-         IBulkInsertOptions options,
-         CancellationToken cancellationToken = default)
-         where T : class
-      {
-         if (entities == null)
-            throw new ArgumentNullException(nameof(entities));
-         if (tableName == null)
-            throw new ArgumentNullException(nameof(tableName));
-         if (options == null)
-            throw new ArgumentNullException(nameof(options));
-
-         if (!(options is ISqliteBulkInsertOptions sqliteOptions))
-            sqliteOptions = new SqliteBulkInsertOptions(options);
-
-         var properties = sqliteOptions.PropertiesToInsert.DeterminePropertiesForInsert(entityType, null);
-         var ctx = new BulkInsertContext(_ctx.GetService<IEntityDataReaderFactory>(),
-                                         (SqliteConnection)_ctx.Database.GetDbConnection(),
-                                         sqliteOptions,
-                                         properties);
-
-         EnsureNoSeparateOwnedTypesInsideCollectionOwnedType(properties);
-
-         await ExecuteBulkOperationAsync(entities, schema, tableName, ctx, cancellationToken);
-      }
-
-      private static void EnsureNoSeparateOwnedTypesInsideCollectionOwnedType(IReadOnlyList<PropertyWithNavigations> properties)
-      {
-         foreach (var property in properties)
+         foreach (var navigation in property.Navigations)
          {
-            INavigation? collection = null;
+            if (!navigation.IsInlined() && collection is not null)
+               throw new NotSupportedException($"Non-inlined (i.e. with its own table) nested owned type '{navigation.DeclaringEntityType.Name}.{navigation.Name}' inside another owned type collection '{collection.DeclaringEntityType.Name}.{collection.Name}' is not supported.");
 
-            foreach (var navigation in property.Navigations)
-            {
-               if (!navigation.IsInlined() && collection is not null)
-                  throw new NotSupportedException($"Non-inlined (i.e. with its own table) nested owned type '{navigation.DeclaringEntityType.Name}.{navigation.Name}' inside another owned type collection '{collection.DeclaringEntityType.Name}.{collection.Name}' is not supported.");
-
-               if (navigation.IsCollection)
-                  collection = navigation;
-            }
+            if (navigation.IsCollection)
+               collection = navigation;
          }
       }
+   }
 
-      /// <inheritdoc />
-      public async Task<int> BulkUpdateAsync<T>(
-         IEnumerable<T> entities,
-         IBulkUpdateOptions options,
-         CancellationToken cancellationToken = default)
-         where T : class
+   /// <inheritdoc />
+   public async Task<int> BulkUpdateAsync<T>(
+      IEnumerable<T> entities,
+      IBulkUpdateOptions options,
+      CancellationToken cancellationToken = default)
+      where T : class
+   {
+      if (entities == null)
+         throw new ArgumentNullException(nameof(entities));
+      if (options == null)
+         throw new ArgumentNullException(nameof(options));
+
+      var entityType = _ctx.Model.GetEntityType(typeof(T));
+
+      var ctx = new BulkUpdateContext(_ctx.GetService<IEntityDataReaderFactory>(),
+                                      (SqliteConnection)_ctx.Database.GetDbConnection(),
+                                      options.KeyProperties.DetermineKeyProperties(entityType, true),
+                                      options.PropertiesToUpdate.DeterminePropertiesForUpdate(entityType, null));
+      var tableName = entityType.GetTableName()
+                      ?? throw new Exception($"The entity '{entityType.Name}' has no table name.");
+
+      return await ExecuteBulkOperationAsync(entities, entityType.GetSchema(), tableName, ctx, cancellationToken);
+   }
+
+   /// <inheritdoc />
+   public async Task<int> BulkInsertOrUpdateAsync<T>(
+      IEnumerable<T> entities,
+      IBulkInsertOrUpdateOptions options,
+      CancellationToken cancellationToken = default)
+      where T : class
+   {
+      if (entities == null)
+         throw new ArgumentNullException(nameof(entities));
+      if (options == null)
+         throw new ArgumentNullException(nameof(options));
+
+      if (!(options is ISqliteBulkInsertOrUpdateOptions sqliteOptions))
+         sqliteOptions = new SqliteBulkInsertOrUpdateOptions(options);
+
+      var entityType = _ctx.Model.GetEntityType(typeof(T));
+      var ctx = new BulkInsertOrUpdateContext(_ctx.GetService<IEntityDataReaderFactory>(),
+                                              (SqliteConnection)_ctx.Database.GetDbConnection(),
+                                              sqliteOptions.KeyProperties.DetermineKeyProperties(entityType, true),
+                                              sqliteOptions.PropertiesToInsert.DeterminePropertiesForInsert(entityType, null),
+                                              sqliteOptions.PropertiesToUpdate.DeterminePropertiesForUpdate(entityType, true));
+      var tableName = entityType.GetTableName()
+                      ?? throw new Exception($"The entity '{entityType.Name}' has no table name.");
+
+      return await ExecuteBulkOperationAsync(entities, entityType.GetSchema(), tableName, ctx, cancellationToken);
+   }
+
+   private async Task<int> ExecuteBulkOperationAsync<T>(
+      IEnumerable<T> entities,
+      string? schema,
+      string tableName,
+      ISqliteBulkOperationContext bulkOperationContext,
+      CancellationToken cancellationToken)
+      where T : class
+   {
+      await _ctx.Database.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
+
+      try
       {
-         if (entities == null)
-            throw new ArgumentNullException(nameof(entities));
-         if (options == null)
-            throw new ArgumentNullException(nameof(options));
+         var tableIdentifier = _sqlGenerationHelper.DelimitIdentifier(tableName, schema);
 
-         var entityType = _ctx.Model.GetEntityType(typeof(T));
+         using var reader = bulkOperationContext.ReaderFactory.Create(_ctx, entities, bulkOperationContext.Properties, bulkOperationContext.HasExternalProperties);
+         var numberOfAffectedRows = await ExecuteBulkOperationAsync(reader, bulkOperationContext, tableIdentifier, cancellationToken).ConfigureAwait(false);
 
-         var ctx = new BulkUpdateContext(_ctx.GetService<IEntityDataReaderFactory>(),
-                                         (SqliteConnection)_ctx.Database.GetDbConnection(),
-                                         options.KeyProperties.DetermineKeyProperties(entityType, true),
-                                         options.PropertiesToUpdate.DeterminePropertiesForUpdate(entityType, null));
-         var tableName = entityType.GetTableName()
-                         ?? throw new Exception($"The entity '{entityType.Name}' has no table name.");
-
-         return await ExecuteBulkOperationAsync(entities, entityType.GetSchema(), tableName, ctx, cancellationToken);
-      }
-
-      /// <inheritdoc />
-      public async Task<int> BulkInsertOrUpdateAsync<T>(
-         IEnumerable<T> entities,
-         IBulkInsertOrUpdateOptions options,
-         CancellationToken cancellationToken = default)
-         where T : class
-      {
-         if (entities == null)
-            throw new ArgumentNullException(nameof(entities));
-         if (options == null)
-            throw new ArgumentNullException(nameof(options));
-
-         if (!(options is ISqliteBulkInsertOrUpdateOptions sqliteOptions))
-            sqliteOptions = new SqliteBulkInsertOrUpdateOptions(options);
-
-         var entityType = _ctx.Model.GetEntityType(typeof(T));
-         var ctx = new BulkInsertOrUpdateContext(_ctx.GetService<IEntityDataReaderFactory>(),
-                                                 (SqliteConnection)_ctx.Database.GetDbConnection(),
-                                                 sqliteOptions.KeyProperties.DetermineKeyProperties(entityType, true),
-                                                 sqliteOptions.PropertiesToInsert.DeterminePropertiesForInsert(entityType, null),
-                                                 sqliteOptions.PropertiesToUpdate.DeterminePropertiesForUpdate(entityType, true));
-         var tableName = entityType.GetTableName()
-                         ?? throw new Exception($"The entity '{entityType.Name}' has no table name.");
-
-         return await ExecuteBulkOperationAsync(entities, entityType.GetSchema(), tableName, ctx, cancellationToken);
-      }
-
-      private async Task<int> ExecuteBulkOperationAsync<T>(
-         IEnumerable<T> entities,
-         string? schema,
-         string tableName,
-         ISqliteBulkOperationContext bulkOperationContext,
-         CancellationToken cancellationToken)
-         where T : class
-      {
-         await _ctx.Database.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
-
-         try
+         if (bulkOperationContext.HasExternalProperties)
          {
-            var tableIdentifier = _sqlGenerationHelper.DelimitIdentifier(tableName, schema);
-
-            using var reader = bulkOperationContext.ReaderFactory.Create(_ctx, entities, bulkOperationContext.Properties, bulkOperationContext.HasExternalProperties);
-            var numberOfAffectedRows = await ExecuteBulkOperationAsync(reader, bulkOperationContext, tableIdentifier, cancellationToken).ConfigureAwait(false);
-
-            if (bulkOperationContext.HasExternalProperties)
-            {
-               var readEntities = reader.GetReadEntities();
-               numberOfAffectedRows += await ExecuteBulkOperationForSeparatedOwnedEntitiesAsync(readEntities, bulkOperationContext, cancellationToken);
-            }
-
-            return numberOfAffectedRows;
-         }
-         finally
-         {
-            await _ctx.Database.CloseConnectionAsync().ConfigureAwait(false);
-         }
-      }
-
-      private async Task<int> ExecuteBulkOperationForSeparatedOwnedEntitiesAsync(
-         IReadOnlyList<object> parentEntities,
-         ISqliteBulkOperationContext parentBulkOperationContext,
-         CancellationToken cancellationToken)
-      {
-         if (parentEntities.Count == 0)
-            return 0;
-
-         var numberOfAffectedRows = 0;
-
-         foreach (var childContext in parentBulkOperationContext.GetChildren(parentEntities))
-         {
-            var childTableName = childContext.EntityType.GetTableName()
-                                 ?? throw new InvalidOperationException($"The entity '{childContext.EntityType.Name}' has no table name.");
-
-            numberOfAffectedRows += await ExecuteBulkOperationAsync(childContext.Entities,
-                                                                    childContext.EntityType.GetSchema(),
-                                                                    childTableName,
-                                                                    childContext,
-                                                                    cancellationToken).ConfigureAwait(false);
+            var readEntities = reader.GetReadEntities();
+            numberOfAffectedRows += await ExecuteBulkOperationForSeparatedOwnedEntitiesAsync(readEntities, bulkOperationContext, cancellationToken);
          }
 
          return numberOfAffectedRows;
       }
-
-      private async Task<int> ExecuteBulkOperationAsync(
-         IEntityDataReader reader,
-         ISqliteBulkOperationContext bulkOperationContext,
-         string tableIdentifier,
-         CancellationToken cancellationToken)
+      finally
       {
-         await using var command = bulkOperationContext.Connection.CreateCommand();
+         await _ctx.Database.CloseConnectionAsync().ConfigureAwait(false);
+      }
+   }
 
-         command.CommandText = bulkOperationContext.CreateCommandBuilder().GetStatement(_sqlGenerationHelper, reader, tableIdentifier);
-         var parameterInfos = CreateParameters(reader, command);
+   private async Task<int> ExecuteBulkOperationForSeparatedOwnedEntitiesAsync(
+      IReadOnlyList<object> parentEntities,
+      ISqliteBulkOperationContext parentBulkOperationContext,
+      CancellationToken cancellationToken)
+   {
+      if (parentEntities.Count == 0)
+         return 0;
 
-         try
-         {
-            command.Prepare();
-         }
-         catch (SqliteException ex)
-         {
-            throw new InvalidOperationException($"Error during bulk operation on table '{tableIdentifier}'. See inner exception for more details.", ex);
-         }
+      var numberOfAffectedRows = 0;
 
-         LogBulkOperationStart(command.CommandText);
-         var stopwatch = Stopwatch.StartNew();
-         var numberOfAffectedRows = 0;
+      foreach (var childContext in parentBulkOperationContext.GetChildren(parentEntities))
+      {
+         var childTableName = childContext.EntityType.GetTableName()
+                              ?? throw new InvalidOperationException($"The entity '{childContext.EntityType.Name}' has no table name.");
 
-         while (reader.Read())
-         {
-            for (var i = 0; i < reader.FieldCount; i++)
-            {
-               var paramInfo = parameterInfos[i];
-               var value = reader.GetValue(i);
-
-               if (bulkOperationContext.AutoIncrementBehavior == SqliteAutoIncrementBehavior.SetZeroToNull && paramInfo.IsAutoIncrementColumn && 0.Equals(value))
-                  value = null;
-
-               paramInfo.Parameter.Value = value ?? DBNull.Value;
-            }
-
-            numberOfAffectedRows += await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
-         }
-
-         stopwatch.Stop();
-         LogBulkOperationEnd(command.CommandText, stopwatch.Elapsed);
-
-         return numberOfAffectedRows;
+         numberOfAffectedRows += await ExecuteBulkOperationAsync(childContext.Entities,
+                                                                 childContext.EntityType.GetSchema(),
+                                                                 childTableName,
+                                                                 childContext,
+                                                                 cancellationToken).ConfigureAwait(false);
       }
 
-      private static ParameterInfo[] CreateParameters(IEntityDataReader reader, SqliteCommand command)
+      return numberOfAffectedRows;
+   }
+
+   private async Task<int> ExecuteBulkOperationAsync(
+      IEntityDataReader reader,
+      ISqliteBulkOperationContext bulkOperationContext,
+      string tableIdentifier,
+      CancellationToken cancellationToken)
+   {
+      await using var command = bulkOperationContext.Connection.CreateCommand();
+
+      command.CommandText = bulkOperationContext.CreateCommandBuilder().GetStatement(_sqlGenerationHelper, reader, tableIdentifier);
+      var parameterInfos = CreateParameters(reader, command);
+
+      try
       {
-         var parameters = new ParameterInfo[reader.Properties.Count];
-
-         for (var i = 0; i < reader.Properties.Count; i++)
-         {
-            var property = reader.Properties[i];
-            var index = reader.GetPropertyIndex(property);
-
-            var parameter = command.CreateParameter();
-            parameter.ParameterName = $"$p{index}";
-            parameters[i] = new ParameterInfo(parameter, property.Property.IsAutoIncrement());
-            command.Parameters.Add(parameter);
-         }
-
-         return parameters;
+         command.Prepare();
+      }
+      catch (SqliteException ex)
+      {
+         throw new InvalidOperationException($"Error during bulk operation on table '{tableIdentifier}'. See inner exception for more details.", ex);
       }
 
-      private void LogBulkOperationStart(string statement)
+      LogBulkOperationStart(command.CommandText);
+      var stopwatch = Stopwatch.StartNew();
+      var numberOfAffectedRows = 0;
+
+      while (reader.Read())
       {
-         _logger.Logger.LogDebug(EventIds.Started, @"Executing DbCommand
+         for (var i = 0; i < reader.FieldCount; i++)
+         {
+            var paramInfo = parameterInfos[i];
+            var value = reader.GetValue(i);
+
+            if (bulkOperationContext.AutoIncrementBehavior == SqliteAutoIncrementBehavior.SetZeroToNull && paramInfo.IsAutoIncrementColumn && 0.Equals(value))
+               value = null;
+
+            paramInfo.Parameter.Value = value ?? DBNull.Value;
+         }
+
+         numberOfAffectedRows += await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+      }
+
+      stopwatch.Stop();
+      LogBulkOperationEnd(command.CommandText, stopwatch.Elapsed);
+
+      return numberOfAffectedRows;
+   }
+
+   private static ParameterInfo[] CreateParameters(IEntityDataReader reader, SqliteCommand command)
+   {
+      var parameters = new ParameterInfo[reader.Properties.Count];
+
+      for (var i = 0; i < reader.Properties.Count; i++)
+      {
+         var property = reader.Properties[i];
+         var index = reader.GetPropertyIndex(property);
+
+         var parameter = command.CreateParameter();
+         parameter.ParameterName = $"$p{index}";
+         parameters[i] = new ParameterInfo(parameter, property.Property.IsAutoIncrement());
+         command.Parameters.Add(parameter);
+      }
+
+      return parameters;
+   }
+
+   private void LogBulkOperationStart(string statement)
+   {
+      _logger.Logger.LogDebug(EventIds.Started, @"Executing DbCommand
 {Statement}", statement);
-      }
+   }
 
-      private void LogBulkOperationEnd(string statement, TimeSpan duration)
-      {
-         _logger.Logger.LogInformation(EventIds.Finished, @"Executed DbCommand ({Duration}ms)
+   private void LogBulkOperationEnd(string statement, TimeSpan duration)
+   {
+      _logger.Logger.LogInformation(EventIds.Finished, @"Executed DbCommand ({Duration}ms)
 {Statement}", (long)duration.TotalMilliseconds, statement);
+   }
+
+   /// <inheritdoc />
+   public async Task<ITempTableQuery<T>> BulkInsertIntoTempTableAsync<T>(
+      IEnumerable<T> entities,
+      ITempTableBulkInsertOptions options,
+      CancellationToken cancellationToken = default)
+      where T : class
+   {
+      if (entities == null)
+         throw new ArgumentNullException(nameof(entities));
+      if (options == null)
+         throw new ArgumentNullException(nameof(options));
+
+      var entityType = _ctx.Model.GetEntityType(typeof(T));
+
+      if (options is not ISqliteTempTableBulkInsertOptions sqliteOptions)
+      {
+         sqliteOptions = new SqliteTempTableBulkInsertOptions(options);
+         options = sqliteOptions;
       }
 
-      /// <inheritdoc />
-      public async Task<ITempTableQuery<T>> BulkInsertIntoTempTableAsync<T>(
-         IEnumerable<T> entities,
-         ITempTableBulkInsertOptions options,
-         CancellationToken cancellationToken = default)
-         where T : class
+      var selectedProperties = sqliteOptions.PropertiesToInsert.DeterminePropertiesForTempTable(entityType, null);
+
+      if (selectedProperties.Any(p => !p.IsInlined))
+         throw new NotSupportedException($"Bulk insert of separate owned types into temp tables is not supported. Properties of separate owned types: {String.Join(", ", selectedProperties.Where(p => !p.IsInlined))}");
+
+      var tempTableCreator = _ctx.GetService<ITempTableCreator>();
+      var tempTableReference = await tempTableCreator.CreateTempTableAsync(entityType, options.TempTableCreationOptions, cancellationToken).ConfigureAwait(false);
+
+      try
       {
-         if (entities == null)
-            throw new ArgumentNullException(nameof(entities));
-         if (options == null)
-            throw new ArgumentNullException(nameof(options));
+         await BulkInsertAsync(entityType, entities, null, tempTableReference.Name, options.BulkInsertOptions, cancellationToken).ConfigureAwait(false);
 
-         var entityType = _ctx.Model.GetEntityType(typeof(T));
+         var query = _ctx.Set<T>().FromTempTable(tempTableReference.Name);
 
-         if (options is not ISqliteTempTableBulkInsertOptions sqliteOptions)
-         {
-            sqliteOptions = new SqliteTempTableBulkInsertOptions(options);
-            options = sqliteOptions;
-         }
+         var pk = entityType.FindPrimaryKey();
 
-         var selectedProperties = sqliteOptions.PropertiesToInsert.DeterminePropertiesForTempTable(entityType, null);
+         if (pk is not null && pk.Properties.Count != 0)
+            query = query.AsNoTracking();
 
-         if (selectedProperties.Any(p => !p.IsInlined))
-            throw new NotSupportedException($"Bulk insert of separate owned types into temp tables is not supported. Properties of separate owned types: {String.Join(", ", selectedProperties.Where(p => !p.IsInlined))}");
-
-         var tempTableCreator = _ctx.GetService<ITempTableCreator>();
-         var tempTableReference = await tempTableCreator.CreateTempTableAsync(entityType, options.TempTableCreationOptions, cancellationToken).ConfigureAwait(false);
-
-         try
-         {
-            await BulkInsertAsync(entityType, entities, null, tempTableReference.Name, options.BulkInsertOptions, cancellationToken).ConfigureAwait(false);
-
-            var query = _ctx.Set<T>().FromTempTable(tempTableReference.Name);
-
-            var pk = entityType.FindPrimaryKey();
-
-            if (pk is not null && pk.Properties.Count != 0)
-               query = query.AsNoTracking();
-
-            return new TempTableQuery<T>(query, tempTableReference);
-         }
-         catch (Exception)
-         {
-            await tempTableReference.DisposeAsync().ConfigureAwait(false);
-            throw;
-         }
+         return new TempTableQuery<T>(query, tempTableReference);
       }
-
-      /// <inheritdoc />
-      public async Task TruncateTableAsync<T>(CancellationToken cancellationToken = default)
-         where T : class
+      catch (Exception)
       {
-         var entityType = _ctx.Model.GetEntityType(typeof(T));
-         var tableName = entityType.GetTableName()
-                         ?? throw new InvalidOperationException($"The entity '{entityType.Name}' has no table name.");
-
-         var tableIdentifier = _sqlGenerationHelper.DelimitIdentifier(tableName, entityType.GetSchema());
-         var truncateStatement = $"DELETE FROM {tableIdentifier};";
-
-         await _ctx.Database.ExecuteSqlRawAsync(truncateStatement, cancellationToken);
+         await tempTableReference.DisposeAsync().ConfigureAwait(false);
+         throw;
       }
+   }
 
-      private readonly struct ParameterInfo
+   /// <inheritdoc />
+   public async Task TruncateTableAsync<T>(CancellationToken cancellationToken = default)
+      where T : class
+   {
+      var entityType = _ctx.Model.GetEntityType(typeof(T));
+      var tableName = entityType.GetTableName()
+                      ?? throw new InvalidOperationException($"The entity '{entityType.Name}' has no table name.");
+
+      var tableIdentifier = _sqlGenerationHelper.DelimitIdentifier(tableName, entityType.GetSchema());
+      var truncateStatement = $"DELETE FROM {tableIdentifier};";
+
+      await _ctx.Database.ExecuteSqlRawAsync(truncateStatement, cancellationToken);
+   }
+
+   private readonly struct ParameterInfo
+   {
+      public readonly SqliteParameter Parameter;
+      public readonly bool IsAutoIncrementColumn;
+
+      public ParameterInfo(SqliteParameter parameter, bool isAutoIncrementColumn)
       {
-         public readonly SqliteParameter Parameter;
-         public readonly bool IsAutoIncrementColumn;
-
-         public ParameterInfo(SqliteParameter parameter, bool isAutoIncrementColumn)
-         {
-            Parameter = parameter;
-            IsAutoIncrementColumn = isAutoIncrementColumn;
-         }
+         Parameter = parameter;
+         IsAutoIncrementColumn = isAutoIncrementColumn;
       }
    }
 }

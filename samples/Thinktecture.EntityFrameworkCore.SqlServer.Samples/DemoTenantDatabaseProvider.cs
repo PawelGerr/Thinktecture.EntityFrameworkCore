@@ -1,27 +1,26 @@
 using System;
 using Thinktecture.EntityFrameworkCore.Query;
 
-namespace Thinktecture
+namespace Thinktecture;
+
+public class DemoTenantDatabaseProvider : ITenantDatabaseProvider
 {
-   public class DemoTenantDatabaseProvider : ITenantDatabaseProvider
+   public string? Tenant { get; }
+
+   public DemoTenantDatabaseProvider(string? tenant)
    {
-      public string? Tenant { get; }
+      Tenant = tenant;
+   }
 
-      public DemoTenantDatabaseProvider(string? tenant)
-      {
-         Tenant = tenant;
-      }
+   /// <inheritdoc />
+   public string? GetDatabaseName(string? schema, string table)
+   {
+      if (Tenant == "1")
+         return "demo";
 
-      /// <inheritdoc />
-      public string? GetDatabaseName(string? schema, string table)
-      {
-         if (Tenant == "1")
-            return "demo";
+      if (Tenant == "2")
+         return "demo2";
 
-         if (Tenant == "2")
-            return "demo2";
-
-         return null;
-      }
+      return null;
    }
 }

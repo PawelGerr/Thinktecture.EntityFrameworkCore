@@ -1,12 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 
-namespace Thinktecture.EntityFrameworkCore
+namespace Thinktecture.EntityFrameworkCore;
+
+internal sealed class MigrationExecutionStrategy : IMigrationExecutionStrategy
 {
-   internal sealed class MigrationExecutionStrategy : IMigrationExecutionStrategy
+   public void Migrate(DbContext ctx)
    {
-      public void Migrate(DbContext ctx)
-      {
-         ctx.Database.Migrate();
-      }
+      ctx.Database.Migrate();
    }
 }

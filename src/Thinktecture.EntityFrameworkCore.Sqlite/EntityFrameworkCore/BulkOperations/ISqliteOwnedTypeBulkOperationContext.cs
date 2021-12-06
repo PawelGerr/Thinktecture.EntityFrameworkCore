@@ -1,6 +1,5 @@
-namespace Thinktecture.EntityFrameworkCore.BulkOperations
+namespace Thinktecture.EntityFrameworkCore.BulkOperations;
+
+internal interface ISqliteOwnedTypeBulkOperationContext : ISqliteBulkOperationContext, IOwnedTypeBulkOperationContext
 {
-   internal interface ISqliteOwnedTypeBulkOperationContext : ISqliteBulkOperationContext, IOwnedTypeBulkOperationContext
-   {
-   }
 }

@@ -1,21 +1,20 @@
 using System;
 using Thinktecture.EntityFrameworkCore.TempTables;
 
-namespace Thinktecture.EntityFrameworkCore.BulkOperations
+namespace Thinktecture.EntityFrameworkCore.BulkOperations;
+
+/// <summary>
+/// Options for bulk insert into a temp table.
+/// </summary>
+public interface ITempTableBulkInsertOptions
 {
    /// <summary>
-   /// Options for bulk insert into a temp table.
+   /// Options for creation of the temp table.
    /// </summary>
-   public interface ITempTableBulkInsertOptions
-   {
-      /// <summary>
-      /// Options for creation of the temp table.
-      /// </summary>
-      ITempTableCreationOptions TempTableCreationOptions { get; }
+   ITempTableCreationOptions TempTableCreationOptions { get; }
 
-      /// <summary>
-      /// Options for bulk insert.
-      /// </summary>
-      IBulkInsertOptions BulkInsertOptions { get; }
-   }
+   /// <summary>
+   /// Options for bulk insert.
+   /// </summary>
+   IBulkInsertOptions BulkInsertOptions { get; }
 }

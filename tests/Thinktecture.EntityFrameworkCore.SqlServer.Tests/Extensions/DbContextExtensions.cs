@@ -2,13 +2,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 
 // ReSharper disable once CheckNamespace
-namespace Thinktecture
+namespace Thinktecture;
+
+public static class DbContextExtensions
 {
-   public static class DbContextExtensions
+   public static IEntityType GetEntityType<T>(this DbContext ctx)
    {
-      public static IEntityType GetEntityType<T>(this DbContext ctx)
-      {
-         return ctx.Model.GetEntityType(typeof(T));
-      }
+      return ctx.Model.GetEntityType(typeof(T));
    }
 }

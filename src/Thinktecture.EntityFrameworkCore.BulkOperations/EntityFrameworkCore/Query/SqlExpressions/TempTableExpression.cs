@@ -3,54 +3,53 @@ using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 
-namespace Thinktecture.EntityFrameworkCore.Query.SqlExpressions
+namespace Thinktecture.EntityFrameworkCore.Query.SqlExpressions;
+
+/// <summary>
+/// An expression that represents a temp table.
+/// </summary>
+public sealed class TempTableExpression : TableExpressionBase
 {
    /// <summary>
-   /// An expression that represents a temp table.
+   /// The name of the table or view.
    /// </summary>
-   public sealed class TempTableExpression : TableExpressionBase
+   public string Name { get; }
+
+   /// <inheritdoc />
+   [NotNull]
+   public override string? Alias => base.Alias!;
+
+   /// <summary>
+   /// Initializes new instance of <see cref="TempTableExpression"/>.
+   /// </summary>
+   /// <param name="name">The name of the temp table.</param>
+   /// <param name="alias">The alias of the temp table.</param>
+   public TempTableExpression(string name, string alias)
+      : base(alias)
    {
-      /// <summary>
-      /// The name of the table or view.
-      /// </summary>
-      public string Name { get; }
+      Name = name;
+   }
 
-      /// <inheritdoc />
-      [NotNull]
-      public override string? Alias => base.Alias!;
+   /// <inheritdoc />
+   protected override void Print(ExpressionPrinter expressionPrinter)
+   {
+      expressionPrinter.Append(Name).Append(" AS ").Append(Alias);
+   }
 
-      /// <summary>
-      /// Initializes new instance of <see cref="TempTableExpression"/>.
-      /// </summary>
-      /// <param name="name">The name of the temp table.</param>
-      /// <param name="alias">The alias of the temp table.</param>
-      public TempTableExpression(string name, string alias)
-         : base(alias)
-      {
-         Name = name;
-      }
+   /// <inheritdoc />
+   public override bool Equals(object? obj)
+   {
+      return ReferenceEquals(this, obj) || Equals(obj as TempTableExpression);
+   }
 
-      /// <inheritdoc />
-      protected override void Print(ExpressionPrinter expressionPrinter)
-      {
-         expressionPrinter.Append(Name).Append(" AS ").Append(Alias);
-      }
+   private bool Equals(TempTableExpression? tempTableExpression)
+   {
+      return base.Equals(tempTableExpression) && string.Equals(Name, tempTableExpression.Name);
+   }
 
-      /// <inheritdoc />
-      public override bool Equals(object? obj)
-      {
-         return ReferenceEquals(this, obj) || Equals(obj as TempTableExpression);
-      }
-
-      private bool Equals(TempTableExpression? tempTableExpression)
-      {
-         return base.Equals(tempTableExpression) && string.Equals(Name, tempTableExpression.Name);
-      }
-
-      /// <inheritdoc />
-      public override int GetHashCode()
-      {
-         return HashCode.Combine(base.GetHashCode(), Name);
-      }
+   /// <inheritdoc />
+   public override int GetHashCode()
+   {
+      return HashCode.Combine(base.GetHashCode(), Name);
    }
 }

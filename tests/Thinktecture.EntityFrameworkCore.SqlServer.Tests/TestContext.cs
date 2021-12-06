@@ -9,52 +9,51 @@ using Xunit.Abstractions;
 [assembly: SuppressMessage("ReSharper", "CA1707")]
 [assembly: SuppressMessage("ReSharper", "CA2007")]
 
-namespace Thinktecture
+namespace Thinktecture;
+
+public class TestContext
 {
-   public class TestContext
+   private static readonly Lazy<TestContext> _lazy = new(CreateTestConfiguration);
+
+   public static TestContext Instance => _lazy.Value;
+
+   private readonly ConcurrentDictionary<ITestOutputHelper, ILoggerFactory> _loggerFactoryCache = new();
+
+   public IConfiguration Configuration { get; }
+
+   public string ConnectionString => Configuration.GetConnectionString("default");
+
+   private static TestContext CreateTestConfiguration()
    {
-      private static readonly Lazy<TestContext> _lazy = new(CreateTestConfiguration);
+      var config = GetConfiguration();
+      return new TestContext(config);
+   }
 
-      public static TestContext Instance => _lazy.Value;
+   public TestContext(IConfiguration config)
+   {
+      Configuration = config ?? throw new ArgumentNullException(nameof(config));
+   }
 
-      private readonly ConcurrentDictionary<ITestOutputHelper, ILoggerFactory> _loggerFactoryCache = new();
+   private static IConfiguration GetConfiguration()
+   {
+      return new ConfigurationBuilder()
+             .AddJsonFile("appsettings.json")
+             .AddEnvironmentVariables()
+             .Build();
+   }
 
-      public IConfiguration Configuration { get; }
+   public ILoggerFactory GetLoggerFactory(ITestOutputHelper testOutputHelper)
+   {
+      if (testOutputHelper == null)
+         throw new ArgumentNullException(nameof(testOutputHelper));
 
-      public string ConnectionString => Configuration.GetConnectionString("default");
+      return _loggerFactoryCache.GetOrAdd(testOutputHelper, helper =>
+                                                            {
+                                                               var loggerConfig = new LoggerConfiguration()
+                                                                                  .WriteTo.TestOutput(helper, outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}");
 
-      private static TestContext CreateTestConfiguration()
-      {
-         var config = GetConfiguration();
-         return new TestContext(config);
-      }
-
-      public TestContext(IConfiguration config)
-      {
-         Configuration = config ?? throw new ArgumentNullException(nameof(config));
-      }
-
-      private static IConfiguration GetConfiguration()
-      {
-         return new ConfigurationBuilder()
-                .AddJsonFile("appsettings.json")
-                .AddEnvironmentVariables()
-                .Build();
-      }
-
-      public ILoggerFactory GetLoggerFactory(ITestOutputHelper testOutputHelper)
-      {
-         if (testOutputHelper == null)
-            throw new ArgumentNullException(nameof(testOutputHelper));
-
-         return _loggerFactoryCache.GetOrAdd(testOutputHelper, helper =>
-                                                               {
-                                                                  var loggerConfig = new LoggerConfiguration()
-                                                                                     .WriteTo.TestOutput(helper, outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}");
-
-                                                                  return new LoggerFactory()
-                                                                     .AddSerilog(loggerConfig.CreateLogger());
-                                                               });
-      }
+                                                               return new LoggerFactory()
+                                                                  .AddSerilog(loggerConfig.CreateLogger());
+                                                            });
    }
 }

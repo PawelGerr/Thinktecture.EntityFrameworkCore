@@ -1,21 +1,20 @@
 using System;
 
-namespace Thinktecture.EntityFrameworkCore.TempTables.NameSuffixing
+namespace Thinktecture.EntityFrameworkCore.TempTables.NameSuffixing;
+
+internal readonly struct TempTableSuffixLease : IDisposable
 {
-   internal readonly struct TempTableSuffixLease : IDisposable
+   public int Suffix { get; }
+   private readonly TempTableSuffixes _suffixes;
+
+   public TempTableSuffixLease(int suffix, TempTableSuffixes suffixes)
    {
-      public int Suffix { get; }
-      private readonly TempTableSuffixes _suffixes;
+      Suffix = suffix;
+      _suffixes = suffixes ?? throw new ArgumentNullException(nameof(suffixes));
+   }
 
-      public TempTableSuffixLease(int suffix, TempTableSuffixes suffixes)
-      {
-         Suffix = suffix;
-         _suffixes = suffixes ?? throw new ArgumentNullException(nameof(suffixes));
-      }
-
-      public void Dispose()
-      {
-         _suffixes.Return(Suffix);
-      }
+   public void Dispose()
+   {
+      _suffixes.Return(Suffix);
    }
 }

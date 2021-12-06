@@ -6,97 +6,96 @@ using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage;
 
 // ReSharper disable InconsistentNaming
-namespace Thinktecture.TestDatabaseContext
+namespace Thinktecture.TestDatabaseContext;
+
+public class TestDbContext : DbContext
 {
-   public class TestDbContext : DbContext
-   {
 #nullable disable
-      public DbSet<TestEntity> TestEntities { get; set; }
-      public DbSet<TestEntityWithAutoIncrement> TestEntitiesWithAutoIncrement { get; set; }
-      public DbSet<TestEntityWithShadowProperties> TestEntitiesWithShadowProperties { get; set; }
-      public DbSet<TestEntityWithSqlDefaultValues> TestEntitiesWithDefaultValues { get; set; }
-      public DbSet<TestEntityWithDotnetDefaultValues> TestEntitiesWithDotnetDefaultValues { get; set; }
-      public DbSet<TestEntity_Owns_Inline> TestEntities_Own_Inline { get; set; }
-      public DbSet<TestEntity_Owns_Inline_Inline> TestEntities_Own_Inline_Inline { get; set; }
-      public DbSet<TestEntity_Owns_Inline_SeparateOne> TestEntities_Own_Inline_SeparateOne { get; set; }
-      public DbSet<TestEntity_Owns_Inline_SeparateMany> TestEntities_Own_Inline_SeparateMany { get; set; }
-      public DbSet<TestEntity_Owns_SeparateOne> TestEntities_Own_SeparateOne { get; set; }
-      public DbSet<TestEntity_Owns_SeparateOne_Inline> TestEntities_Own_SeparateOne_Inline { get; set; }
-      public DbSet<TestEntity_Owns_SeparateOne_SeparateOne> TestEntities_Own_SeparateOne_SeparateOne { get; set; }
-      public DbSet<TestEntity_Owns_SeparateOne_SeparateMany> TestEntities_Own_SeparateOne_SeparateMany { get; set; }
-      public DbSet<TestEntity_Owns_SeparateMany> TestEntities_Own_SeparateMany { get; set; }
-      public DbSet<TestEntity_Owns_SeparateMany_Inline> TestEntities_Own_SeparateMany_Inline { get; set; }
-      public DbSet<TestEntity_Owns_SeparateMany_SeparateOne> TestEntities_Own_SeparateMany_SeparateOne { get; set; }
-      public DbSet<TestEntity_Owns_SeparateMany_SeparateMany> TestEntities_Own_SeparateMany_SeparateMany { get; set; }
+   public DbSet<TestEntity> TestEntities { get; set; }
+   public DbSet<TestEntityWithAutoIncrement> TestEntitiesWithAutoIncrement { get; set; }
+   public DbSet<TestEntityWithShadowProperties> TestEntitiesWithShadowProperties { get; set; }
+   public DbSet<TestEntityWithSqlDefaultValues> TestEntitiesWithDefaultValues { get; set; }
+   public DbSet<TestEntityWithDotnetDefaultValues> TestEntitiesWithDotnetDefaultValues { get; set; }
+   public DbSet<TestEntity_Owns_Inline> TestEntities_Own_Inline { get; set; }
+   public DbSet<TestEntity_Owns_Inline_Inline> TestEntities_Own_Inline_Inline { get; set; }
+   public DbSet<TestEntity_Owns_Inline_SeparateOne> TestEntities_Own_Inline_SeparateOne { get; set; }
+   public DbSet<TestEntity_Owns_Inline_SeparateMany> TestEntities_Own_Inline_SeparateMany { get; set; }
+   public DbSet<TestEntity_Owns_SeparateOne> TestEntities_Own_SeparateOne { get; set; }
+   public DbSet<TestEntity_Owns_SeparateOne_Inline> TestEntities_Own_SeparateOne_Inline { get; set; }
+   public DbSet<TestEntity_Owns_SeparateOne_SeparateOne> TestEntities_Own_SeparateOne_SeparateOne { get; set; }
+   public DbSet<TestEntity_Owns_SeparateOne_SeparateMany> TestEntities_Own_SeparateOne_SeparateMany { get; set; }
+   public DbSet<TestEntity_Owns_SeparateMany> TestEntities_Own_SeparateMany { get; set; }
+   public DbSet<TestEntity_Owns_SeparateMany_Inline> TestEntities_Own_SeparateMany_Inline { get; set; }
+   public DbSet<TestEntity_Owns_SeparateMany_SeparateOne> TestEntities_Own_SeparateMany_SeparateOne { get; set; }
+   public DbSet<TestEntity_Owns_SeparateMany_SeparateMany> TestEntities_Own_SeparateMany_SeparateMany { get; set; }
 #nullable enable
 
-      public Action<ModelBuilder>? ConfigureModel { get; set; }
+   public Action<ModelBuilder>? ConfigureModel { get; set; }
 
-      public TestDbContext(DbContextOptions<TestDbContext> options)
-         : base(options)
-      {
-      }
+   public TestDbContext(DbContextOptions<TestDbContext> options)
+      : base(options)
+   {
+   }
 
-      protected override void OnModelCreating(ModelBuilder modelBuilder)
-      {
-         base.OnModelCreating(modelBuilder);
+   protected override void OnModelCreating(ModelBuilder modelBuilder)
+   {
+      base.OnModelCreating(modelBuilder);
 
-         TestEntity.Configure(modelBuilder);
+      TestEntity.Configure(modelBuilder);
 
-         modelBuilder.Entity<TestEntityWithAutoIncrement>().Property(e => e.Id).ValueGeneratedOnAdd();
+      modelBuilder.Entity<TestEntityWithAutoIncrement>().Property(e => e.Id).ValueGeneratedOnAdd();
 
-         TestEntityWithShadowProperties.Configure(modelBuilder);
-         TestEntityWithSqlDefaultValues.Configure(modelBuilder);
-         TestEntityWithDotnetDefaultValues.Configure(modelBuilder);
-         TestEntity_Owns_Inline.Configure(modelBuilder);
-         TestEntity_Owns_SeparateOne.Configure(modelBuilder);
-         TestEntity_Owns_SeparateMany.Configure(modelBuilder);
-         modelBuilder.Entity<TestEntity_Owns_SeparateMany>().OwnsMany(e => e.SeparateEntities, b => b.Property("Id").ValueGeneratedNever());
-         TestEntity_Owns_SeparateOne_SeparateOne.Configure(modelBuilder);
-         TestEntity_Owns_SeparateOne_Inline.Configure(modelBuilder);
-         TestEntity_Owns_SeparateOne_SeparateMany.Configure(modelBuilder);
-         TestEntity_Owns_Inline_SeparateOne.Configure(modelBuilder);
-         TestEntity_Owns_Inline_Inline.Configure(modelBuilder);
-         TestEntity_Owns_Inline_SeparateMany.Configure(modelBuilder);
-         TestEntity_Owns_SeparateMany_SeparateOne.Configure(modelBuilder);
-         TestEntity_Owns_SeparateMany_Inline.Configure(modelBuilder);
-         TestEntity_Owns_SeparateMany_SeparateMany.Configure(modelBuilder);
+      TestEntityWithShadowProperties.Configure(modelBuilder);
+      TestEntityWithSqlDefaultValues.Configure(modelBuilder);
+      TestEntityWithDotnetDefaultValues.Configure(modelBuilder);
+      TestEntity_Owns_Inline.Configure(modelBuilder);
+      TestEntity_Owns_SeparateOne.Configure(modelBuilder);
+      TestEntity_Owns_SeparateMany.Configure(modelBuilder);
+      modelBuilder.Entity<TestEntity_Owns_SeparateMany>().OwnsMany(e => e.SeparateEntities, b => b.Property("Id").ValueGeneratedNever());
+      TestEntity_Owns_SeparateOne_SeparateOne.Configure(modelBuilder);
+      TestEntity_Owns_SeparateOne_Inline.Configure(modelBuilder);
+      TestEntity_Owns_SeparateOne_SeparateMany.Configure(modelBuilder);
+      TestEntity_Owns_Inline_SeparateOne.Configure(modelBuilder);
+      TestEntity_Owns_Inline_Inline.Configure(modelBuilder);
+      TestEntity_Owns_Inline_SeparateMany.Configure(modelBuilder);
+      TestEntity_Owns_SeparateMany_SeparateOne.Configure(modelBuilder);
+      TestEntity_Owns_SeparateMany_Inline.Configure(modelBuilder);
+      TestEntity_Owns_SeparateMany_SeparateMany.Configure(modelBuilder);
 
-         ConfigureModel?.Invoke(modelBuilder);
+      ConfigureModel?.Invoke(modelBuilder);
 
-         modelBuilder.Entity<SqliteMaster>().HasNoKey().ToView("sqlite_temp_master");
-         modelBuilder.Entity<SqliteTableInfo>().HasNoKey().ToView("PRAGMA_TABLE_INFO('<<table-name>>')");
-         modelBuilder.Entity<SqliteIndex>().HasNoKey().ToView("pragma temp.index_list('<<table-name>>')");
-      }
+      modelBuilder.Entity<SqliteMaster>().HasNoKey().ToView("sqlite_temp_master");
+      modelBuilder.Entity<SqliteTableInfo>().HasNoKey().ToView("PRAGMA_TABLE_INFO('<<table-name>>')");
+      modelBuilder.Entity<SqliteIndex>().HasNoKey().ToView("pragma temp.index_list('<<table-name>>')");
+   }
 
-      public IQueryable<SqliteTableInfo> GetTempTableColumns<T>()
-      {
-         var entityType = Model.GetEntityType(typeof(T));
-         return GetTempTableColumns(entityType);
-      }
+   public IQueryable<SqliteTableInfo> GetTempTableColumns<T>()
+   {
+      var entityType = Model.GetEntityType(typeof(T));
+      return GetTempTableColumns(entityType);
+   }
 
-      public IQueryable<SqliteTableInfo> GetTempTableColumns(IEntityType entityType)
-      {
-         var tableName = entityType.GetTableName() ?? throw new Exception($"The entity '{entityType.Name}' has no table name.");
+   public IQueryable<SqliteTableInfo> GetTempTableColumns(IEntityType entityType)
+   {
+      var tableName = entityType.GetTableName() ?? throw new Exception($"The entity '{entityType.Name}' has no table name.");
 
-         return GetTempTableColumns(tableName);
-      }
+      return GetTempTableColumns(tableName);
+   }
 
-      public IQueryable<SqliteTableInfo> GetTempTableColumns(string tableName)
-      {
-         if (tableName == null)
-            throw new ArgumentNullException(nameof(tableName));
+   public IQueryable<SqliteTableInfo> GetTempTableColumns(string tableName)
+   {
+      if (tableName == null)
+         throw new ArgumentNullException(nameof(tableName));
 
-         var helper = this.GetService<ISqlGenerationHelper>();
+      var helper = this.GetService<ISqlGenerationHelper>();
 
-         return Set<SqliteTableInfo>()
-            .FromSqlRaw($"SELECT * FROM PRAGMA_TABLE_INFO({helper.DelimitIdentifier(tableName)})");
-      }
+      return Set<SqliteTableInfo>()
+         .FromSqlRaw($"SELECT * FROM PRAGMA_TABLE_INFO({helper.DelimitIdentifier(tableName)})");
+   }
 
-      public IQueryable<SqliteTableInfo> GetTempTableKeyColumns<T>()
-      {
-         return GetTempTableColumns<T>()
-            .Where(c => c.PK > 0);
-      }
+   public IQueryable<SqliteTableInfo> GetTempTableKeyColumns<T>()
+   {
+      return GetTempTableColumns<T>()
+         .Where(c => c.PK > 0);
    }
 }

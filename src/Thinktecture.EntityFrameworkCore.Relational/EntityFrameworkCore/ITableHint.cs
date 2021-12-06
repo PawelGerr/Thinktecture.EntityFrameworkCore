@@ -1,9 +1,8 @@
-namespace Thinktecture.EntityFrameworkCore
+namespace Thinktecture.EntityFrameworkCore;
+
+/// <summary>
+/// Represents a table hint.
+/// </summary>
+public interface ITableHint
 {
-   /// <summary>
-   /// Represents a table hint.
-   /// </summary>
-   public interface ITableHint
-   {
-   }
 }

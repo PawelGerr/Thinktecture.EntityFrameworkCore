@@ -9,148 +9,147 @@ using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Microsoft.Extensions.Logging;
 
-namespace Thinktecture.EntityFrameworkCore.Data
+namespace Thinktecture.EntityFrameworkCore.Data;
+
+/// <summary>
+/// Builds and caches property getters.
+/// </summary>
+[SuppressMessage("ReSharper", "EF1001")]
+public class PropertyGetterCache : IPropertyGetterCache
 {
+   private readonly ILogger<PropertyGetterCache> _logger;
+   private readonly ConcurrentDictionary<PropertyWithNavigations, Delegate> _propertyGetterLookup;
+
    /// <summary>
-   /// Builds and caches property getters.
+   /// Initializes new instance of <see cref="PropertyGetterCache"/>.
    /// </summary>
-   [SuppressMessage("ReSharper", "EF1001")]
-   public class PropertyGetterCache : IPropertyGetterCache
+   /// <param name="loggerFactory">Logger factory.</param>
+   public PropertyGetterCache(ILoggerFactory loggerFactory)
    {
-      private readonly ILogger<PropertyGetterCache> _logger;
-      private readonly ConcurrentDictionary<PropertyWithNavigations, Delegate> _propertyGetterLookup;
+      _logger = loggerFactory?.CreateLogger<PropertyGetterCache>() ?? throw new ArgumentNullException(nameof(loggerFactory));
+      _propertyGetterLookup = new ConcurrentDictionary<PropertyWithNavigations, Delegate>();
+   }
 
-      /// <summary>
-      /// Initializes new instance of <see cref="PropertyGetterCache"/>.
-      /// </summary>
-      /// <param name="loggerFactory">Logger factory.</param>
-      public PropertyGetterCache(ILoggerFactory loggerFactory)
+   /// <inheritdoc />
+   public Func<DbContext, TEntity, object?> GetPropertyGetter<TEntity>(PropertyWithNavigations property)
+      where TEntity : class
+   {
+      return (Func<DbContext, TEntity, object?>)_propertyGetterLookup.GetOrAdd(property, BuildPropertyGetter<TEntity>);
+   }
+
+   private Func<DbContext, TEntity, object?> BuildPropertyGetter<TEntity>(PropertyWithNavigations cacheKey)
+      where TEntity : class
+   {
+      var property = cacheKey.Property;
+      var storeObject = StoreObjectIdentifier.Create(property.DeclaringEntityType, StoreObjectType.Table)
+                        ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.DeclaringEntityType.Name}'.");
+      var hasSqlDefaultValue = property.GetDefaultValueSql(storeObject) != null;
+      var hasDefaultValue = property.TryGetDefaultValue(storeObject, out _);
+
+      if ((hasSqlDefaultValue || hasDefaultValue) && !property.IsNullable)
       {
-         _logger = loggerFactory?.CreateLogger<PropertyGetterCache>() ?? throw new ArgumentNullException(nameof(loggerFactory));
-         _propertyGetterLookup = new ConcurrentDictionary<PropertyWithNavigations, Delegate>();
+         if (property.ClrType.IsClass)
+         {
+            _logger.LogWarning("The corresponding column of '{Entity}.{Property}' has a DEFAULT value constraint in the database and is NOT NULL. Depending on the database vendor the .NET value `null` may lead to an exception because the tool for bulk insert of data may prevent sending `null`s for NOT NULL columns. Use 'PropertiesToInsert/PropertiesToUpdate' on corresponding options to specify properties to insert/update and skip '{Entity}.{Property}' so database uses the DEFAULT value.",
+                               property.DeclaringEntityType.ClrType.Name, property.Name, property.DeclaringEntityType.ClrType.Name, property.Name);
+         }
+         else if (!property.ClrType.IsGenericType ||
+                  !property.ClrType.IsGenericTypeDefinition &&
+                  property.ClrType.GetGenericTypeDefinition() != typeof(Nullable<>))
+         {
+            _logger.LogWarning("The corresponding column of '{Entity}.{Property}' has a DEFAULT value constraint in the database and is NOT NULL. Depending on the database vendor the \".NET default values\" (`false`, `0`, `00000000-0000-0000-0000-000000000000` etc.) may lead to unexpected results because these values are sent to the database as-is, i.e. the DEFAULT value constraint will NOT be used by database. Use 'PropertiesToInsert/PropertiesToUpdate' on corresponding options to specify properties to insert and skip '{Entity}.{Property}' so database uses the DEFAULT value.",
+                               property.DeclaringEntityType.ClrType.Name, property.Name, property.DeclaringEntityType.ClrType.Name, property.Name);
+         }
       }
 
-      /// <inheritdoc />
-      public Func<DbContext, TEntity, object?> GetPropertyGetter<TEntity>(PropertyWithNavigations property)
-         where TEntity : class
+      var getter = BuildGetter(property);
+      var converter = property.GetValueConverter();
+
+      if (converter != null)
+         getter = UseConverter(getter, converter);
+
+      if (cacheKey.Navigations.Count != 0)
       {
-         return (Func<DbContext, TEntity, object?>)_propertyGetterLookup.GetOrAdd(property, BuildPropertyGetter<TEntity>);
+         var naviGetter = BuildNavigationGetter(cacheKey.Navigations);
+         getter = Combine(naviGetter, getter);
       }
 
-      private Func<DbContext, TEntity, object?> BuildPropertyGetter<TEntity>(PropertyWithNavigations cacheKey)
-         where TEntity : class
+      return getter;
+   }
+
+   private static Func<object, object?> BuildNavigationGetter(IReadOnlyList<INavigation> navigations)
+   {
+      Func<object, object?>? getter = null;
+
+      for (var i = 0; i < navigations.Count; i++)
       {
-         var property = cacheKey.Property;
-         var storeObject = StoreObjectIdentifier.Create(property.DeclaringEntityType, StoreObjectType.Table)
-                           ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.DeclaringEntityType.Name}'.");
-         var hasSqlDefaultValue = property.GetDefaultValueSql(storeObject) != null;
-         var hasDefaultValue = property.TryGetDefaultValue(storeObject, out _);
+         getter = Combine(getter, navigations[i].GetGetter().GetClrValue);
+      }
 
-         if ((hasSqlDefaultValue || hasDefaultValue) && !property.IsNullable)
-         {
-            if (property.ClrType.IsClass)
-            {
-               _logger.LogWarning("The corresponding column of '{Entity}.{Property}' has a DEFAULT value constraint in the database and is NOT NULL. Depending on the database vendor the .NET value `null` may lead to an exception because the tool for bulk insert of data may prevent sending `null`s for NOT NULL columns. Use 'PropertiesToInsert/PropertiesToUpdate' on corresponding options to specify properties to insert/update and skip '{Entity}.{Property}' so database uses the DEFAULT value.",
-                                  property.DeclaringEntityType.ClrType.Name, property.Name, property.DeclaringEntityType.ClrType.Name, property.Name);
-            }
-            else if (!property.ClrType.IsGenericType ||
-                     !property.ClrType.IsGenericTypeDefinition &&
-                     property.ClrType.GetGenericTypeDefinition() != typeof(Nullable<>))
-            {
-               _logger.LogWarning("The corresponding column of '{Entity}.{Property}' has a DEFAULT value constraint in the database and is NOT NULL. Depending on the database vendor the \".NET default values\" (`false`, `0`, `00000000-0000-0000-0000-000000000000` etc.) may lead to unexpected results because these values are sent to the database as-is, i.e. the DEFAULT value constraint will NOT be used by database. Use 'PropertiesToInsert/PropertiesToUpdate' on corresponding options to specify properties to insert and skip '{Entity}.{Property}' so database uses the DEFAULT value.",
-                                  property.DeclaringEntityType.ClrType.Name, property.Name, property.DeclaringEntityType.ClrType.Name, property.Name);
-            }
-         }
+      return getter ?? throw new ArgumentException("No navigations provided.");
+   }
 
-         var getter = BuildGetter(property);
-         var converter = property.GetValueConverter();
-
-         if (converter != null)
-            getter = UseConverter(getter, converter);
-
-         if (cacheKey.Navigations.Count != 0)
-         {
-            var naviGetter = BuildNavigationGetter(cacheKey.Navigations);
-            getter = Combine(naviGetter, getter);
-         }
-
+   private static Func<object, object?> Combine(Func<object, object?>? parentGetter, Func<object, object?> getter)
+   {
+      if (parentGetter is null)
          return getter;
-      }
 
-      private static Func<object, object?> BuildNavigationGetter(IReadOnlyList<INavigation> navigations)
+      return e =>
+             {
+                var childEntity = parentGetter(e);
+
+                return childEntity == null ? null : getter(childEntity);
+             };
+   }
+
+   private static Func<DbContext, object, object?> Combine(Func<object, object?> naviGetter, Func<DbContext, object, object?> getter)
+   {
+      return (ctx, e) =>
+             {
+                var childEntity = naviGetter(e);
+
+                return childEntity == null ? null : getter(ctx, childEntity);
+             };
+   }
+
+   private static Func<DbContext, object, object?> BuildGetter(IProperty property)
+   {
+      if (property.IsShadowProperty())
       {
-         Func<object, object?>? getter = null;
-
-         for (var i = 0; i < navigations.Count; i++)
-         {
-            getter = Combine(getter, navigations[i].GetGetter().GetClrValue);
-         }
-
-         return getter ?? throw new ArgumentException("No navigations provided.");
+         var shadowPropGetter = CreateShadowPropertyGetter(property);
+         return shadowPropGetter.GetValue;
       }
 
-      private static Func<object, object?> Combine(Func<object, object?>? parentGetter, Func<object, object?> getter)
-      {
-         if (parentGetter is null)
-            return getter;
+      var getter = property.GetGetter();
 
-         return e =>
-                {
-                   var childEntity = parentGetter(e);
+      if (getter == null)
+         throw new ArgumentException($"The property '{property.Name}' of entity '{property.DeclaringEntityType.Name}' has no property getter.");
 
-                   return childEntity == null ? null : getter(childEntity);
-                };
-      }
+      return (_, entity) => getter.GetClrValue(entity);
+   }
 
-      private static Func<DbContext, object, object?> Combine(Func<object, object?> naviGetter, Func<DbContext, object, object?> getter)
-      {
-         return (ctx, e) =>
-                {
-                   var childEntity = naviGetter(e);
+   private static Func<DbContext, object, object?> UseConverter(Func<DbContext, object, object?> getter, ValueConverter converter)
+   {
+      var convert = converter.ConvertToProvider;
 
-                   return childEntity == null ? null : getter(ctx, childEntity);
-                };
-      }
+      return (ctx, e) =>
+             {
+                var value = getter(ctx, e);
 
-      private static Func<DbContext, object, object?> BuildGetter(IProperty property)
-      {
-         if (property.IsShadowProperty())
-         {
-            var shadowPropGetter = CreateShadowPropertyGetter(property);
-            return shadowPropGetter.GetValue;
-         }
+                if (value != null)
+                   value = convert(value);
 
-         var getter = property.GetGetter();
+                return value;
+             };
+   }
 
-         if (getter == null)
-            throw new ArgumentException($"The property '{property.Name}' of entity '{property.DeclaringEntityType.Name}' has no property getter.");
+   private static IShadowPropertyGetter CreateShadowPropertyGetter(IProperty property)
+   {
+      var currentValueGetter = property.GetPropertyAccessors().CurrentValueGetter;
+      var shadowPropGetterType = typeof(ShadowPropertyGetter<>).MakeGenericType(property.ClrType);
+      var shadowPropGetter = Activator.CreateInstance(shadowPropGetterType, currentValueGetter)
+                             ?? throw new Exception($"Could not create shadow property getter of type '{shadowPropGetterType.ShortDisplayName()}'.");
 
-         return (_, entity) => getter.GetClrValue(entity);
-      }
-
-      private static Func<DbContext, object, object?> UseConverter(Func<DbContext, object, object?> getter, ValueConverter converter)
-      {
-         var convert = converter.ConvertToProvider;
-
-         return (ctx, e) =>
-                {
-                   var value = getter(ctx, e);
-
-                   if (value != null)
-                      value = convert(value);
-
-                   return value;
-                };
-      }
-
-      private static IShadowPropertyGetter CreateShadowPropertyGetter(IProperty property)
-      {
-         var currentValueGetter = property.GetPropertyAccessors().CurrentValueGetter;
-         var shadowPropGetterType = typeof(ShadowPropertyGetter<>).MakeGenericType(property.ClrType);
-         var shadowPropGetter = Activator.CreateInstance(shadowPropGetterType, currentValueGetter)
-                                ?? throw new Exception($"Could not create shadow property getter of type '{shadowPropGetterType.ShortDisplayName()}'.");
-
-         return (IShadowPropertyGetter)shadowPropGetter;
-      }
+      return (IShadowPropertyGetter)shadowPropGetter;
    }
 }

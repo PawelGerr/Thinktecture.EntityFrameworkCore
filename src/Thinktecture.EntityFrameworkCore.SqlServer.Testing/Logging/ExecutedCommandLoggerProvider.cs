@@ -6,55 +6,54 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
-namespace Thinktecture.Logging
+namespace Thinktecture.Logging;
+
+internal class ExecutedCommandLoggerProvider : ILoggerProvider, ILogger
 {
-   internal class ExecutedCommandLoggerProvider : ILoggerProvider, ILogger
+   private readonly ConcurrentQueue<string> _commands;
+
+   public IReadOnlyCollection<string> Commands => _commands;
+
+   public ExecutedCommandLoggerProvider()
    {
-      private readonly ConcurrentQueue<string> _commands;
+      _commands = new ConcurrentQueue<string>();
+   }
 
-      public IReadOnlyCollection<string> Commands => _commands;
+   public ILogger CreateLogger(string categoryName)
+   {
+      if (categoryName == DbLoggerCategory.Database.Command.Name)
+         return this;
 
-      public ExecutedCommandLoggerProvider()
-      {
-         _commands = new ConcurrentQueue<string>();
-      }
+      return NullLogger.Instance;
+   }
 
-      public ILogger CreateLogger(string categoryName)
-      {
-         if (categoryName == DbLoggerCategory.Database.Command.Name)
-            return this;
+   public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
+   {
+      if (eventId != RelationalEventId.CommandExecuted)
+         return;
 
-         return NullLogger.Instance;
-      }
+      var command = formatter(state, exception);
+      _commands.Enqueue(command);
+   }
 
-      public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
-      {
-         if (eventId != RelationalEventId.CommandExecuted)
-            return;
+   public bool IsEnabled(LogLevel logLevel)
+   {
+      return logLevel >= LogLevel.Information;
+   }
 
-         var command = formatter(state, exception);
-         _commands.Enqueue(command);
-      }
+   public void Dispose()
+   {
+   }
 
-      public bool IsEnabled(LogLevel logLevel)
-      {
-         return logLevel >= LogLevel.Information;
-      }
+   public IDisposable BeginScope<TState>(TState state)
+   {
+      return new EmptyDisposable();
+   }
 
+   private struct EmptyDisposable : IDisposable
+   {
       public void Dispose()
       {
-      }
-
-      public IDisposable BeginScope<TState>(TState state)
-      {
-         return new EmptyDisposable();
-      }
-
-      private struct EmptyDisposable : IDisposable
-      {
-         public void Dispose()
-         {
-         }
       }
    }
 }

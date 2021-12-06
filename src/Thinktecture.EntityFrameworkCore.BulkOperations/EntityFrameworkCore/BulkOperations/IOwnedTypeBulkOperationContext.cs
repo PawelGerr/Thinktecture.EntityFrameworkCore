@@ -1,21 +1,20 @@
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore.Metadata;
 
-namespace Thinktecture.EntityFrameworkCore.BulkOperations
+namespace Thinktecture.EntityFrameworkCore.BulkOperations;
+
+/// <summary>
+/// Bulk operation context for an owned type.
+/// </summary>
+public interface IOwnedTypeBulkOperationContext : IBulkOperationContext
 {
    /// <summary>
-   /// Bulk operation context for an owned type.
+   /// Type of the owned type.
    /// </summary>
-   public interface IOwnedTypeBulkOperationContext : IBulkOperationContext
-   {
-      /// <summary>
-      /// Type of the owned type.
-      /// </summary>
-      IEntityType EntityType { get; }
+   IEntityType EntityType { get; }
 
-      /// <summary>
-      /// A collection of owned types.
-      /// </summary>
-      IEnumerable<object> Entities { get; }
-   }
+   /// <summary>
+   /// A collection of owned types.
+   /// </summary>
+   IEnumerable<object> Entities { get; }
 }

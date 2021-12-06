@@ -1,9 +1,8 @@
-namespace Thinktecture.EntityFrameworkCore.BulkOperations
+namespace Thinktecture.EntityFrameworkCore.BulkOperations;
+
+/// <summary>
+/// Bulk update options.
+/// </summary>
+public interface ISqlServerBulkInsertOrUpdateOptions : IBulkInsertOrUpdateOptions, ISqlServerBulkOperationOptions
 {
-   /// <summary>
-   /// Bulk update options.
-   /// </summary>
-   public interface ISqlServerBulkInsertOrUpdateOptions : IBulkInsertOrUpdateOptions, ISqlServerBulkOperationOptions
-   {
-   }
 }

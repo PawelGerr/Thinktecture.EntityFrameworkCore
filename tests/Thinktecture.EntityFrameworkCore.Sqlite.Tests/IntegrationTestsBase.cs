@@ -20,74 +20,73 @@ using Xunit.Abstractions;
 [assembly: SuppressMessage("ReSharper", "CA1816")]
 [assembly: SuppressMessage("ReSharper", "CA1822")]
 
-namespace Thinktecture
+namespace Thinktecture;
+
+public class IntegrationTestsBase : SqliteDbContextIntegrationTests<TestDbContext>
 {
-   public class IntegrationTestsBase : SqliteDbContextIntegrationTests<TestDbContext>
+   private static readonly ConcurrentDictionary<ITestOutputHelper, ILoggerFactory> _loggerFactoryCache = new();
+
+   protected Action<DbContextOptionsBuilder<TestDbContext>>? ConfigureOptionsBuilder { get; set; }
+   protected Action<ModelBuilder>? ConfigureModel { get; set; }
+
+   protected IntegrationTestsBase(ITestOutputHelper testOutputHelper,
+                                  IMigrationExecutionStrategy? migrationExecutionStrategy = null)
+      : base(migrationExecutionStrategy)
    {
-      private static readonly ConcurrentDictionary<ITestOutputHelper, ILoggerFactory> _loggerFactoryCache = new();
+      DisableModelCache = true;
 
-      protected Action<DbContextOptionsBuilder<TestDbContext>>? ConfigureOptionsBuilder { get; set; }
-      protected Action<ModelBuilder>? ConfigureModel { get; set; }
+      var loggerFactory = CreateLoggerFactory(testOutputHelper);
+      UseLoggerFactory(loggerFactory);
+   }
 
-      protected IntegrationTestsBase(ITestOutputHelper testOutputHelper,
-                                     IMigrationExecutionStrategy? migrationExecutionStrategy = null)
-         : base(migrationExecutionStrategy)
-      {
-         DisableModelCache = true;
+   protected IDiagnosticsLogger<TCategory> CreateDiagnosticsLogger<TCategory>(ILoggingOptions? options = null, DiagnosticSource? diagnosticSource = null)
+      where TCategory : LoggerCategory<TCategory>, new()
+   {
+      var loggerFactory = LoggerFactory ?? throw new InvalidOperationException($"The '{nameof(LoggerFactory)}' must be set first.");
 
-         var loggerFactory = CreateLoggerFactory(testOutputHelper);
-         UseLoggerFactory(loggerFactory);
-      }
+      return new DiagnosticsLogger<TCategory>(loggerFactory, options ?? new LoggingOptions(),
+                                              diagnosticSource ?? new DiagnosticListener(typeof(TCategory).ShortDisplayName()),
+                                              new SqliteLoggingDefinitions(),
+                                              new NullDbContextLogger());
+   }
 
-      protected IDiagnosticsLogger<TCategory> CreateDiagnosticsLogger<TCategory>(ILoggingOptions? options = null, DiagnosticSource? diagnosticSource = null)
-         where TCategory : LoggerCategory<TCategory>, new()
-      {
-         var loggerFactory = LoggerFactory ?? throw new InvalidOperationException($"The '{nameof(LoggerFactory)}' must be set first.");
+   protected override DbContextOptionsBuilder<TestDbContext> CreateOptionsBuilder(DbConnection? connection)
+   {
+      var builder = base.CreateOptionsBuilder(connection);
+      ConfigureOptionsBuilder?.Invoke(builder);
 
-         return new DiagnosticsLogger<TCategory>(loggerFactory, options ?? new LoggingOptions(),
-                                                 diagnosticSource ?? new DiagnosticListener(typeof(TCategory).ShortDisplayName()),
-                                                 new SqliteLoggingDefinitions(),
-                                                 new NullDbContextLogger());
-      }
+      return builder;
+   }
 
-      protected override DbContextOptionsBuilder<TestDbContext> CreateOptionsBuilder(DbConnection? connection)
-      {
-         var builder = base.CreateOptionsBuilder(connection);
-         ConfigureOptionsBuilder?.Invoke(builder);
+   /// <inheritdoc />
+   protected override void ConfigureSqlite(SqliteDbContextOptionsBuilder builder)
+   {
+      base.ConfigureSqlite(builder);
 
-         return builder;
-      }
+      builder.AddBulkOperationSupport()
+             .AddRowNumberSupport();
+   }
 
-      /// <inheritdoc />
-      protected override void ConfigureSqlite(SqliteDbContextOptionsBuilder builder)
-      {
-         base.ConfigureSqlite(builder);
+   protected override TestDbContext CreateContext(DbContextOptions<TestDbContext> options)
+   {
+      var ctx = base.CreateContext(options);
+      ctx.ConfigureModel = ConfigureModel;
 
-         builder.AddBulkOperationSupport()
-                .AddRowNumberSupport();
-      }
+      return ctx;
+   }
 
-      protected override TestDbContext CreateContext(DbContextOptions<TestDbContext> options)
-      {
-         var ctx = base.CreateContext(options);
-         ctx.ConfigureModel = ConfigureModel;
+   private ILoggerFactory CreateLoggerFactory(ITestOutputHelper testOutputHelper)
+   {
+      if (testOutputHelper == null)
+         throw new ArgumentNullException(nameof(testOutputHelper));
 
-         return ctx;
-      }
+      return _loggerFactoryCache.GetOrAdd(testOutputHelper, helper =>
+                                                            {
+                                                               var loggerConfig = new LoggerConfiguration()
+                                                                                  .WriteTo.TestOutput(testOutputHelper, outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}");
 
-      private ILoggerFactory CreateLoggerFactory(ITestOutputHelper testOutputHelper)
-      {
-         if (testOutputHelper == null)
-            throw new ArgumentNullException(nameof(testOutputHelper));
-
-         return _loggerFactoryCache.GetOrAdd(testOutputHelper, helper =>
-                                                               {
-                                                                  var loggerConfig = new LoggerConfiguration()
-                                                                                     .WriteTo.TestOutput(testOutputHelper, outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}");
-
-                                                                  return new LoggerFactory()
-                                                                     .AddSerilog(loggerConfig.CreateLogger());
-                                                               });
-      }
+                                                               return new LoggerFactory()
+                                                                  .AddSerilog(loggerConfig.CreateLogger());
+                                                            });
    }
 }

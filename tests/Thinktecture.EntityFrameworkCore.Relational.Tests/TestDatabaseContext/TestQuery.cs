@@ -1,6 +1,5 @@
-namespace Thinktecture.TestDatabaseContext
+namespace Thinktecture.TestDatabaseContext;
+
+public class TestQuery
 {
-   public class TestQuery
-   {
-   }
 }

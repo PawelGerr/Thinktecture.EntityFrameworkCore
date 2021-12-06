@@ -1,13 +1,12 @@
 using Thinktecture.EntityFrameworkCore.Query;
 
-namespace Thinktecture
+namespace Thinktecture;
+
+public class DemoTenantDatabaseProviderFactory : ITenantDatabaseProviderFactory
 {
-   public class DemoTenantDatabaseProviderFactory : ITenantDatabaseProviderFactory
+   /// <inheritdoc />
+   public ITenantDatabaseProvider Create()
    {
-      /// <inheritdoc />
-      public ITenantDatabaseProvider Create()
-      {
-         return new DemoTenantDatabaseProvider(CurrentTenant.Value);
-      }
+      return new DemoTenantDatabaseProvider(CurrentTenant.Value);
    }
 }

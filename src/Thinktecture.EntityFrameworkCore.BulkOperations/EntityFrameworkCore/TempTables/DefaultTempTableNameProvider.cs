@@ -2,28 +2,27 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 
-namespace Thinktecture.EntityFrameworkCore.TempTables
+namespace Thinktecture.EntityFrameworkCore.TempTables;
+
+/// <summary>
+/// Use the default name of the entity.
+/// </summary>
+public class DefaultTempTableNameProvider : ITempTableNameProvider
 {
    /// <summary>
-   /// Use the default name of the entity.
+   /// An instance of <see cref="DefaultTempTableNameProvider"/>.
    /// </summary>
-   public class DefaultTempTableNameProvider : ITempTableNameProvider
+   public static readonly ITempTableNameProvider Instance = new DefaultTempTableNameProvider();
+
+   /// <inheritdoc />
+   public ITempTableNameLease LeaseName(DbContext ctx, IEntityType entityType)
    {
-      /// <summary>
-      /// An instance of <see cref="DefaultTempTableNameProvider"/>.
-      /// </summary>
-      public static readonly ITempTableNameProvider Instance = new DefaultTempTableNameProvider();
+      if (entityType == null)
+         throw new ArgumentNullException(nameof(entityType));
 
-      /// <inheritdoc />
-      public ITempTableNameLease LeaseName(DbContext ctx, IEntityType entityType)
-      {
-         if (entityType == null)
-            throw new ArgumentNullException(nameof(entityType));
+      var tableName = entityType.GetTableName()
+                      ?? throw new InvalidOperationException($"The entity '{entityType.Name}' has no table name.");
 
-         var tableName = entityType.GetTableName()
-                         ?? throw new InvalidOperationException($"The entity '{entityType.Name}' has no table name.");
-
-         return new TempTableName(tableName);
-      }
+      return new TempTableName(tableName);
    }
 }
