@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using Thinktecture.EntityFrameworkCore.BulkOperations;
 
 namespace Thinktecture.EntityFrameworkCore.TempTables;

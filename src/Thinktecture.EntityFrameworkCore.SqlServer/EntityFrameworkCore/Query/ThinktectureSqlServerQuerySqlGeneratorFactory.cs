@@ -1,4 +1,3 @@
-using System;
 using Microsoft.EntityFrameworkCore.Query;
 
 namespace Thinktecture.EntityFrameworkCore.Query;

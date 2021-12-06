@@ -1,11 +1,6 @@
-using System.Linq;
-using FluentAssertions;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Thinktecture.TestDatabaseContext;
-using Xunit;
-using Xunit.Abstractions;
 
 namespace Thinktecture.EntityFrameworkCore.Infrastructure.DefaultSchemaModelCustomizerTests;
 

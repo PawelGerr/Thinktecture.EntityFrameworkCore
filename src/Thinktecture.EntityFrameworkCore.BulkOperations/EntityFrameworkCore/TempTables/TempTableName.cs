@@ -1,5 +1,3 @@
-using System;
-
 namespace Thinktecture.EntityFrameworkCore.TempTables;
 
 internal class TempTableName : ITempTableNameLease

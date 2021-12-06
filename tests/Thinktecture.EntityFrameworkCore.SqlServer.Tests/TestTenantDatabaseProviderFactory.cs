@@ -1,5 +1,3 @@
-using System;
-using Moq;
 using Thinktecture.EntityFrameworkCore.Query;
 
 namespace Thinktecture;

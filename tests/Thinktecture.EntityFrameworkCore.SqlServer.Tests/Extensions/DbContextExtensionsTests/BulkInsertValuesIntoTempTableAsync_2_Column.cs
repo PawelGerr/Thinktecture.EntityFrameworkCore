@@ -1,12 +1,5 @@
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using FluentAssertions;
-using Microsoft.EntityFrameworkCore;
 using Thinktecture.EntityFrameworkCore.BulkOperations;
 using Thinktecture.EntityFrameworkCore.TempTables;
-using Xunit;
-using Xunit.Abstractions;
 
 namespace Thinktecture.Extensions.DbContextExtensionsTests;
 

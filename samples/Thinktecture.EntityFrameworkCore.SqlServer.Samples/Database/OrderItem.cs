@@ -1,5 +1,3 @@
-using System;
-
 namespace Thinktecture.Database;
 
 public class OrderItem

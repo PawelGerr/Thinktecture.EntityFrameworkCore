@@ -1,9 +1,4 @@
-using System.Linq;
-using FluentAssertions;
-using Microsoft.EntityFrameworkCore;
 using Thinktecture.TestDatabaseContext;
-using Xunit;
-using Xunit.Abstractions;
 
 namespace Thinktecture.Extensions.ModelBuilderExtensionsTests;
 

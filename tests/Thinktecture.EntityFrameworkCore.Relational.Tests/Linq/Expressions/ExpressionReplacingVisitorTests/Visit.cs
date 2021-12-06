@@ -1,7 +1,4 @@
-using System;
 using System.Linq.Expressions;
-using FluentAssertions;
-using Xunit;
 
 namespace Thinktecture.Linq.Expressions.ExpressionReplacingVisitorTests;
 

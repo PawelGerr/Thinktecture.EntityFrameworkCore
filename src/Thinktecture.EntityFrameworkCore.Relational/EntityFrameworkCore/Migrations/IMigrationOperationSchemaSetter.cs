@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore.Migrations.Operations;
 
 namespace Thinktecture.EntityFrameworkCore.Migrations;

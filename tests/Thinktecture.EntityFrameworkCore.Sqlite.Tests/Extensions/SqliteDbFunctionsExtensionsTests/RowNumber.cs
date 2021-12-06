@@ -1,12 +1,6 @@
-using System;
-using System.Linq;
 using System.Linq.Expressions;
-using FluentAssertions;
 using Microsoft.Data.Sqlite;
-using Microsoft.EntityFrameworkCore;
 using Thinktecture.TestDatabaseContext;
-using Xunit;
-using Xunit.Abstractions;
 
 namespace Thinktecture.Extensions.SqliteDbFunctionsExtensionsTests;
 

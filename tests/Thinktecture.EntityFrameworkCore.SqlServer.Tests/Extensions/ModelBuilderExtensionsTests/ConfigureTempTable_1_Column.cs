@@ -1,11 +1,4 @@
-using System;
-using System.Linq;
-using System.Threading.Tasks;
-using FluentAssertions;
-using Microsoft.EntityFrameworkCore;
 using Thinktecture.EntityFrameworkCore.TempTables;
-using Xunit;
-using Xunit.Abstractions;
 
 namespace Thinktecture.Extensions.ModelBuilderExtensionsTests;
 

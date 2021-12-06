@@ -1,6 +1,3 @@
-using System;
-using Microsoft.EntityFrameworkCore;
-
 namespace Thinktecture.TestDatabaseContext;
 #pragma warning disable 8618
 public class TestEntityWithShadowProperties

@@ -1,10 +1,3 @@
-using System.Linq;
-using System.Threading.Tasks;
-using FluentAssertions;
-using Microsoft.EntityFrameworkCore;
-using Xunit;
-using Xunit.Abstractions;
-
 namespace Thinktecture.EntityFrameworkCore.TenantDatabase;
 
 public class TenantDatabaseTests : IntegrationTestsBase

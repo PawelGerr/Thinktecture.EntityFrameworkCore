@@ -1,8 +1,3 @@
-using System;
-using FluentAssertions;
-using Xunit;
-using Xunit.Abstractions;
-
 namespace Thinktecture.EntityFrameworkCore.Infrastructure.DefaultSchemaRespectingModelCacheKeyFactoryTests;
 
 public class Create : IntegrationTestsBase

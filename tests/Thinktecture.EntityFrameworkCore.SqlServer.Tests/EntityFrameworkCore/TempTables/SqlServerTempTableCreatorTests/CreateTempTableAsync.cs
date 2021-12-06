@@ -1,14 +1,7 @@
-using System;
 using System.Data;
-using System.Linq;
-using System.Threading.Tasks;
-using FluentAssertions;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Thinktecture.EntityFrameworkCore.BulkOperations;
 using Thinktecture.TestDatabaseContext;
-using Xunit;
-using Xunit.Abstractions;
 
 namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorTests;
 

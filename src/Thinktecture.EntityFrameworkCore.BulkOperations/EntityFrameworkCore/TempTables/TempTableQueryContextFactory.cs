@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 
 namespace Thinktecture.EntityFrameworkCore.TempTables;

@@ -1,12 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using FluentAssertions;
-using Microsoft.EntityFrameworkCore;
 using Thinktecture.EntityFrameworkCore;
-using Xunit;
-using Xunit.Abstractions;
 
 namespace Thinktecture.Extensions.QueryableExtensionsTests;
 

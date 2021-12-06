@@ -1,5 +1,3 @@
-using System;
-
 namespace Thinktecture.EntityFrameworkCore.TempTables.NameSuffixing;
 
 internal readonly struct TempTableSuffixLease : IDisposable

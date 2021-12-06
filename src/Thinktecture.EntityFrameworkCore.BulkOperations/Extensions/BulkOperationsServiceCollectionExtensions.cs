@@ -1,4 +1,3 @@
-using System;
 using Microsoft.Extensions.DependencyInjection;
 using Thinktecture.EntityFrameworkCore.TempTables.NameSuffixing;
 

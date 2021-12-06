@@ -1,10 +1,6 @@
-using System;
-using FluentAssertions;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Thinktecture.EntityFrameworkCore.Data;
 using Thinktecture.TestDatabaseContext;
-using Xunit;
 
 namespace Thinktecture.EntityFrameworkCore.BulkOperations.PropertiesProviderTests;
 

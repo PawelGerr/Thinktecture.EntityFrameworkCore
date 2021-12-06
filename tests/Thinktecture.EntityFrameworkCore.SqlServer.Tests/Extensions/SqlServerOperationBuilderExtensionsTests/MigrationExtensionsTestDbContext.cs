@@ -1,6 +1,3 @@
-using System;
-using System.Linq;
-using Microsoft.EntityFrameworkCore;
 using Thinktecture.TestDatabaseContext;
 
 namespace Thinktecture.Extensions.SqlServerOperationBuilderExtensionsTests;

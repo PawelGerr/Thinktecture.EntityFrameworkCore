@@ -1,14 +1,8 @@
-using System;
 using System.Data.Common;
-using System.Linq;
 using System.Transactions;
-using FluentAssertions;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
 using Thinktecture.TestDatabaseContext;
-using Xunit;
-using Xunit.Abstractions;
 using IsolationLevel = System.Data.IsolationLevel;
 
 namespace Thinktecture.EntityFrameworkCore.Storage;

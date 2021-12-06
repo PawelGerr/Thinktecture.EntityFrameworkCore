@@ -17,6 +17,11 @@
     <Nullable>enable</Nullable>
     <NoWarn>$(NoWarn);CA1303;MSB3884;</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
+  
+  <ItemGroup>
+    <Using Include="Microsoft.EntityFrameworkCore" />
+  </ItemGroup>
 
 </Project>

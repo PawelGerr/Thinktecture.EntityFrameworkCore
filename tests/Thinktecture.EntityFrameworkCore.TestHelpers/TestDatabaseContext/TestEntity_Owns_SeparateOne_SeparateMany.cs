@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using Microsoft.EntityFrameworkCore;
-
 namespace Thinktecture.TestDatabaseContext;
 #pragma warning disable 8618
 public class TestEntity_Owns_SeparateOne_SeparateMany

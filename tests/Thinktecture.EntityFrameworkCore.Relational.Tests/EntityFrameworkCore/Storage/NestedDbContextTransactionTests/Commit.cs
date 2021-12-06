@@ -1,11 +1,7 @@
-using System;
 using System.Transactions;
-using FluentAssertions;
 using Microsoft.EntityFrameworkCore.Storage;
 using Thinktecture.EntityFrameworkCore.Storage.NestedRelationalTransactionManagerTests;
 using Thinktecture.TestDatabaseContext;
-using Xunit;
-using Xunit.Abstractions;
 
 namespace Thinktecture.EntityFrameworkCore.Storage.NestedDbContextTransactionTests;
 

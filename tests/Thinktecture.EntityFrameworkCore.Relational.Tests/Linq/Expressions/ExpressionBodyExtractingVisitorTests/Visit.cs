@@ -1,8 +1,5 @@
-using System;
 using System.Linq.Expressions;
 using System.Reflection;
-using FluentAssertions;
-using Xunit;
 
 namespace Thinktecture.Linq.Expressions.ExpressionBodyExtractingVisitorTests;
 

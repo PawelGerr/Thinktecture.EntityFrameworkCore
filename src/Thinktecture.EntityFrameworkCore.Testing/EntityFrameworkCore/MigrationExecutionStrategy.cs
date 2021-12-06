@@ -1,5 +1,3 @@
-using Microsoft.EntityFrameworkCore;
-
 namespace Thinktecture.EntityFrameworkCore;
 
 internal sealed class MigrationExecutionStrategy : IMigrationExecutionStrategy

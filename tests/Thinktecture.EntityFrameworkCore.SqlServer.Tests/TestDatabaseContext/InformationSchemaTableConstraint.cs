@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-
 namespace Thinktecture.TestDatabaseContext;
 
 // ReSharper disable InconsistentNaming

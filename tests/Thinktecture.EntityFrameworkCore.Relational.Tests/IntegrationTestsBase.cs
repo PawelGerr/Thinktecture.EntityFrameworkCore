@@ -1,15 +1,11 @@
-using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Data.Common;
 using System.Diagnostics.CodeAnalysis;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Serilog;
 using Thinktecture.EntityFrameworkCore;
 using Thinktecture.EntityFrameworkCore.Testing;
 using Thinktecture.TestDatabaseContext;
-using Xunit.Abstractions;
 
 [assembly: SuppressMessage("ReSharper", "CA1063")]
 [assembly: SuppressMessage("ReSharper", "CA1816")]

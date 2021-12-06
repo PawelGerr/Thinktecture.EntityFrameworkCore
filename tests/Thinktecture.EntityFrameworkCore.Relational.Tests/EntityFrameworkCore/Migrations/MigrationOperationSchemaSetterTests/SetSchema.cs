@@ -1,8 +1,5 @@
-using System.Collections.Generic;
-using FluentAssertions;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Migrations.Operations;
-using Xunit;
 
 namespace Thinktecture.EntityFrameworkCore.Migrations.MigrationOperationSchemaSetterTests;
 

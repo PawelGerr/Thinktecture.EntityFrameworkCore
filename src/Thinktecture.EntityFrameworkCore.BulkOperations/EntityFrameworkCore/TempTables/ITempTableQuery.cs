@@ -1,6 +1,3 @@
-using System;
-using System.Linq;
-
 namespace Thinktecture.EntityFrameworkCore.TempTables;
 
 /// <summary>

@@ -1,6 +1,3 @@
-using System;
-using Microsoft.EntityFrameworkCore;
-
 namespace Thinktecture.TestDatabaseContext;
 
 public class DbContextWithoutSchema : DbContext

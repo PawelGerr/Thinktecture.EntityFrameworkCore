@@ -1,7 +1,4 @@
-using System;
-using System.Collections.Generic;
 using System.Reflection;
-using Microsoft.EntityFrameworkCore;
 
 namespace Thinktecture.TestDatabaseContext;
 #pragma warning disable 8618

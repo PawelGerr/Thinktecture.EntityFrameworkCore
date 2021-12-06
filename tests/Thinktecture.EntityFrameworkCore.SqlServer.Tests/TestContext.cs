@@ -1,10 +1,8 @@
-using System;
 using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Serilog;
-using Xunit.Abstractions;
 
 [assembly: SuppressMessage("ReSharper", "CA1707")]
 [assembly: SuppressMessage("ReSharper", "CA2007")]

@@ -1,9 +1,5 @@
-using System;
-using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 
 namespace Thinktecture.EntityFrameworkCore.Data;

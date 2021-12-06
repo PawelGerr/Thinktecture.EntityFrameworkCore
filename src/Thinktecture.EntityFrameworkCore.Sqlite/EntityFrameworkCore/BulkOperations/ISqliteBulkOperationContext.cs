@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using Microsoft.Data.Sqlite;
 
 namespace Thinktecture.EntityFrameworkCore.BulkOperations;

@@ -1,7 +1,5 @@
-using System;
 using System.Data.Common;
 using Microsoft.Data.Sqlite;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Logging;
 using Thinktecture.EntityFrameworkCore.Infrastructure;

@@ -1,5 +1,3 @@
-using System;
-using Microsoft.EntityFrameworkCore;
 using Thinktecture.EntityFrameworkCore;
 
 namespace Thinktecture.TestDatabaseContext;

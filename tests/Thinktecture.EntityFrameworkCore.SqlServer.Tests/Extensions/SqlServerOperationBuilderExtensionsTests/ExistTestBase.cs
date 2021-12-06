@@ -1,9 +1,6 @@
-using System;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage;
-using Xunit.Abstractions;
 
 namespace Thinktecture.Extensions.SqlServerOperationBuilderExtensionsTests;
 

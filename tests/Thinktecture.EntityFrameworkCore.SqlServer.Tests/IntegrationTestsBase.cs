@@ -1,22 +1,15 @@
-using System;
-using System.Collections.Generic;
 using System.Data.Common;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Diagnostics.Internal;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.SqlServer.Diagnostics.Internal;
-using Moq;
 using Thinktecture.EntityFrameworkCore;
 using Thinktecture.EntityFrameworkCore.Infrastructure;
 using Thinktecture.EntityFrameworkCore.Query;
 using Thinktecture.EntityFrameworkCore.Testing;
 using Thinktecture.TestDatabaseContext;
-using Xunit;
-using Xunit.Abstractions;
 
 namespace Thinktecture;
 

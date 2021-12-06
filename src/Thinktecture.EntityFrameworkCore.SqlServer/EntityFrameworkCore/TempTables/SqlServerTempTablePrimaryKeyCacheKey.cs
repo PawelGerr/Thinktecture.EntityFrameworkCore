@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using Thinktecture.EntityFrameworkCore.Data;
 
 namespace Thinktecture.EntityFrameworkCore.TempTables;

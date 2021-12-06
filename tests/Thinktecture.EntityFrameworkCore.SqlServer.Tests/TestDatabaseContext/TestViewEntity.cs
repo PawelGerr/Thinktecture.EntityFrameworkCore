@@ -1,5 +1,3 @@
-using System;
-
 namespace Thinktecture.TestDatabaseContext;
 
 public class TestViewEntity
