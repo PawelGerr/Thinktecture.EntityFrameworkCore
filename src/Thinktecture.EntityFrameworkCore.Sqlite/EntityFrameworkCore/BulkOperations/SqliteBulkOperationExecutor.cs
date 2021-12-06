@@ -383,15 +383,5 @@ public sealed class
       await _ctx.Database.ExecuteSqlRawAsync(truncateStatement, cancellationToken);
    }
 
-   private readonly struct ParameterInfo
-   {
-      public readonly SqliteParameter Parameter;
-      public readonly bool IsAutoIncrementColumn;
-
-      public ParameterInfo(SqliteParameter parameter, bool isAutoIncrementColumn)
-      {
-         Parameter = parameter;
-         IsAutoIncrementColumn = isAutoIncrementColumn;
-      }
-   }
+   private readonly record struct ParameterInfo(SqliteParameter Parameter, bool IsAutoIncrementColumn);
 }
