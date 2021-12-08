@@ -1,5 +1,4 @@
 using System.Diagnostics.CodeAnalysis;
-using Thinktecture.EntityFrameworkCore.TempTables;
 
 namespace Thinktecture.EntityFrameworkCore.BulkOperations;
 
@@ -8,11 +7,6 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations;
 /// </summary>
 public abstract class SqlServerBulkOperationOptions
 {
-   /// <summary>
-   /// Options for creation of the temp table and for bulk insert of data used for later update.
-   /// </summary>
-   public SqlServerTempTableBulkOperationOptions TempTableOptions { get; }
-
    /// <summary>
    /// Properties to update.
    /// If the <see cref="PropertiesToUpdate"/> is <c>null</c> then all properties of the entity are going to be updated.
@@ -32,37 +26,33 @@ public abstract class SqlServerBulkOperationOptions
    public List<SqlServerTableHintLimited> MergeTableHints { get; }
 
    /// <summary>
+   /// Options for the temp table used by the 'MERGE' command.
+   /// </summary>
+   public SqlServerBulkOperationTempTableOptions TempTableOptions { get; }
+
+   /// <summary>
    /// Initializes new instance of <see cref="SqlServerBulkOperationOptions"/>.
    /// </summary>
    /// <param name="options">Options to initialize from.</param>
    /// <param name="propertiesToUpdate">Properties to update.</param>
    /// <param name="keyProperties">Key properties.</param>
    protected SqlServerBulkOperationOptions(
-      ISqlServerBulkOperationOptions? options = null,
+      SqlServerBulkOperationOptions? options = null,
       IEntityPropertiesProvider? propertiesToUpdate = null,
       IEntityPropertiesProvider? keyProperties = null)
    {
       if (options is null)
       {
-         TempTableOptions = new ConcreteSqlServerTempTableBulkOperationOptions { PrimaryKeyCreation = PrimaryKeyPropertiesProviders.None };
+         TempTableOptions = new SqlServerBulkOperationTempTableOptions();
          MergeTableHints = new List<SqlServerTableHintLimited> { SqlServerTableHintLimited.HoldLock };
       }
       else
       {
-         TempTableOptions = new ConcreteSqlServerTempTableBulkOperationOptions(options.TempTableOptions);
+         TempTableOptions = new SqlServerBulkOperationTempTableOptions(options.TempTableOptions);
          MergeTableHints = options.MergeTableHints;
       }
 
       KeyProperties = keyProperties;
       PropertiesToUpdate = propertiesToUpdate;
-   }
-
-   private class ConcreteSqlServerTempTableBulkOperationOptions : SqlServerTempTableBulkOperationOptions
-   {
-      public ConcreteSqlServerTempTableBulkOperationOptions(ITempTableBulkInsertOptions? optionsToInitializeFrom = null)
-         : base(optionsToInitializeFrom)
-      {
-         Advanced.UsePropertiesToInsertForTempTableCreation = true;
-      }
    }
 }
