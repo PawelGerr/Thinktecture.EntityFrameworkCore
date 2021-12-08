@@ -11,7 +11,7 @@ internal class BulkInsertContext : ISqliteBulkOperationContext
    public IEntityDataReaderFactory ReaderFactory { get; }
    public IReadOnlyList<PropertyWithNavigations> Properties { get; }
    public SqliteConnection Connection { get; }
-   public ISqliteBulkInsertOptions Options { get; }
+   public SqliteBulkInsertOptions Options { get; }
 
    public bool HasExternalProperties => _externalProperties.Count != 0;
    public SqliteAutoIncrementBehavior AutoIncrementBehavior => Options.AutoIncrementBehavior;
@@ -19,7 +19,7 @@ internal class BulkInsertContext : ISqliteBulkOperationContext
    public BulkInsertContext(
       IEntityDataReaderFactory factory,
       SqliteConnection sqlCon,
-      ISqliteBulkInsertOptions options,
+      SqliteBulkInsertOptions options,
       IReadOnlyList<PropertyWithNavigations> properties)
    {
       ReaderFactory = factory;
@@ -59,7 +59,7 @@ internal class BulkInsertContext : ISqliteBulkOperationContext
       public OwnedTypeBulkInsertContext(
          IEntityDataReaderFactory factory,
          SqliteConnection sqlCon,
-         ISqliteBulkInsertOptions options,
+         SqliteBulkInsertOptions options,
          IReadOnlyList<PropertyWithNavigations> properties,
          IEntityType entityType,
          IEnumerable<object> entities)

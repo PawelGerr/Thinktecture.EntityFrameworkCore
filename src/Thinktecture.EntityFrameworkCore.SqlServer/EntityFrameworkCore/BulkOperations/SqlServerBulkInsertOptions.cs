@@ -6,7 +6,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations;
 /// <summary>
 /// Bulk insert options for SQL Server.
 /// </summary>
-public sealed class SqlServerBulkInsertOptions : ISqlServerBulkInsertOptions
+public sealed class SqlServerBulkInsertOptions : IBulkInsertOptions
 {
    /// <summary>
    /// Timeout used by <see cref="SqlBulkCopy"/>
@@ -38,13 +38,14 @@ public sealed class SqlServerBulkInsertOptions : ISqlServerBulkInsertOptions
    /// <param name="optionsToInitializeFrom">Options to initialize from.</param>
    public SqlServerBulkInsertOptions(IBulkInsertOptions? optionsToInitializeFrom = null)
    {
+      EnableStreaming = true;
+
       if (optionsToInitializeFrom == null)
          return;
 
       PropertiesToInsert = optionsToInitializeFrom.PropertiesToInsert;
-      EnableStreaming = true;
 
-      if (optionsToInitializeFrom is ISqlServerBulkInsertOptions sqlServerOptions)
+      if (optionsToInitializeFrom is SqlServerBulkInsertOptions sqlServerOptions)
       {
          BulkCopyTimeout = sqlServerOptions.BulkCopyTimeout;
          SqlBulkCopyOptions = sqlServerOptions.SqlBulkCopyOptions;

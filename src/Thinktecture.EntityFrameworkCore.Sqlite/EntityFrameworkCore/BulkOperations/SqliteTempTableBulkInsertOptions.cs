@@ -8,20 +8,11 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations;
 /// </summary>
 public sealed class SqliteTempTableBulkInsertOptions : ITempTableBulkInsertOptions
 {
-   /// <inheritdoc />
-   public IBulkInsertOptions BulkInsertOptions => _bulkInsertOptions;
-
-   private readonly SqliteBulkInsertOptions _bulkInsertOptions;
-
    /// <summary>
    /// Behavior for auto-increment columns.
    /// Default is <see cref="SqliteAutoIncrementBehavior.SetZeroToNull"/>
    /// </summary>
-   public SqliteAutoIncrementBehavior AutoIncrementBehavior
-   {
-      get => _bulkInsertOptions.AutoIncrementBehavior;
-      set => _bulkInsertOptions.AutoIncrementBehavior = value;
-   }
+   public SqliteAutoIncrementBehavior AutoIncrementBehavior { get; set; }
 
    /// <inheritdoc />
    public bool TruncateTableIfExists { get; set; }
@@ -36,11 +27,7 @@ public sealed class SqliteTempTableBulkInsertOptions : ITempTableBulkInsertOptio
    public IPrimaryKeyPropertiesProvider? PrimaryKeyCreation { get; set; }
 
    /// <inheritdoc />
-   public IEntityPropertiesProvider? PropertiesToInsert
-   {
-      get => _bulkInsertOptions.PropertiesToInsert;
-      set => _bulkInsertOptions.PropertiesToInsert = value;
-   }
+   public IEntityPropertiesProvider? PropertiesToInsert { get; set; }
 
    /// <summary>
    /// Advanced settings.
@@ -52,12 +39,12 @@ public sealed class SqliteTempTableBulkInsertOptions : ITempTableBulkInsertOptio
    /// </summary>
    public SqliteTempTableBulkInsertOptions(ITempTableBulkInsertOptions? optionsToInitializeFrom = null)
    {
-      _bulkInsertOptions = new SqliteBulkInsertOptions(optionsToInitializeFrom?.BulkInsertOptions);
       Advanced = new AdvancedSqliteTempTableBulkInsertOptions();
 
       if (optionsToInitializeFrom is null)
       {
          DropTableOnDispose = true;
+         AutoIncrementBehavior = SqliteAutoIncrementBehavior.SetZeroToNull;
       }
       else
       {
@@ -68,14 +55,17 @@ public sealed class SqliteTempTableBulkInsertOptions : ITempTableBulkInsertOptio
          PropertiesToInsert = optionsToInitializeFrom.PropertiesToInsert;
 
          if (optionsToInitializeFrom is SqliteTempTableBulkInsertOptions sqliteOptions)
+         {
+            AutoIncrementBehavior = sqliteOptions.AutoIncrementBehavior;
             Advanced.UsePropertiesToInsertForTempTableCreation = sqliteOptions.Advanced.UsePropertiesToInsertForTempTableCreation;
+         }
       }
    }
 
    /// <summary>
-   /// Options for creation of the temp table.
+   /// Gets options for creation of the temp table.
    /// </summary>
-   public ITempTableCreationOptions GetTempTableCreationOptions()
+   public TempTableCreationOptions GetTempTableCreationOptions()
    {
       return new TempTableCreationOptions
              {
@@ -84,6 +74,18 @@ public sealed class SqliteTempTableBulkInsertOptions : ITempTableBulkInsertOptio
                 TableNameProvider = TableNameProvider,
                 PrimaryKeyCreation = PrimaryKeyCreation,
                 PropertiesToInclude = Advanced.UsePropertiesToInsertForTempTableCreation ? PropertiesToInsert : null
+             };
+   }
+
+   /// <summary>
+   /// Get options for bulk insert.
+   /// </summary>
+   public SqliteBulkInsertOptions GetBulkInsertOptions()
+   {
+      return new SqliteBulkInsertOptions
+             {
+                AutoIncrementBehavior = AutoIncrementBehavior,
+                PropertiesToInsert = PropertiesToInsert
              };
    }
 

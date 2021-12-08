@@ -111,7 +111,7 @@ public sealed class SqlServerBulkOperationExecutor
       ArgumentNullException.ThrowIfNull(tableName);
       ArgumentNullException.ThrowIfNull(options);
 
-      if (options is not ISqlServerBulkInsertOptions sqlServerOptions)
+      if (options is not SqlServerBulkInsertOptions sqlServerOptions)
          sqlServerOptions = new SqlServerBulkInsertOptions(options);
 
       var properties = sqlServerOptions.PropertiesToInsert.DeterminePropertiesForInsert(entityType, null);
@@ -219,7 +219,7 @@ public sealed class SqlServerBulkOperationExecutor
       return columnsSb.ToString();
    }
 
-   private SqlBulkCopy CreateSqlBulkCopy(SqlConnection sqlCon, SqlTransaction? sqlTx, string? schema, string tableName, ISqlServerBulkInsertOptions sqlServerOptions)
+   private SqlBulkCopy CreateSqlBulkCopy(SqlConnection sqlCon, SqlTransaction? sqlTx, string? schema, string tableName, SqlServerBulkInsertOptions sqlServerOptions)
    {
       var bulkCopy = new SqlBulkCopy(sqlCon, sqlServerOptions.SqlBulkCopyOptions, sqlTx)
                      {
@@ -298,7 +298,8 @@ INSERT BULK {Table} ({Columns})", (long)duration.TotalMilliseconds,
 
       try
       {
-         await BulkInsertAsync(entityType, entities, null, tempTableReference.Name, options.BulkInsertOptions, cancellationToken).ConfigureAwait(false);
+         var bulkInsertOptions = options.GetBulkInsertOptions();
+         await BulkInsertAsync(entityType, entities, null, tempTableReference.Name, bulkInsertOptions, cancellationToken).ConfigureAwait(false);
 
          if (options.MomentOfPrimaryKeyCreation == MomentOfSqlServerPrimaryKeyCreation.AfterBulkInsert)
          {

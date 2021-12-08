@@ -39,9 +39,4 @@ public interface ITempTableBulkInsertOptions
    /// Gets properties to insert.
    /// </summary>
    IEntityPropertiesProvider? PropertiesToInsert { get; }
-
-   /// <summary>
-   /// Options for bulk insert.
-   /// </summary>
-   IBulkInsertOptions BulkInsertOptions { get; }
 }

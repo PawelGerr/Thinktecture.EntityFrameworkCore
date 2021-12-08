@@ -9,10 +9,6 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations;
 /// </summary>
 public abstract class SqlServerTempTableBulkOperationOptions : ITempTableBulkInsertOptions
 {
-   public IBulkInsertOptions BulkInsertOptions => _bulkInsertOptions;
-
-   private readonly SqlServerBulkInsertOptions _bulkInsertOptions;
-
    /// <summary>
    /// Defines when the primary key should be created.
    /// Default is set to <see cref="MomentOfSqlServerPrimaryKeyCreation.AfterBulkInsert"/>.
@@ -34,46 +30,26 @@ public abstract class SqlServerTempTableBulkOperationOptions : ITempTableBulkIns
    /// <summary>
    /// Timeout used by <see cref="SqlBulkCopy"/>
    /// </summary>
-   public TimeSpan? BulkCopyTimeout
-   {
-      get => _bulkInsertOptions.BulkCopyTimeout;
-      set => _bulkInsertOptions.BulkCopyTimeout = value;
-   }
+   public TimeSpan? BulkCopyTimeout { get; set; }
 
    /// <summary>
    /// Options used by <see cref="SqlBulkCopy"/>.
    /// </summary>
-   public SqlBulkCopyOptions SqlBulkCopyOptions
-   {
-      get => _bulkInsertOptions.SqlBulkCopyOptions;
-      set => _bulkInsertOptions.SqlBulkCopyOptions = value;
-   }
+   public SqlBulkCopyOptions SqlBulkCopyOptions { get; set; }
 
    /// <summary>
    /// Batch size used by <see cref="SqlBulkCopy"/>.
    /// </summary>
-   public int? BatchSize
-   {
-      get => _bulkInsertOptions.BatchSize;
-      set => _bulkInsertOptions.BatchSize = value;
-   }
+   public int? BatchSize { get; set; }
 
    /// <summary>
    /// Enables or disables a <see cref="SqlBulkCopy"/> object to stream data from an <see cref="IDataReader"/> object.
    /// Default is set to <c>true</c>.
    /// </summary>
-   public bool EnableStreaming
-   {
-      get => _bulkInsertOptions.EnableStreaming;
-      set => _bulkInsertOptions.EnableStreaming = value;
-   }
+   public bool EnableStreaming { get; set; }
 
    /// <inheritdoc />
-   public IEntityPropertiesProvider? PropertiesToInsert
-   {
-      get => _bulkInsertOptions.PropertiesToInsert;
-      set => _bulkInsertOptions.PropertiesToInsert = value;
-   }
+   public IEntityPropertiesProvider? PropertiesToInsert { get; set; }
 
    /// <summary>
    /// Adds "COLLATE database_default" to columns so the collation matches with the one of the user database instead of the master db.
@@ -91,13 +67,13 @@ public abstract class SqlServerTempTableBulkOperationOptions : ITempTableBulkIns
    /// <param name="optionsToInitializeFrom">Options to initialize from.</param>
    protected SqlServerTempTableBulkOperationOptions(ITempTableBulkInsertOptions? optionsToInitializeFrom)
    {
-      _bulkInsertOptions = new SqlServerBulkInsertOptions(optionsToInitializeFrom?.BulkInsertOptions);
       Advanced = new AdvancedSqlServerTempTableBulkOperationOptions();
 
       if (optionsToInitializeFrom is null)
       {
          DropTableOnDispose = true;
          MomentOfPrimaryKeyCreation = MomentOfSqlServerPrimaryKeyCreation.AfterBulkInsert;
+         EnableStreaming = true;
       }
       else
       {
@@ -123,7 +99,7 @@ public abstract class SqlServerTempTableBulkOperationOptions : ITempTableBulkIns
    }
 
    /// <summary>
-   /// Options for creation of the temp table.
+   /// Gets options for creation of the temp table.
    /// </summary>
    public SqlServerTempTableCreationOptions GetTempTableCreationOptions()
    {
@@ -136,6 +112,21 @@ public abstract class SqlServerTempTableBulkOperationOptions : ITempTableBulkIns
                 UseDefaultDatabaseCollation = UseDefaultDatabaseCollation,
 
                 PropertiesToInclude = Advanced.UsePropertiesToInsertForTempTableCreation ? PropertiesToInsert : null
+             };
+   }
+
+   /// <summary>
+   /// Gets options for bulk insert.
+   /// </summary>
+   public SqlServerBulkInsertOptions GetBulkInsertOptions()
+   {
+      return new SqlServerBulkInsertOptions
+             {
+                BatchSize = BatchSize,
+                EnableStreaming = EnableStreaming,
+                BulkCopyTimeout = BulkCopyTimeout,
+                SqlBulkCopyOptions = SqlBulkCopyOptions,
+                PropertiesToInsert = PropertiesToInsert
              };
    }
 
