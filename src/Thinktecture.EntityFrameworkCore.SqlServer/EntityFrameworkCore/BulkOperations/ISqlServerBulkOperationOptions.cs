@@ -8,7 +8,7 @@ public interface ISqlServerBulkOperationOptions
    /// <summary>
    /// Options for creation of the temp table and for bulk insert of data used for later update.
    /// </summary>
-   ISqlServerTempTableBulkInsertOptions TempTableOptions { get; }
+   SqlServerTempTableBulkOperationOptions TempTableOptions { get; }
 
    /// <summary>
    /// Table hints for the MERGE command.

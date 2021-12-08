@@ -12,7 +12,7 @@ public readonly struct SqlServerTempTableCreatorCacheKey
    /// <inheritdoc cref="ITempTableCreationOptions.TruncateTableIfExists" />
    public bool TruncateTableIfExists { get; }
 
-   /// <inheritdoc cref="ISqlServerTempTableCreationOptions.UseDefaultDatabaseCollation" />
+   /// <inheritdoc cref="SqlServerTempTableCreationOptions.UseDefaultDatabaseCollation" />
    public bool UseDefaultDatabaseCollation { get; }
 
    /// <summary>
@@ -31,7 +31,7 @@ public readonly struct SqlServerTempTableCreatorCacheKey
    /// <param name="options">Options.</param>
    /// <param name="entityType">Entity type.</param>
    public SqlServerTempTableCreatorCacheKey(
-      ISqlServerTempTableCreationOptions options,
+      SqlServerTempTableCreationOptions options,
       IEntityType entityType)
    {
       TruncateTableIfExists = options.TruncateTableIfExists;

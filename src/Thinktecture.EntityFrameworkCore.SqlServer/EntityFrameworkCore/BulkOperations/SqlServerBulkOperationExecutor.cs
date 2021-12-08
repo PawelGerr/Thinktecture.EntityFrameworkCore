@@ -258,7 +258,7 @@ INSERT BULK {Table} ({Columns})", (long)duration.TotalMilliseconds,
       CancellationToken cancellationToken = default)
       where T : class
    {
-      if (options is not ISqlServerTempTableBulkInsertOptions sqlServerOptions)
+      if (options is not SqlServerTempTableBulkInsertOptions sqlServerOptions)
          sqlServerOptions = new SqlServerTempTableBulkInsertOptions(options);
 
       return BulkInsertIntoTempTableAsync(entities, sqlServerOptions, cancellationToken);
@@ -274,7 +274,7 @@ INSERT BULK {Table} ({Columns})", (long)duration.TotalMilliseconds,
    /// <returns>A query returning the inserted <paramref name="entities"/>.</returns>
    public async Task<ITempTableQuery<T>> BulkInsertIntoTempTableAsync<T>(
       IEnumerable<T> entities,
-      ISqlServerTempTableBulkInsertOptions options,
+      SqlServerTempTableBulkInsertOptions options,
       CancellationToken cancellationToken = default)
       where T : class
    {
@@ -287,13 +287,14 @@ INSERT BULK {Table} ({Columns})", (long)duration.TotalMilliseconds,
       if (selectedProperties.Any(p => !p.IsInlined))
          throw new NotSupportedException($"Bulk insert of separate owned types into temp tables is not supported. Properties of separate owned types: {String.Join(", ", selectedProperties.Where(p => !p.IsInlined))}");
 
-      var tempTableOptions = options.TempTableCreationOptions;
+      var tempTableCreationOptions = options.GetTempTableCreationOptions();
+      var primaryKeyCreation = tempTableCreationOptions.PrimaryKeyCreation;
 
       if (options.MomentOfPrimaryKeyCreation == MomentOfSqlServerPrimaryKeyCreation.AfterBulkInsert)
-         tempTableOptions = new SqlServerTempTableCreationOptions(tempTableOptions) { PrimaryKeyCreation = PrimaryKeyPropertiesProviders.None };
+         tempTableCreationOptions.PrimaryKeyCreation = PrimaryKeyPropertiesProviders.None;
 
       var tempTableCreator = _ctx.GetService<ISqlServerTempTableCreator>();
-      var tempTableReference = await tempTableCreator.CreateTempTableAsync(entityType, tempTableOptions, cancellationToken).ConfigureAwait(false);
+      var tempTableReference = await tempTableCreator.CreateTempTableAsync(entityType, tempTableCreationOptions, cancellationToken).ConfigureAwait(false);
 
       try
       {
@@ -301,9 +302,11 @@ INSERT BULK {Table} ({Columns})", (long)duration.TotalMilliseconds,
 
          if (options.MomentOfPrimaryKeyCreation == MomentOfSqlServerPrimaryKeyCreation.AfterBulkInsert)
          {
-            var tempTableProperties = options.TempTableCreationOptions.PropertiesToInclude.DeterminePropertiesForTempTable(entityType, true);
-            var keyProperties = options.PrimaryKeyCreation.GetPrimaryKeyProperties(entityType, tempTableProperties);
-            await tempTableCreator.CreatePrimaryKeyAsync(_ctx, keyProperties, tempTableReference.Name, options.TempTableCreationOptions.TruncateTableIfExists, cancellationToken).ConfigureAwait(false);
+            tempTableCreationOptions.PrimaryKeyCreation = primaryKeyCreation;
+
+            var tempTableProperties = tempTableCreationOptions.PropertiesToInclude.DeterminePropertiesForTempTable(entityType, true);
+            var keyProperties = tempTableCreationOptions.PrimaryKeyCreation.GetPrimaryKeyProperties(entityType, tempTableProperties);
+            await tempTableCreator.CreatePrimaryKeyAsync(_ctx, keyProperties, tempTableReference.Name, tempTableCreationOptions.TruncateTableIfExists, cancellationToken).ConfigureAwait(false);
          }
 
          var query = _ctx.Set<T>().FromTempTable(tempTableReference.Name);
@@ -391,7 +394,7 @@ INSERT BULK {Table} ({Columns})", (long)duration.TotalMilliseconds,
       return await _ctx.Database.ExecuteSqlRawAsync(mergeStatement, cancellationToken);
    }
 
-   private static ISqlServerTempTableBulkInsertOptions GetSqlServerTempTableBulkInsertOptions(
+   private static SqlServerTempTableBulkOperationOptions GetSqlServerTempTableBulkInsertOptions(
       ISqlServerBulkOperationOptions sqlServerOptions,
       IEntityPropertiesProvider? propertiesToInsert,
       IEntityPropertiesProvider? propertiesToUpdate,

@@ -60,8 +60,9 @@ public abstract class SqlServerBulkOperationOptions
    private class ConcreteSqlServerTempTableBulkOperationOptions : SqlServerTempTableBulkOperationOptions
    {
       public ConcreteSqlServerTempTableBulkOperationOptions(ITempTableBulkInsertOptions? optionsToInitializeFrom = null)
-         : base(true, optionsToInitializeFrom)
+         : base(optionsToInitializeFrom)
       {
+         Advanced.UsePropertiesToInsertForTempTableCreation = true;
       }
    }
 }

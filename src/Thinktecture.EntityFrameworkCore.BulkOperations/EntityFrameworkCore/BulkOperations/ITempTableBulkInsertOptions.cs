@@ -8,9 +8,37 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations;
 public interface ITempTableBulkInsertOptions
 {
    /// <summary>
-   /// Options for creation of the temp table.
+   /// Drops/truncates the temp table if the table exists already.
+   /// Default is <c>false</c>.
    /// </summary>
-   ITempTableCreationOptions TempTableCreationOptions { get; }
+   bool TruncateTableIfExists { get; }
+
+   /// <summary>
+   /// Indication whether to drop the temp table on dispose of <see cref="ITempTableQuery{T}"/>.
+   /// Default is <c>true</c>.
+   /// </summary>
+   /// <remarks>
+   /// Set to <c>false</c> for more performance if the same temp table is re-used very often.
+   /// Set <see cref="TruncateTableIfExists"/> to <c>true</c> on re-use.
+   /// </remarks>
+   bool DropTableOnDispose { get; }
+
+   /// <summary>
+   /// Provides the name to create a temp table with.
+   /// The default is the <see cref="ReusingTempTableNameProvider"/>.
+   /// </summary>
+   ITempTableNameProvider? TableNameProvider { get; }
+
+   /// <summary>
+   /// Provides the corresponding columns if the primary key should be created.
+   /// The default is <see cref="PrimaryKeyPropertiesProviders.EntityTypeConfiguration"/>.
+   /// </summary>
+   IPrimaryKeyPropertiesProvider? PrimaryKeyCreation { get; }
+
+   /// <summary>
+   /// Gets properties to insert.
+   /// </summary>
+   IEntityPropertiesProvider? PropertiesToInsert { get; }
 
    /// <summary>
    /// Options for bulk insert.

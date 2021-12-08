@@ -5,7 +5,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations;
 /// </summary>
 public sealed class SqlServerBulkUpdateOptions : SqlServerBulkOperationOptions, ISqlServerBulkUpdateOptions
 {
-   ISqlServerTempTableBulkInsertOptions ISqlServerBulkOperationOptions.TempTableOptions => TempTableOptions;
+   SqlServerTempTableBulkOperationOptions ISqlServerBulkOperationOptions.TempTableOptions => TempTableOptions;
 
    /// <summary>
    /// Initializes new instance of <see cref="SqlServerBulkUpdateOptions"/>.

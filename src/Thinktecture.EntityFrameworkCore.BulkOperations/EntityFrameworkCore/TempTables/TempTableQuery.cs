@@ -33,8 +33,14 @@ public sealed class TempTableQuery<T> : ITempTableQuery<T>
    /// <inheritdoc />
    public void Dispose()
    {
-      _tempTableReference?.Dispose();
+      var tableRef = _tempTableReference;
+
+      if (tableRef == null)
+         return;
+
+      tableRef.Dispose();
       _tempTableReference = null;
+      _query = null;
    }
 
    /// <inheritdoc />
@@ -42,11 +48,11 @@ public sealed class TempTableQuery<T> : ITempTableQuery<T>
    {
       var tableRef = _tempTableReference;
 
-      if (tableRef != null)
-      {
-         await tableRef.DisposeAsync().ConfigureAwait(false);
-         _tempTableReference = null;
-         _query = null;
-      }
+      if (tableRef == null)
+         return;
+
+      await tableRef.DisposeAsync().ConfigureAwait(false);
+      _tempTableReference = null;
+      _query = null;
    }
 }

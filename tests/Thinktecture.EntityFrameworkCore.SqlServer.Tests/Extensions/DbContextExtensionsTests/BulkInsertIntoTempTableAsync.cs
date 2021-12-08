@@ -1,4 +1,5 @@
 using Microsoft.Data.SqlClient;
+using Thinktecture.EntityFrameworkCore.BulkOperations;
 using Thinktecture.TestDatabaseContext;
 
 namespace Thinktecture.Extensions.DbContextExtensionsTests;
@@ -54,13 +55,35 @@ public class BulkInsertIntoTempTableAsync : IntegrationTestsBase
    }
 
    [Fact]
+   public async Task Should_insert_entityType_without_required_fields_if_excluded_and_with_UsePropertiesToInsertForTempTableCreation()
+   {
+      var entity = new TestEntity
+                   {
+                      Id = new Guid("577BFD36-21BC-4F9E-97B4-367B8F29B730")
+                   };
+      var entities = new List<TestEntity> { entity };
+      await using var query = await ActDbContext.BulkInsertIntoTempTableAsync(entities, new SqlServerTempTableBulkInsertOptions
+                                                                                        {
+                                                                                           PropertiesToInsert = EntityPropertiesProvider.From<TestEntity>(e => e.Id),
+                                                                                           Advanced = { UsePropertiesToInsertForTempTableCreation = true }
+                                                                                        });
+
+      var tempTable = await query.Query.Select(t => new { t.Id }).ToListAsync();
+      tempTable.Should().BeEquivalentTo(new[]
+                                        {
+                                           new { Id = new Guid("577BFD36-21BC-4F9E-97B4-367B8F29B730") }
+                                        });
+   }
+
+   [Fact]
    public async Task Should_return_disposable_query()
    {
       await using var tempTableQuery = await ActDbContext.BulkInsertIntoTempTableAsync(Array.Empty<TestEntity>());
       tempTableQuery.Dispose();
 
       await tempTableQuery.Awaiting(t => t.Query.ToListAsync())
-                          .Should().ThrowAsync<SqlException>().WithMessage("Invalid object name '#TestEntities_1'.");
+                          .Should().ThrowAsync<ObjectDisposedException>().WithMessage(@"Cannot access a disposed object.
+Object name: 'TempTableQuery'.");
    }
 
    [Fact]

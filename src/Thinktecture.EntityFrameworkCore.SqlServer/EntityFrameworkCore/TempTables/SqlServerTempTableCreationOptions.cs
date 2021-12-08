@@ -3,9 +3,11 @@ namespace Thinktecture.EntityFrameworkCore.TempTables;
 /// <summary>
 /// Options required for creation of a temp table.
 /// </summary>
-public class SqlServerTempTableCreationOptions : TempTableCreationOptions, ISqlServerTempTableCreationOptions
+public class SqlServerTempTableCreationOptions : TempTableCreationOptions
 {
-   /// <inheritdoc />
+   /// <summary>
+   /// Adds "COLLATE database_default" to columns so the collation matches with the one of the user database instead of the master db.
+   /// </summary>
    public bool UseDefaultDatabaseCollation { get; set; }
 
    /// <summary>
@@ -14,7 +16,7 @@ public class SqlServerTempTableCreationOptions : TempTableCreationOptions, ISqlS
    public SqlServerTempTableCreationOptions(ITempTableCreationOptions? optionsToInitializeFrom = null)
       : base(optionsToInitializeFrom)
    {
-      if (optionsToInitializeFrom is ISqlServerTempTableCreationOptions sqlServerOptions)
+      if (optionsToInitializeFrom is SqlServerTempTableCreationOptions sqlServerOptions)
          UseDefaultDatabaseCollation = sqlServerOptions.UseDefaultDatabaseCollation;
    }
 }

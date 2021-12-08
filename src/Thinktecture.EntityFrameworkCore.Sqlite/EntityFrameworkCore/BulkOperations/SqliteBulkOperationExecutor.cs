@@ -18,8 +18,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations;
 /// </summary>
 // ReSharper disable once ClassNeverInstantiated.Global
 [SuppressMessage("ReSharper", "EF1001")]
-public sealed class
-   SqliteBulkOperationExecutor
+public sealed class SqliteBulkOperationExecutor
    : IBulkInsertExecutor, ITempTableBulkInsertExecutor, IBulkUpdateExecutor,
      IBulkInsertOrUpdateExecutor, ITruncateTableExecutor
 {
@@ -335,19 +334,27 @@ public sealed class
 
       var entityType = _ctx.Model.GetEntityType(typeof(T));
 
-      if (options is not ISqliteTempTableBulkInsertOptions sqliteOptions)
-      {
+      if (options is not SqliteTempTableBulkInsertOptions sqliteOptions)
          sqliteOptions = new SqliteTempTableBulkInsertOptions(options);
-         options = sqliteOptions;
-      }
 
-      var selectedProperties = sqliteOptions.PropertiesToInsert.DeterminePropertiesForTempTable(entityType, null);
+      return await BulkInsertIntoTempTableAsync(entityType, entities, sqliteOptions, cancellationToken);
+   }
+
+   private async Task<ITempTableQuery<T>> BulkInsertIntoTempTableAsync<T>(
+      IEntityType entityType,
+      IEnumerable<T> entities,
+      SqliteTempTableBulkInsertOptions options,
+      CancellationToken cancellationToken)
+      where T : class
+   {
+      var selectedProperties = options.PropertiesToInsert.DeterminePropertiesForTempTable(entityType, null);
 
       if (selectedProperties.Any(p => !p.IsInlined))
          throw new NotSupportedException($"Bulk insert of separate owned types into temp tables is not supported. Properties of separate owned types: {String.Join(", ", selectedProperties.Where(p => !p.IsInlined))}");
 
       var tempTableCreator = _ctx.GetService<ITempTableCreator>();
-      var tempTableReference = await tempTableCreator.CreateTempTableAsync(entityType, options.TempTableCreationOptions, cancellationToken).ConfigureAwait(false);
+      var tempTableCreationOptions = options.GetTempTableCreationOptions();
+      var tempTableReference = await tempTableCreator.CreateTempTableAsync(entityType, tempTableCreationOptions, cancellationToken).ConfigureAwait(false);
 
       try
       {

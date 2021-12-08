@@ -6,7 +6,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations;
 public sealed class SqlServerBulkInsertOrUpdateOptions
    : SqlServerBulkOperationOptions, ISqlServerBulkInsertOrUpdateOptions
 {
-   ISqlServerTempTableBulkInsertOptions ISqlServerBulkOperationOptions.TempTableOptions => TempTableOptions;
+   SqlServerTempTableBulkOperationOptions ISqlServerBulkOperationOptions.TempTableOptions => TempTableOptions;
 
    /// <inheritdoc />
    public IEntityPropertiesProvider? PropertiesToInsert { get; set; }
