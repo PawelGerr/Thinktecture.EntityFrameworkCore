@@ -12,14 +12,14 @@ internal class BulkInsertContext : ISqlServerBulkOperationContext
    public SqlConnection Connection { get; }
    public SqlTransaction? Transaction { get; }
    public IReadOnlyList<PropertyWithNavigations> Properties { get; }
-   public ISqlServerBulkInsertOptions Options { get; }
+   public SqlServerBulkInsertOptions Options { get; }
    public bool HasExternalProperties => _externalProperties.Count != 0;
 
    public BulkInsertContext(
       IEntityDataReaderFactory factory,
       SqlConnection connection,
       SqlTransaction? transaction,
-      ISqlServerBulkInsertOptions options,
+      SqlServerBulkInsertOptions options,
       IReadOnlyList<PropertyWithNavigations> properties)
    {
       ReaderFactory = factory;
@@ -56,7 +56,7 @@ internal class BulkInsertContext : ISqlServerBulkOperationContext
          IEntityDataReaderFactory factory,
          SqlConnection connection,
          SqlTransaction? transaction,
-         ISqlServerBulkInsertOptions options,
+         SqlServerBulkInsertOptions options,
          IReadOnlyList<PropertyWithNavigations> properties,
          IEntityType entityType,
          IEnumerable<object> entities)

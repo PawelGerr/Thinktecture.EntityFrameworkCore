@@ -111,36 +111,19 @@ public sealed class SqlServerBulkOperationExecutor
       ArgumentNullException.ThrowIfNull(tableName);
       ArgumentNullException.ThrowIfNull(options);
 
-      if (options is not ISqlServerBulkInsertOptions sqlServerOptions)
+      if (options is not SqlServerBulkInsertOptions sqlServerOptions)
          sqlServerOptions = new SqlServerBulkInsertOptions(options);
 
       var properties = sqlServerOptions.PropertiesToInsert.DeterminePropertiesForInsert(entityType, null);
+      properties.EnsureNoSeparateOwnedTypesInsideCollectionOwnedType();
+
       var ctx = new BulkInsertContext(_ctx.GetService<IEntityDataReaderFactory>(),
                                       (SqlConnection)_ctx.Database.GetDbConnection(),
                                       (SqlTransaction?)_ctx.Database.CurrentTransaction?.GetDbTransaction(),
                                       sqlServerOptions,
                                       properties);
 
-      EnsureNoSeparateOwnedTypesInsideCollectionOwnedType(properties);
-
       await BulkInsertAsync(entities, schema, tableName, ctx, cancellationToken);
-   }
-
-   private static void EnsureNoSeparateOwnedTypesInsideCollectionOwnedType(IReadOnlyList<PropertyWithNavigations> properties)
-   {
-      foreach (var property in properties)
-      {
-         INavigation? collection = null;
-
-         foreach (var navigation in property.Navigations)
-         {
-            if (!navigation.IsInlined() && collection is not null)
-               throw new NotSupportedException($"Non-inlined (i.e. with its own table) nested owned type '{navigation.DeclaringEntityType.Name}.{navigation.Name}' inside another owned type collection '{collection.DeclaringEntityType.Name}.{collection.Name}' is not supported.");
-
-            if (navigation.IsCollection)
-               collection = navigation;
-         }
-      }
    }
 
    private async Task BulkInsertAsync<T>(IEnumerable<T> entities, string? schema, string tableName, ISqlServerBulkOperationContext ctx, CancellationToken cancellationToken)
@@ -219,7 +202,7 @@ public sealed class SqlServerBulkOperationExecutor
       return columnsSb.ToString();
    }
 
-   private SqlBulkCopy CreateSqlBulkCopy(SqlConnection sqlCon, SqlTransaction? sqlTx, string? schema, string tableName, ISqlServerBulkInsertOptions sqlServerOptions)
+   private SqlBulkCopy CreateSqlBulkCopy(SqlConnection sqlCon, SqlTransaction? sqlTx, string? schema, string tableName, SqlServerBulkInsertOptions sqlServerOptions)
    {
       var bulkCopy = new SqlBulkCopy(sqlCon, sqlServerOptions.SqlBulkCopyOptions, sqlTx)
                      {
@@ -258,7 +241,7 @@ INSERT BULK {Table} ({Columns})", (long)duration.TotalMilliseconds,
       CancellationToken cancellationToken = default)
       where T : class
    {
-      if (options is not ISqlServerTempTableBulkInsertOptions sqlServerOptions)
+      if (options is not SqlServerTempTableBulkInsertOptions sqlServerOptions)
          sqlServerOptions = new SqlServerTempTableBulkInsertOptions(options);
 
       return BulkInsertIntoTempTableAsync(entities, sqlServerOptions, cancellationToken);
@@ -274,7 +257,7 @@ INSERT BULK {Table} ({Columns})", (long)duration.TotalMilliseconds,
    /// <returns>A query returning the inserted <paramref name="entities"/>.</returns>
    public async Task<ITempTableQuery<T>> BulkInsertIntoTempTableAsync<T>(
       IEnumerable<T> entities,
-      ISqlServerTempTableBulkInsertOptions options,
+      SqlServerTempTableBulkInsertOptions options,
       CancellationToken cancellationToken = default)
       where T : class
    {
@@ -287,23 +270,27 @@ INSERT BULK {Table} ({Columns})", (long)duration.TotalMilliseconds,
       if (selectedProperties.Any(p => !p.IsInlined))
          throw new NotSupportedException($"Bulk insert of separate owned types into temp tables is not supported. Properties of separate owned types: {String.Join(", ", selectedProperties.Where(p => !p.IsInlined))}");
 
-      var tempTableOptions = options.TempTableCreationOptions;
+      var tempTableCreationOptions = options.GetTempTableCreationOptions();
+      var primaryKeyCreation = tempTableCreationOptions.PrimaryKeyCreation;
 
       if (options.MomentOfPrimaryKeyCreation == MomentOfSqlServerPrimaryKeyCreation.AfterBulkInsert)
-         tempTableOptions = new SqlServerTempTableCreationOptions(tempTableOptions) { PrimaryKeyCreation = PrimaryKeyPropertiesProviders.None };
+         tempTableCreationOptions.PrimaryKeyCreation = PrimaryKeyPropertiesProviders.None;
 
       var tempTableCreator = _ctx.GetService<ISqlServerTempTableCreator>();
-      var tempTableReference = await tempTableCreator.CreateTempTableAsync(entityType, tempTableOptions, cancellationToken).ConfigureAwait(false);
+      var tempTableReference = await tempTableCreator.CreateTempTableAsync(entityType, tempTableCreationOptions, cancellationToken).ConfigureAwait(false);
 
       try
       {
-         await BulkInsertAsync(entityType, entities, null, tempTableReference.Name, options.BulkInsertOptions, cancellationToken).ConfigureAwait(false);
+         var bulkInsertOptions = options.GetBulkInsertOptions();
+         await BulkInsertAsync(entityType, entities, null, tempTableReference.Name, bulkInsertOptions, cancellationToken).ConfigureAwait(false);
 
          if (options.MomentOfPrimaryKeyCreation == MomentOfSqlServerPrimaryKeyCreation.AfterBulkInsert)
          {
-            var tempTableProperties = options.TempTableCreationOptions.PropertiesToInclude.DeterminePropertiesForTempTable(entityType, true);
-            var keyProperties = options.PrimaryKeyCreation.GetPrimaryKeyProperties(entityType, tempTableProperties);
-            await tempTableCreator.CreatePrimaryKeyAsync(_ctx, keyProperties, tempTableReference.Name, options.TempTableCreationOptions.TruncateTableIfExists, cancellationToken).ConfigureAwait(false);
+            tempTableCreationOptions.PrimaryKeyCreation = primaryKeyCreation;
+
+            var tempTableProperties = tempTableCreationOptions.PropertiesToInclude.DeterminePropertiesForTempTable(entityType, true);
+            var keyProperties = tempTableCreationOptions.PrimaryKeyCreation.GetPrimaryKeyProperties(entityType, tempTableProperties);
+            await tempTableCreator.CreatePrimaryKeyAsync(_ctx, keyProperties, tempTableReference.Name, tempTableCreationOptions.TruncateTableIfExists, cancellationToken).ConfigureAwait(false);
          }
 
          var query = _ctx.Set<T>().FromTempTable(tempTableReference.Name);
@@ -345,20 +332,25 @@ INSERT BULK {Table} ({Columns})", (long)duration.TotalMilliseconds,
       ArgumentNullException.ThrowIfNull(entities);
       ArgumentNullException.ThrowIfNull(options);
 
-      if (options is not ISqlServerBulkUpdateOptions sqlServerOptions)
+      if (options is not SqlServerBulkUpdateOptions sqlServerOptions)
          sqlServerOptions = new SqlServerBulkUpdateOptions(options);
 
+      return await BulkUpdateAsync(entities, sqlServerOptions, cancellationToken);
+   }
+
+   private async Task<int> BulkUpdateAsync<T>(IEnumerable<T> entities, SqlServerBulkUpdateOptions options, CancellationToken cancellationToken)
+      where T : class
+   {
       var entityType = _ctx.Model.GetEntityType(typeof(T));
       var propertiesForUpdate = options.PropertiesToUpdate.DeterminePropertiesForUpdate(entityType, true);
 
       if (propertiesForUpdate.Count == 0)
          throw new ArgumentException("The number of properties to update cannot be 0.");
 
-      var tempTableOptions = GetSqlServerTempTableBulkInsertOptions(sqlServerOptions, null, sqlServerOptions.PropertiesToUpdate, sqlServerOptions.KeyProperties);
-
+      var tempTableOptions = options.GetTempTableBulkInsertOptions();
       await using var tempTable = await BulkInsertIntoTempTableAsync(entities, tempTableOptions, cancellationToken);
 
-      var mergeStatement = CreateMergeCommand(entityType, tempTable.Name, sqlServerOptions, null, propertiesForUpdate, options.KeyProperties.DetermineKeyProperties(entityType, true));
+      var mergeStatement = CreateMergeCommand(entityType, tempTable.Name, options, null, propertiesForUpdate, options.KeyProperties.DetermineKeyProperties(entityType, true));
 
       return await _ctx.Database.ExecuteSqlRawAsync(mergeStatement, cancellationToken);
    }
@@ -373,38 +365,28 @@ INSERT BULK {Table} ({Columns})", (long)duration.TotalMilliseconds,
       ArgumentNullException.ThrowIfNull(entities);
       ArgumentNullException.ThrowIfNull(options);
 
-      if (options is not ISqlServerBulkInsertOrUpdateOptions sqlServerOptions)
+      if (options is not SqlServerBulkInsertOrUpdateOptions sqlServerOptions)
          sqlServerOptions = new SqlServerBulkInsertOrUpdateOptions(options);
 
+      return await BulkInsertOrUpdateAsync(entities, sqlServerOptions, cancellationToken);
+   }
+
+   private async Task<int> BulkInsertOrUpdateAsync<T>(IEnumerable<T> entities, SqlServerBulkInsertOrUpdateOptions options, CancellationToken cancellationToken)
+      where T : class
+   {
       var entityType = _ctx.Model.GetEntityType(typeof(T));
       var propertiesForInsert = options.PropertiesToInsert.DeterminePropertiesForInsert(entityType, true);
       var propertiesForUpdate = options.PropertiesToUpdate.DeterminePropertiesForUpdate(entityType, true);
 
       if (propertiesForInsert.Count == 0)
          throw new ArgumentException("The number of properties to insert cannot be 0.");
-      var tempTableOptions = GetSqlServerTempTableBulkInsertOptions(sqlServerOptions, options.PropertiesToInsert, sqlServerOptions.PropertiesToUpdate, sqlServerOptions.KeyProperties);
 
+      var tempTableOptions = options.GetTempTableBulkInsertOptions();
       await using var tempTable = await BulkInsertIntoTempTableAsync(entities, tempTableOptions, cancellationToken);
 
-      var mergeStatement = CreateMergeCommand(entityType, tempTable.Name, sqlServerOptions, propertiesForInsert, propertiesForUpdate, options.KeyProperties.DetermineKeyProperties(entityType, true));
+      var mergeStatement = CreateMergeCommand(entityType, tempTable.Name, options, propertiesForInsert, propertiesForUpdate, options.KeyProperties.DetermineKeyProperties(entityType, true));
 
       return await _ctx.Database.ExecuteSqlRawAsync(mergeStatement, cancellationToken);
-   }
-
-   private static ISqlServerTempTableBulkInsertOptions GetSqlServerTempTableBulkInsertOptions(
-      ISqlServerBulkOperationOptions sqlServerOptions,
-      IEntityPropertiesProvider? propertiesToInsert,
-      IEntityPropertiesProvider? propertiesToUpdate,
-      IEntityPropertiesProvider? keyProperties)
-   {
-      return sqlServerOptions.TempTableOptions.PropertiesToInsert is not null
-                ? sqlServerOptions.TempTableOptions
-                : new SqlServerTempTableBulkInsertOptions(sqlServerOptions.TempTableOptions)
-                  {
-                     PropertiesToInsert = propertiesToInsert is null && propertiesToUpdate is null
-                                             ? null
-                                             : new CompositeTempTableEntityPropertiesProvider(propertiesToInsert, propertiesToUpdate, keyProperties)
-                  };
    }
 
    private string CreateMergeCommand<T>(
@@ -414,7 +396,7 @@ INSERT BULK {Table} ({Columns})", (long)duration.TotalMilliseconds,
       IReadOnlyList<PropertyWithNavigations>? propertiesToInsert,
       IReadOnlyList<PropertyWithNavigations> propertiesToUpdate,
       IReadOnlyList<PropertyWithNavigations> keyProperties)
-      where T : ISqlServerBulkOperationOptions
+      where T : ISqlServerMergeOperationOptions
    {
       var sb = new StringBuilder();
 

@@ -21,7 +21,7 @@ public interface ISqlServerTempTableCreator : ITempTableCreator
    /// <exception cref="ArgumentException">The provided type <paramref name="entityType"/> is not known by the current <see cref="DbContext"/>.</exception>
    Task<ITempTableReference> CreateTempTableAsync(
       IEntityType entityType,
-      ISqlServerTempTableCreationOptions options,
+      SqlServerTempTableCreationOptions options,
       CancellationToken cancellationToken = default);
 
    /// <summary>

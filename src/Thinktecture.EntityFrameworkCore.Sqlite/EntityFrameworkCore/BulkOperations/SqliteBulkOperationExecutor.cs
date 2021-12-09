@@ -18,8 +18,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations;
 /// </summary>
 // ReSharper disable once ClassNeverInstantiated.Global
 [SuppressMessage("ReSharper", "EF1001")]
-public sealed class
-   SqliteBulkOperationExecutor
+public sealed class SqliteBulkOperationExecutor
    : IBulkInsertExecutor, ITempTableBulkInsertExecutor, IBulkUpdateExecutor,
      IBulkInsertOrUpdateExecutor, ITruncateTableExecutor
 {
@@ -88,60 +87,36 @@ public sealed class
    }
 
    /// <inheritdoc />
-   public Task BulkInsertAsync<T>(
+   public async Task BulkInsertAsync<T>(
       IEnumerable<T> entities,
-      IBulkInsertOptions options,
-      CancellationToken cancellationToken = default)
-      where T : class
-   {
-      var entityType = _ctx.Model.GetEntityType(typeof(T));
-      var tableName = entityType.GetTableName() ?? throw new InvalidOperationException($"The entity '{entityType.Name}' has no table name.");
-
-      return BulkInsertAsync(entityType, entities, entityType.GetSchema(), tableName, options, cancellationToken);
-   }
-
-   private async Task BulkInsertAsync<T>(
-      IEntityType entityType,
-      IEnumerable<T> entities,
-      string? schema,
-      string tableName,
       IBulkInsertOptions options,
       CancellationToken cancellationToken = default)
       where T : class
    {
       ArgumentNullException.ThrowIfNull(entities);
-      ArgumentNullException.ThrowIfNull(tableName);
       ArgumentNullException.ThrowIfNull(options);
 
-      if (!(options is ISqliteBulkInsertOptions sqliteOptions))
+      var entityType = _ctx.Model.GetEntityType(typeof(T));
+      var tableName = entityType.GetTableName() ?? throw new InvalidOperationException($"The entity '{entityType.Name}' has no table name.");
+
+      if (options is not SqliteBulkInsertOptions sqliteOptions)
          sqliteOptions = new SqliteBulkInsertOptions(options);
 
-      var properties = sqliteOptions.PropertiesToInsert.DeterminePropertiesForInsert(entityType, null);
-      var ctx = new BulkInsertContext(_ctx.GetService<IEntityDataReaderFactory>(),
-                                      (SqliteConnection)_ctx.Database.GetDbConnection(),
-                                      sqliteOptions,
-                                      properties);
-
-      EnsureNoSeparateOwnedTypesInsideCollectionOwnedType(properties);
-
-      await ExecuteBulkOperationAsync(entities, schema, tableName, ctx, cancellationToken);
+      await BulkInsertAsync(entityType, entities, entityType.GetSchema(), tableName, sqliteOptions, cancellationToken);
    }
 
-   private static void EnsureNoSeparateOwnedTypesInsideCollectionOwnedType(IReadOnlyList<PropertyWithNavigations> properties)
+   private async Task BulkInsertAsync<T>(IEntityType entityType, IEnumerable<T> entities, string? schema, string tableName, SqliteBulkInsertOptions options, CancellationToken cancellationToken)
+      where T : class
    {
-      foreach (var property in properties)
-      {
-         INavigation? collection = null;
+      var properties = options.PropertiesToInsert.DeterminePropertiesForInsert(entityType, null);
+      properties.EnsureNoSeparateOwnedTypesInsideCollectionOwnedType();
 
-         foreach (var navigation in property.Navigations)
-         {
-            if (!navigation.IsInlined() && collection is not null)
-               throw new NotSupportedException($"Non-inlined (i.e. with its own table) nested owned type '{navigation.DeclaringEntityType.Name}.{navigation.Name}' inside another owned type collection '{collection.DeclaringEntityType.Name}.{collection.Name}' is not supported.");
+      var ctx = new BulkInsertContext(_ctx.GetService<IEntityDataReaderFactory>(),
+                                      (SqliteConnection)_ctx.Database.GetDbConnection(),
+                                      options,
+                                      properties);
 
-            if (navigation.IsCollection)
-               collection = navigation;
-         }
-      }
+      await ExecuteBulkOperationAsync(entities, schema, tableName, ctx, cancellationToken);
    }
 
    /// <inheritdoc />
@@ -335,23 +310,32 @@ public sealed class
 
       var entityType = _ctx.Model.GetEntityType(typeof(T));
 
-      if (options is not ISqliteTempTableBulkInsertOptions sqliteOptions)
-      {
+      if (options is not SqliteTempTableBulkInsertOptions sqliteOptions)
          sqliteOptions = new SqliteTempTableBulkInsertOptions(options);
-         options = sqliteOptions;
-      }
 
-      var selectedProperties = sqliteOptions.PropertiesToInsert.DeterminePropertiesForTempTable(entityType, null);
+      return await BulkInsertIntoTempTableAsync(entityType, entities, sqliteOptions, cancellationToken);
+   }
+
+   private async Task<ITempTableQuery<T>> BulkInsertIntoTempTableAsync<T>(
+      IEntityType entityType,
+      IEnumerable<T> entities,
+      SqliteTempTableBulkInsertOptions options,
+      CancellationToken cancellationToken)
+      where T : class
+   {
+      var selectedProperties = options.PropertiesToInsert.DeterminePropertiesForTempTable(entityType, null);
 
       if (selectedProperties.Any(p => !p.IsInlined))
          throw new NotSupportedException($"Bulk insert of separate owned types into temp tables is not supported. Properties of separate owned types: {String.Join(", ", selectedProperties.Where(p => !p.IsInlined))}");
 
       var tempTableCreator = _ctx.GetService<ITempTableCreator>();
-      var tempTableReference = await tempTableCreator.CreateTempTableAsync(entityType, options.TempTableCreationOptions, cancellationToken).ConfigureAwait(false);
+      var tempTableCreationOptions = options.GetTempTableCreationOptions();
+      var tempTableReference = await tempTableCreator.CreateTempTableAsync(entityType, tempTableCreationOptions, cancellationToken).ConfigureAwait(false);
 
       try
       {
-         await BulkInsertAsync(entityType, entities, null, tempTableReference.Name, options.BulkInsertOptions, cancellationToken).ConfigureAwait(false);
+         var bulkInsertOptions = options.GetBulkInsertOptions();
+         await BulkInsertAsync(entityType, entities, null, tempTableReference.Name, bulkInsertOptions, cancellationToken).ConfigureAwait(false);
 
          var query = _ctx.Set<T>().FromTempTable(tempTableReference.Name);
 

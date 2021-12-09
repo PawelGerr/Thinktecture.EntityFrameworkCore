@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Thinktecture.EntityFrameworkCore.BulkOperations;
 
 namespace Thinktecture.EntityFrameworkCore.TempTables;
@@ -13,19 +14,21 @@ public class TempTableCreationOptions : ITempTableCreationOptions
    private ITempTableNameProvider? _tableNameProvider;
 
    /// <inheritdoc />
+   [AllowNull]
    public ITempTableNameProvider TableNameProvider
    {
       get => _tableNameProvider ?? ReusingTempTableNameProvider.Instance;
-      set => _tableNameProvider = value ?? throw new ArgumentNullException(nameof(value), "The table name provider cannot be null.");
+      set => _tableNameProvider = value;
    }
 
    private IPrimaryKeyPropertiesProvider? _primaryKeyCreation;
 
    /// <inheritdoc />
+   [AllowNull]
    public IPrimaryKeyPropertiesProvider PrimaryKeyCreation
    {
       get => _primaryKeyCreation ?? PrimaryKeyPropertiesProviders.EntityTypeConfiguration;
-      set => _primaryKeyCreation = value ?? throw new ArgumentNullException(nameof(value), "The primary key column provider cannot be null.");
+      set => _primaryKeyCreation = value;
    }
 
    /// <inheritdoc />

@@ -7,157 +7,146 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations;
 /// <summary>
 /// Options for bulk insert into temp tables.
 /// </summary>
-public abstract class SqlServerTempTableBulkOperationOptions : ISqlServerTempTableBulkInsertOptions
+public abstract class SqlServerTempTableBulkOperationOptions : ITempTableBulkInsertOptions
 {
-   IBulkInsertOptions ITempTableBulkInsertOptions.BulkInsertOptions => _bulkInsertOptions;
-   ITempTableCreationOptions ITempTableBulkInsertOptions.TempTableCreationOptions => _tempTableCreationOptions;
-   ISqlServerTempTableCreationOptions ISqlServerTempTableBulkInsertOptions.TempTableCreationOptions => _tempTableCreationOptions;
-   IEntityPropertiesProvider? ISqlServerTempTableBulkInsertOptions.PropertiesToInsert => PropertiesToInsert;
-
-   private readonly bool _couplePropertiesToInsertWithPropertiesToInclude;
-   private readonly SqlServerBulkInsertOptions _bulkInsertOptions;
-   private readonly SqlServerTempTableCreationOptions _tempTableCreationOptions;
-
-   /// <inheritdoc />
+   /// <summary>
+   /// Defines when the primary key should be created.
+   /// Default is set to <see cref="MomentOfSqlServerPrimaryKeyCreation.AfterBulkInsert"/>.
+   /// </summary>
    public MomentOfSqlServerPrimaryKeyCreation MomentOfPrimaryKeyCreation { get; set; }
 
    /// <inheritdoc />
-   public IPrimaryKeyPropertiesProvider PrimaryKeyCreation
-   {
-      get => _tempTableCreationOptions.PrimaryKeyCreation;
-      set => _tempTableCreationOptions.PrimaryKeyCreation = value;
-   }
+   public bool TruncateTableIfExists { get; set; }
 
-   /// <summary>
-   /// Drops/truncates the temp table if the table exists already.
-   /// Default is <c>false</c>.
-   /// </summary>
-   public bool TruncateTableIfExists
-   {
-      get => _tempTableCreationOptions.TruncateTableIfExists;
-      set => _tempTableCreationOptions.TruncateTableIfExists = value;
-   }
+   /// <inheritdoc />
+   public bool DropTableOnDispose { get; set; }
 
-   /// <summary>
-   /// Indication whether to drop the temp table on dispose of <see cref="ITempTableQuery{T}"/>.
-   /// Default is <c>true</c>.
-   /// </summary>
-   /// <remarks>
-   /// Set to <c>false</c> for more performance if the same temp table is re-used very often.
-   /// Set <see cref="TruncateTableIfExists"/> to <c>true</c> on re-use.
-   /// </remarks>
-   public bool DropTableOnDispose
-   {
-      get => _tempTableCreationOptions.DropTableOnDispose;
-      set => _tempTableCreationOptions.DropTableOnDispose = value;
-   }
+   /// <inheritdoc />
+   public ITempTableNameProvider? TableNameProvider { get; set; }
 
-   /// <summary>
-   /// Provides the name to create a temp table with.
-   /// </summary>
-
-   public ITempTableNameProvider TableNameProvider
-   {
-      get => _tempTableCreationOptions.TableNameProvider;
-      set => _tempTableCreationOptions.TableNameProvider = value;
-   }
+   /// <inheritdoc />
+   public IPrimaryKeyPropertiesProvider? PrimaryKeyCreation { get; set; }
 
    /// <summary>
    /// Timeout used by <see cref="SqlBulkCopy"/>
    /// </summary>
-   public TimeSpan? BulkCopyTimeout
-   {
-      get => _bulkInsertOptions.BulkCopyTimeout;
-      set => _bulkInsertOptions.BulkCopyTimeout = value;
-   }
+   public TimeSpan? BulkCopyTimeout { get; set; }
 
    /// <summary>
    /// Options used by <see cref="SqlBulkCopy"/>.
    /// </summary>
-   public SqlBulkCopyOptions SqlBulkCopyOptions
-   {
-      get => _bulkInsertOptions.SqlBulkCopyOptions;
-      set => _bulkInsertOptions.SqlBulkCopyOptions = value;
-   }
+   public SqlBulkCopyOptions SqlBulkCopyOptions { get; set; }
 
    /// <summary>
    /// Batch size used by <see cref="SqlBulkCopy"/>.
    /// </summary>
-   public int? BatchSize
-   {
-      get => _bulkInsertOptions.BatchSize;
-      set => _bulkInsertOptions.BatchSize = value;
-   }
+   public int? BatchSize { get; set; }
 
    /// <summary>
    /// Enables or disables a <see cref="SqlBulkCopy"/> object to stream data from an <see cref="IDataReader"/> object.
    /// Default is set to <c>true</c>.
    /// </summary>
-   public bool EnableStreaming
-   {
-      get => _bulkInsertOptions.EnableStreaming;
-      set => _bulkInsertOptions.EnableStreaming = value;
-   }
+   public bool EnableStreaming { get; set; }
 
-   /// <summary>
-   /// Gets properties to insert.
-   /// </summary>
-   protected IEntityPropertiesProvider? PropertiesToInsert
-   {
-      get => _bulkInsertOptions.PropertiesToInsert;
-      set
-      {
-         _bulkInsertOptions.PropertiesToInsert = value;
-
-         if (_couplePropertiesToInsertWithPropertiesToInclude)
-            _tempTableCreationOptions.PropertiesToInclude = value;
-      }
-   }
+   /// <inheritdoc />
+   public IEntityPropertiesProvider? PropertiesToInsert { get; set; }
 
    /// <summary>
    /// Adds "COLLATE database_default" to columns so the collation matches with the one of the user database instead of the master db.
    /// </summary>
-   public bool UseDefaultDatabaseCollation
-   {
-      get => _tempTableCreationOptions.UseDefaultDatabaseCollation;
-      set => _tempTableCreationOptions.UseDefaultDatabaseCollation = value;
-   }
+   public bool UseDefaultDatabaseCollation { get; set; }
+
+   /// <summary>
+   /// Advanced settings.
+   /// </summary>
+   public AdvancedSqlServerTempTableBulkOperationOptions Advanced { get; }
 
    /// <summary>
    /// Initializes new instance of <see cref="SqlServerTempTableBulkOperationOptions"/>.
    /// </summary>
-   /// <param name="couplePropertiesToInsertWithPropertiesToInclude">
-   /// Indication whether the <see cref="IEntityPropertiesProvider"/> of the <see cref="PropertiesToInsert"/> will be applied to <see cref="SqlServerTempTableCreationOptions"/>.</param>
    /// <param name="optionsToInitializeFrom">Options to initialize from.</param>
-   protected SqlServerTempTableBulkOperationOptions(
-      bool couplePropertiesToInsertWithPropertiesToInclude,
-      ITempTableBulkInsertOptions? optionsToInitializeFrom)
+   protected SqlServerTempTableBulkOperationOptions(ITempTableBulkInsertOptions? optionsToInitializeFrom)
    {
-      _couplePropertiesToInsertWithPropertiesToInclude = couplePropertiesToInsertWithPropertiesToInclude;
-      _bulkInsertOptions = new SqlServerBulkInsertOptions();
-      _tempTableCreationOptions = new SqlServerTempTableCreationOptions();
+      Advanced = new AdvancedSqlServerTempTableBulkOperationOptions();
 
-      MomentOfPrimaryKeyCreation = MomentOfSqlServerPrimaryKeyCreation.AfterBulkInsert;
+      if (optionsToInitializeFrom is null)
+      {
+         DropTableOnDispose = true;
+         MomentOfPrimaryKeyCreation = MomentOfSqlServerPrimaryKeyCreation.AfterBulkInsert;
+         EnableStreaming = true;
+      }
+      else
+      {
+         TruncateTableIfExists = optionsToInitializeFrom.TruncateTableIfExists;
+         DropTableOnDispose = optionsToInitializeFrom.DropTableOnDispose;
+         TableNameProvider = optionsToInitializeFrom.TableNameProvider;
+         PrimaryKeyCreation = optionsToInitializeFrom.PrimaryKeyCreation;
+         PropertiesToInsert = optionsToInitializeFrom.PropertiesToInsert;
 
-      if (optionsToInitializeFrom != null)
-         InitializeFrom(optionsToInitializeFrom);
+         if (optionsToInitializeFrom is SqlServerTempTableBulkOperationOptions sqlServerOptions)
+         {
+            UseDefaultDatabaseCollation = sqlServerOptions.UseDefaultDatabaseCollation;
+
+            BatchSize = sqlServerOptions.BatchSize;
+            EnableStreaming = sqlServerOptions.EnableStreaming;
+            BulkCopyTimeout = sqlServerOptions.BulkCopyTimeout;
+            SqlBulkCopyOptions = sqlServerOptions.SqlBulkCopyOptions;
+            MomentOfPrimaryKeyCreation = sqlServerOptions.MomentOfPrimaryKeyCreation;
+
+            Advanced.UsePropertiesToInsertForTempTableCreation = sqlServerOptions.Advanced.UsePropertiesToInsertForTempTableCreation;
+         }
+      }
    }
 
-   private void InitializeFrom(ITempTableBulkInsertOptions options)
+   /// <summary>
+   /// Gets options for creation of the temp table.
+   /// </summary>
+   public SqlServerTempTableCreationOptions GetTempTableCreationOptions()
    {
-      TruncateTableIfExists = options.TempTableCreationOptions.TruncateTableIfExists;
-      DropTableOnDispose = options.TempTableCreationOptions.DropTableOnDispose;
-      TableNameProvider = options.TempTableCreationOptions.TableNameProvider;
-      PrimaryKeyCreation = options.TempTableCreationOptions.PrimaryKeyCreation;
-      PropertiesToInsert = options.BulkInsertOptions.PropertiesToInsert;
+      return new SqlServerTempTableCreationOptions
+             {
+                TruncateTableIfExists = TruncateTableIfExists,
+                DropTableOnDispose = DropTableOnDispose,
+                TableNameProvider = TableNameProvider,
+                PrimaryKeyCreation = PrimaryKeyCreation,
+                UseDefaultDatabaseCollation = UseDefaultDatabaseCollation,
 
-      if (options is SqlServerTempTableBulkOperationOptions sqlServerOptions)
-      {
-         BatchSize = sqlServerOptions.BatchSize;
-         EnableStreaming = sqlServerOptions.EnableStreaming;
-         BulkCopyTimeout = sqlServerOptions.BulkCopyTimeout;
-         SqlBulkCopyOptions = sqlServerOptions.SqlBulkCopyOptions;
-         MomentOfPrimaryKeyCreation = sqlServerOptions.MomentOfPrimaryKeyCreation;
-      }
+                PropertiesToInclude = Advanced.UsePropertiesToInsertForTempTableCreation ? PropertiesToInsert : null
+             };
+   }
+
+   /// <summary>
+   /// Gets options for bulk insert.
+   /// </summary>
+   public SqlServerBulkInsertOptions GetBulkInsertOptions()
+   {
+      return new SqlServerBulkInsertOptions
+             {
+                BatchSize = BatchSize,
+                EnableStreaming = EnableStreaming,
+                BulkCopyTimeout = BulkCopyTimeout,
+                SqlBulkCopyOptions = SqlBulkCopyOptions,
+                PropertiesToInsert = PropertiesToInsert
+             };
+   }
+
+   /// <summary>
+   /// Advanced options.
+   /// </summary>
+   public class AdvancedSqlServerTempTableBulkOperationOptions
+   {
+      /// <summary>
+      /// By default all properties of the corresponding entity are used to create the temp table,
+      /// i.e. the <see cref="SqlServerTempTableBulkOperationOptions.PropertiesToInsert"/> are ignored.
+      /// This approach ensures that the returned <see cref="IQueryable{T}"/> doesn't throw an exception on read.
+      /// The drawback is that all required (i.e. non-null) properties must be set accordingly and included into <see cref="SqlServerTempTableBulkOperationOptions.PropertiesToInsert"/>.
+      ///
+      /// If a use case requires the use of a subset of properties of the corresponding entity then set this setting to <c>true</c>.
+      /// In this case the temp table is created by using <see cref="SqlServerTempTableBulkOperationOptions.PropertiesToInsert"/> only.
+      /// The omitted properties must not be selected or used by the returned <see cref="IQueryable{T}"/>.
+      /// 
+      /// Default is <c>false</c>.
+      /// </summary>
+      public bool UsePropertiesToInsertForTempTableCreation { get; set; }
    }
 }

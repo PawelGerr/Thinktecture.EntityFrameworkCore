@@ -3,7 +3,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations;
 /// <summary>
 /// Bulk insert options for SQLite.
 /// </summary>
-public sealed class SqliteBulkInsertOptions : ISqliteBulkInsertOptions
+public sealed class SqliteBulkInsertOptions : IBulkInsertOptions
 {
    /// <inheritdoc />
    public IEntityPropertiesProvider? PropertiesToInsert { get; set; }
@@ -23,12 +23,13 @@ public sealed class SqliteBulkInsertOptions : ISqliteBulkInsertOptions
       if (optionsToInitializeFrom is null)
       {
          AutoIncrementBehavior = SqliteAutoIncrementBehavior.SetZeroToNull;
-         return;
       }
+      else
+      {
+         PropertiesToInsert = optionsToInitializeFrom.PropertiesToInsert;
 
-      PropertiesToInsert = optionsToInitializeFrom.PropertiesToInsert;
-
-      if (optionsToInitializeFrom is ISqliteBulkInsertOptions sqliteOptions)
-         AutoIncrementBehavior = sqliteOptions.AutoIncrementBehavior;
+         if (optionsToInitializeFrom is SqliteBulkInsertOptions sqliteOptions)
+            AutoIncrementBehavior = sqliteOptions.AutoIncrementBehavior;
+      }
    }
 }

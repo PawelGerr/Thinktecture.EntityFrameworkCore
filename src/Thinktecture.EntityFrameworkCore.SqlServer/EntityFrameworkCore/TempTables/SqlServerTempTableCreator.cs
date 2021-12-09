@@ -57,7 +57,7 @@ public sealed class SqlServerTempTableCreator : ISqlServerTempTableCreator
       ITempTableCreationOptions options,
       CancellationToken cancellationToken = default)
    {
-      if (options is not ISqlServerTempTableCreationOptions sqlServerOptions)
+      if (options is not SqlServerTempTableCreationOptions sqlServerOptions)
          sqlServerOptions = new SqlServerTempTableCreationOptions(options);
 
       return CreateTempTableAsync(entityType, sqlServerOptions, cancellationToken);
@@ -66,7 +66,7 @@ public sealed class SqlServerTempTableCreator : ISqlServerTempTableCreator
    /// <inheritdoc />
    public async Task<ITempTableReference> CreateTempTableAsync(
       IEntityType entityType,
-      ISqlServerTempTableCreationOptions options,
+      SqlServerTempTableCreationOptions options,
       CancellationToken cancellationToken = default)
    {
       ArgumentNullException.ThrowIfNull(entityType);
@@ -158,7 +158,7 @@ ADD CONSTRAINT {_sqlGenerationHelper.DelimitIdentifier($"PK_{name}_{Guid.NewGuid
 ");
    }
 
-   private string GetTempTableCreationSql(IEntityType entityType, string tableName, ISqlServerTempTableCreationOptions options)
+   private string GetTempTableCreationSql(IEntityType entityType, string tableName, SqlServerTempTableCreationOptions options)
    {
       ArgumentNullException.ThrowIfNull(tableName);
 
