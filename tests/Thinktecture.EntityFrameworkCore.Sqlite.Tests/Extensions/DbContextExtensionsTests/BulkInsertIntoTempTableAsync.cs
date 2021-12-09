@@ -79,11 +79,11 @@ public class BulkInsertIntoTempTableAsync : IntegrationTestsBase
    public async Task Should_return_disposable_query()
    {
       await using var tempTableQuery = await ActDbContext.BulkInsertIntoTempTableAsync(Array.Empty<TestEntity>());
+      var query = tempTableQuery.Query;
       tempTableQuery.Dispose();
 
-      await tempTableQuery.Awaiting(t => t.Query.ToListAsync())
-                          .Should().ThrowAsync<ObjectDisposedException>().WithMessage(@"Cannot access a disposed object.
-Object name: 'TempTableQuery'.");
+      await query.Awaiting(q => q.ToListAsync())
+                 .Should().ThrowAsync<SqliteException>().WithMessage("SQLite Error 1: 'no such table: TestEntities_1'.");
    }
 
    [Fact]
