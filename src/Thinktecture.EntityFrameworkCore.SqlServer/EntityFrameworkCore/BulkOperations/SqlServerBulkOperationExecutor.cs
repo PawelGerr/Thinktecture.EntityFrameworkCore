@@ -413,7 +413,7 @@ INSERT BULK {Table} ({Columns})", (long)duration.TotalMilliseconds,
       IReadOnlyList<PropertyWithNavigations>? propertiesToInsert,
       IReadOnlyList<PropertyWithNavigations> propertiesToUpdate,
       IReadOnlyList<PropertyWithNavigations> keyProperties)
-      where T : SqlServerBulkOperationOptions
+      where T : ISqlServerMergeOperationOptions
    {
       var sb = new StringBuilder();
 
