@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.ObjectPool;
 using Thinktecture.EntityFrameworkCore.Data;
 using Thinktecture.EntityFrameworkCore.TempTables;
 using Thinktecture.Internal;
@@ -25,6 +26,7 @@ public sealed class SqliteBulkOperationExecutor
    private readonly DbContext _ctx;
    private readonly IDiagnosticsLogger<SqliteDbLoggerCategory.BulkOperation> _logger;
    private readonly ISqlGenerationHelper _sqlGenerationHelper;
+   private readonly ObjectPool<StringBuilder> _stringBuilderPool;
 
    private static class EventIds
    {
@@ -38,16 +40,19 @@ public sealed class SqliteBulkOperationExecutor
    /// <param name="ctx">Current database context.</param>
    /// <param name="logger">Logger.</param>
    /// <param name="sqlGenerationHelper">SQL generation helper.</param>
+   /// <param name="stringBuilderPool">String builder pool.</param>
    public SqliteBulkOperationExecutor(
       ICurrentDbContext ctx,
       IDiagnosticsLogger<SqliteDbLoggerCategory.BulkOperation> logger,
-      ISqlGenerationHelper sqlGenerationHelper)
+      ISqlGenerationHelper sqlGenerationHelper,
+      ObjectPool<StringBuilder> stringBuilderPool)
    {
       ArgumentNullException.ThrowIfNull(ctx);
 
       _ctx = ctx.Context ?? throw new ArgumentNullException(nameof(ctx));
       _logger = logger ?? throw new ArgumentNullException(nameof(logger));
       _sqlGenerationHelper = sqlGenerationHelper ?? throw new ArgumentNullException(nameof(sqlGenerationHelper));
+      _stringBuilderPool = stringBuilderPool ?? throw new ArgumentNullException(nameof(stringBuilderPool));
    }
 
    /// <inheritdoc />
@@ -230,7 +235,7 @@ public sealed class SqliteBulkOperationExecutor
    {
       await using var command = bulkOperationContext.Connection.CreateCommand();
 
-      command.CommandText = bulkOperationContext.CreateCommandBuilder().GetStatement(_sqlGenerationHelper, reader, tableIdentifier);
+      command.CommandText = bulkOperationContext.CreateCommandBuilder().GetStatement(_sqlGenerationHelper, _stringBuilderPool, reader, tableIdentifier);
       var parameterInfos = CreateParameters(reader, command);
 
       try

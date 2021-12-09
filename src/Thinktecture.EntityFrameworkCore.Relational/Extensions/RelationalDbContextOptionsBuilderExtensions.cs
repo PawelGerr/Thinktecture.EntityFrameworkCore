@@ -1,3 +1,4 @@
+using System.Text;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -129,6 +130,22 @@ public static class RelationalDbContextOptionsBuilderExtensions
       bool addNestedTransactionsSupport = true)
    {
       builder.AddOrUpdateExtension<RelationalDbContextOptionsExtension>(extension => extension.AddNestedTransactionsSupport = addNestedTransactionsSupport);
+      return builder;
+   }
+
+   /// <summary>
+   /// Configures the string builder pool.
+   /// </summary>
+   /// <param name="builder">Options builder.</param>
+   /// <param name="initialCapacity">Initial capacity of a new <see cref="StringBuilder"/>.</param>
+   /// <param name="maximumRetainedCapacity">Instances of <see cref="StringBuilder"/> with greater capacity are not reused.</param>
+   /// <returns>The provided <paramref name="builder"/>.</returns>
+   public static DbContextOptionsBuilder ConfigureStringBuilderPool(
+      this DbContextOptionsBuilder builder,
+      int initialCapacity = 300,
+      int maximumRetainedCapacity = 4096)
+   {
+      builder.AddOrUpdateExtension<RelationalDbContextOptionsExtension>(extension => extension.ConfigureStringBuilderPool(initialCapacity, maximumRetainedCapacity));
       return builder;
    }
 

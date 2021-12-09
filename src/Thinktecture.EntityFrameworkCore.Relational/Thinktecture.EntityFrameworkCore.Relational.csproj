@@ -2,6 +2,7 @@
 
     <ItemGroup>
       <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="6.0.0" />
+      <PackageReference Include="Microsoft.Extensions.ObjectPool" Version="6.0.0" />
     </ItemGroup>
 
 </Project>

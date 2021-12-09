@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.Extensions.ObjectPool;
 using Thinktecture.EntityFrameworkCore.Data;
 
 namespace Thinktecture.EntityFrameworkCore.TempTables;
@@ -16,6 +17,7 @@ public sealed class SqliteTempTableCreator : ITempTableCreator
    private readonly IDiagnosticsLogger<DbLoggerCategory.Query> _logger;
    private readonly ISqlGenerationHelper _sqlGenerationHelper;
    private readonly IRelationalTypeMappingSource _typeMappingSource;
+   private readonly ObjectPool<StringBuilder> _stringBuilderPool;
    private readonly TempTableStatementCache<SqliteTempTableCreatorCacheKey> _cache;
 
    /// <summary>
@@ -26,11 +28,13 @@ public sealed class SqliteTempTableCreator : ITempTableCreator
    /// <param name="sqlGenerationHelper">SQL generation helper.</param>
    /// <param name="typeMappingSource">Type mappings.</param>
    /// <param name="cache">SQL statement cache.</param>
+   /// <param name="stringBuilderPool">String builder pool.</param>
    public SqliteTempTableCreator(
       ICurrentDbContext ctx,
       IDiagnosticsLogger<DbLoggerCategory.Query> logger,
       ISqlGenerationHelper sqlGenerationHelper,
       IRelationalTypeMappingSource typeMappingSource,
+      ObjectPool<StringBuilder> stringBuilderPool,
       TempTableStatementCache<SqliteTempTableCreatorCacheKey> cache)
    {
       ArgumentNullException.ThrowIfNull(ctx);
@@ -39,6 +43,7 @@ public sealed class SqliteTempTableCreator : ITempTableCreator
       _logger = logger ?? throw new ArgumentNullException(nameof(logger));
       _sqlGenerationHelper = sqlGenerationHelper ?? throw new ArgumentNullException(nameof(sqlGenerationHelper));
       _typeMappingSource = typeMappingSource ?? throw new ArgumentNullException(nameof(typeMappingSource));
+      _stringBuilderPool = stringBuilderPool ?? throw new ArgumentNullException(nameof(stringBuilderPool));
       _cache = cache ?? throw new ArgumentNullException(nameof(cache));
    }
 
@@ -111,56 +116,64 @@ CREATE TEMPORARY TABLE {_sqlGenerationHelper.DelimitIdentifier(name)}
 
    private string GetColumnsDefinitions(SqliteTempTableCreatorCacheKey options)
    {
-      var sb = new StringBuilder();
-      var isFirst = true;
-      var createPk = true;
+      var sb = _stringBuilderPool.Get();
 
-      foreach (var property in options.Properties)
+      try
       {
-         if (!isFirst)
-            sb.AppendLine(",");
+         var isFirst = true;
+         var createPk = true;
 
-         var storeObject = StoreObjectIdentifier.Create(property.Property.DeclaringEntityType, StoreObjectType.Table)
-                           ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.Property.DeclaringEntityType.Name}'.");
-         var columnName = property.Property.GetColumnName(storeObject)
-                          ?? throw new Exception($"The property '{property.Property.Name}' has no column name.");
-
-         sb.Append("\t\t")
-           .Append(_sqlGenerationHelper.DelimitIdentifier(columnName)).Append(' ')
-           .Append(property.Property.GetColumnType())
-           .Append(property.Property.IsNullable ? " NULL" : " NOT NULL");
-
-         if (property.Property.IsAutoIncrement())
+         foreach (var property in options.Properties)
          {
-            if (options.PrimaryKeys.Count != 1 || !property.Equals(options.PrimaryKeys.First()))
+            if (!isFirst)
+               sb.AppendLine(",");
+
+            var storeObject = StoreObjectIdentifier.Create(property.Property.DeclaringEntityType, StoreObjectType.Table)
+                              ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.Property.DeclaringEntityType.Name}'.");
+            var columnName = property.Property.GetColumnName(storeObject)
+                             ?? throw new Exception($"The property '{property.Property.Name}' has no column name.");
+
+            sb.Append("\t\t")
+              .Append(_sqlGenerationHelper.DelimitIdentifier(columnName)).Append(' ')
+              .Append(property.Property.GetColumnType())
+              .Append(property.Property.IsNullable ? " NULL" : " NOT NULL");
+
+            if (property.Property.IsAutoIncrement())
             {
-               throw new NotSupportedException(@$"SQLite does not allow the property '{property.Property.Name}' of the entity '{property.Property.DeclaringEntityType.Name}' to be an AUTOINCREMENT column unless this column is the PRIMARY KEY.
+               if (options.PrimaryKeys.Count != 1 || !property.Equals(options.PrimaryKeys.First()))
+               {
+                  throw new NotSupportedException(@$"SQLite does not allow the property '{property.Property.Name}' of the entity '{property.Property.DeclaringEntityType.Name}' to be an AUTOINCREMENT column unless this column is the PRIMARY KEY.
 Currently configured primary keys: [{String.Join(", ", options.PrimaryKeys.Select(p => p.Property.Name))}]");
+               }
+
+               sb.Append(" PRIMARY KEY AUTOINCREMENT");
+               createPk = false;
             }
 
-            sb.Append(" PRIMARY KEY AUTOINCREMENT");
-            createPk = false;
+            var defaultValueSql = property.Property.GetDefaultValueSql(storeObject);
+
+            if (!String.IsNullOrWhiteSpace(defaultValueSql))
+            {
+               sb.Append(" DEFAULT (").Append(defaultValueSql).Append(')');
+            }
+            else if (property.Property.TryGetDefaultValue(storeObject, out var defaultValue))
+            {
+               var mappingForValue = _typeMappingSource.GetMappingForValue(defaultValue);
+               sb.Append(" DEFAULT ").Append(mappingForValue.GenerateSqlLiteral(defaultValue));
+            }
+
+            isFirst = false;
          }
 
-         var defaultValueSql = property.Property.GetDefaultValueSql(storeObject);
+         if (createPk)
+            CreatePkClause(options.PrimaryKeys, sb);
 
-         if (!String.IsNullOrWhiteSpace(defaultValueSql))
-         {
-            sb.Append(" DEFAULT (").Append(defaultValueSql).Append(')');
-         }
-         else if (property.Property.TryGetDefaultValue(storeObject, out var defaultValue))
-         {
-            var mappingForValue = _typeMappingSource.GetMappingForValue(defaultValue);
-            sb.Append(" DEFAULT ").Append(mappingForValue.GenerateSqlLiteral(defaultValue));
-         }
-
-         isFirst = false;
+         return sb.ToString();
       }
-
-      if (createPk)
-         CreatePkClause(options.PrimaryKeys, sb);
-
-      return sb.ToString();
+      finally
+      {
+         _stringBuilderPool.Return(sb);
+      }
    }
 
    private void CreatePkClause(IReadOnlyCollection<PropertyWithNavigations> keyProperties, StringBuilder sb)

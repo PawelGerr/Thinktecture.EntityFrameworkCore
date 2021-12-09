@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.ObjectPool;
 using Thinktecture.EntityFrameworkCore.Data;
 using Thinktecture.EntityFrameworkCore.TempTables;
 using Thinktecture.Internal;
@@ -24,6 +25,7 @@ public sealed class SqlServerBulkOperationExecutor
    private readonly DbContext _ctx;
    private readonly IDiagnosticsLogger<SqlServerDbLoggerCategory.BulkOperation> _logger;
    private readonly ISqlGenerationHelper _sqlGenerationHelper;
+   private readonly ObjectPool<StringBuilder> _stringBuilderPool;
 
    private static class EventIds
    {
@@ -37,16 +39,19 @@ public sealed class SqlServerBulkOperationExecutor
    /// <param name="ctx">Current database context.</param>
    /// <param name="logger">Logger.</param>
    /// <param name="sqlGenerationHelper">SQL generation helper.</param>
+   /// <param name="stringBuilderPool">String builder pool.</param>
    public SqlServerBulkOperationExecutor(
       ICurrentDbContext ctx,
       IDiagnosticsLogger<SqlServerDbLoggerCategory.BulkOperation> logger,
-      ISqlGenerationHelper sqlGenerationHelper)
+      ISqlGenerationHelper sqlGenerationHelper,
+      ObjectPool<StringBuilder> stringBuilderPool)
    {
       ArgumentNullException.ThrowIfNull(ctx);
 
       _ctx = ctx.Context;
       _logger = logger ?? throw new ArgumentNullException(nameof(logger));
       _sqlGenerationHelper = sqlGenerationHelper ?? throw new ArgumentNullException(nameof(sqlGenerationHelper));
+      _stringBuilderPool = stringBuilderPool ?? throw new ArgumentNullException(nameof(stringBuilderPool));
    }
 
    /// <inheritdoc />
@@ -179,27 +184,34 @@ public sealed class SqlServerBulkOperationExecutor
       }
    }
 
-   private static string SetColumnMappings(SqlBulkCopy bulkCopy, IEntityDataReader reader)
+   private string SetColumnMappings(SqlBulkCopy bulkCopy, IEntityDataReader reader)
    {
-      var columnsSb = new StringBuilder();
+      var columnsSb = _stringBuilderPool.Get();
 
-      for (var i = 0; i < reader.Properties.Count; i++)
+      try
       {
-         var property = reader.Properties[i];
-         var index = reader.GetPropertyIndex(property);
-         var storeObject = StoreObjectIdentifier.Create(property.Property.DeclaringEntityType, StoreObjectType.Table)
-                           ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.Property.DeclaringEntityType.Name}'.");
-         var columnName = property.Property.GetColumnName(storeObject);
+         for (var i = 0; i < reader.Properties.Count; i++)
+         {
+            var property = reader.Properties[i];
+            var index = reader.GetPropertyIndex(property);
+            var storeObject = StoreObjectIdentifier.Create(property.Property.DeclaringEntityType, StoreObjectType.Table)
+                              ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.Property.DeclaringEntityType.Name}'.");
+            var columnName = property.Property.GetColumnName(storeObject);
 
-         bulkCopy.ColumnMappings.Add(new SqlBulkCopyColumnMapping(index, columnName));
+            bulkCopy.ColumnMappings.Add(new SqlBulkCopyColumnMapping(index, columnName));
 
-         if (columnsSb.Length > 0)
-            columnsSb.Append(", ");
+            if (columnsSb.Length > 0)
+               columnsSb.Append(", ");
 
-         columnsSb.Append(columnName).Append(' ').Append(property.Property.GetColumnType());
+            columnsSb.Append(columnName).Append(' ').Append(property.Property.GetColumnType());
+         }
+
+         return columnsSb.ToString();
       }
-
-      return columnsSb.ToString();
+      finally
+      {
+         _stringBuilderPool.Return(columnsSb);
+      }
    }
 
    private SqlBulkCopy CreateSqlBulkCopy(SqlConnection sqlCon, SqlTransaction? sqlTx, string? schema, string tableName, SqlServerBulkInsertOptions sqlServerOptions)
@@ -398,130 +410,137 @@ INSERT BULK {Table} ({Columns})", (long)duration.TotalMilliseconds,
       IReadOnlyList<PropertyWithNavigations> keyProperties)
       where T : ISqlServerMergeOperationOptions
    {
-      var sb = new StringBuilder();
+      var sb = _stringBuilderPool.Get();
 
-      var tableName = entityType.GetTableName() ?? throw new Exception($"The entity '{entityType.Name}' has no table name.");
-
-      sb.Append("MERGE INTO ")
-        .Append(_sqlGenerationHelper.DelimitIdentifier(tableName, entityType.GetSchema()));
-
-      if (options.MergeTableHints.Count != 0)
+      try
       {
-         sb.Append(" WITH (");
+         var tableName = entityType.GetTableName() ?? throw new Exception($"The entity '{entityType.Name}' has no table name.");
 
-         for (var i = 0; i < options.MergeTableHints.Count; i++)
+         sb.Append("MERGE INTO ")
+           .Append(_sqlGenerationHelper.DelimitIdentifier(tableName, entityType.GetSchema()));
+
+         if (options.MergeTableHints.Count != 0)
          {
-            if (i != 0)
+            sb.Append(" WITH (");
+
+            for (var i = 0; i < options.MergeTableHints.Count; i++)
+            {
+               if (i != 0)
+                  sb.Append(", ");
+
+               sb.Append(options.MergeTableHints[i]);
+            }
+
+            sb.Append(")");
+         }
+
+         sb.AppendLine(" AS d")
+           .Append("USING ")
+           .Append(_sqlGenerationHelper.DelimitIdentifier(sourceTempTableName))
+           .Append(" AS s ON ");
+
+         var isFirstIteration = true;
+
+         foreach (var property in keyProperties)
+         {
+            if (!isFirstIteration)
+               sb.AppendLine(" AND ");
+
+            var storeObject = StoreObjectIdentifier.Create(property.Property.DeclaringEntityType, StoreObjectType.Table)
+                              ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.Property.DeclaringEntityType.Name}'.");
+            var columnName = property.Property.GetColumnName(storeObject)
+                             ?? throw new Exception($"The property '{property.Property.Name}' has no column name.");
+
+            var escapedColumnName = _sqlGenerationHelper.DelimitIdentifier(columnName);
+
+            sb.Append("(d.").Append(escapedColumnName).Append(" = s.").Append(escapedColumnName);
+
+            if (property.Property.IsNullable)
+               sb.Append(" OR d.").Append(escapedColumnName).Append(" IS NULL AND s.").Append(escapedColumnName).Append(" IS NULL");
+
+            sb.Append(")");
+            isFirstIteration = false;
+         }
+
+         isFirstIteration = true;
+
+         foreach (var property in propertiesToUpdate.Except(keyProperties))
+         {
+            if (!isFirstIteration)
+            {
                sb.Append(", ");
+            }
+            else
+            {
+               sb.AppendLine()
+                 .AppendLine("WHEN MATCHED THEN")
+                 .Append("\tUPDATE SET ");
+            }
 
-            sb.Append(options.MergeTableHints[i]);
+            var storeObject = StoreObjectIdentifier.Create(property.Property.DeclaringEntityType, StoreObjectType.Table)
+                              ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.Property.DeclaringEntityType.Name}'.");
+            var columnName = property.Property.GetColumnName(storeObject)
+                             ?? throw new Exception($"The property '{property.Property.Name}' has no column name.");
+
+            var escapedColumnName = _sqlGenerationHelper.DelimitIdentifier(columnName);
+
+            sb.Append("d.").Append(escapedColumnName).Append(" = s.").Append(escapedColumnName);
+            isFirstIteration = false;
          }
 
-         sb.Append(")");
-      }
-
-      sb.AppendLine(" AS d")
-        .Append("USING ")
-        .Append(_sqlGenerationHelper.DelimitIdentifier(sourceTempTableName))
-        .Append(" AS s ON ");
-
-      var isFirstIteration = true;
-
-      foreach (var property in keyProperties)
-      {
-         if (!isFirstIteration)
-            sb.AppendLine(" AND ");
-
-         var storeObject = StoreObjectIdentifier.Create(property.Property.DeclaringEntityType, StoreObjectType.Table)
-                           ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.Property.DeclaringEntityType.Name}'.");
-         var columnName = property.Property.GetColumnName(storeObject)
-                          ?? throw new Exception($"The property '{property.Property.Name}' has no column name.");
-
-         var escapedColumnName = _sqlGenerationHelper.DelimitIdentifier(columnName);
-
-         sb.Append("(d.").Append(escapedColumnName).Append(" = s.").Append(escapedColumnName);
-
-         if (property.Property.IsNullable)
-            sb.Append(" OR d.").Append(escapedColumnName).Append(" IS NULL AND s.").Append(escapedColumnName).Append(" IS NULL");
-
-         sb.Append(")");
-         isFirstIteration = false;
-      }
-
-      isFirstIteration = true;
-
-      foreach (var property in propertiesToUpdate.Except(keyProperties))
-      {
-         if (!isFirstIteration)
-         {
-            sb.Append(", ");
-         }
-         else
+         if (propertiesToInsert is not null)
          {
             sb.AppendLine()
-              .AppendLine("WHEN MATCHED THEN")
-              .Append("\tUPDATE SET ");
+              .AppendLine("WHEN NOT MATCHED THEN")
+              .Append("\tINSERT (");
+
+            isFirstIteration = true;
+
+            foreach (var property in propertiesToInsert)
+            {
+               if (!isFirstIteration)
+                  sb.Append(", ");
+
+               var storeObject = StoreObjectIdentifier.Create(property.Property.DeclaringEntityType, StoreObjectType.Table)
+                                 ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.Property.DeclaringEntityType.Name}'.");
+               var columnName = property.Property.GetColumnName(storeObject)
+                                ?? throw new Exception($"The property '{property.Property.Name}' has no column name.");
+               var escapedColumnName = _sqlGenerationHelper.DelimitIdentifier(columnName);
+
+               sb.Append(escapedColumnName);
+               isFirstIteration = false;
+            }
+
+            sb.AppendLine(")")
+              .Append("\tVALUES (");
+
+            isFirstIteration = true;
+
+            foreach (var property in propertiesToInsert)
+            {
+               if (!isFirstIteration)
+                  sb.Append(", ");
+
+               var storeObject = StoreObjectIdentifier.Create(property.Property.DeclaringEntityType, StoreObjectType.Table)
+                                 ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.Property.DeclaringEntityType.Name}'.");
+               var columnName = property.Property.GetColumnName(storeObject)
+                                ?? throw new Exception($"The property '{property.Property.Name}' has no column name.");
+               var escapedColumnName = _sqlGenerationHelper.DelimitIdentifier(columnName);
+
+               sb.Append("s.").Append(escapedColumnName);
+               isFirstIteration = false;
+            }
+
+            sb.Append(")");
          }
 
-         var storeObject = StoreObjectIdentifier.Create(property.Property.DeclaringEntityType, StoreObjectType.Table)
-                           ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.Property.DeclaringEntityType.Name}'.");
-         var columnName = property.Property.GetColumnName(storeObject)
-                          ?? throw new Exception($"The property '{property.Property.Name}' has no column name.");
+         sb.Append(_sqlGenerationHelper.StatementTerminator);
 
-         var escapedColumnName = _sqlGenerationHelper.DelimitIdentifier(columnName);
-
-         sb.Append("d.").Append(escapedColumnName).Append(" = s.").Append(escapedColumnName);
-         isFirstIteration = false;
+         return sb.ToString();
       }
-
-      if (propertiesToInsert is not null)
+      finally
       {
-         sb.AppendLine()
-           .AppendLine("WHEN NOT MATCHED THEN")
-           .Append("\tINSERT (");
-
-         isFirstIteration = true;
-
-         foreach (var property in propertiesToInsert)
-         {
-            if (!isFirstIteration)
-               sb.Append(", ");
-
-            var storeObject = StoreObjectIdentifier.Create(property.Property.DeclaringEntityType, StoreObjectType.Table)
-                              ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.Property.DeclaringEntityType.Name}'.");
-            var columnName = property.Property.GetColumnName(storeObject)
-                             ?? throw new Exception($"The property '{property.Property.Name}' has no column name.");
-            var escapedColumnName = _sqlGenerationHelper.DelimitIdentifier(columnName);
-
-            sb.Append(escapedColumnName);
-            isFirstIteration = false;
-         }
-
-         sb.AppendLine(")")
-           .Append("\tVALUES (");
-
-         isFirstIteration = true;
-
-         foreach (var property in propertiesToInsert)
-         {
-            if (!isFirstIteration)
-               sb.Append(", ");
-
-            var storeObject = StoreObjectIdentifier.Create(property.Property.DeclaringEntityType, StoreObjectType.Table)
-                              ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.Property.DeclaringEntityType.Name}'.");
-            var columnName = property.Property.GetColumnName(storeObject)
-                             ?? throw new Exception($"The property '{property.Property.Name}' has no column name.");
-            var escapedColumnName = _sqlGenerationHelper.DelimitIdentifier(columnName);
-
-            sb.Append("s.").Append(escapedColumnName);
-            isFirstIteration = false;
-         }
-
-         sb.Append(")");
+         _stringBuilderPool.Return(sb);
       }
-
-      sb.Append(_sqlGenerationHelper.StatementTerminator);
-
-      return sb.ToString();
    }
 }

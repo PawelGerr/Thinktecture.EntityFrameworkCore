@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.SqlServer.Metadata.Internal;
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.Extensions.ObjectPool;
 using Thinktecture.EntityFrameworkCore.Data;
 
 namespace Thinktecture.EntityFrameworkCore.TempTables;
@@ -23,6 +24,7 @@ public sealed class SqlServerTempTableCreator : ISqlServerTempTableCreator
    private readonly IRelationalTypeMappingSource _typeMappingSource;
    private readonly TempTableStatementCache<SqlServerTempTableCreatorCacheKey> _tempTableCache;
    private readonly TempTableStatementCache<SqlServerTempTablePrimaryKeyCacheKey> _primaryKeyCache;
+   private readonly ObjectPool<StringBuilder> _stringBuilderPool;
 
    /// <summary>
    /// Initializes <see cref="SqlServerTempTableCreator"/>.
@@ -33,13 +35,15 @@ public sealed class SqlServerTempTableCreator : ISqlServerTempTableCreator
    /// <param name="typeMappingSource">Type mappings.</param>
    /// <param name="cache">SQL statement cache.</param>
    /// <param name="primaryKeyCache">Cache for primary keys.</param>
+   /// <param name="stringBuilderPool">String builder pool.</param>
    public SqlServerTempTableCreator(
       ICurrentDbContext ctx,
       IDiagnosticsLogger<DbLoggerCategory.Query> logger,
       ISqlGenerationHelper sqlGenerationHelper,
       IRelationalTypeMappingSource typeMappingSource,
       TempTableStatementCache<SqlServerTempTableCreatorCacheKey> cache,
-      TempTableStatementCache<SqlServerTempTablePrimaryKeyCacheKey> primaryKeyCache)
+      TempTableStatementCache<SqlServerTempTablePrimaryKeyCacheKey> primaryKeyCache,
+      ObjectPool<StringBuilder> stringBuilderPool)
    {
       ArgumentNullException.ThrowIfNull(ctx);
 
@@ -49,6 +53,7 @@ public sealed class SqlServerTempTableCreator : ISqlServerTempTableCreator
       _typeMappingSource = typeMappingSource ?? throw new ArgumentNullException(nameof(typeMappingSource));
       _tempTableCache = cache ?? throw new ArgumentNullException(nameof(cache));
       _primaryKeyCache = primaryKeyCache ?? throw new ArgumentNullException(nameof(primaryKeyCache));
+      _stringBuilderPool = stringBuilderPool ?? throw new ArgumentNullException(nameof(stringBuilderPool));
    }
 
    /// <inheritdoc />
@@ -205,52 +210,60 @@ END
 
    private string GetColumnsDefinitions(SqlServerTempTableCreatorCacheKey options)
    {
-      var sb = new StringBuilder();
-      var isFirst = true;
+      var sb = _stringBuilderPool.Get();
 
-      foreach (var property in options.Properties)
+      try
       {
-         if (!isFirst)
-            sb.AppendLine(",");
+         var isFirst = true;
 
-         var columnType = property.Property.GetColumnType();
-
-         var storeObject = StoreObjectIdentifier.Create(property.Property.DeclaringEntityType, StoreObjectType.Table)
-                           ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.Property.DeclaringEntityType.Name}'.");
-
-         var columnName = property.Property.GetColumnName(storeObject)
-                          ?? throw new InvalidOperationException($"The property '{property.Property.Name}' has no column name.");
-
-         sb.Append('\t')
-           .Append(_sqlGenerationHelper.DelimitIdentifier(columnName)).Append(' ')
-           .Append(columnType);
-
-         if (options.UseDefaultDatabaseCollation && _stringColumnTypes.Any(t => columnType.StartsWith(t, StringComparison.OrdinalIgnoreCase)))
-            sb.Append(" COLLATE database_default");
-
-         sb.Append(property.Property.IsNullable ? " NULL" : " NOT NULL");
-
-         if (IsIdentityColumn(property))
-            sb.Append(" IDENTITY");
-
-         var defaultValueSql = property.Property.GetDefaultValueSql(storeObject);
-
-         if (!String.IsNullOrWhiteSpace(defaultValueSql))
+         foreach (var property in options.Properties)
          {
-            sb.Append(" DEFAULT (").Append(defaultValueSql).Append(')');
-         }
-         else if (property.Property.TryGetDefaultValue(storeObject, out var defaultValue))
-         {
-            var mappingForValue = _typeMappingSource.GetMappingForValue(defaultValue);
-            sb.Append(" DEFAULT ").Append(mappingForValue.GenerateSqlLiteral(defaultValue));
+            if (!isFirst)
+               sb.AppendLine(",");
+
+            var columnType = property.Property.GetColumnType();
+
+            var storeObject = StoreObjectIdentifier.Create(property.Property.DeclaringEntityType, StoreObjectType.Table)
+                              ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.Property.DeclaringEntityType.Name}'.");
+
+            var columnName = property.Property.GetColumnName(storeObject)
+                             ?? throw new InvalidOperationException($"The property '{property.Property.Name}' has no column name.");
+
+            sb.Append('\t')
+              .Append(_sqlGenerationHelper.DelimitIdentifier(columnName)).Append(' ')
+              .Append(columnType);
+
+            if (options.UseDefaultDatabaseCollation && _stringColumnTypes.Any(t => columnType.StartsWith(t, StringComparison.OrdinalIgnoreCase)))
+               sb.Append(" COLLATE database_default");
+
+            sb.Append(property.Property.IsNullable ? " NULL" : " NOT NULL");
+
+            if (IsIdentityColumn(property))
+               sb.Append(" IDENTITY");
+
+            var defaultValueSql = property.Property.GetDefaultValueSql(storeObject);
+
+            if (!String.IsNullOrWhiteSpace(defaultValueSql))
+            {
+               sb.Append(" DEFAULT (").Append(defaultValueSql).Append(')');
+            }
+            else if (property.Property.TryGetDefaultValue(storeObject, out var defaultValue))
+            {
+               var mappingForValue = _typeMappingSource.GetMappingForValue(defaultValue);
+               sb.Append(" DEFAULT ").Append(mappingForValue.GenerateSqlLiteral(defaultValue));
+            }
+
+            isFirst = false;
          }
 
-         isFirst = false;
+         CreatePkClause(options.PrimaryKeys, sb);
+
+         return sb.ToString();
       }
-
-      CreatePkClause(options.PrimaryKeys, sb);
-
-      return sb.ToString();
+      finally
+      {
+         _stringBuilderPool.Return(sb);
+      }
    }
 
    private void CreatePkClause(

@@ -1,8 +1,10 @@
 using System.Data;
+using System.Text;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.Extensions.ObjectPool;
 using Thinktecture.EntityFrameworkCore.BulkOperations;
 using Thinktecture.TestDatabaseContext;
 
@@ -20,6 +22,7 @@ public class CreateTempTableAsync : IntegrationTestsBase
                                                                              ActDbContext.GetService<IDiagnosticsLogger<DbLoggerCategory.Query>>(),
                                                                              _sqlGenerationHelperMock.Object,
                                                                              ActDbContext.GetService<IRelationalTypeMappingSource>(),
+                                                                             ActDbContext.GetService<ObjectPool<StringBuilder>>(),
                                                                              new TempTableStatementCache<SqliteTempTableCreatorCacheKey>());
 
    public CreateTempTableAsync(ITestOutputHelper testOutputHelper)

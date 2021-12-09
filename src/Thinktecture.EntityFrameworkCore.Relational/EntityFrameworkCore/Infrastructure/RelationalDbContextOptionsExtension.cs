@@ -1,11 +1,13 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Text;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.ObjectPool;
 using Thinktecture.EntityFrameworkCore.Migrations;
 using Thinktecture.EntityFrameworkCore.Query;
 using Thinktecture.EntityFrameworkCore.Query.ExpressionTranslators;
@@ -23,6 +25,7 @@ public sealed class RelationalDbContextOptionsExtension : DbContextOptionsExtens
 
    private readonly List<ServiceDescriptor> _serviceDescriptors;
    private readonly List<Type> _evaluatableExpressionFilterPlugins;
+   private readonly StringBuilderPooledObjectPolicy _stringBuilderPolicy;
 
    private DbContextOptionsExtensionInfo? _info;
 
@@ -79,6 +82,7 @@ public sealed class RelationalDbContextOptionsExtension : DbContextOptionsExtens
    {
       _serviceDescriptors = new List<ServiceDescriptor>();
       _evaluatableExpressionFilterPlugins = new List<Type>();
+      _stringBuilderPolicy = new StringBuilderPooledObjectPolicy { InitialCapacity = 300 };
    }
 
    /// <inheritdoc />
@@ -88,6 +92,13 @@ public sealed class RelationalDbContextOptionsExtension : DbContextOptionsExtens
 
       services.TryAddSingleton(this);
       services.TryAddSingleton<ITenantDatabaseProviderFactory>(DummyTenantDatabaseProviderFactory.Instance);
+
+      services.TryAddSingleton<ObjectPoolProvider, DefaultObjectPoolProvider>();
+      services.TryAddSingleton(serviceProvider =>
+                               {
+                                  var provider = serviceProvider.GetRequiredService<ObjectPoolProvider>();
+                                  return provider.Create(_stringBuilderPolicy);
+                               });
 
       services.Add<IMethodCallTranslatorPlugin, RelationalMethodCallTranslatorPlugin>(GetLifetime<IMethodCallTranslatorPlugin>());
 
@@ -130,6 +141,24 @@ public sealed class RelationalDbContextOptionsExtension : DbContextOptionsExtens
    {
       if (AddTenantDatabaseSupport && _serviceDescriptors.All(d => d.ServiceType != typeof(ITenantDatabaseProviderFactory)))
          throw new InvalidOperationException($"TenantDatabaseSupport is enabled but there is no registration of an implementation of '{nameof(ITenantDatabaseProviderFactory)}'.");
+   }
+
+   /// <summary>
+   /// Configures the string builder pool.
+   /// </summary>
+   /// <param name="initialCapacity">Initial capacity of a new <see cref="StringBuilder"/>.</param>
+   /// <param name="maximumRetainedCapacity">Instances of <see cref="StringBuilder"/> with greater capacity are not reused.</param>
+   /// <exception cref="ArgumentOutOfRangeException">If <paramref name="initialCapacity"/> or <paramref name="maximumRetainedCapacity"/> are negative.</exception>
+   public void ConfigureStringBuilderPool(int initialCapacity, int maximumRetainedCapacity)
+   {
+      if (initialCapacity < 0)
+         throw new ArgumentOutOfRangeException(nameof(initialCapacity), "Initial capacity cannot be negative.");
+
+      if (maximumRetainedCapacity < 0)
+         throw new ArgumentOutOfRangeException(nameof(initialCapacity), "Initial capacity cannot be negative.");
+
+      _stringBuilderPolicy.InitialCapacity = initialCapacity;
+      _stringBuilderPolicy.MaximumRetainedCapacity = maximumRetainedCapacity;
    }
 
    /// <summary>
@@ -207,7 +236,8 @@ public sealed class RelationalDbContextOptionsExtension : DbContextOptionsExtens
    'RowNumberSupport'={_extension.AddRowNumberSupport},
    'TenantDatabaseSupport'={_extension.AddTenantDatabaseSupport},
    'Number of evaluatable expression filter plugins'={_extension._evaluatableExpressionFilterPlugins.Count},
-   'Number of custom services'={_extension._serviceDescriptors.Count}
+   'Number of custom services'={_extension._serviceDescriptors.Count},
+   'StringBuilderPool'= {{ InitialCapacity={_extension._stringBuilderPolicy.InitialCapacity}, MaximumRetainedCapacity={_extension._stringBuilderPolicy.MaximumRetainedCapacity} }}
 }}";
 
       public RelationalDbContextOptionsExtensionInfo(RelationalDbContextOptionsExtension extension)
@@ -225,6 +255,8 @@ public sealed class RelationalDbContextOptionsExtension : DbContextOptionsExtens
          hashCode.Add(_extension.AddTenantDatabaseSupport);
          hashCode.Add(_extension.AddRowNumberSupport);
          hashCode.Add(_extension.ComponentDecorator);
+         hashCode.Add(_extension._stringBuilderPolicy.InitialCapacity);
+         hashCode.Add(_extension._stringBuilderPolicy.MaximumRetainedCapacity);
 
          _extension._evaluatableExpressionFilterPlugins.ForEach(type => hashCode.Add(type));
          _extension._serviceDescriptors.ForEach(descriptor => hashCode.Add(GetHashCode(descriptor)));
@@ -246,6 +278,8 @@ public sealed class RelationalDbContextOptionsExtension : DbContextOptionsExtens
                         && _extension.AddNestedTransactionsSupport == otherRelationalInfo._extension.AddNestedTransactionsSupport
                         && _extension.AddTenantDatabaseSupport == otherRelationalInfo._extension.AddTenantDatabaseSupport
                         && _extension.AddRowNumberSupport == otherRelationalInfo._extension.AddRowNumberSupport
+                        && _extension._stringBuilderPolicy.InitialCapacity == otherRelationalInfo._extension._stringBuilderPolicy.InitialCapacity
+                        && _extension._stringBuilderPolicy.MaximumRetainedCapacity == otherRelationalInfo._extension._stringBuilderPolicy.MaximumRetainedCapacity
                         && _extension.ComponentDecorator.Equals(otherRelationalInfo._extension.ComponentDecorator);
 
          if (!areEqual)
@@ -306,6 +340,8 @@ public sealed class RelationalDbContextOptionsExtension : DbContextOptionsExtens
          debugInfo["Thinktecture:TenantDatabaseSupport"] = _extension.AddTenantDatabaseSupport.ToString(CultureInfo.InvariantCulture);
          debugInfo["Thinktecture:EvaluatableExpressionFilterPlugins"] = String.Join(", ", _extension._evaluatableExpressionFilterPlugins.Select(t => t.ShortDisplayName()));
          debugInfo["Thinktecture:ServiceDescriptors"] = String.Join(", ", _extension._serviceDescriptors);
+         debugInfo["Thinktecture:StringBuilderPool:InitialCapacity"] = String.Join(", ", _extension._stringBuilderPolicy.InitialCapacity);
+         debugInfo["Thinktecture:StringBuilderPool:MaximumRetainedCapacity"] = String.Join(", ", _extension._stringBuilderPolicy.MaximumRetainedCapacity);
       }
    }
 }

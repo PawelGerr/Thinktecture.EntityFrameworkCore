@@ -1,6 +1,7 @@
 using System.Text;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.Extensions.ObjectPool;
 using Thinktecture.EntityFrameworkCore.Data;
 
 namespace Thinktecture.EntityFrameworkCore.BulkOperations;
@@ -63,6 +64,7 @@ internal abstract class SqliteCommandBuilder
 
    public abstract string GetStatement(
       ISqlGenerationHelper sqlGenerationHelper,
+      ObjectPool<StringBuilder> stringBuilderPool,
       IEntityDataReader reader,
       string tableIdentifier);
 
@@ -76,14 +78,26 @@ internal abstract class SqliteCommandBuilder
       }
 
       /// <inheritdoc />
-      public override string GetStatement(ISqlGenerationHelper sqlGenerationHelper, IEntityDataReader reader, string tableIdentifier)
+      public override string GetStatement(
+         ISqlGenerationHelper sqlGenerationHelper,
+         ObjectPool<StringBuilder> stringBuilderPool,
+         IEntityDataReader reader,
+         string tableIdentifier)
       {
-         var sb = new StringBuilder();
-         GenerateInsertStatement(sb, sqlGenerationHelper, reader, tableIdentifier, _propertiesToInsert);
+         var sb = stringBuilderPool.Get();
 
-         sb.Append(sqlGenerationHelper.StatementTerminator);
+         try
+         {
+            GenerateInsertStatement(sb, sqlGenerationHelper, reader, tableIdentifier, _propertiesToInsert);
 
-         return sb.ToString();
+            sb.Append(sqlGenerationHelper.StatementTerminator);
+
+            return sb.ToString();
+         }
+         finally
+         {
+            stringBuilderPool.Return(sb);
+         }
       }
    }
 
@@ -100,16 +114,28 @@ internal abstract class SqliteCommandBuilder
          _keyProperties = keyProperties;
       }
 
-      public override string GetStatement(ISqlGenerationHelper sqlGenerationHelper, IEntityDataReader reader, string tableIdentifier)
+      public override string GetStatement(
+         ISqlGenerationHelper sqlGenerationHelper,
+         ObjectPool<StringBuilder> stringBuilderPool,
+         IEntityDataReader reader,
+         string tableIdentifier)
       {
-         var sb = new StringBuilder();
-         sb.Append("UPDATE ").AppendLine(tableIdentifier);
+         var sb = stringBuilderPool.Get();
 
-         GenerateSetAndWhereClause(sb, sqlGenerationHelper, reader, _propertiesToUpdate, _keyProperties);
+         try
+         {
+            sb.Append("UPDATE ").AppendLine(tableIdentifier);
 
-         sb.Append(sqlGenerationHelper.StatementTerminator);
+            GenerateSetAndWhereClause(sb, sqlGenerationHelper, reader, _propertiesToUpdate, _keyProperties);
 
-         return sb.ToString();
+            sb.Append(sqlGenerationHelper.StatementTerminator);
+
+            return sb.ToString();
+         }
+         finally
+         {
+            stringBuilderPool.Return(sb);
+         }
       }
 
       public static bool GenerateSetAndWhereClause(
@@ -189,44 +215,56 @@ internal abstract class SqliteCommandBuilder
          _keyProperties = keyProperties;
       }
 
-      public override string GetStatement(ISqlGenerationHelper sqlGenerationHelper, IEntityDataReader reader, string tableIdentifier)
+      public override string GetStatement(
+         ISqlGenerationHelper sqlGenerationHelper,
+         ObjectPool<StringBuilder> stringBuilderPool,
+         IEntityDataReader reader,
+         string tableIdentifier)
       {
-         var sb = new StringBuilder();
-         GenerateInsertStatement(sb, sqlGenerationHelper, reader, tableIdentifier, _propertiesToInsert);
+         var sb = stringBuilderPool.Get();
 
-         sb.AppendLine()
-           .Append("\tON CONFLICT(");
-
-         for (var i = 0; i < _keyProperties.Count; i++)
+         try
          {
-            if (i > 0)
-               sb.Append(", ");
+            GenerateInsertStatement(sb, sqlGenerationHelper, reader, tableIdentifier, _propertiesToInsert);
 
-            var property = _keyProperties[i];
-            var storeObject = StoreObjectIdentifier.Create(property.Property.DeclaringEntityType, StoreObjectType.Table)
-                              ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.Property.DeclaringEntityType.Name}'.");
-            var columnName = property.Property.GetColumnName(storeObject)
-                             ?? throw new Exception($"The property '{property.Property.Name}' has no column name.");
+            sb.AppendLine()
+              .Append("\tON CONFLICT(");
 
-            var escapedColumnName = sqlGenerationHelper.DelimitIdentifier(columnName);
-            sb.Append(escapedColumnName);
+            for (var i = 0; i < _keyProperties.Count; i++)
+            {
+               if (i > 0)
+                  sb.Append(", ");
+
+               var property = _keyProperties[i];
+               var storeObject = StoreObjectIdentifier.Create(property.Property.DeclaringEntityType, StoreObjectType.Table)
+                                 ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.Property.DeclaringEntityType.Name}'.");
+               var columnName = property.Property.GetColumnName(storeObject)
+                                ?? throw new Exception($"The property '{property.Property.Name}' has no column name.");
+
+               var escapedColumnName = sqlGenerationHelper.DelimitIdentifier(columnName);
+               sb.Append(escapedColumnName);
+            }
+
+            sb.AppendLine(") DO");
+            var sbIndexBeforeUpdate = sb.Length;
+
+            sb.Append("\tUPDATE ");
+            var hasPropertiesToUpdate = SqliteUpdateBuilder.GenerateSetAndWhereClause(sb, sqlGenerationHelper, reader, _propertiesToUpdate, _keyProperties);
+
+            if (!hasPropertiesToUpdate)
+            {
+               sb.Length = sbIndexBeforeUpdate;
+               sb.Append("\tNOTHING");
+            }
+
+            sb.Append(sqlGenerationHelper.StatementTerminator);
+
+            return sb.ToString();
          }
-
-         sb.AppendLine(") DO");
-         var sbIndexBeforeUpdate = sb.Length;
-
-         sb.Append("\tUPDATE ");
-         var hasPropertiesToUpdate = SqliteUpdateBuilder.GenerateSetAndWhereClause(sb, sqlGenerationHelper, reader, _propertiesToUpdate, _keyProperties);
-
-         if (!hasPropertiesToUpdate)
+         finally
          {
-            sb.Length = sbIndexBeforeUpdate;
-            sb.Append("\tNOTHING");
+            stringBuilderPool.Return(sb);
          }
-
-         sb.Append(sqlGenerationHelper.StatementTerminator);
-
-         return sb.ToString();
       }
    }
 }
