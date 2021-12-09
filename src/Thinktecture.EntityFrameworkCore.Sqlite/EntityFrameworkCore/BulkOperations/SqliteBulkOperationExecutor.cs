@@ -109,31 +109,14 @@ public sealed class SqliteBulkOperationExecutor
       where T : class
    {
       var properties = options.PropertiesToInsert.DeterminePropertiesForInsert(entityType, null);
+      properties.EnsureNoSeparateOwnedTypesInsideCollectionOwnedType();
+
       var ctx = new BulkInsertContext(_ctx.GetService<IEntityDataReaderFactory>(),
                                       (SqliteConnection)_ctx.Database.GetDbConnection(),
                                       options,
                                       properties);
 
-      EnsureNoSeparateOwnedTypesInsideCollectionOwnedType(properties);
-
       await ExecuteBulkOperationAsync(entities, schema, tableName, ctx, cancellationToken);
-   }
-
-   private static void EnsureNoSeparateOwnedTypesInsideCollectionOwnedType(IReadOnlyList<PropertyWithNavigations> properties)
-   {
-      foreach (var property in properties)
-      {
-         INavigation? collection = null;
-
-         foreach (var navigation in property.Navigations)
-         {
-            if (!navigation.IsInlined() && collection is not null)
-               throw new NotSupportedException($"Non-inlined (i.e. with its own table) nested owned type '{navigation.DeclaringEntityType.Name}.{navigation.Name}' inside another owned type collection '{collection.DeclaringEntityType.Name}.{collection.Name}' is not supported.");
-
-            if (navigation.IsCollection)
-               collection = navigation;
-         }
-      }
    }
 
    /// <inheritdoc />

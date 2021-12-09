@@ -68,6 +68,30 @@ public static class BulkOperationsCollectionExtensions
    }
 
    /// <summary>
+   /// Checks that there are no separate owned types inside a collection property.
+   /// </summary>
+   /// <param name="properties">Properties to check.</param>
+   /// <exception cref="NotSupportedException">If a separate owned type is found inside a collection property.</exception>
+   public static void EnsureNoSeparateOwnedTypesInsideCollectionOwnedType(this IReadOnlyList<PropertyWithNavigations> properties)
+   {
+      ArgumentNullException.ThrowIfNull(properties);
+
+      foreach (var property in properties)
+      {
+         INavigation? collection = null;
+
+         foreach (var navigation in property.Navigations)
+         {
+            if (!navigation.IsInlined() && collection is not null)
+               throw new NotSupportedException($"Non-inlined (i.e. with its own table) nested owned type '{navigation.DeclaringEntityType.Name}.{navigation.Name}' inside another owned type collection '{collection.DeclaringEntityType.Name}.{collection.Name}' is not supported.");
+
+            if (navigation.IsCollection)
+               collection = navigation;
+         }
+      }
+   }
+
+   /// <summary>
    /// Separates <paramref name="properties"/> in own properties and properties belonging to different tables.
    /// </summary>
    /// <param name="properties">Properties to separate.</param>
@@ -125,42 +149,5 @@ public static class BulkOperationsCollectionExtensions
          ownedEntities = ownedEntities.SelectMany(c => (IEnumerable<object>)c);
 
       return ownedEntities;
-   }
-}
-
-/// <summary>
-/// Uses "DroppedNavigations" only.
-/// </summary>
-internal class DroppedInlineNavigationsComparer
-   : IEqualityComparer<(IReadOnlyList<INavigation> DroppedNavigations, PropertyWithNavigations Property)>
-{
-   public static readonly DroppedInlineNavigationsComparer Instance = new();
-
-   public bool Equals(
-      (IReadOnlyList<INavigation> DroppedNavigations, PropertyWithNavigations Property) x,
-      (IReadOnlyList<INavigation> DroppedNavigations, PropertyWithNavigations Property) y)
-   {
-      if (x.DroppedNavigations.Count != y.DroppedNavigations.Count)
-         return false;
-
-      for (var i = 0; i < x.DroppedNavigations.Count; i++)
-      {
-         if (!x.DroppedNavigations[i].Equals(y.DroppedNavigations[i]))
-            return false;
-      }
-
-      return true;
-   }
-
-   public int GetHashCode((IReadOnlyList<INavigation> DroppedNavigations, PropertyWithNavigations Property) obj)
-   {
-      var hashCode = new HashCode();
-
-      foreach (var navigation in obj.DroppedNavigations)
-      {
-         hashCode.Add(navigation);
-      }
-
-      return hashCode.ToHashCode();
    }
 }

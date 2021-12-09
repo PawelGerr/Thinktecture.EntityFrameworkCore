@@ -115,32 +115,15 @@ public sealed class SqlServerBulkOperationExecutor
          sqlServerOptions = new SqlServerBulkInsertOptions(options);
 
       var properties = sqlServerOptions.PropertiesToInsert.DeterminePropertiesForInsert(entityType, null);
+      properties.EnsureNoSeparateOwnedTypesInsideCollectionOwnedType();
+
       var ctx = new BulkInsertContext(_ctx.GetService<IEntityDataReaderFactory>(),
                                       (SqlConnection)_ctx.Database.GetDbConnection(),
                                       (SqlTransaction?)_ctx.Database.CurrentTransaction?.GetDbTransaction(),
                                       sqlServerOptions,
                                       properties);
 
-      EnsureNoSeparateOwnedTypesInsideCollectionOwnedType(properties);
-
       await BulkInsertAsync(entities, schema, tableName, ctx, cancellationToken);
-   }
-
-   private static void EnsureNoSeparateOwnedTypesInsideCollectionOwnedType(IReadOnlyList<PropertyWithNavigations> properties)
-   {
-      foreach (var property in properties)
-      {
-         INavigation? collection = null;
-
-         foreach (var navigation in property.Navigations)
-         {
-            if (!navigation.IsInlined() && collection is not null)
-               throw new NotSupportedException($"Non-inlined (i.e. with its own table) nested owned type '{navigation.DeclaringEntityType.Name}.{navigation.Name}' inside another owned type collection '{collection.DeclaringEntityType.Name}.{collection.Name}' is not supported.");
-
-            if (navigation.IsCollection)
-               collection = navigation;
-         }
-      }
    }
 
    private async Task BulkInsertAsync<T>(IEnumerable<T> entities, string? schema, string tableName, ISqlServerBulkOperationContext ctx, CancellationToken cancellationToken)
