@@ -23,7 +23,7 @@ public sealed class ShadowPropertyGetter<TValue> : IShadowPropertyGetter
    }
 
    /// <inheritdoc />
-   [SuppressMessage("ReSharper", "EF1001")]
+   [SuppressMessage("Usage", "EF1001", MessageId = "Internal EF Core API usage.")]
    public object? GetValue(DbContext context, object entity)
    {
       var entry = context.Entry(entity);

@@ -1,10 +1,5 @@
-using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.DependencyInjection;
 using Thinktecture.Database;
-
-[assembly: SuppressMessage("ReSharper", "CA2007")]
-[assembly: SuppressMessage("ReSharper", "CA1052")]
-[assembly: SuppressMessage("ReSharper", "CA2227")]
 
 namespace Thinktecture;
 
@@ -80,25 +75,25 @@ public class Program
 
    private static async Task DoTenantQueriesAsync(DemoDbContext ctx)
    {
-      var customers = await ctx.Customers
-                               .Include(c => c.Orders)
-                               .ToListAsync();
+      await ctx.Customers
+               .Include(c => c.Orders)
+               .ToListAsync();
 
       try
       {
          // requires a database with the name "demo"
          CurrentTenant.Value = "1";
 
-         customers = await ctx.Customers
-                              .Include(c => c.Orders)
-                              .ToListAsync();
+         await ctx.Customers
+                  .Include(c => c.Orders)
+                  .ToListAsync();
 
          // requires a database with the name "demo2"
          CurrentTenant.Value = "2";
 
-         customers = await ctx.Customers
-                              .Include(c => c.Orders)
-                              .ToListAsync();
+         await ctx.Customers
+                  .Include(c => c.Orders)
+                  .ToListAsync();
       }
       catch
       {

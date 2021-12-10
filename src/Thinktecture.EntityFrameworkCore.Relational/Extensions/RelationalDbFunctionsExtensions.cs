@@ -1,8 +1,5 @@
 using Thinktecture.EntityFrameworkCore;
 
-// ReSharper disable once CheckNamespace
-#pragma warning disable CA1707, CA1801
-
 namespace Thinktecture;
 
 /// <summary>

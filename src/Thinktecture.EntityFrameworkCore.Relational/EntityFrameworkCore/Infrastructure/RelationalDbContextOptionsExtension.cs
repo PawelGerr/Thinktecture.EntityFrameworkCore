@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text;
 using Microsoft.EntityFrameworkCore.Infrastructure;
@@ -18,7 +17,6 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure;
 /// <summary>
 /// Extensions for DbContextOptions.
 /// </summary>
-[SuppressMessage("ReSharper", "EF1001")]
 public sealed class RelationalDbContextOptionsExtension : DbContextOptionsExtensionBase, IDbContextOptionsExtension
 {
    private static readonly IRelationalDbContextComponentDecorator _defaultDecorator = new RelationalDbContextComponentDecorator();

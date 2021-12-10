@@ -2,7 +2,6 @@ using System.Data.Common;
 using Microsoft.EntityFrameworkCore.Metadata;
 
 namespace Thinktecture.EntityFrameworkCore.TempTables.NameSuffixing;
-#pragma warning disable CA1812
 
 internal class TempTableSuffixCache
 {

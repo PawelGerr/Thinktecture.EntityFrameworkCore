@@ -1,15 +1,10 @@
 using System.Collections.Concurrent;
 using System.Data.Common;
-using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Logging;
 using Serilog;
 using Thinktecture.EntityFrameworkCore;
 using Thinktecture.EntityFrameworkCore.Testing;
 using Thinktecture.TestDatabaseContext;
-
-[assembly: SuppressMessage("ReSharper", "CA1063")]
-[assembly: SuppressMessage("ReSharper", "CA1816")]
-[assembly: SuppressMessage("ReSharper", "CA1822")]
 
 namespace Thinktecture;
 

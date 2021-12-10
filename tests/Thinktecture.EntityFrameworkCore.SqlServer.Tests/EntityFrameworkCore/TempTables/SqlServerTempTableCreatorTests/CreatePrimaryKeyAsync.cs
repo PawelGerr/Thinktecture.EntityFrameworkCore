@@ -67,13 +67,11 @@ public class CreatePrimaryKeyAsync : IntegrationTestsBase
    [Fact]
    public async Task Should_not_create_primary_key_if_key_exists_and_checkForExistence_is_true()
    {
-#pragma warning disable 618
       await using var tempTableReference = await ArrangeDbContext.CreateTempTableAsync<TestEntity>(new TempTableCreationOptions
                                                                                                    {
                                                                                                       TableNameProvider = DefaultTempTableNameProvider.Instance,
                                                                                                       PrimaryKeyCreation = PrimaryKeyPropertiesProviders.None
                                                                                                    });
-#pragma warning restore 618
       var entityType = ArrangeDbContext.GetEntityType<TestEntity>();
       var allProperties = entityType.GetProperties().Select(p => new PropertyWithNavigations(p, Array.Empty<INavigation>())).ToList();
       var keyProperties = PrimaryKeyPropertiesProviders.AdaptiveForced.GetPrimaryKeyProperties(entityType, allProperties);
@@ -90,7 +88,6 @@ public class CreatePrimaryKeyAsync : IntegrationTestsBase
    [Fact]
    public async Task Should_throw_if_key_exists_and_checkForExistence_is_false()
    {
-#pragma warning disable 618
       await using var tempTableReference = await ArrangeDbContext.CreateTempTableAsync<TestEntity>(new TempTableCreationOptions
                                                                                                    {
                                                                                                       TableNameProvider = DefaultTempTableNameProvider.Instance,
@@ -102,6 +99,7 @@ public class CreatePrimaryKeyAsync : IntegrationTestsBase
       await SUT.CreatePrimaryKeyAsync(ArrangeDbContext, keyProperties, tempTableReference.Name);
 
       // ReSharper disable once RedundantArgumentDefaultValue
+      // ReSharper disable once AccessToDisposedClosure
       await SUT.Awaiting(sut => sut.CreatePrimaryKeyAsync(ActDbContext, keyProperties, tempTableReference.Name, false))
                .Should()
                .ThrowAsync<SqlException>();

@@ -7,7 +7,7 @@ using Thinktecture.EntityFrameworkCore.TempTables;
 namespace Thinktecture.EntityFrameworkCore.Query;
 
 /// <inheritdoc />
-[SuppressMessage("ReSharper", "EF1001")]
+[SuppressMessage("Usage", "EF1001", MessageId = "Internal EF Core API usage.")]
 public class ThinktectureSqlServerParameterBasedSqlProcessor : SqlServerParameterBasedSqlProcessor
 {
    /// <inheritdoc />

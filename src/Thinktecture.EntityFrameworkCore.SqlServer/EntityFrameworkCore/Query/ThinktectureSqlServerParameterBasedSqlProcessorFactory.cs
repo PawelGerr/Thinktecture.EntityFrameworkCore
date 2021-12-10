@@ -1,10 +1,8 @@
-using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore.Query;
 
 namespace Thinktecture.EntityFrameworkCore.Query;
 
 /// <inheritdoc />
-[SuppressMessage("ReSharper", "EF1001")]
 public class ThinktectureSqlServerParameterBasedSqlProcessorFactory : IRelationalParameterBasedSqlProcessorFactory
 {
    private readonly RelationalParameterBasedSqlProcessorDependencies _dependencies;

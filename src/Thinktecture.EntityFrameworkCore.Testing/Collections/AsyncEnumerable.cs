@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using System.Reflection;
 using Microsoft.EntityFrameworkCore.Query;
@@ -50,7 +49,6 @@ internal sealed class AsyncEnumerable<T> : EnumerableQuery<T>, IAsyncEnumerable<
       }
    }
 
-   [SuppressMessage("ReSharper", "EF1001")]
    private sealed class AsyncQueryProvider : IAsyncQueryProvider
    {
       private static readonly MethodInfo _genericCreateQuery = typeof(AsyncQueryProvider).GetMethods(BindingFlags.Instance | BindingFlags.Public)

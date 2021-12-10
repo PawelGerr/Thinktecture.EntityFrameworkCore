@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Thinktecture.EntityFrameworkCore.TempTables;
@@ -71,7 +70,6 @@ public static class BulkOperationsModelBuilderExtensions
       return builder;
    }
 
-   [SuppressMessage("ReSharper", "EF1001")]
    private static EntityTypeBuilder<T> Configure<T>(this ModelBuilder modelBuilder, bool isKeyless)
       where T : class
    {

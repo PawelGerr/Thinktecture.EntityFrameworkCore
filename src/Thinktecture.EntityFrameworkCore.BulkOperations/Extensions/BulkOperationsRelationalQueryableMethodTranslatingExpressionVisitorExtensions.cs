@@ -82,6 +82,7 @@ public static class BulkOperationsRelationalQueryableMethodTranslatingExpression
 #pragma warning disable EF1001
       var clone = selectExpression.Clone();
 #pragma warning restore EF1001
+
       clone.ApplyProjection(shapedQueryExpression.ShaperExpression, shapedQueryExpression.ResultCardinality, QuerySplittingBehavior.SingleQuery);
       var tableToDeleteIn = GetTableForDeleteOperation(clone);
 

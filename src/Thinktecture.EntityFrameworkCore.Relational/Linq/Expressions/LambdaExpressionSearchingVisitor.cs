@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using System.Reflection;
 using Microsoft.EntityFrameworkCore.Infrastructure;
@@ -8,7 +7,6 @@ namespace Thinktecture.Linq.Expressions;
 /// <summary>
 /// Visitor for searching a <see cref="LambdaExpression"/>.
 /// </summary>
-[SuppressMessage("ReSharper", "EF1001")]
 public class LambdaExpressionSearchingVisitor : ExpressionVisitor
 {
    private static readonly LambdaExpressionSearchingVisitor _instance = new();

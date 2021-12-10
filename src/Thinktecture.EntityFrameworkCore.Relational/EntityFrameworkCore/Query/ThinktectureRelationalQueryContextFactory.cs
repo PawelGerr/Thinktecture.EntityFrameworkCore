@@ -6,7 +6,6 @@ using Thinktecture.EntityFrameworkCore.Infrastructure;
 namespace Thinktecture.EntityFrameworkCore.Query;
 
 /// <inheritdoc />
-[SuppressMessage("ReSharper", "EF1001")]
 public class ThinktectureRelationalQueryContextFactory<TFactory> : IQueryContextFactory
    where TFactory : IQueryContextFactory
 {
@@ -47,6 +46,7 @@ public class ThinktectureRelationalQueryContextFactory<TFactory> : IQueryContext
    /// Adds a parameter so EF query cache treats queries for different tenants as different queries.
    /// </summary>
    /// <param name="ctx">Query context.</param>
+   [SuppressMessage("Usage", "EF1001", MessageId = "Internal EF Core API usage.")]
    private void AddTenantParameter(IParameterValues ctx)
    {
       var tenantDatabaseProvider = _tenantDatabaseProviderFactory.Create();

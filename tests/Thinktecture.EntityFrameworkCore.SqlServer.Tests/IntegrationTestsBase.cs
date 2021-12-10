@@ -13,7 +13,6 @@ using Thinktecture.TestDatabaseContext;
 
 namespace Thinktecture;
 
-[SuppressMessage("ReSharper", "EF1001")]
 [Collection("SqlServerTests")]
 public class IntegrationTestsBase : SqlServerDbContextIntegrationTests<TestDbContext>
 {
@@ -36,6 +35,7 @@ public class IntegrationTestsBase : SqlServerDbContextIntegrationTests<TestDbCon
       TenantDatabaseProviderMock = new Mock<ITenantDatabaseProvider>(MockBehavior.Strict);
    }
 
+   [SuppressMessage("Usage", "EF1001", MessageId = "Internal EF Core API usage.")]
    protected IDiagnosticsLogger<TCategory> CreateDiagnosticsLogger<TCategory>(ILoggingOptions? options = null, DiagnosticSource? diagnosticSource = null)
       where TCategory : LoggerCategory<TCategory>, new()
    {

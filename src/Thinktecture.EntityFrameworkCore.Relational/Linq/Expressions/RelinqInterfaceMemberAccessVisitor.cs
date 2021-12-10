@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using System.Reflection;
 using Microsoft.EntityFrameworkCore.Infrastructure;
@@ -9,7 +8,6 @@ namespace Thinktecture.Linq.Expressions;
 /// Searches for conversions from a (derived) type to an interface
 /// and rewrites member access expressions so the property of the derived type is used instead the one of the interface.
 /// </summary>
-[SuppressMessage("ReSharper", "EF1001")]
 public class RelinqInterfaceMemberAccessVisitor : ExpressionVisitor
 {
    private static readonly RelinqInterfaceMemberAccessVisitor _instance = new();

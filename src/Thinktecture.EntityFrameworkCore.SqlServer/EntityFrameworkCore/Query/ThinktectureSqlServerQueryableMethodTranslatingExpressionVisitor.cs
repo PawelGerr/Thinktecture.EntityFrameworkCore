@@ -10,7 +10,7 @@ namespace Thinktecture.EntityFrameworkCore.Query;
 /// <summary>
 /// Extends the capabilities of <see cref="RelationalQueryableMethodTranslatingExpressionVisitor"/>.
 /// </summary>
-[SuppressMessage("ReSharper", "EF1001")]
+[SuppressMessage("Usage", "EF1001", MessageId = "Internal EF Core API usage.")]
 public class ThinktectureSqlServerQueryableMethodTranslatingExpressionVisitor
    : SqlServerQueryableMethodTranslatingExpressionVisitor
 {

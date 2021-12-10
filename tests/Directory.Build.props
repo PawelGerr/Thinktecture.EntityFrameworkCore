@@ -6,7 +6,7 @@
         <NoWarn>$(NoWarn);CA1062</NoWarn>
     </PropertyGroup>
 
-    <Import Condition=" exists('$(ParentPropsFile)') " Project="$(ParentPropsFile)"/>
+    <Import Condition="exists('$(ParentPropsFile)') " Project="$(ParentPropsFile)"/>
 
     <ItemGroup>
         <PackageReference Include="FluentAssertions" Version="6.2.0"/>

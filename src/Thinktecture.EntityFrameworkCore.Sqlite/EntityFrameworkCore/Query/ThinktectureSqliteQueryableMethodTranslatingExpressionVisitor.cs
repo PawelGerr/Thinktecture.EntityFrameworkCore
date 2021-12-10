@@ -10,9 +10,8 @@ namespace Thinktecture.EntityFrameworkCore.Query;
 /// <summary>
 /// Extends the capabilities of <see cref="Microsoft.EntityFrameworkCore.Sqlite.Query.Internal.SqliteQueryableMethodTranslatingExpressionVisitor"/>.
 /// </summary>
-[SuppressMessage("ReSharper", "EF1001")]
-public class ThinktectureSqliteQueryableMethodTranslatingExpressionVisitor
-   : SqliteQueryableMethodTranslatingExpressionVisitor
+[SuppressMessage("Usage", "EF1001", MessageId = "Internal EF Core API usage.")]
+public class ThinktectureSqliteQueryableMethodTranslatingExpressionVisitor : SqliteQueryableMethodTranslatingExpressionVisitor
 {
    private readonly IRelationalTypeMappingSource _typeMappingSource;
    private readonly TableHintContextFactory _tableHintContextFactory;

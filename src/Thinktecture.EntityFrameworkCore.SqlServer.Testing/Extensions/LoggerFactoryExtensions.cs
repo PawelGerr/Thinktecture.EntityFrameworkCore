@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Logging;
 using Thinktecture.Logging;
 
@@ -16,7 +15,6 @@ public static class LoggerFactoryExtensions
    /// <param name="loggerFactory">Logger factory to register the statement collector with.</param>
    /// <returns></returns>
    /// <exception cref="ArgumentNullException"></exception>
-   [SuppressMessage("ReSharper", "CA2000")]
    public static IReadOnlyCollection<string> CollectExecutedCommands(
       this ILoggerFactory loggerFactory)
    {

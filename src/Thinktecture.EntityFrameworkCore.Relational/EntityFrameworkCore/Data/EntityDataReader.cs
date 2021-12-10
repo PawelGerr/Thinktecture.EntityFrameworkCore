@@ -1,5 +1,4 @@
 using System.Data;
-using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 
 namespace Thinktecture.EntityFrameworkCore.Data;
@@ -8,7 +7,6 @@ namespace Thinktecture.EntityFrameworkCore.Data;
 /// Data reader for Entity Framework Core entities.
 /// </summary>
 /// <typeparam name="TEntity">Type of the entity.</typeparam>
-[SuppressMessage("ReSharper", "EF1001")]
 public sealed class EntityDataReader<TEntity> : IEntityDataReader<TEntity>
    where TEntity : class
 {
@@ -136,7 +134,6 @@ public sealed class EntityDataReader<TEntity> : IEntityDataReader<TEntity>
 
    // The following methods are not needed for bulk insert.
    // ReSharper disable ArrangeMethodOrOperatorBody
-#pragma warning disable 1591
    object IDataRecord.this[int i] => throw new NotSupportedException();
    object IDataRecord.this[string name] => throw new NotSupportedException();
    int IDataReader.Depth => throw new NotSupportedException();
@@ -164,7 +161,7 @@ public sealed class EntityDataReader<TEntity> : IEntityDataReader<TEntity>
    DateTime IDataRecord.GetDateTime(int i) => throw new NotSupportedException();
    IDataReader IDataRecord.GetData(int i) => throw new NotSupportedException();
    DataTable IDataReader.GetSchemaTable() => throw new NotSupportedException();
+
    bool IDataReader.NextResult() => throw new NotSupportedException();
-#pragma warning restore 1591
    // ReSharper restore ArrangeMethodOrOperatorBody
 }

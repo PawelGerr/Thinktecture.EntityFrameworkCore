@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 
@@ -22,7 +21,6 @@ public static class RelationalModelExtensions
    /// <paramref name="type"/> is <c>null</c>.
    /// </exception>
    /// <exception cref="ArgumentException">The provided type <paramref name="type"/> is not known by provided <paramref name="model"/>.</exception>
-   [SuppressMessage("ReSharper", "EF1001")]
    public static IEntityType GetEntityType(this IModel model, Type type)
    {
       ArgumentNullException.ThrowIfNull(model);

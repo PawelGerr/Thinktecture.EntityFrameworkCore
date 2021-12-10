@@ -80,9 +80,7 @@ public class NestedRelationalTransactionManager : IRelationalTransactionManager
          }
          else
          {
-#pragma warning disable CA2000
             _transactions.Push(new RootNestedDbContextTransaction(_logger, this, _innerManager, tx, transactionId));
-#pragma warning restore CA2000
          }
       }
 
@@ -140,9 +138,7 @@ public class NestedRelationalTransactionManager : IRelationalTransactionManager
          }
          else
          {
-#pragma warning disable CA2000
             _transactions.Push(new RootNestedDbContextTransaction(_logger, this, _innerManager, tx, transactionId));
-#pragma warning restore CA2000
          }
       }
 

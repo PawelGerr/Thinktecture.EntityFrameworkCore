@@ -6,8 +6,6 @@ using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
 using IsolationLevel = System.Data.IsolationLevel;
 
-#pragma warning disable CA1063, CA1816
-
 namespace Thinktecture.EntityFrameworkCore.Storage;
 
 /// <summary>

@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -17,7 +16,6 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations;
 /// <summary>
 /// Executes bulk operations.
 /// </summary>
-[SuppressMessage("ReSharper", "EF1001")]
 public sealed class SqlServerBulkOperationExecutor
    : IBulkInsertExecutor, ITempTableBulkInsertExecutor, IBulkUpdateExecutor,
      IBulkInsertOrUpdateExecutor, ITruncateTableExecutor

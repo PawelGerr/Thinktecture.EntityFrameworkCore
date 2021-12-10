@@ -8,7 +8,7 @@ using Thinktecture.EntityFrameworkCore.Query.SqlExpressions;
 namespace Thinktecture.EntityFrameworkCore.Query;
 
 /// <inheritdoc />
-[SuppressMessage("ReSharper", "EF1001")]
+[SuppressMessage("Usage", "EF1001", MessageId = "Internal EF Core API usage.")]
 public class ThinktectureSqlServerQuerySqlGenerator : SqlServerQuerySqlGenerator
 {
    private readonly ITenantDatabaseProvider _databaseProvider;

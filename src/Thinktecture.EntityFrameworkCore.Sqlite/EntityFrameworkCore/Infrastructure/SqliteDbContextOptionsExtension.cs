@@ -15,7 +15,6 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure;
 /// <summary>
 /// Extensions for DbContextOptions.
 /// </summary>
-[SuppressMessage("ReSharper", "EF1001")]
 public sealed class SqliteDbContextOptionsExtension : DbContextOptionsExtensionBase, IDbContextOptionsExtension
 {
    private readonly RelationalDbContextOptionsExtension _relationalOptions;
@@ -85,6 +84,7 @@ public sealed class SqliteDbContextOptionsExtension : DbContextOptionsExtensionB
    }
 
    /// <inheritdoc />
+   [SuppressMessage("Usage", "EF1001", MessageId = "Internal EF Core API usage.")]
    public void ApplyServices(IServiceCollection services)
    {
       services.TryAddSingleton(this);

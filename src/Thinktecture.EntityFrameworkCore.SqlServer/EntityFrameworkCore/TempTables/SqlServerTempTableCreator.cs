@@ -13,7 +13,6 @@ namespace Thinktecture.EntityFrameworkCore.TempTables;
 /// <summary>
 /// Creates temp tables.
 /// </summary>
-[SuppressMessage("ReSharper", "EF1001")]
 public sealed class SqlServerTempTableCreator : ISqlServerTempTableCreator
 {
    private static readonly string[] _stringColumnTypes = { "char", "varchar", "text", "nchar", "nvarchar", "ntext" };
@@ -297,6 +296,7 @@ END
       sb.Append(')');
    }
 
+   [SuppressMessage("Usage", "EF1001", MessageId = "Internal EF Core API usage.")]
    private static bool IsIdentityColumn(PropertyWithNavigations property)
    {
       return SqlServerValueGenerationStrategy.IdentityColumn.Equals(property.Property.FindAnnotation(SqlServerAnnotationNames.ValueGenerationStrategy)?.Value);

@@ -11,7 +11,6 @@ namespace Thinktecture.EntityFrameworkCore.Data;
 /// <summary>
 /// Builds and caches property getters.
 /// </summary>
-[SuppressMessage("ReSharper", "EF1001")]
 public class PropertyGetterCache : IPropertyGetterCache
 {
    private readonly ILogger<PropertyGetterCache> _logger;
@@ -47,15 +46,15 @@ public class PropertyGetterCache : IPropertyGetterCache
       {
          if (property.ClrType.IsClass)
          {
-            _logger.LogWarning("The corresponding column of '{Entity}.{Property}' has a DEFAULT value constraint in the database and is NOT NULL. Depending on the database vendor the .NET value `null` may lead to an exception because the tool for bulk insert of data may prevent sending `null`s for NOT NULL columns. Use 'PropertiesToInsert/PropertiesToUpdate' on corresponding options to specify properties to insert/update and skip '{Entity}.{Property}' so database uses the DEFAULT value.",
-                               property.DeclaringEntityType.ClrType.Name, property.Name, property.DeclaringEntityType.ClrType.Name, property.Name);
+            _logger.LogWarning("The corresponding column of '{Entity}.{Property}' has a DEFAULT value constraint in the database and is NOT NULL. Depending on the database vendor the .NET value `null` may lead to an exception because the tool for bulk insert of data may prevent sending `null`s for NOT NULL columns. Use 'PropertiesToInsert/PropertiesToUpdate' on corresponding options to specify properties to insert/update and skip the property so database uses the DEFAULT value.",
+                               property.DeclaringEntityType.ClrType.Name, property.Name);
          }
          else if (!property.ClrType.IsGenericType ||
                   !property.ClrType.IsGenericTypeDefinition &&
                   property.ClrType.GetGenericTypeDefinition() != typeof(Nullable<>))
          {
-            _logger.LogWarning("The corresponding column of '{Entity}.{Property}' has a DEFAULT value constraint in the database and is NOT NULL. Depending on the database vendor the \".NET default values\" (`false`, `0`, `00000000-0000-0000-0000-000000000000` etc.) may lead to unexpected results because these values are sent to the database as-is, i.e. the DEFAULT value constraint will NOT be used by database. Use 'PropertiesToInsert/PropertiesToUpdate' on corresponding options to specify properties to insert and skip '{Entity}.{Property}' so database uses the DEFAULT value.",
-                               property.DeclaringEntityType.ClrType.Name, property.Name, property.DeclaringEntityType.ClrType.Name, property.Name);
+            _logger.LogWarning("The corresponding column of '{Entity}.{Property}' has a DEFAULT value constraint in the database and is NOT NULL. Depending on the database vendor the \".NET default values\" (`false`, `0`, `00000000-0000-0000-0000-000000000000` etc.) may lead to unexpected results because these values are sent to the database as-is, i.e. the DEFAULT value constraint will NOT be used by database. Use 'PropertiesToInsert/PropertiesToUpdate' on corresponding options to specify properties to insert and skip the property so database uses the DEFAULT value.",
+                               property.DeclaringEntityType.ClrType.Name, property.Name);
          }
       }
 
@@ -140,6 +139,7 @@ public class PropertyGetterCache : IPropertyGetterCache
              };
    }
 
+   [SuppressMessage("Usage", "EF1001", MessageId = "Internal EF Core API usage.")]
    private static IShadowPropertyGetter CreateShadowPropertyGetter(IProperty property)
    {
       var currentValueGetter = property.GetPropertyAccessors().CurrentValueGetter;

@@ -3,17 +3,13 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 
 namespace Thinktecture.EntityFrameworkCore.TempTables.NameSuffixing;
-#pragma warning disable CA1812
 
 internal class TempTableSuffixLeasing : IDisposable
 {
    private readonly object _lock;
    private readonly TempTableSuffixCache _cache;
    private readonly ICurrentDbContext _currentDbContext;
-
-#pragma warning disable CA2213
    private DbConnection? _connection;
-#pragma warning restore CA2213
 
    private Dictionary<IEntityType, TempTableSuffixes>? _lookup;
    private bool _idDisposed;

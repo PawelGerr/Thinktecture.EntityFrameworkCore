@@ -1,10 +1,5 @@
-using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.DependencyInjection;
 using Thinktecture.Database;
-
-[assembly: SuppressMessage("ReSharper", "CA2007")]
-[assembly: SuppressMessage("ReSharper", "CA1052")]
-[assembly: SuppressMessage("ReSharper", "CA2227")]
 
 namespace Thinktecture;
 

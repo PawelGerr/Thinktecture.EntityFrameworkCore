@@ -1,11 +1,7 @@
 using System.Collections.Concurrent;
-using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Serilog;
-
-[assembly: SuppressMessage("ReSharper", "CA1707")]
-[assembly: SuppressMessage("ReSharper", "CA2007")]
 
 namespace Thinktecture;
 

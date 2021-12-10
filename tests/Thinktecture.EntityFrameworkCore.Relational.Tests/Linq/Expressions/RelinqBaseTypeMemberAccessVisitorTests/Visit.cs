@@ -5,7 +5,6 @@ using System.Reflection;
 namespace Thinktecture.Linq.Expressions.RelinqBaseTypeMemberAccessVisitorTests;
 
 [SuppressMessage("ReSharper", "UnassignedGetOnlyAutoProperty")]
-[SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Local")]
 public class Visit
 {
    [Fact]

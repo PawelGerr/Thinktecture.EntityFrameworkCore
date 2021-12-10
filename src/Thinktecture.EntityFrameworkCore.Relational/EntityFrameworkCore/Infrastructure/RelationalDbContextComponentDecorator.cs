@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -7,7 +6,6 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure;
 /// <summary>
 /// Decorates EF Core components.
 /// </summary>
-[SuppressMessage("ReSharper", "EF1001")]
 public sealed class RelationalDbContextComponentDecorator : IRelationalDbContextComponentDecorator
 {
    /// <inheritdoc />

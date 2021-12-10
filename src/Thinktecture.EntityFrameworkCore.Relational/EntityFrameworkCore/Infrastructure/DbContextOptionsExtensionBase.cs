@@ -9,7 +9,6 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure;
 /// <summary>
 /// Base class for <see cref="IDbContextOptionsExtension"/>.
 /// </summary>
-[SuppressMessage("ReSharper", "EF1001")]
 public abstract class DbContextOptionsExtensionBase
 {
    /// <summary>
@@ -28,6 +27,7 @@ public abstract class DbContextOptionsExtensionBase
    /// <typeparam name="TService">Service to fetch lifetime for.</typeparam>
    /// <returns>Lifetime of the provided service.</returns>
    /// <exception cref="InvalidOperationException">If service is not found.</exception>
+   [SuppressMessage("Usage", "EF1001", MessageId = "Internal EF Core API usage.")]
    protected ServiceLifetime GetLifetime<TService>()
    {
       var serviceType = typeof(TService);

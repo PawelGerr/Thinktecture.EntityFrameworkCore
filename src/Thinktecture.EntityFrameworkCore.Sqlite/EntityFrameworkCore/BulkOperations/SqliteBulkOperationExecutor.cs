@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -18,7 +17,6 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations;
 /// Executes bulk operations.
 /// </summary>
 // ReSharper disable once ClassNeverInstantiated.Global
-[SuppressMessage("ReSharper", "EF1001")]
 public sealed class SqliteBulkOperationExecutor
    : IBulkInsertExecutor, ITempTableBulkInsertExecutor, IBulkUpdateExecutor,
      IBulkInsertOrUpdateExecutor, ITruncateTableExecutor
