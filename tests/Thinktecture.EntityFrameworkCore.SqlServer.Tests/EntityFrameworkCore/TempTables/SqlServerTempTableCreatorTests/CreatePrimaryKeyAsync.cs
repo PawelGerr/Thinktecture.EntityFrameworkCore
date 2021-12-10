@@ -70,14 +70,18 @@ public class CreatePrimaryKeyAsync : IntegrationTestsBase
 #pragma warning disable 618
       await using var tempTableReference = await ArrangeDbContext.CreateTempTableAsync<TestEntity>(new TempTableCreationOptions
                                                                                                    {
-                                                                                                      TableNameProvider = NewGuidTempTableNameProvider.Instance,
+                                                                                                      TableNameProvider = DefaultTempTableNameProvider.Instance,
                                                                                                       PrimaryKeyCreation = PrimaryKeyPropertiesProviders.None
                                                                                                    });
 #pragma warning restore 618
       var entityType = ArrangeDbContext.GetEntityType<TestEntity>();
       var allProperties = entityType.GetProperties().Select(p => new PropertyWithNavigations(p, Array.Empty<INavigation>())).ToList();
       var keyProperties = PrimaryKeyPropertiesProviders.AdaptiveForced.GetPrimaryKeyProperties(entityType, allProperties);
-      await SUT.CreatePrimaryKeyAsync(ArrangeDbContext, keyProperties, tempTableReference.Name);
+      await SUT.CreatePrimaryKeyAsync(ArrangeDbContext, keyProperties, tempTableReference.Name, true);
+
+      var constraints = await AssertDbContext.GetTempTableConstraints<TestEntity>().ToListAsync();
+      constraints.Should().HaveCount(1)
+                 .And.Subject.First().CONSTRAINT_TYPE.Should().Be("PRIMARY KEY");
 
       await SUT.Awaiting(sut => sut.CreatePrimaryKeyAsync(ActDbContext, keyProperties, tempTableReference.Name, true))
                .Should().NotThrowAsync();
@@ -89,7 +93,7 @@ public class CreatePrimaryKeyAsync : IntegrationTestsBase
 #pragma warning disable 618
       await using var tempTableReference = await ArrangeDbContext.CreateTempTableAsync<TestEntity>(new TempTableCreationOptions
                                                                                                    {
-                                                                                                      TableNameProvider = NewGuidTempTableNameProvider.Instance,
+                                                                                                      TableNameProvider = DefaultTempTableNameProvider.Instance,
                                                                                                       PrimaryKeyCreation = PrimaryKeyPropertiesProviders.None
                                                                                                    });
       var entityType = ArrangeDbContext.GetEntityType<TestEntity>();

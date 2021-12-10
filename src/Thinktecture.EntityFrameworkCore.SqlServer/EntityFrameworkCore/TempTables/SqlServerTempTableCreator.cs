@@ -148,17 +148,13 @@ public sealed class SqlServerTempTableCreator : ISqlServerTempTableCreator
 
       if (cacheKey.CheckForExistence)
       {
-         return new CachedTempTableStatement(delegate(string name)
-                                             {
-                                                var escapedTableName = _sqlGenerationHelper.DelimitIdentifier(name);
-                                                return $@"
-IF(NOT EXISTS (SELECT * FROM tempdb.INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE CONSTRAINT_TYPE = 'PRIMARY KEY' AND OBJECT_ID(TABLE_CATALOG + '..' + TABLE_NAME) = OBJECT_ID('tempdb..{escapedTableName}')))
+         return new CachedTempTableStatement(name => $@"
+IF(NOT EXISTS (SELECT * FROM tempdb.INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE CONSTRAINT_TYPE = 'PRIMARY KEY' AND OBJECT_ID(TABLE_CATALOG + '..' + TABLE_NAME) = OBJECT_ID('tempdb..{name}')))
 BEGIN
-   ALTER TABLE {_sqlGenerationHelper.DelimitIdentifier(escapedTableName)}
+   ALTER TABLE {_sqlGenerationHelper.DelimitIdentifier(name)}
    ADD CONSTRAINT {_sqlGenerationHelper.DelimitIdentifier($"PK_{name}_{Guid.NewGuid():N}")} PRIMARY KEY CLUSTERED ({commaSeparatedColumns});
 END
-";
-                                             });
+");
       }
 
       return new CachedTempTableStatement(name => $@"
