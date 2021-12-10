@@ -73,21 +73,30 @@ public sealed class SqlServerTempTableCreator : ISqlServerTempTableCreator
       ArgumentNullException.ThrowIfNull(options);
 
       var (nameLease, tableName) = GetTableName(entityType, options.TableNameProvider);
-      var sql = GetTempTableCreationSql(entityType, tableName, options);
-
-      await _ctx.Database.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
 
       try
       {
-         await _ctx.Database.ExecuteSqlRawAsync(sql, cancellationToken).ConfigureAwait(false);
+         var sql = GetTempTableCreationSql(entityType, tableName, options);
+
+         await _ctx.Database.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
+
+         try
+         {
+            await _ctx.Database.ExecuteSqlRawAsync(sql, cancellationToken).ConfigureAwait(false);
+         }
+         catch (Exception)
+         {
+            await _ctx.Database.CloseConnectionAsync().ConfigureAwait(false);
+            throw;
+         }
+
+         return new SqlServerTempTableReference(_logger, _sqlGenerationHelper, tableName, _ctx.Database, nameLease, options.DropTableOnDispose);
       }
       catch (Exception)
       {
-         await _ctx.Database.CloseConnectionAsync().ConfigureAwait(false);
+         nameLease.Dispose();
          throw;
       }
-
-      return new SqlServerTempTableReference(_logger, _sqlGenerationHelper, tableName, _ctx.Database, nameLease, options.DropTableOnDispose);
    }
 
    private (ITempTableNameLease nameLease, string tableName) GetTableName(

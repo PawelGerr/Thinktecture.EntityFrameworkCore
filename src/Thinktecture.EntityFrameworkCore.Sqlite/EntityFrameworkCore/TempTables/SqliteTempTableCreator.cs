@@ -51,22 +51,31 @@ public sealed class SqliteTempTableCreator : ITempTableCreator
       ArgumentNullException.ThrowIfNull(entityType);
       ArgumentNullException.ThrowIfNull(options);
 
-      var (nameLease, tableName) = GetTableName(entityType, options.TableNameProvider);
-      var sql = GetTempTableCreationSql(entityType, tableName, options);
-
-      await _ctx.Database.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
+      var nameLease = options.TableNameProvider.LeaseName(_ctx, entityType);
 
       try
       {
-         await _ctx.Database.ExecuteSqlRawAsync(sql, cancellationToken).ConfigureAwait(false);
+         var sql = GetTempTableCreationSql(entityType, nameLease.Name, options);
+
+         await _ctx.Database.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
+
+         try
+         {
+            await _ctx.Database.ExecuteSqlRawAsync(sql, cancellationToken).ConfigureAwait(false);
+         }
+         catch (Exception)
+         {
+            await _ctx.Database.CloseConnectionAsync().ConfigureAwait(false);
+            throw;
+         }
+
+         return new SqliteTempTableReference(_logger, _sqlGenerationHelper, nameLease.Name, _ctx.Database, nameLease, options.DropTableOnDispose);
       }
       catch (Exception)
       {
-         await _ctx.Database.CloseConnectionAsync().ConfigureAwait(false);
+         nameLease.Dispose();
          throw;
       }
-
-      return new SqliteTempTableReference(_logger, _sqlGenerationHelper, tableName, _ctx.Database, nameLease, options.DropTableOnDispose);
    }
 
    private string GetTempTableCreationSql(IEntityType entityType, string tableName, ITempTableCreationOptions options)
@@ -182,17 +191,5 @@ Currently configured primary keys: [{String.Join(", ", options.PrimaryKeys.Selec
       }
 
       sb.Append(')');
-   }
-
-   private (ITempTableNameLease nameLease, string tableName) GetTableName(
-      IEntityType entityType,
-      ITempTableNameProvider nameProvider)
-   {
-      ArgumentNullException.ThrowIfNull(nameProvider);
-
-      var nameLease = nameProvider.LeaseName(_ctx, entityType);
-      var name = nameLease.Name;
-
-      return (nameLease, name);
    }
 }
