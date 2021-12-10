@@ -189,17 +189,22 @@ CREATE TABLE {_sqlGenerationHelper.DelimitIdentifier(name)}
 );");
       }
 
-      return new CachedTempTableStatement(name => $@"
+      return new CachedTempTableStatement(name =>
+                                          {
+                                             var escapedTableName = _sqlGenerationHelper.DelimitIdentifier(name);
+
+                                             return $@"
 IF(OBJECT_ID('tempdb..{name}') IS NOT NULL)
-   TRUNCATE TABLE {_sqlGenerationHelper.DelimitIdentifier(name)};
+   TRUNCATE TABLE {escapedTableName};
 ELSE
 BEGIN
-CREATE TABLE {_sqlGenerationHelper.DelimitIdentifier(name)}
+CREATE TABLE {escapedTableName}
 (
 {columnDefinitions}
 );
 END
-");
+";
+                                          });
    }
 
    private string GetColumnsDefinitions(SqlServerTempTableCreatorCacheKey options)
