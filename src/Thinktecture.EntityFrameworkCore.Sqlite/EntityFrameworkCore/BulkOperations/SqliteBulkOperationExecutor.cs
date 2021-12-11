@@ -278,10 +278,9 @@ public sealed class SqliteBulkOperationExecutor
       for (var i = 0; i < reader.Properties.Count; i++)
       {
          var property = reader.Properties[i];
-         var index = reader.GetPropertyIndex(property);
 
          var parameter = command.CreateParameter();
-         parameter.ParameterName = $"$p{index}";
+         parameter.ParameterName = $"$p{i}";
          parameters[i] = new ParameterInfo(parameter, property.Property.IsAutoIncrement());
          command.Parameters.Add(parameter);
       }

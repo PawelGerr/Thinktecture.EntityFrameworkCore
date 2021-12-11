@@ -191,12 +191,11 @@ public sealed class SqlServerBulkOperationExecutor
          for (var i = 0; i < reader.Properties.Count; i++)
          {
             var property = reader.Properties[i];
-            var index = reader.GetPropertyIndex(property);
             var storeObject = StoreObjectIdentifier.Create(property.Property.DeclaringEntityType, StoreObjectType.Table)
                               ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.Property.DeclaringEntityType.Name}'.");
             var columnName = property.Property.GetColumnName(storeObject);
 
-            bulkCopy.ColumnMappings.Add(new SqlBulkCopyColumnMapping(index, columnName));
+            bulkCopy.ColumnMappings.Add(new SqlBulkCopyColumnMapping(i, columnName));
 
             if (columnsSb.Length > 0)
                columnsSb.Append(", ");

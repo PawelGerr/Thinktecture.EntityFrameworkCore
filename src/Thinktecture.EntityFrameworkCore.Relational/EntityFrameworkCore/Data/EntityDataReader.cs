@@ -77,12 +77,6 @@ public sealed class EntityDataReader<TEntity> : IEntityDataReader<TEntity>
    }
 
    /// <inheritdoc />
-   public IEnumerable<(int index, PropertyWithNavigations property)> GetProperties()
-   {
-      return Properties.Select((p, i) => (i, p));
-   }
-
-   /// <inheritdoc />
    public int GetPropertyIndex(PropertyWithNavigations property)
    {
       for (var i = 0; i < Properties.Count; i++)
