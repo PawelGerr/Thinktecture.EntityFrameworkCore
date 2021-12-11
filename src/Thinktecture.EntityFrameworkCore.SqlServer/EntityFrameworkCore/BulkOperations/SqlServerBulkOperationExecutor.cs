@@ -280,7 +280,7 @@ INSERT BULK {Table} ({Columns})", (long)duration.TotalMilliseconds,
          throw new NotSupportedException($"Bulk insert of separate owned types into temp tables is not supported. Properties of separate owned types: {String.Join(", ", selectedProperties.Where(p => !p.IsInlined))}");
 
       var tempTableCreationOptions = options.GetTempTableCreationOptions();
-      var primaryKeyCreation = tempTableCreationOptions.PrimaryKeyCreation;
+      var primaryKeyCreation = tempTableCreationOptions.PrimaryKeyCreation; // keep this one in a local variable because we may change it in the next line
 
       if (options.MomentOfPrimaryKeyCreation == MomentOfSqlServerPrimaryKeyCreation.AfterBulkInsert)
          tempTableCreationOptions.PrimaryKeyCreation = PrimaryKeyPropertiesProviders.None;
