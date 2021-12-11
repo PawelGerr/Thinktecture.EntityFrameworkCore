@@ -12,7 +12,7 @@ public sealed class EntityDataReader<TEntity> : IEntityDataReader<TEntity>
 {
    private readonly DbContext _ctx;
    private readonly IEnumerator<TEntity> _enumerator;
-   private readonly Dictionary<int, Func<DbContext, TEntity, object?>> _propertyGetterLookup;
+   private readonly Func<DbContext, TEntity, object?>[] _propertyGetterLookup;
    private readonly IReadOnlyList<TEntity>? _entities;
    private readonly List<TEntity>? _readEntities;
 
@@ -62,16 +62,15 @@ public sealed class EntityDataReader<TEntity> : IEntityDataReader<TEntity>
       }
    }
 
-   private static Dictionary<int, Func<DbContext, TEntity, object?>> BuildPropertyGetterLookup(
+   private static Func<DbContext, TEntity, object?>[] BuildPropertyGetterLookup(
       IPropertyGetterCache propertyGetterCache,
       IReadOnlyList<PropertyWithNavigations> properties)
    {
-      var lookup = new Dictionary<int, Func<DbContext, TEntity, object?>>();
+      var lookup = new Func<DbContext, TEntity, object?>[properties.Count];
 
       for (var i = 0; i < properties.Count; i++)
       {
-         var getter = propertyGetterCache.GetPropertyGetter<TEntity>(properties[i]);
-         lookup.Add(lookup.Count, getter);
+         lookup[i] = propertyGetterCache.GetPropertyGetter<TEntity>(properties[i]);
       }
 
       return lookup;
