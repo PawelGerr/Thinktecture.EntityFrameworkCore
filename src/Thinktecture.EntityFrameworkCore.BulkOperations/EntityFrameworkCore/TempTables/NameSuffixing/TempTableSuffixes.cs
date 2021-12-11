@@ -5,12 +5,22 @@ internal class TempTableSuffixes
    private int _numberOfTempTables;
    private SortedSet<int>? _suffixes;
 
+   // perf optimization
+   private int? _firstSuffix;
+
    public TempTableSuffixLease Lease()
    {
       if (_suffixes?.Count > 0)
       {
          var suffix = _suffixes.First();
          _suffixes.Remove(suffix);
+         return new TempTableSuffixLease(suffix, this);
+      }
+
+      if (_firstSuffix.HasValue)
+      {
+         var suffix = _firstSuffix.Value;
+         _firstSuffix = null;
          return new TempTableSuffixLease(suffix, this);
       }
 
@@ -22,13 +32,17 @@ internal class TempTableSuffixes
    {
       if (_suffixes == null)
       {
-         _suffixes = new SortedSet<int>();
-      }
-      else if (_suffixes.Contains(suffix))
-      {
-         throw new InvalidOperationException($"The suffix '{suffix}' is returned already.");
+         if (!_firstSuffix.HasValue)
+         {
+            _firstSuffix = suffix;
+            return;
+         }
+
+         _suffixes = new SortedSet<int> { _firstSuffix.Value };
+         _firstSuffix = null;
       }
 
-      _suffixes.Add(suffix);
+      if (!_suffixes.Add(suffix))
+         throw new InvalidOperationException($"The suffix '{suffix}' is returned already.");
    }
 }
