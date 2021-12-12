@@ -74,7 +74,8 @@ public class IntegrationTestsBase : SqlServerDbContextIntegrationTests<TestDbCon
       base.ConfigureSqlServer(builder);
 
       builder.AddBulkOperationSupport()
-             .AddRowNumberSupport();
+             .AddRowNumberSupport()
+             .AddCollectionParameterSupport();
 
       if (IsTenantDatabaseSupportEnabled)
          builder.AddTenantDatabaseSupport<TestTenantDatabaseProviderFactory>();

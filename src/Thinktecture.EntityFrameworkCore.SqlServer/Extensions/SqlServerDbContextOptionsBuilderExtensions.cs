@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.DependencyInjection;
@@ -19,10 +20,26 @@ public static class SqlServerDbContextOptionsBuilderExtensions
    /// <param name="sqlServerOptionsBuilder">SQL Server options builder.</param>
    /// <param name="addBulkOperationSupport">Indication whether to enable or disable the feature.</param>
    /// <returns>Provided <paramref name="sqlServerOptionsBuilder"/>.</returns>
-   public static SqlServerDbContextOptionsBuilder AddBulkOperationSupport(this SqlServerDbContextOptionsBuilder sqlServerOptionsBuilder,
-                                                                          bool addBulkOperationSupport = true)
+   public static SqlServerDbContextOptionsBuilder AddBulkOperationSupport(
+      this SqlServerDbContextOptionsBuilder sqlServerOptionsBuilder,
+      bool addBulkOperationSupport = true)
    {
       return AddOrUpdateExtension(sqlServerOptionsBuilder, extension => extension.AddBulkOperationSupport = addBulkOperationSupport);
+   }
+
+   /// <summary>
+   /// Adds support for queryable parameters.
+   /// </summary>
+   /// <param name="sqlServerOptionsBuilder">SQL Server options builder.</param>
+   /// <param name="jsonSerializerOptions">JSON serialization options.</param>
+   /// <param name="addCollectionParameterSupport">Indication whether to enable or disable the feature.</param>
+   /// <returns>Provided <paramref name="sqlServerOptionsBuilder"/>.</returns>
+   public static SqlServerDbContextOptionsBuilder AddCollectionParameterSupport(
+      this SqlServerDbContextOptionsBuilder sqlServerOptionsBuilder,
+      JsonSerializerOptions? jsonSerializerOptions = null,
+      bool addCollectionParameterSupport = true)
+   {
+      return AddOrUpdateExtension(sqlServerOptionsBuilder, extension => extension.AddCollectionParameterSupport(addCollectionParameterSupport, jsonSerializerOptions));
    }
 
    /// <summary>

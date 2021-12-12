@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Thinktecture.EntityFrameworkCore.Parameters;
 using Thinktecture.EntityFrameworkCore.TempTables;
 
 // ReSharper disable once CheckNamespace
@@ -21,7 +22,22 @@ public static class BulkOperationsModelBuilderExtensions
    public static EntityTypeBuilder<T> ConfigureTempTableEntity<T>(this ModelBuilder modelBuilder, bool isKeyless = true)
       where T : class
    {
-      return modelBuilder.Configure<T>(isKeyless);
+      return modelBuilder.ConfigureTempTableInternal<T>(isKeyless);
+   }
+
+   /// <summary>
+   /// Introduces and configures a scalar parameter.
+   /// </summary>
+   /// <param name="modelBuilder">A model builder.</param>
+   /// <typeparam name="T">Type of the column.</typeparam>
+   /// <returns>An entity type builder for further configuration.</returns>
+   /// <exception cref="ArgumentNullException"><paramref name="modelBuilder"/> is <c>null</c>.</exception>
+   public static EntityTypeBuilder<ScalarCollectionParameter<T>> ConfigureScalarCollectionParameter<T>(this ModelBuilder modelBuilder)
+   {
+      return modelBuilder.Entity<ScalarCollectionParameter<T>>()
+                         .ToTable(typeof(ScalarCollectionParameter<T>).ShortDisplayName(),
+                                  tableBuilder => tableBuilder.ExcludeFromMigrations())
+                         .HasNoKey();
    }
 
    /// <summary>
@@ -34,7 +50,7 @@ public static class BulkOperationsModelBuilderExtensions
    /// <exception cref="ArgumentNullException"><paramref name="modelBuilder"/> is <c>null</c>.</exception>
    public static EntityTypeBuilder<TempTable<TColumn1>> ConfigureTempTable<TColumn1>(this ModelBuilder modelBuilder, bool isKeyless = true)
    {
-      var builder = modelBuilder.Configure<TempTable<TColumn1>>(isKeyless);
+      var builder = modelBuilder.ConfigureTempTableInternal<TempTable<TColumn1>>(isKeyless);
 
       if (!isKeyless)
       {
@@ -58,7 +74,7 @@ public static class BulkOperationsModelBuilderExtensions
    {
       ArgumentNullException.ThrowIfNull(modelBuilder);
 
-      var builder = modelBuilder.Configure<TempTable<TColumn1, TColumn2>>(isKeyless);
+      var builder = modelBuilder.ConfigureTempTableInternal<TempTable<TColumn1, TColumn2>>(isKeyless);
 
       if (!isKeyless)
       {
@@ -70,7 +86,7 @@ public static class BulkOperationsModelBuilderExtensions
       return builder;
    }
 
-   private static EntityTypeBuilder<T> Configure<T>(this ModelBuilder modelBuilder, bool isKeyless)
+   private static EntityTypeBuilder<T> ConfigureTempTableInternal<T>(this ModelBuilder modelBuilder, bool isKeyless)
       where T : class
    {
       ArgumentNullException.ThrowIfNull(modelBuilder);

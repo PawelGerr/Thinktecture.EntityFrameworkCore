@@ -46,6 +46,10 @@ public class TestDbContext : DbContext, IDbDefaultSchema
    {
       base.OnModelCreating(modelBuilder);
 
+      modelBuilder.ConfigureScalarCollectionParameter<ConvertibleClass>()
+                  .Property(e => e.Value)
+                  .HasConversion(c => c.Key, k => new ConvertibleClass(k));
+
       TestEntity.Configure(modelBuilder);
 
       modelBuilder.Entity<TestTemporalTableEntity>(builder => builder.ToTable("TestTemporalTableEntity", tableBuilder => tableBuilder.IsTemporal()));

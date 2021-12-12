@@ -1,6 +1,7 @@
 using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Thinktecture.EntityFrameworkCore.BulkOperations;
+using Thinktecture.EntityFrameworkCore.Parameters;
 using Thinktecture.EntityFrameworkCore.TempTables;
 
 // ReSharper disable once CheckNamespace
@@ -304,5 +305,19 @@ public static class BulkOperationsDbContextExtensions
    {
       return ctx.GetService<ITruncateTableExecutor>()
                 .TruncateTableAsync<T>(cancellationToken);
+   }
+
+   /// <summary>
+   /// Converts the provided <paramref name="values"/> to a "parameter" to be used in queries.
+   /// </summary>
+   /// <param name="ctx">An instance of <see cref="DbContext"/> to use the values with.</param>
+   /// <param name="values">A collection of values to create a query from.</param>
+   /// <typeparam name="T">Type of the values.</typeparam>
+   /// <returns>An <see cref="IQueryable{T}"/> giving access to the provided <paramref name="values"/>.</returns>
+   public static IQueryable<T> ToScalarCollectionParameter<T>(this DbContext ctx, IEnumerable<T> values)
+   {
+      var factory = ctx.GetService<ICollectionParameterFactory>();
+
+      return factory.CreateScalarQuery(ctx, values);
    }
 }

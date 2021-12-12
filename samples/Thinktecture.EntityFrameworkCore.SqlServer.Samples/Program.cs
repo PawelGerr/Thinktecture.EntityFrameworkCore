@@ -43,6 +43,9 @@ public class Program
          await DoBulkDeleteAsync(ctx);
          ctx.ChangeTracker.Clear();
 
+         await DoContainsUsingCollectionParameterAsync(ctx, new List<Guid> { customerId });
+         ctx.ChangeTracker.Clear();
+
          // Bulk insert into temp tables
          await DoBulkInsertEntitiesIntoTempTableAsync(ctx);
          ctx.ChangeTracker.Clear();
@@ -71,6 +74,14 @@ public class Program
       }
 
       Console.WriteLine("Exiting samples...");
+   }
+
+   private static async Task DoContainsUsingCollectionParameterAsync(DemoDbContext ctx, List<Guid> customerIds)
+   {
+      var customerIdsQuery = ctx.ToScalarCollectionParameter(customerIds);
+
+      var customers = await ctx.Customers.Join(customerIdsQuery, c => c.Id, t => t, (c, t) => c).ToListAsync();
+      Console.WriteLine($"Found customers: {String.Join(", ", customers.Select(c => c.Id))}");
    }
 
    private static async Task DoTenantQueriesAsync(DemoDbContext ctx)
