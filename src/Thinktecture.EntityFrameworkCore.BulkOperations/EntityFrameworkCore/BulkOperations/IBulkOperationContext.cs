@@ -21,11 +21,4 @@ public interface IBulkOperationContext
    /// Indication whether there are properties that belongs to a different table.
    /// </summary>
    bool HasExternalProperties { get; }
-
-   /// <summary>
-   /// Gets bulk operation contexts for "external" properties, i.e. belonging to other tables.
-   /// </summary>
-   /// <param name="entities"></param>
-   /// <returns></returns>
-   IReadOnlyList<IOwnedTypeBulkOperationContext> GetContextsForExternalOwnedTypes(IReadOnlyList<object> entities);
 }

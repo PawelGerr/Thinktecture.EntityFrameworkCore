@@ -9,9 +9,4 @@ internal interface ISqliteBulkOperationContext : IBulkOperationContext
    SqliteCommandBuilder CreateCommandBuilder();
 
    IReadOnlyList<ISqliteOwnedTypeBulkOperationContext> GetChildren(IReadOnlyList<object> entities);
-
-   IReadOnlyList<IOwnedTypeBulkOperationContext> IBulkOperationContext.GetContextsForExternalOwnedTypes(IReadOnlyList<object> entities)
-   {
-      return GetChildren(entities);
-   }
 }
