@@ -188,19 +188,21 @@ public sealed class SqlServerBulkOperationExecutor
 
       try
       {
+         StoreObjectIdentifier? storeObject = null;
+
          for (var i = 0; i < reader.Properties.Count; i++)
          {
             var property = reader.Properties[i];
-            var storeObject = StoreObjectIdentifier.Create(property.Property.DeclaringEntityType, StoreObjectType.Table)
-                              ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.Property.DeclaringEntityType.Name}'.");
-            var columnName = property.Property.GetColumnName(storeObject);
+
+            storeObject ??= property.GetStoreObject();
+            var columnName = property.GetColumnName(storeObject.Value);
 
             bulkCopy.ColumnMappings.Add(new SqlBulkCopyColumnMapping(i, columnName));
 
             if (columnsSb.Length > 0)
                columnsSb.Append(", ");
 
-            columnsSb.Append(columnName).Append(' ').Append(property.Property.GetColumnType());
+            columnsSb.Append(columnName).Append(' ').Append(property.Property.GetColumnType(storeObject.Value));
          }
 
          return columnsSb.ToString();
@@ -429,6 +431,8 @@ INSERT BULK {Table} ({Columns})", (long)duration.TotalMilliseconds,
       try
       {
          var tableName = entityType.GetTableName() ?? throw new Exception($"The entity '{entityType.Name}' has no table name.");
+         var storeObject = StoreObjectIdentifier.Create(entityType, StoreObjectType.Table)
+                           ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{entityType.Name}'.");
 
          sb.Append("MERGE INTO ")
            .Append(_sqlGenerationHelper.DelimitIdentifier(tableName, entityType.GetSchema()));
@@ -460,11 +464,7 @@ INSERT BULK {Table} ({Columns})", (long)duration.TotalMilliseconds,
             if (!isFirstIteration)
                sb.AppendLine(" AND ");
 
-            var storeObject = StoreObjectIdentifier.Create(property.Property.DeclaringEntityType, StoreObjectType.Table)
-                              ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.Property.DeclaringEntityType.Name}'.");
-            var columnName = property.Property.GetColumnName(storeObject)
-                             ?? throw new Exception($"The property '{property.Property.Name}' has no column name.");
-
+            var columnName = property.GetColumnName(storeObject);
             var escapedColumnName = _sqlGenerationHelper.DelimitIdentifier(columnName);
 
             sb.Append("(d.").Append(escapedColumnName).Append(" = s.").Append(escapedColumnName);
@@ -491,11 +491,7 @@ INSERT BULK {Table} ({Columns})", (long)duration.TotalMilliseconds,
                  .Append("\tUPDATE SET ");
             }
 
-            var storeObject = StoreObjectIdentifier.Create(property.Property.DeclaringEntityType, StoreObjectType.Table)
-                              ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.Property.DeclaringEntityType.Name}'.");
-            var columnName = property.Property.GetColumnName(storeObject)
-                             ?? throw new Exception($"The property '{property.Property.Name}' has no column name.");
-
+            var columnName = property.GetColumnName(storeObject);
             var escapedColumnName = _sqlGenerationHelper.DelimitIdentifier(columnName);
 
             sb.Append("d.").Append(escapedColumnName).Append(" = s.").Append(escapedColumnName);
@@ -515,10 +511,7 @@ INSERT BULK {Table} ({Columns})", (long)duration.TotalMilliseconds,
                if (!isFirstIteration)
                   sb.Append(", ");
 
-               var storeObject = StoreObjectIdentifier.Create(property.Property.DeclaringEntityType, StoreObjectType.Table)
-                                 ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.Property.DeclaringEntityType.Name}'.");
-               var columnName = property.Property.GetColumnName(storeObject)
-                                ?? throw new Exception($"The property '{property.Property.Name}' has no column name.");
+               var columnName = property.GetColumnName(storeObject);
                var escapedColumnName = _sqlGenerationHelper.DelimitIdentifier(columnName);
 
                sb.Append(escapedColumnName);
@@ -535,10 +528,7 @@ INSERT BULK {Table} ({Columns})", (long)duration.TotalMilliseconds,
                if (!isFirstIteration)
                   sb.Append(", ");
 
-               var storeObject = StoreObjectIdentifier.Create(property.Property.DeclaringEntityType, StoreObjectType.Table)
-                                 ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.Property.DeclaringEntityType.Name}'.");
-               var columnName = property.Property.GetColumnName(storeObject)
-                                ?? throw new Exception($"The property '{property.Property.Name}' has no column name.");
+               var columnName = property.GetColumnName(storeObject);
                var escapedColumnName = _sqlGenerationHelper.DelimitIdentifier(columnName);
 
                sb.Append("s.").Append(escapedColumnName);

@@ -143,9 +143,8 @@ public sealed class SqlServerTempTableCreator : ISqlServerTempTableCreator
    {
       var columnNames = cacheKey.KeyProperties.Select(p =>
                                                       {
-                                                         var storeObject = StoreObjectIdentifier.Create(p.Property.DeclaringEntityType, StoreObjectType.Table)
-                                                                           ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{p.Property.DeclaringEntityType.Name}'.");
-                                                         return p.Property.GetColumnName(storeObject);
+                                                         var storeObject = p.GetStoreObject();
+                                                         return p.GetColumnName(storeObject);
                                                       });
 
       var commaSeparatedColumns = String.Join(", ", columnNames);
@@ -213,6 +212,8 @@ END
 
       try
       {
+         StoreObjectIdentifier? storeObject = null;
+
          var isFirst = true;
 
          foreach (var property in options.Properties)
@@ -220,13 +221,10 @@ END
             if (!isFirst)
                sb.AppendLine(",");
 
-            var columnType = property.Property.GetColumnType();
+            storeObject ??= property.GetStoreObject();
 
-            var storeObject = StoreObjectIdentifier.Create(property.Property.DeclaringEntityType, StoreObjectType.Table)
-                              ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.Property.DeclaringEntityType.Name}'.");
-
-            var columnName = property.Property.GetColumnName(storeObject)
-                             ?? throw new InvalidOperationException($"The property '{property.Property.Name}' has no column name.");
+            var columnType = property.Property.GetColumnType(storeObject.Value);
+            var columnName = property.GetColumnName(storeObject.Value);
 
             sb.Append('\t')
               .Append(_sqlGenerationHelper.DelimitIdentifier(columnName)).Append(' ')
@@ -240,13 +238,13 @@ END
             if (IsIdentityColumn(property))
                sb.Append(" IDENTITY");
 
-            var defaultValueSql = property.Property.GetDefaultValueSql(storeObject);
+            var defaultValueSql = property.Property.GetDefaultValueSql(storeObject.Value);
 
             if (!String.IsNullOrWhiteSpace(defaultValueSql))
             {
                sb.Append(" DEFAULT (").Append(defaultValueSql).Append(')');
             }
-            else if (property.Property.TryGetDefaultValue(storeObject, out var defaultValue))
+            else if (property.Property.TryGetDefaultValue(storeObject.Value, out var defaultValue))
             {
                var mappingForValue = _typeMappingSource.GetMappingForValue(defaultValue);
                sb.Append(" DEFAULT ").Append(mappingForValue.GenerateSqlLiteral(defaultValue));
@@ -274,10 +272,8 @@ END
 
       var columnNames = keyProperties.Select(p =>
                                              {
-                                                var storeObject = StoreObjectIdentifier.Create(p.Property.DeclaringEntityType, StoreObjectType.Table)
-                                                                  ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{p.Property.DeclaringEntityType.Name}'.");
-
-                                                return p.Property.GetColumnName(storeObject) ?? throw new Exception($"The property '{p.Property.Name}' has no column name.");
+                                                var storeObject = p.GetStoreObject();
+                                                return p.GetColumnName(storeObject);
                                              });
 
       sb.AppendLine(",");

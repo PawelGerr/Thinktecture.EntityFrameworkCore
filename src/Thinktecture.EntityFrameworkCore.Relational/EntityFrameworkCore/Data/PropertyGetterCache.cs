@@ -35,8 +35,7 @@ public class PropertyGetterCache : IPropertyGetterCache
    private Func<DbContext, TEntity, object?> BuildPropertyGetter<TEntity>(PropertyWithNavigations cacheKey)
    {
       var property = cacheKey.Property;
-      var storeObject = StoreObjectIdentifier.Create(property.DeclaringEntityType, StoreObjectType.Table)
-                        ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.DeclaringEntityType.Name}'.");
+      var storeObject = cacheKey.GetStoreObject();
       var hasSqlDefaultValue = property.GetDefaultValueSql(storeObject) != null;
       var hasDefaultValue = property.TryGetDefaultValue(storeObject, out _);
 

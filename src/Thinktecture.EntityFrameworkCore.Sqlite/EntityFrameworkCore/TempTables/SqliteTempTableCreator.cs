@@ -122,20 +122,19 @@ CREATE TEMPORARY TABLE {_sqlGenerationHelper.DelimitIdentifier(name)}
       {
          var isFirst = true;
          var createPk = true;
+         StoreObjectIdentifier? storeObject = null;
 
          foreach (var property in options.Properties)
          {
             if (!isFirst)
                sb.AppendLine(",");
 
-            var storeObject = StoreObjectIdentifier.Create(property.Property.DeclaringEntityType, StoreObjectType.Table)
-                              ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.Property.DeclaringEntityType.Name}'.");
-            var columnName = property.Property.GetColumnName(storeObject)
-                             ?? throw new Exception($"The property '{property.Property.Name}' has no column name.");
+            storeObject ??= property.GetStoreObject();
+            var columnName = property.GetColumnName(storeObject.Value);
 
             sb.Append("\t\t")
               .Append(_sqlGenerationHelper.DelimitIdentifier(columnName)).Append(' ')
-              .Append(property.Property.GetColumnType())
+              .Append(property.Property.GetColumnType(storeObject.Value))
               .Append(property.Property.IsNullable ? " NULL" : " NOT NULL");
 
             if (property.Property.IsAutoIncrement())
@@ -150,13 +149,13 @@ Currently configured primary keys: [{String.Join(", ", options.PrimaryKeys.Selec
                createPk = false;
             }
 
-            var defaultValueSql = property.Property.GetDefaultValueSql(storeObject);
+            var defaultValueSql = property.Property.GetDefaultValueSql(storeObject.Value);
 
             if (!String.IsNullOrWhiteSpace(defaultValueSql))
             {
                sb.Append(" DEFAULT (").Append(defaultValueSql).Append(')');
             }
-            else if (property.Property.TryGetDefaultValue(storeObject, out var defaultValue))
+            else if (property.Property.TryGetDefaultValue(storeObject.Value, out var defaultValue))
             {
                var mappingForValue = _typeMappingSource.GetMappingForValue(defaultValue);
                sb.Append(" DEFAULT ").Append(mappingForValue.GenerateSqlLiteral(defaultValue));
@@ -183,11 +182,8 @@ Currently configured primary keys: [{String.Join(", ", options.PrimaryKeys.Selec
 
       var columnNames = keyProperties.Select(p =>
                                              {
-                                                var storeObject = StoreObjectIdentifier.Create(p.Property.DeclaringEntityType, StoreObjectType.Table)
-                                                                  ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{p.Property.DeclaringEntityType.Name}'.");
-
-                                                return p.Property.GetColumnName(storeObject)
-                                                       ?? throw new Exception($"The property '{p.Property.Name}' has no column name.");
+                                                var storeObject = p.GetStoreObject();
+                                                return p.GetColumnName(storeObject);
                                              });
 
       sb.AppendLine(",");

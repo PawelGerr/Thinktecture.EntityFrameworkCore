@@ -31,6 +31,7 @@ internal abstract class SqliteCommandBuilder
       IReadOnlyList<PropertyWithNavigations> propertiesToInsert)
    {
       sb.Append("INSERT INTO ").Append(tableIdentifier).Append('(');
+      StoreObjectIdentifier? storeObject = null;
 
       for (var i = 0; i < propertiesToInsert.Count; i++)
       {
@@ -38,10 +39,8 @@ internal abstract class SqliteCommandBuilder
             sb.Append(", ");
 
          var property = propertiesToInsert[i];
-         var storeObject = StoreObjectIdentifier.Create(property.Property.DeclaringEntityType, StoreObjectType.Table)
-                           ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.Property.DeclaringEntityType.Name}'.");
-         var columnName = property.Property.GetColumnName(storeObject)
-                          ?? throw new Exception($"The property '{property.Property.Name}' has no column name.");
+         storeObject ??= property.GetStoreObject();
+         var columnName = property.GetColumnName(storeObject.Value);
 
          sb.Append(sqlGenerationHelper.DelimitIdentifier(columnName));
       }
@@ -145,6 +144,7 @@ internal abstract class SqliteCommandBuilder
          IReadOnlyList<PropertyWithNavigations> propertiesToUpdate,
          IReadOnlyList<PropertyWithNavigations> keyProperties)
       {
+         StoreObjectIdentifier? storeObject = null;
          var isFirst = true;
 
          foreach (var property in propertiesToUpdate.Except(keyProperties))
@@ -158,10 +158,9 @@ internal abstract class SqliteCommandBuilder
                sb.Append("SET ");
             }
 
-            var storeObject = StoreObjectIdentifier.Create(property.Property.DeclaringEntityType, StoreObjectType.Table)
-                              ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.Property.DeclaringEntityType.Name}'.");
-            var columnName = property.Property.GetColumnName(storeObject)
-                             ?? throw new Exception($"The property '{property.Property.Name}' has no column name.");
+            storeObject ??= property.GetStoreObject();
+            var columnName = property.GetColumnName(storeObject.Value);
+
             sb.Append(sqlGenerationHelper.DelimitIdentifier(columnName))
               .Append(" = $p").Append(reader.GetPropertyIndex(property));
 
@@ -181,10 +180,8 @@ internal abstract class SqliteCommandBuilder
 
             var property = keyProperties[i];
             var index = reader.GetPropertyIndex(property);
-            var storeObject = StoreObjectIdentifier.Create(property.Property.DeclaringEntityType, StoreObjectType.Table)
-                              ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.Property.DeclaringEntityType.Name}'.");
-            var columnName = property.Property.GetColumnName(storeObject)
-                             ?? throw new Exception($"The property '{property.Property.Name}' has no column name.");
+            storeObject ??= property.GetStoreObject();
+            var columnName = property.GetColumnName(storeObject.Value);
             var escapedColumnName = sqlGenerationHelper.DelimitIdentifier(columnName);
 
             sb.Append("(").Append(escapedColumnName).Append(" = $p").Append(index);
@@ -230,16 +227,16 @@ internal abstract class SqliteCommandBuilder
             sb.AppendLine()
               .Append("\tON CONFLICT(");
 
+            StoreObjectIdentifier? storeObject = null;
+
             for (var i = 0; i < _keyProperties.Count; i++)
             {
                if (i > 0)
                   sb.Append(", ");
 
                var property = _keyProperties[i];
-               var storeObject = StoreObjectIdentifier.Create(property.Property.DeclaringEntityType, StoreObjectType.Table)
-                                 ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.Property.DeclaringEntityType.Name}'.");
-               var columnName = property.Property.GetColumnName(storeObject)
-                                ?? throw new Exception($"The property '{property.Property.Name}' has no column name.");
+               storeObject ??= property.GetStoreObject();
+               var columnName = property.GetColumnName(storeObject.Value);
 
                var escapedColumnName = sqlGenerationHelper.DelimitIdentifier(columnName);
                sb.Append(escapedColumnName);
