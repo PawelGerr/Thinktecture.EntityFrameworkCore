@@ -27,4 +27,17 @@ public interface ITempTableBulkInsertExecutor
       ITempTableBulkInsertOptions options,
       CancellationToken cancellationToken = default)
       where T : class;
+
+   /// <summary>
+   /// Inserts the provided <paramref name="values"/> into a temp table.
+   /// </summary>
+   /// <param name="values">Values to insert.</param>
+   /// <param name="options">Options.</param>
+   /// <param name="cancellationToken">Cancellation token.</param>
+   /// <typeparam name="TColumn1">Type of the values.</typeparam>
+   /// <returns>A query returning the inserted <paramref name="values"/>.</returns>
+   Task<ITempTableQuery<TColumn1>> BulkInsertValuesIntoTempTableAsync<TColumn1>(
+      IEnumerable<TColumn1> values,
+      ITempTableBulkInsertOptions options,
+      CancellationToken cancellationToken);
 }

@@ -19,6 +19,5 @@ public interface IEntityDataReaderFactory
       DbContext ctx,
       IEnumerable<T> entities,
       IReadOnlyList<PropertyWithNavigations> properties,
-      bool ensureReadEntitiesCollection)
-      where T : class;
+      bool ensureReadEntitiesCollection);
 }

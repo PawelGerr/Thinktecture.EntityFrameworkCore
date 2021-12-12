@@ -28,13 +28,11 @@ public class PropertyGetterCache : IPropertyGetterCache
 
    /// <inheritdoc />
    public Func<DbContext, TEntity, object?> GetPropertyGetter<TEntity>(PropertyWithNavigations property)
-      where TEntity : class
    {
       return (Func<DbContext, TEntity, object?>)_propertyGetterLookup.GetOrAdd(property, BuildPropertyGetter<TEntity>);
    }
 
    private Func<DbContext, TEntity, object?> BuildPropertyGetter<TEntity>(PropertyWithNavigations cacheKey)
-      where TEntity : class
    {
       var property = cacheKey.Property;
       var storeObject = StoreObjectIdentifier.Create(property.DeclaringEntityType, StoreObjectType.Table)
@@ -70,7 +68,7 @@ public class PropertyGetterCache : IPropertyGetterCache
          getter = Combine(naviGetter, getter);
       }
 
-      return getter;
+      return (Func<DbContext, TEntity, object?>)(object)getter;
    }
 
    private static Func<object, object?> BuildNavigationGetter(IReadOnlyList<INavigation> navigations)

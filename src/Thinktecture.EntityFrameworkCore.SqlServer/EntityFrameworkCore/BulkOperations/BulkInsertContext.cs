@@ -7,22 +7,30 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations;
 internal class BulkInsertContext : ISqlServerBulkOperationContext
 {
    private readonly IReadOnlyList<PropertyWithNavigations> _externalProperties;
+   private readonly DbContext _ctx;
+   private readonly IEntityDataReaderFactory _readerFactory;
 
-   public IEntityDataReaderFactory ReaderFactory { get; }
    public SqlConnection Connection { get; }
    public SqlTransaction? Transaction { get; }
    public IReadOnlyList<PropertyWithNavigations> Properties { get; }
    public SqlServerBulkInsertOptions Options { get; }
    public bool HasExternalProperties => _externalProperties.Count != 0;
 
+   public IEntityDataReader<T> CreateReader<T>(IEnumerable<T> entities)
+   {
+      return _readerFactory.Create(_ctx, entities, Properties, HasExternalProperties);
+   }
+
    public BulkInsertContext(
+      DbContext ctx,
       IEntityDataReaderFactory factory,
       SqlConnection connection,
       SqlTransaction? transaction,
       SqlServerBulkInsertOptions options,
       IReadOnlyList<PropertyWithNavigations> properties)
    {
-      ReaderFactory = factory;
+      _ctx = ctx;
+      _readerFactory = factory;
       Connection = connection;
       Transaction = transaction;
       var (ownProperties, externalProperties) = properties.SeparateProperties();
@@ -40,7 +48,7 @@ internal class BulkInsertContext : ISqlServerBulkOperationContext
 
       foreach (var (navigation, ownedEntities, properties) in _externalProperties.GroupExternalProperties(entities))
       {
-         var ownedTypeCtx = new OwnedTypeBulkInsertContext(ReaderFactory, Connection, Transaction, Options, properties, navigation.TargetEntityType, ownedEntities);
+         var ownedTypeCtx = new OwnedTypeBulkInsertContext(_ctx, _readerFactory, Connection, Transaction, Options, properties, navigation.TargetEntityType, ownedEntities);
          childCtx.Add(ownedTypeCtx);
       }
 
@@ -53,6 +61,7 @@ internal class BulkInsertContext : ISqlServerBulkOperationContext
       public IEnumerable<object> Entities { get; }
 
       public OwnedTypeBulkInsertContext(
+         DbContext ctx,
          IEntityDataReaderFactory factory,
          SqlConnection connection,
          SqlTransaction? transaction,
@@ -60,7 +69,7 @@ internal class BulkInsertContext : ISqlServerBulkOperationContext
          IReadOnlyList<PropertyWithNavigations> properties,
          IEntityType entityType,
          IEnumerable<object> entities)
-         : base(factory, connection, transaction, options, properties)
+         : base(ctx, factory, connection, transaction, options, properties)
       {
          EntityType = entityType;
          Entities = entities;

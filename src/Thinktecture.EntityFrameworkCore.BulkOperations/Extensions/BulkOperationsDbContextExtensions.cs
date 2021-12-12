@@ -207,7 +207,7 @@ public static class BulkOperationsDbContextExtensions
    /// <typeparam name="TColumn1">Type of the values to insert.</typeparam>
    /// <returns>A query for accessing the inserted values.</returns>
    /// <exception cref="ArgumentNullException"> <paramref name="ctx"/> or <paramref name="values"/> is <c>null</c>.</exception>
-   public static Task<ITempTableQuery<TempTable<TColumn1>>> BulkInsertValuesIntoTempTableAsync<TColumn1>(
+   public static Task<ITempTableQuery<TColumn1>> BulkInsertValuesIntoTempTableAsync<TColumn1>(
       this DbContext ctx,
       IEnumerable<TColumn1> values,
       ITempTableBulkInsertOptions? options = null,
@@ -215,9 +215,10 @@ public static class BulkOperationsDbContextExtensions
    {
       ArgumentNullException.ThrowIfNull(values);
 
-      var entities = values.Select(v => new TempTable<TColumn1>(v));
+      var executor = ctx.GetService<ITempTableBulkInsertExecutor>();
+      options ??= executor.CreateOptions();
 
-      return ctx.BulkInsertIntoTempTableAsync(entities, options, cancellationToken);
+      return executor.BulkInsertValuesIntoTempTableAsync(values, options, cancellationToken);
    }
 
    /// <summary>

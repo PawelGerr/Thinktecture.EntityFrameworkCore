@@ -26,7 +26,6 @@ public interface IEntityDataReader : IDataReader
 /// Data reader to be used for bulk inserts.
 /// </summary>
 public interface IEntityDataReader<out T> : IEntityDataReader
-   where T : class
 {
    /// <summary>
    /// Gets the entities that are read by now.

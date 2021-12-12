@@ -8,7 +8,6 @@ namespace Thinktecture.EntityFrameworkCore.Data;
 /// </summary>
 /// <typeparam name="TEntity">Type of the entity.</typeparam>
 public sealed class EntityDataReader<TEntity> : IEntityDataReader<TEntity>
-   where TEntity : class
 {
    private readonly DbContext _ctx;
    private readonly IEnumerator<TEntity> _enumerator;

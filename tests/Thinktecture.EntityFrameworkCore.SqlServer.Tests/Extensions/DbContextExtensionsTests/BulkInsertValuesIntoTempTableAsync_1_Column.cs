@@ -23,7 +23,7 @@ public class BulkInsertValuesIntoTempTableAsync_1_Column : IntegrationTestsBase
       await using var query = await ActDbContext.BulkInsertValuesIntoTempTableAsync(values);
 
       var tempTable = await query.Query.ToListAsync();
-      tempTable.Should().BeEquivalentTo(new[] { new TempTable<int>(1), new TempTable<int>(2) });
+      tempTable.Should().BeEquivalentTo(new[] { 1, 2 });
    }
 
    [Fact]
@@ -46,7 +46,7 @@ public class BulkInsertValuesIntoTempTableAsync_1_Column : IntegrationTestsBase
       await using var query = await ActDbContext.BulkInsertValuesIntoTempTableAsync(values, options);
 
       var tempTable = await query.Query.ToListAsync();
-      tempTable.Should().BeEquivalentTo(new[] { new TempTable<int>(1), new TempTable<int>(2) });
+      tempTable.Should().BeEquivalentTo(new[] { 1, 2 });
    }
 
    [Fact]
@@ -58,7 +58,7 @@ public class BulkInsertValuesIntoTempTableAsync_1_Column : IntegrationTestsBase
       await using var query = await ActDbContext.BulkInsertValuesIntoTempTableAsync(values, new SqlServerTempTableBulkInsertOptions { PrimaryKeyCreation = PrimaryKeyPropertiesProviders.None });
 
       var tempTable = await query.Query.ToListAsync();
-      tempTable.Should().BeEquivalentTo(new[] { new TempTable<int?>(1), new TempTable<int?>(null) });
+      tempTable.Should().BeEquivalentTo(new[] { 1, (int?)null });
    }
 
    [Fact]
@@ -75,7 +75,7 @@ public class BulkInsertValuesIntoTempTableAsync_1_Column : IntegrationTestsBase
       await using var query = await ActDbContext.BulkInsertValuesIntoTempTableAsync(values, new SqlServerTempTableBulkInsertOptions { PrimaryKeyCreation = PrimaryKeyPropertiesProviders.None });
 
       var tempTable = await query.Query.ToListAsync();
-      tempTable.Should().BeEquivalentTo(new[] { new TempTable<int?>(1), new TempTable<int?>(2) });
+      tempTable.Should().BeEquivalentTo(new[] { 1, 2 });
    }
 
    [Fact]
@@ -87,7 +87,7 @@ public class BulkInsertValuesIntoTempTableAsync_1_Column : IntegrationTestsBase
       await using var query = await ActDbContext.BulkInsertValuesIntoTempTableAsync(values, new SqlServerTempTableBulkInsertOptions { PrimaryKeyCreation = PrimaryKeyPropertiesProviders.None });
 
       var tempTable = await query.Query.ToListAsync();
-      tempTable.Should().BeEquivalentTo(new[] { new TempTable<string?>("value1"), new TempTable<string?>(null) });
+      tempTable.Should().BeEquivalentTo(new[] { "value1", null });
    }
 
    [Fact]
@@ -175,7 +175,7 @@ public class BulkInsertValuesIntoTempTableAsync_1_Column : IntegrationTestsBase
 
       var query = ActDbContext.TestEntities
                               .AsSplitQuery()
-                              .Where(c => tempTable.Query.Any(id => c.Id == id.Column1))
+                              .Where(c => tempTable.Query.Any(id => c.Id == id))
                               .Select(c => new
                                            {
                                               c.Id,

@@ -11,22 +11,31 @@ internal class BulkInsertOrUpdateContext : ISqliteBulkOperationContext
    private readonly IReadOnlyList<PropertyWithNavigations> _propertiesToUpdate;
    private readonly IReadOnlyList<PropertyWithNavigations> _externalPropertiesToInsert;
    private readonly IReadOnlyList<PropertyWithNavigations> _externalPropertiesToUpdate;
+   private readonly DbContext _ctx;
+   private readonly IEntityDataReaderFactory _readerFactory;
 
-   public IEntityDataReaderFactory ReaderFactory { get; }
    public IReadOnlyList<PropertyWithNavigations> Properties { get; }
    public bool HasExternalProperties => _externalPropertiesToInsert.Count != 0 || _externalPropertiesToUpdate.Count != 0;
+
+   /// <inheritdoc />
+   public IEntityDataReader<T> CreateReader<T>(IEnumerable<T> entities)
+   {
+      return _readerFactory.Create(_ctx, entities, Properties, HasExternalProperties);
+   }
 
    public SqliteAutoIncrementBehavior AutoIncrementBehavior => SqliteAutoIncrementBehavior.KeepValueAsIs;
    public SqliteConnection Connection { get; }
 
    public BulkInsertOrUpdateContext(
+      DbContext ctx,
       IEntityDataReaderFactory factory,
       SqliteConnection connection,
       IReadOnlyList<PropertyWithNavigations> keyProperties,
       IReadOnlyList<PropertyWithNavigations> propertiesToInsert,
       IReadOnlyList<PropertyWithNavigations> propertiesForUpdate)
    {
-      ReaderFactory = factory;
+      _ctx = ctx;
+      _readerFactory = factory;
       Connection = connection;
       _keyProperties = keyProperties;
 
@@ -66,7 +75,7 @@ internal class BulkInsertOrUpdateContext : ISqliteBulkOperationContext
 
          propertiesToUpdateData.Remove(propertiesToUpdateTuple);
 
-         var ownedTypeCtx = new OwnedTypeBulkInsertOrUpdateContext(ReaderFactory, Connection, propertiesToInsert, propertiesToUpdate, navigation.TargetEntityType, ownedEntities);
+         var ownedTypeCtx = new OwnedTypeBulkInsertOrUpdateContext(_ctx, _readerFactory, Connection, propertiesToInsert, propertiesToUpdate, navigation.TargetEntityType, ownedEntities);
          childCtx.Add(ownedTypeCtx);
       }
 
@@ -85,13 +94,14 @@ internal class BulkInsertOrUpdateContext : ISqliteBulkOperationContext
       public IEnumerable<object> Entities { get; }
 
       public OwnedTypeBulkInsertOrUpdateContext(
+         DbContext ctx,
          IEntityDataReaderFactory factory,
          SqliteConnection sqlCon,
          IReadOnlyList<PropertyWithNavigations> propertiesToInsert,
          IReadOnlyList<PropertyWithNavigations> propertiesToUpdate,
          IEntityType entityType,
          IEnumerable<object> entities)
-         : base(factory, sqlCon, GetKeyProperties(entityType), propertiesToInsert, propertiesToUpdate)
+         : base(ctx, factory, sqlCon, GetKeyProperties(entityType), propertiesToInsert, propertiesToUpdate)
       {
          EntityType = entityType;
          Entities = entities;

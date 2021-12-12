@@ -121,21 +121,21 @@ public class WithTableHints : IntegrationTestsBase
 
       var result = await query.ToListAsync();
       result.Should().HaveCount(1);
-      result[0].Column1.Should().Be(Guid.Empty);
+      result[0].Should().Be(Guid.Empty);
 
       var joinQuery = tempTable.Query.WithTableHints(SqlServerTableHint.UpdLock, SqlServerTableHint.RowLock)
                                .LeftJoin(tempTable.Query.WithTableHints(SqlServerTableHint.UpdLock),
-                                         e => e.Column1, e => e.Column1);
+                                         e => e, e => e);
 
-      joinQuery.ToQueryString().Should().Be(@"SELECT [#].[Column1], [#0].[Column1]" + Environment.NewLine +
+      joinQuery.ToQueryString().Should().Be(@"SELECT [#].[Column1] AS [Left], [#0].[Column1] AS [Right]" + Environment.NewLine +
                                             "FROM [#TempTable<Guid>_1] AS [#] WITH (UPDLOCK, ROWLOCK)" + Environment.NewLine +
                                             "LEFT JOIN [#TempTable<Guid>_1] AS [#0] WITH (UPDLOCK) ON [#].[Column1] = [#0].[Column1]");
 
       joinQuery = tempTable.Query.WithTableHints(SqlServerTableHint.UpdLock, SqlServerTableHint.RowLock)
                            .LeftJoin(tempTable.Query.WithTableHints(SqlServerTableHint.UpdLock, SqlServerTableHint.RowLock),
-                                     e => e.Column1, e => e.Column1);
+                                     e => e, e => e);
 
-      joinQuery.ToQueryString().Should().Be(@"SELECT [#].[Column1], [#0].[Column1]" + Environment.NewLine +
+      joinQuery.ToQueryString().Should().Be(@"SELECT [#].[Column1] AS [Left], [#0].[Column1] AS [Right]" + Environment.NewLine +
                                             "FROM [#TempTable<Guid>_1] AS [#] WITH (UPDLOCK, ROWLOCK)" + Environment.NewLine +
                                             "LEFT JOIN [#TempTable<Guid>_1] AS [#0] WITH (UPDLOCK, ROWLOCK) ON [#].[Column1] = [#0].[Column1]");
    }

@@ -98,19 +98,19 @@ public sealed class SqlServerBulkOperationExecutor
       var entityType = _ctx.Model.GetEntityType(typeof(T));
       var tableName = entityType.GetTableName() ?? throw new InvalidOperationException($"The entity '{entityType.Name}' has no table name.");
 
-      return BulkInsertAsync(entityType, entities, entityType.GetSchema(), tableName, options, cancellationToken);
+      return BulkInsertAsync(entityType, entities, entityType.GetSchema(), tableName, options, SqlServerBulkOperationContextFactoryForEntities.Instance, cancellationToken);
    }
 
    private async Task BulkInsertAsync<T>(
       IEntityType entityType,
-      IEnumerable<T> entities,
+      IEnumerable<T> entitiesOrValues,
       string? schema,
       string tableName,
       IBulkInsertOptions options,
+      ISqlServerBulkOperationContextFactory bulkOperationContextFactory,
       CancellationToken cancellationToken = default)
-      where T : class
    {
-      ArgumentNullException.ThrowIfNull(entities);
+      ArgumentNullException.ThrowIfNull(entitiesOrValues);
       ArgumentNullException.ThrowIfNull(tableName);
       ArgumentNullException.ThrowIfNull(options);
 
@@ -120,19 +120,19 @@ public sealed class SqlServerBulkOperationExecutor
       var properties = sqlServerOptions.PropertiesToInsert.DeterminePropertiesForInsert(entityType, null);
       properties.EnsureNoSeparateOwnedTypesInsideCollectionOwnedType();
 
-      var ctx = new BulkInsertContext(_ctx.GetService<IEntityDataReaderFactory>(),
-                                      (SqlConnection)_ctx.Database.GetDbConnection(),
-                                      (SqlTransaction?)_ctx.Database.CurrentTransaction?.GetDbTransaction(),
-                                      sqlServerOptions,
-                                      properties);
+      var ctx = bulkOperationContextFactory.CreateForBulkInsert(_ctx, sqlServerOptions, properties);
 
-      await BulkInsertAsync(entities, schema, tableName, ctx, cancellationToken);
+      await BulkInsertAsync(entitiesOrValues, schema, tableName, ctx, cancellationToken);
    }
 
-   private async Task BulkInsertAsync<T>(IEnumerable<T> entities, string? schema, string tableName, ISqlServerBulkOperationContext ctx, CancellationToken cancellationToken)
-      where T : class
+   private async Task BulkInsertAsync<T>(
+      IEnumerable<T> entitiesOrValues,
+      string? schema,
+      string tableName,
+      ISqlServerBulkOperationContext ctx,
+      CancellationToken cancellationToken)
    {
-      using var reader = ctx.ReaderFactory.Create(_ctx, entities, ctx.Properties, ctx.HasExternalProperties);
+      using var reader = ctx.CreateReader(entitiesOrValues);
       using var bulkCopy = CreateSqlBulkCopy(ctx.Connection, ctx.Transaction, schema, tableName, ctx.Options);
 
       var columns = SetColumnMappings(bulkCopy, reader);
@@ -153,7 +153,7 @@ public sealed class SqlServerBulkOperationExecutor
             var readEntities = reader.GetReadEntities();
 
             if (readEntities.Count != 0)
-               await BulkInsertSeparatedOwnedEntitiesAsync(readEntities, ctx, cancellationToken);
+               await BulkInsertSeparatedOwnedEntitiesAsync((IReadOnlyList<object>)readEntities, ctx, cancellationToken);
          }
       }
       finally
@@ -244,36 +244,53 @@ INSERT BULK {Table} ({Columns})", (long)duration.TotalMilliseconds,
    }
 
    /// <inheritdoc />
+   public Task<ITempTableQuery<TColumn1>> BulkInsertValuesIntoTempTableAsync<TColumn1>(
+      IEnumerable<TColumn1> values,
+      ITempTableBulkInsertOptions options,
+      CancellationToken cancellationToken)
+   {
+      ArgumentNullException.ThrowIfNull(values);
+      ArgumentNullException.ThrowIfNull(options);
+
+      if (options is not SqlServerTempTableBulkInsertOptions sqlServerOptions)
+         sqlServerOptions = new SqlServerTempTableBulkInsertOptions(options);
+
+      return BulkInsertIntoTempTableAsync<TColumn1, TempTable<TColumn1>>(values,
+                                                                         sqlServerOptions,
+                                                                         SqlServerBulkOperationContextFactoryForValues.Instance,
+                                                                         query => query.Select(t => t.Column1),
+                                                                         cancellationToken);
+   }
+
+   /// <inheritdoc />
    public Task<ITempTableQuery<T>> BulkInsertIntoTempTableAsync<T>(
       IEnumerable<T> entities,
       ITempTableBulkInsertOptions options,
       CancellationToken cancellationToken = default)
       where T : class
    {
-      if (options is not SqlServerTempTableBulkInsertOptions sqlServerOptions)
-         sqlServerOptions = new SqlServerTempTableBulkInsertOptions(options);
-
-      return BulkInsertIntoTempTableAsync(entities, sqlServerOptions, cancellationToken);
-   }
-
-   /// <summary>
-   /// Inserts the provided <paramref name="entities"/> into a temp table.
-   /// </summary>
-   /// <param name="entities">Entities to insert.</param>
-   /// <param name="options">Options.</param>
-   /// <param name="cancellationToken">Cancellation token.</param>
-   /// <typeparam name="T">Type of the entities.</typeparam>
-   /// <returns>A query returning the inserted <paramref name="entities"/>.</returns>
-   public async Task<ITempTableQuery<T>> BulkInsertIntoTempTableAsync<T>(
-      IEnumerable<T> entities,
-      SqlServerTempTableBulkInsertOptions options,
-      CancellationToken cancellationToken = default)
-      where T : class
-   {
       ArgumentNullException.ThrowIfNull(entities);
       ArgumentNullException.ThrowIfNull(options);
 
-      var entityType = _ctx.Model.GetEntityType(typeof(T));
+      if (options is not SqlServerTempTableBulkInsertOptions sqlServerOptions)
+         sqlServerOptions = new SqlServerTempTableBulkInsertOptions(options);
+
+      return BulkInsertIntoTempTableAsync<T, T>(entities,
+                                                sqlServerOptions,
+                                                SqlServerBulkOperationContextFactoryForEntities.Instance,
+                                                static query => query,
+                                                cancellationToken);
+   }
+
+   private async Task<ITempTableQuery<T>> BulkInsertIntoTempTableAsync<T, TEntity>(
+      IEnumerable<T> entitiesOrValues,
+      SqlServerTempTableBulkInsertOptions options,
+      ISqlServerBulkOperationContextFactory bulkOperationContextFactory,
+      Func<IQueryable<TEntity>, IQueryable<T>> projection,
+      CancellationToken cancellationToken)
+      where TEntity : class
+   {
+      var entityType = _ctx.Model.GetEntityType(typeof(TEntity));
       var selectedProperties = options.PropertiesToInsert.DeterminePropertiesForTempTable(entityType, null);
 
       if (selectedProperties.Any(p => !p.IsInlined))
@@ -291,7 +308,7 @@ INSERT BULK {Table} ({Columns})", (long)duration.TotalMilliseconds,
       try
       {
          var bulkInsertOptions = options.GetBulkInsertOptions();
-         await BulkInsertAsync(entityType, entities, null, tempTableReference.Name, bulkInsertOptions, cancellationToken).ConfigureAwait(false);
+         await BulkInsertAsync(entityType, entitiesOrValues, null, tempTableReference.Name, bulkInsertOptions, bulkOperationContextFactory, cancellationToken).ConfigureAwait(false);
 
          if (options.MomentOfPrimaryKeyCreation == MomentOfSqlServerPrimaryKeyCreation.AfterBulkInsert)
          {
@@ -302,14 +319,14 @@ INSERT BULK {Table} ({Columns})", (long)duration.TotalMilliseconds,
             await tempTableCreator.CreatePrimaryKeyAsync(_ctx, keyProperties, tempTableReference.Name, tempTableCreationOptions.TruncateTableIfExists, cancellationToken).ConfigureAwait(false);
          }
 
-         var query = _ctx.Set<T>().FromTempTable(tempTableReference.Name);
+         var query = _ctx.Set<TEntity>().FromTempTable(tempTableReference.Name);
 
          var pk = entityType.FindPrimaryKey();
 
          if (pk is not null && pk.Properties.Count != 0)
             query = query.AsNoTracking();
 
-         return new TempTableQuery<T>(query, tempTableReference);
+         return new TempTableQuery<T>(projection(query), tempTableReference);
       }
       catch (Exception)
       {

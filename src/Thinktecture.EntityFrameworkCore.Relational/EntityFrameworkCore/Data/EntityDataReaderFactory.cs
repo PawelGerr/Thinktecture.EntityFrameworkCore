@@ -23,7 +23,6 @@ public sealed class EntityDataReaderFactory : IEntityDataReaderFactory
       IEnumerable<T> entities,
       IReadOnlyList<PropertyWithNavigations> properties,
       bool ensureReadEntitiesCollection)
-      where T : class
    {
       ArgumentNullException.ThrowIfNull(ctx);
       ArgumentNullException.ThrowIfNull(entities);

@@ -11,6 +11,5 @@ public interface IPropertyGetterCache
    /// <param name="property">Property to get the getter for.</param>
    /// <typeparam name="TRootEntity">Type of the root entity.</typeparam>
    /// <returns>Property getter.</returns>
-   Func<DbContext, TRootEntity, object?> GetPropertyGetter<TRootEntity>(PropertyWithNavigations property)
-      where TRootEntity : class;
+   Func<DbContext, TRootEntity, object?> GetPropertyGetter<TRootEntity>(PropertyWithNavigations property);
 }

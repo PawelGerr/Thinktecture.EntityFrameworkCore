@@ -6,23 +6,33 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations;
 
 internal class BulkInsertContext : ISqliteBulkOperationContext
 {
+   private readonly DbContext _ctx;
    private readonly IReadOnlyList<PropertyWithNavigations> _externalProperties;
+   private readonly IEntityDataReaderFactory _readerFactory;
 
-   public IEntityDataReaderFactory ReaderFactory { get; }
    public IReadOnlyList<PropertyWithNavigations> Properties { get; }
    public SqliteConnection Connection { get; }
    public SqliteBulkInsertOptions Options { get; }
 
    public bool HasExternalProperties => _externalProperties.Count != 0;
+
+   /// <inheritdoc />
+   public IEntityDataReader<T> CreateReader<T>(IEnumerable<T> entities)
+   {
+      return _readerFactory.Create(_ctx, entities, Properties, HasExternalProperties);
+   }
+
    public SqliteAutoIncrementBehavior AutoIncrementBehavior => Options.AutoIncrementBehavior;
 
    public BulkInsertContext(
+      DbContext ctx,
       IEntityDataReaderFactory factory,
       SqliteConnection sqlCon,
       SqliteBulkInsertOptions options,
       IReadOnlyList<PropertyWithNavigations> properties)
    {
-      ReaderFactory = factory;
+      _ctx = ctx;
+      _readerFactory = factory;
       Connection = sqlCon;
       var (ownProperties, externalProperties) = properties.SeparateProperties();
       Properties = ownProperties;
@@ -44,7 +54,7 @@ internal class BulkInsertContext : ISqliteBulkOperationContext
 
       foreach (var (navigation, ownedEntities, properties) in _externalProperties.GroupExternalProperties(entities))
       {
-         var ownedTypeCtx = new OwnedTypeBulkInsertContext(ReaderFactory, Connection, Options, properties, navigation.TargetEntityType, ownedEntities);
+         var ownedTypeCtx = new OwnedTypeBulkInsertContext(_ctx, _readerFactory, Connection, Options, properties, navigation.TargetEntityType, ownedEntities);
          childCtx.Add(ownedTypeCtx);
       }
 
@@ -57,13 +67,14 @@ internal class BulkInsertContext : ISqliteBulkOperationContext
       public IEnumerable<object> Entities { get; }
 
       public OwnedTypeBulkInsertContext(
+         DbContext ctx,
          IEntityDataReaderFactory factory,
          SqliteConnection sqlCon,
          SqliteBulkInsertOptions options,
          IReadOnlyList<PropertyWithNavigations> properties,
          IEntityType entityType,
          IEnumerable<object> entities)
-         : base(factory, sqlCon, options, properties)
+         : base(ctx, factory, sqlCon, options, properties)
       {
          EntityType = entityType;
          Entities = entities;

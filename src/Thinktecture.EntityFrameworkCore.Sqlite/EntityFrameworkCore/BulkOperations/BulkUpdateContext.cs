@@ -9,21 +9,31 @@ internal class BulkUpdateContext : ISqliteBulkOperationContext
    private readonly IReadOnlyList<PropertyWithNavigations> _keyProperties;
    private readonly IReadOnlyList<PropertyWithNavigations> _propertiesToUpdate;
    private readonly IReadOnlyList<PropertyWithNavigations> _externalProperties;
+   private readonly DbContext _ctx;
+   private readonly IEntityDataReaderFactory _readerFactory;
 
-   public IEntityDataReaderFactory ReaderFactory { get; }
    public IReadOnlyList<PropertyWithNavigations> Properties { get; }
    public SqliteConnection Connection { get; }
 
    public bool HasExternalProperties => _externalProperties.Count != 0;
+
+   /// <inheritdoc />
+   public IEntityDataReader<T> CreateReader<T>(IEnumerable<T> entities)
+   {
+      return _readerFactory.Create(_ctx, entities, Properties, HasExternalProperties);
+   }
+
    public SqliteAutoIncrementBehavior AutoIncrementBehavior => SqliteAutoIncrementBehavior.KeepValueAsIs;
 
    public BulkUpdateContext(
+      DbContext ctx,
       IEntityDataReaderFactory factory,
       SqliteConnection connection,
       IReadOnlyList<PropertyWithNavigations> keyProperties,
       IReadOnlyList<PropertyWithNavigations> propertiesForUpdate)
    {
-      ReaderFactory = factory;
+      _ctx = ctx;
+      _readerFactory = factory;
       Connection = connection;
       _keyProperties = keyProperties;
       var (ownProperties, externalProperties) = propertiesForUpdate.SeparateProperties();
@@ -48,7 +58,7 @@ internal class BulkUpdateContext : ISqliteBulkOperationContext
 
       foreach (var (navigation, ownedEntities, properties) in _externalProperties.GroupExternalProperties(entities))
       {
-         var ownedTypeCtx = new OwnedTypeBulkUpdateContext(ReaderFactory, Connection, properties, navigation.TargetEntityType, ownedEntities);
+         var ownedTypeCtx = new OwnedTypeBulkUpdateContext(_ctx, _readerFactory, Connection, properties, navigation.TargetEntityType, ownedEntities);
          childCtx.Add(ownedTypeCtx);
       }
 
@@ -61,12 +71,13 @@ internal class BulkUpdateContext : ISqliteBulkOperationContext
       public IEnumerable<object> Entities { get; }
 
       public OwnedTypeBulkUpdateContext(
+         DbContext ctx,
          IEntityDataReaderFactory factory,
          SqliteConnection sqlCon,
          IReadOnlyList<PropertyWithNavigations> properties,
          IEntityType entityType,
          IEnumerable<object> entities)
-         : base(factory, sqlCon, GetKeyProperties(entityType), properties)
+         : base(ctx, factory, sqlCon, GetKeyProperties(entityType), properties)
       {
          EntityType = entityType;
          Entities = entities;

@@ -241,7 +241,7 @@ public class Program
    {
       await using var tempTableQuery = await ctx.BulkInsertValuesIntoTempTableAsync(customerIds);
 
-      var customers = await ctx.Customers.Join(tempTableQuery.Query, c => c.Id, t => t.Column1, (c, t) => c).ToListAsync();
+      var customers = await ctx.Customers.Join(tempTableQuery.Query, c => c.Id, t => t, (c, t) => c).ToListAsync();
       Console.WriteLine($"Found customers: {String.Join(", ", customers.Select(c => c.Id))}");
    }
 

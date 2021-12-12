@@ -8,11 +8,6 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations;
 public interface IBulkOperationContext
 {
    /// <summary>
-   /// Factory for <see cref="IEntityDataReader{T}"/>.
-   /// </summary>
-   IEntityDataReaderFactory ReaderFactory { get; }
-
-   /// <summary>
    /// Properties participating in the bulk operation.
    /// </summary>
    IReadOnlyList<PropertyWithNavigations> Properties { get; }
@@ -21,4 +16,12 @@ public interface IBulkOperationContext
    /// Indication whether there are properties that belongs to a different table.
    /// </summary>
    bool HasExternalProperties { get; }
+
+   /// <summary>
+   /// Creates a new <see cref="IEntityDataReader{T}"/>.
+   /// </summary>
+   /// <param name="entities"></param>
+   /// <typeparam name="T"></typeparam>
+   /// <returns></returns>
+   IEntityDataReader<T> CreateReader<T>(IEnumerable<T> entities);
 }

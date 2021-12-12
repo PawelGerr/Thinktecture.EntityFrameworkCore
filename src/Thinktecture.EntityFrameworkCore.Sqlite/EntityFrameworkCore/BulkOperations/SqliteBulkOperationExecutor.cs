@@ -105,21 +105,30 @@ public sealed class SqliteBulkOperationExecutor
       if (options is not SqliteBulkInsertOptions sqliteOptions)
          sqliteOptions = new SqliteBulkInsertOptions(options);
 
-      await BulkInsertAsync(entityType, entities, entityType.GetSchema(), tableName, sqliteOptions, cancellationToken);
+      await BulkInsertAsync(entityType,
+                            entities,
+                            entityType.GetSchema(),
+                            tableName,
+                            sqliteOptions,
+                            SqliteBulkOperationContextFactoryForEntities.Instance,
+                            cancellationToken);
    }
 
-   private async Task BulkInsertAsync<T>(IEntityType entityType, IEnumerable<T> entities, string? schema, string tableName, SqliteBulkInsertOptions options, CancellationToken cancellationToken)
-      where T : class
+   private async Task BulkInsertAsync<T>(
+      IEntityType entityType,
+      IEnumerable<T> entitiesOrValues,
+      string? schema,
+      string tableName,
+      SqliteBulkInsertOptions options,
+      ISqliteBulkOperationContextFactory bulkOperationContextFactory,
+      CancellationToken cancellationToken)
    {
       var properties = options.PropertiesToInsert.DeterminePropertiesForInsert(entityType, null);
       properties.EnsureNoSeparateOwnedTypesInsideCollectionOwnedType();
 
-      var ctx = new BulkInsertContext(_ctx.GetService<IEntityDataReaderFactory>(),
-                                      (SqliteConnection)_ctx.Database.GetDbConnection(),
-                                      options,
-                                      properties);
+      var ctx = bulkOperationContextFactory.CreateForBulkInsert(_ctx, options, properties);
 
-      await ExecuteBulkOperationAsync(entities, schema, tableName, ctx, cancellationToken);
+      await ExecuteBulkOperationAsync(entitiesOrValues, schema, tableName, ctx, cancellationToken);
    }
 
    /// <inheritdoc />
@@ -134,7 +143,8 @@ public sealed class SqliteBulkOperationExecutor
 
       var entityType = _ctx.Model.GetEntityType(typeof(T));
 
-      var ctx = new BulkUpdateContext(_ctx.GetService<IEntityDataReaderFactory>(),
+      var ctx = new BulkUpdateContext(_ctx,
+                                      _ctx.GetService<IEntityDataReaderFactory>(),
                                       (SqliteConnection)_ctx.Database.GetDbConnection(),
                                       options.KeyProperties.DetermineKeyProperties(entityType, true),
                                       options.PropertiesToUpdate.DeterminePropertiesForUpdate(entityType, null));
@@ -158,7 +168,8 @@ public sealed class SqliteBulkOperationExecutor
          sqliteOptions = new SqliteBulkInsertOrUpdateOptions(options);
 
       var entityType = _ctx.Model.GetEntityType(typeof(T));
-      var ctx = new BulkInsertOrUpdateContext(_ctx.GetService<IEntityDataReaderFactory>(),
+      var ctx = new BulkInsertOrUpdateContext(_ctx,
+                                              _ctx.GetService<IEntityDataReaderFactory>(),
                                               (SqliteConnection)_ctx.Database.GetDbConnection(),
                                               sqliteOptions.KeyProperties.DetermineKeyProperties(entityType, true),
                                               sqliteOptions.PropertiesToInsert.DeterminePropertiesForInsert(entityType, null),
@@ -170,12 +181,11 @@ public sealed class SqliteBulkOperationExecutor
    }
 
    private async Task<int> ExecuteBulkOperationAsync<T>(
-      IEnumerable<T> entities,
+      IEnumerable<T> entitiesOrValues,
       string? schema,
       string tableName,
       ISqliteBulkOperationContext bulkOperationContext,
       CancellationToken cancellationToken)
-      where T : class
    {
       await _ctx.Database.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
 
@@ -183,13 +193,13 @@ public sealed class SqliteBulkOperationExecutor
       {
          var tableIdentifier = _sqlGenerationHelper.DelimitIdentifier(tableName, schema);
 
-         using var reader = bulkOperationContext.ReaderFactory.Create(_ctx, entities, bulkOperationContext.Properties, bulkOperationContext.HasExternalProperties);
+         using var reader = bulkOperationContext.CreateReader(entitiesOrValues);
          var numberOfAffectedRows = await ExecuteBulkOperationAsync(reader, bulkOperationContext, tableIdentifier, cancellationToken).ConfigureAwait(false);
 
          if (bulkOperationContext.HasExternalProperties)
          {
             var readEntities = reader.GetReadEntities();
-            numberOfAffectedRows += await ExecuteBulkOperationForSeparatedOwnedEntitiesAsync(readEntities, bulkOperationContext, cancellationToken);
+            numberOfAffectedRows += await ExecuteBulkOperationForSeparatedOwnedEntitiesAsync((IReadOnlyList<object>)readEntities, bulkOperationContext, cancellationToken);
          }
 
          return numberOfAffectedRows;
@@ -301,7 +311,26 @@ public sealed class SqliteBulkOperationExecutor
    }
 
    /// <inheritdoc />
-   public async Task<ITempTableQuery<T>> BulkInsertIntoTempTableAsync<T>(
+   public Task<ITempTableQuery<TColumn1>> BulkInsertValuesIntoTempTableAsync<TColumn1>(
+      IEnumerable<TColumn1> values,
+      ITempTableBulkInsertOptions options,
+      CancellationToken cancellationToken)
+   {
+      ArgumentNullException.ThrowIfNull(values);
+      ArgumentNullException.ThrowIfNull(options);
+
+      if (options is not SqliteTempTableBulkInsertOptions sqliteOptions)
+         sqliteOptions = new SqliteTempTableBulkInsertOptions(options);
+
+      return BulkInsertIntoTempTableAsync<TColumn1, TempTable<TColumn1>>(values,
+                                                                         sqliteOptions,
+                                                                         SqliteBulkOperationContextFactoryForValues.Instance,
+                                                                         static query => query.Select(t => t.Column1),
+                                                                         cancellationToken);
+   }
+
+   /// <inheritdoc />
+   public Task<ITempTableQuery<T>> BulkInsertIntoTempTableAsync<T>(
       IEnumerable<T> entities,
       ITempTableBulkInsertOptions options,
       CancellationToken cancellationToken = default)
@@ -310,21 +339,25 @@ public sealed class SqliteBulkOperationExecutor
       ArgumentNullException.ThrowIfNull(entities);
       ArgumentNullException.ThrowIfNull(options);
 
-      var entityType = _ctx.Model.GetEntityType(typeof(T));
-
       if (options is not SqliteTempTableBulkInsertOptions sqliteOptions)
          sqliteOptions = new SqliteTempTableBulkInsertOptions(options);
 
-      return await BulkInsertIntoTempTableAsync(entityType, entities, sqliteOptions, cancellationToken);
+      return BulkInsertIntoTempTableAsync<T, T>(entities,
+                                                sqliteOptions,
+                                                SqliteBulkOperationContextFactoryForEntities.Instance,
+                                                static query => query,
+                                                cancellationToken);
    }
 
-   private async Task<ITempTableQuery<T>> BulkInsertIntoTempTableAsync<T>(
-      IEntityType entityType,
-      IEnumerable<T> entities,
+   private async Task<ITempTableQuery<T>> BulkInsertIntoTempTableAsync<T, TEntity>(
+      IEnumerable<T> entitiesOrValues,
       SqliteTempTableBulkInsertOptions options,
+      ISqliteBulkOperationContextFactory bulkOperationContextFactory,
+      Func<IQueryable<TEntity>, IQueryable<T>> projection,
       CancellationToken cancellationToken)
-      where T : class
+      where TEntity : class
    {
+      var entityType = _ctx.Model.GetEntityType(typeof(TEntity));
       var selectedProperties = options.PropertiesToInsert.DeterminePropertiesForTempTable(entityType, null);
 
       if (selectedProperties.Any(p => !p.IsInlined))
@@ -337,16 +370,16 @@ public sealed class SqliteBulkOperationExecutor
       try
       {
          var bulkInsertOptions = options.GetBulkInsertOptions();
-         await BulkInsertAsync(entityType, entities, null, tempTableReference.Name, bulkInsertOptions, cancellationToken).ConfigureAwait(false);
+         await BulkInsertAsync(entityType, entitiesOrValues, null, tempTableReference.Name, bulkInsertOptions, bulkOperationContextFactory, cancellationToken).ConfigureAwait(false);
 
-         var query = _ctx.Set<T>().FromTempTable(tempTableReference.Name);
+         var query = _ctx.Set<TEntity>().FromTempTable(tempTableReference.Name);
 
          var pk = entityType.FindPrimaryKey();
 
          if (pk is not null && pk.Properties.Count != 0)
             query = query.AsNoTracking();
 
-         return new TempTableQuery<T>(query, tempTableReference);
+         return new TempTableQuery<T>(projection(query), tempTableReference);
       }
       catch (Exception)
       {
