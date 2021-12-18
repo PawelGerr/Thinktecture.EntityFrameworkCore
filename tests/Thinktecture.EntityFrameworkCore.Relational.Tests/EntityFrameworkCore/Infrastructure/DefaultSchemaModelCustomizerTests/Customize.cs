@@ -25,11 +25,11 @@ public class Customize : IntegrationTestsBase
    }
 
    [Fact]
-   public void Should_set_schema_if_query_type_schema_is_null()
+   public void Should_set_schema_if_view_schema_is_null()
    {
       Schema = "E2FBA720-E24C-46C9-B326-46C3C91707F5";
 
-      ActDbContext.Model.FindEntityType(typeof(TestQuery))!.GetSchema().Should().Be(Schema);
+      ActDbContext.Model.FindEntityType(typeof(TestQuery))!.GetViewSchema().Should().Be(Schema);
    }
 
    [Fact]
