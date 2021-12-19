@@ -79,7 +79,7 @@ public class Program
 
    private static async Task DoScalarCollectionParameterAsync(DemoDbContext ctx, List<Guid> customerIds)
    {
-      var customerIdsQuery = ctx.ToScalarCollectionParameter(customerIds);
+      var customerIdsQuery = ctx.CreateScalarCollectionParameter(customerIds);
 
       var customers = await ctx.Customers.Where(c => customerIdsQuery.Contains(c.Id)).ToListAsync();
 
@@ -88,7 +88,7 @@ public class Program
 
    private static async Task DoComplexCollectionParameterAsync(DemoDbContext ctx, Guid customerId)
    {
-      var parameters = ctx.ToComplexCollectionParameter(new[] { new MyParameter(customerId, 42) });
+      var parameters = ctx.CreateComplexCollectionParameter(new[] { new MyParameter(customerId, 42) });
 
       var customers = await ctx.Customers.Join(parameters, c => c.Id, t => t.Column1, (c, t) => new { Customer = c, Number = t.Column2}).ToListAsync();
 

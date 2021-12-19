@@ -3,9 +3,9 @@ using Thinktecture.TestDatabaseContext;
 
 namespace Thinktecture.Extensions.DbContextExtensionsTests;
 
-public class ToScalarCollectionParameter : IntegrationTestsBase
+public class CreateScalarCollectionParameter : IntegrationTestsBase
 {
-   public ToScalarCollectionParameter(ITestOutputHelper testOutputHelper)
+   public CreateScalarCollectionParameter(ITestOutputHelper testOutputHelper)
       : base(testOutputHelper, true)
    {
    }
@@ -28,36 +28,46 @@ public class ToScalarCollectionParameter : IntegrationTestsBase
                                                              new object[] { new ConvertibleClass(99) }
                                                           };
 
-   private static readonly MethodInfo _genericDataTypeTest = typeof(ToScalarCollectionParameter).GetMethod(nameof(MakeGenericToCollectionParameterTest), BindingFlags.Instance | BindingFlags.NonPublic)
-                                                             ?? throw new Exception($"Method '{nameof(MakeGenericToCollectionParameterTest)}' not found.");
+   private static readonly MethodInfo _genericDataTypeTest = typeof(CreateScalarCollectionParameter).GetMethod(nameof(MakeGenericCreateCollectionParameterTest), BindingFlags.Instance | BindingFlags.NonPublic)
+                                                             ?? throw new Exception($"Method '{nameof(MakeGenericCreateCollectionParameterTest)}' not found.");
 
    [Theory]
    [MemberData(nameof(_values))]
-   public void Should_work_with_default_data_types(object value)
+   public void Should_work_with_default_data_types_with_distinct(object value)
    {
-      _genericDataTypeTest.MakeGenericMethod(value.GetType()).Invoke(this, new[] { value });
+      _genericDataTypeTest.MakeGenericMethod(value.GetType()).Invoke(this, new[] { value, true });
    }
 
-   private void MakeGenericToCollectionParameterTest<T>(T value)
+   [Theory]
+   [MemberData(nameof(_values))]
+   public void Should_work_with_default_data_types_without_distinct(object value)
    {
-      ActDbContext.ToScalarCollectionParameter(new[] { value })
+      _genericDataTypeTest.MakeGenericMethod(value.GetType()).Invoke(this, new[] { value, false });
+   }
+
+   private void MakeGenericCreateCollectionParameterTest<T>(T value, bool applyDistinct)
+   {
+      ActDbContext.CreateScalarCollectionParameter(new[] { value }, applyDistinct)
                   .ToList()
                   .Should().BeEquivalentTo(new[] { value });
    }
 
-   [Fact]
-   public async Task Should_work_with_contains()
+   [Theory]
+   [InlineData(true)]
+   [InlineData(false)]
+   public async Task Should_work_with_contains(bool applyDistinct)
    {
       var testEntity = new TestEntity
                        {
                           Id = new Guid("7F8B0E79-2C91-4682-9F61-6FC86B4E5244"),
                           Name = "Name",
+                          RequiredName = "RequiredName",
                           Count = 42
                        };
       await ArrangeDbContext.AddAsync(testEntity);
       await ArrangeDbContext.SaveChangesAsync();
 
-      var collectionParameter = ActDbContext.ToScalarCollectionParameter(new[] { testEntity.Id });
+      var collectionParameter = ActDbContext.CreateScalarCollectionParameter(new[] { testEntity.Id }, applyDistinct);
       var loadedEntities = await ActDbContext.TestEntities
                                              .Where(e => collectionParameter.Contains(e.Id))
                                              .ToListAsync();
@@ -68,6 +78,7 @@ public class ToScalarCollectionParameter : IntegrationTestsBase
                                            {
                                               Id = new Guid("7F8B0E79-2C91-4682-9F61-6FC86B4E5244"),
                                               Name = "Name",
+                                              RequiredName = "RequiredName",
                                               Count = 42
                                            });
    }

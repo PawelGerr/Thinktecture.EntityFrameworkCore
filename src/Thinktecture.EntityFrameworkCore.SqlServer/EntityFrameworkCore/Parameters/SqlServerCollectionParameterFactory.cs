@@ -39,74 +39,109 @@ public class SqlServerCollectionParameterFactory : ICollectionParameterFactory
    }
 
    /// <inheritdoc />
-   public IQueryable<T> CreateScalarQuery<T>(DbContext ctx, IEnumerable<T> values)
+   public IQueryable<T> CreateScalarQuery<T>(DbContext ctx, IReadOnlyCollection<T> values, bool applyDistinct)
    {
       var entityType = ctx.Model.GetEntityType(typeof(ScalarCollectionParameter<T>));
-      var parameterInfo = _cache.GetOrAdd(entityType, GetScalarParameterInfo<T>);
+      var parameterInfo = _cache.GetOrAdd(entityType,
+                                          static (type, args) => GetScalarParameterInfo<T>(args._stringBuilderPool, args._sqlGenerationHelper, type),
+                                          (_stringBuilderPool, _sqlGenerationHelper));
 
-      var parameter = new SqlParameter
-                      {
-                         DbType = DbType.String,
-                         SqlDbType = SqlDbType.NVarChar,
-                         Value = parameterInfo.ParameterFactory(values, _jsonSerializerOptions)
-                      };
+      var parameterValue = parameterInfo.ParameterFactory(values, _jsonSerializerOptions);
 
-      return ctx.Set<ScalarCollectionParameter<T>>().FromSqlRaw(parameterInfo.Statement, parameter).Select(e => e.Value);
+      return ctx.Set<ScalarCollectionParameter<T>>()
+                .FromSqlRaw(applyDistinct ? parameterInfo.StatementWithDistinct : parameterInfo.Statement,
+                            CreateTopParameter(parameterValue),
+                            CreateJsonParameter(parameterValue))
+                .Select(e => e.Value);
    }
 
    /// <inheritdoc />
-   public IQueryable<T> CreateComplexQuery<T>(DbContext ctx, IEnumerable<T> objects)
+   public IQueryable<T> CreateComplexQuery<T>(DbContext ctx, IReadOnlyCollection<T> objects, bool applyDistinct)
       where T : class
    {
       var entityType = ctx.Model.GetEntityType(typeof(T));
       var parameterInfo = _cache.GetOrAdd(entityType, GetComplexParameterInfo<T>);
 
-      var parameter = new SqlParameter
-                      {
-                         DbType = DbType.String,
-                         SqlDbType = SqlDbType.NVarChar,
-                         Value = parameterInfo.ParameterFactory(objects, _jsonSerializerOptions)
-                      };
+      var parameterValue = parameterInfo.ParameterFactory(objects, _jsonSerializerOptions);
 
-      return ctx.Set<T>().FromSqlRaw(parameterInfo.Statement, parameter);
+      return ctx.Set<T>().FromSqlRaw(applyDistinct ? parameterInfo.StatementWithDistinct : parameterInfo.Statement,
+                                     CreateTopParameter(parameterValue),
+                                     CreateJsonParameter(parameterValue));
    }
 
-   private CollectionParameterInfo GetScalarParameterInfo<T>(IEntityType entityType)
+   private static SqlParameter CreateJsonParameter(JsonCollectionParameter parameterValue)
    {
-      var storeObject = StoreObjectIdentifier.Create(entityType, StoreObjectType.Table) ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{entityType.Name}'.");
+      return new SqlParameter
+             {
+                DbType = DbType.String,
+                SqlDbType = SqlDbType.NVarChar,
+                Value = parameterValue
+             };
+   }
 
+   private static SqlParameter CreateTopParameter(JsonCollectionParameter jsonCollection)
+   {
+      return new SqlParameter
+             {
+                DbType = DbType.Int64,
+                SqlDbType = SqlDbType.BigInt,
+                Value = jsonCollection
+             };
+   }
+
+   private static CollectionParameterInfo GetScalarParameterInfo<T>(
+      ObjectPool<StringBuilder> stringBuilderPool,
+      ISqlGenerationHelper sqlGenerationHelper,
+      IEntityType entityType)
+   {
       var property = entityType.GetProperties().Single();
-
-      var columnName = property.GetColumnName(storeObject) ?? throw new Exception($"The property '{property.Name}' has no column name.");
-      var escapedColumnName = _sqlGenerationHelper.DelimitIdentifier(columnName);
-      var columnType = property.GetColumnType(storeObject);
       var converter = property.GetValueConverter();
-      var sb = _stringBuilderPool.Get();
+
+      return new CollectionParameterInfo(BuildScalarStatement(stringBuilderPool, sqlGenerationHelper, entityType, property, false),
+                                         BuildScalarStatement(stringBuilderPool, sqlGenerationHelper, entityType, property, true),
+                                         CreateParameterFactory<T>(converter));
+   }
+
+   private static string BuildScalarStatement(
+      ObjectPool<StringBuilder> stringBuilderPool,
+      ISqlGenerationHelper sqlGenerationHelper,
+      IEntityType entityType,
+      IProperty property,
+      bool applyDistinct)
+   {
+      var sb = stringBuilderPool.Get();
 
       try
       {
-         sb.Append("SELECT ").Append(escapedColumnName).Append(" FROM OPENJSON({0}, '$') WITH (")
+         var storeObject = StoreObjectIdentifier.Create(entityType, StoreObjectType.Table) ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{entityType.Name}'.");
+         var columnType = property.GetColumnType(storeObject);
+         var columnName = property.GetColumnName(storeObject) ?? throw new Exception($"The property '{property.Name}' has no column name.");
+         var escapedColumnName = sqlGenerationHelper.DelimitIdentifier(columnName);
+
+         sb.Append("SELECT ");
+
+         if (applyDistinct)
+            sb.Append("DISTINCT ");
+
+         sb.Append("TOP({0}) ").Append(escapedColumnName).Append(" FROM OPENJSON({1}, '$') WITH (")
            .Append(escapedColumnName).Append(" ").Append(columnType).Append(" '$')");
 
-         var parameterFactory = CreateParameterFactory<T>(converter);
-
-         return new CollectionParameterInfo(sb.ToString(), parameterFactory);
+         return sb.ToString();
       }
       finally
       {
-         _stringBuilderPool.Return(sb);
+         stringBuilderPool.Return(sb);
       }
    }
 
    private CollectionParameterInfo GetComplexParameterInfo<T>(IEntityType entityType)
    {
-      var sqlStatement = CreateSqlStatementForComplexType(entityType);
-      var parameterFactory = CreateParameterFactory<T>(null);
-
-      return new CollectionParameterInfo(sqlStatement, parameterFactory);
+      return new CollectionParameterInfo(CreateSqlStatementForComplexType(entityType, false),
+                                         CreateSqlStatementForComplexType(entityType, true),
+                                         CreateParameterFactory<T>(null));
    }
 
-   private string CreateSqlStatementForComplexType(IEntityType entityType)
+   private string CreateSqlStatementForComplexType(IEntityType entityType, bool withDistinct)
    {
       var sb = _stringBuilderPool.Get();
       var withClause = _stringBuilderPool.Get();
@@ -116,6 +151,11 @@ public class SqlServerCollectionParameterFactory : ICollectionParameterFactory
          var storeObject = StoreObjectIdentifier.Create(entityType, StoreObjectType.Table) ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{entityType.Name}'.");
 
          sb.Append("SELECT ");
+
+         if (withDistinct)
+            sb.Append("DISTINCT ");
+
+         sb.Append("TOP({0}) ");
 
          var isFirst = true;
 
@@ -131,14 +171,13 @@ public class SqlServerCollectionParameterFactory : ICollectionParameterFactory
             var escapedColumnName = _sqlGenerationHelper.DelimitIdentifier(columnName);
             var columnType = property.GetColumnType(storeObject) ?? throw new Exception($"The property '{property.Name}' has no column type.");
 
-            sb.Append("[").Append(columnName).Append("]");
-
+            sb.Append(escapedColumnName);
             withClause.Append(escapedColumnName).Append(" ").Append(columnType).Append($" '$.{property.Name}'");
 
             isFirst = false;
          }
 
-         sb.Append(" FROM OPENJSON({0}, '$') WITH (").Append(withClause).Append(")");
+         sb.Append(" FROM OPENJSON({1}, '$') WITH (").Append(withClause).Append(")");
 
          return sb.ToString();
       }
@@ -153,7 +192,7 @@ public class SqlServerCollectionParameterFactory : ICollectionParameterFactory
       ValueConverter? converter)
    {
       if (converter is null)
-         return (values, options) => new JsonCollectionParameter<T>((IEnumerable<T>)values, options);
+         return static (values, options) => new JsonCollectionParameter<T>((IReadOnlyCollection<T>)values, options);
 
       var itemType = typeof(T);
       var parameterType = typeof(JsonCollectionParameter<,>).MakeGenericType(itemType, converter.ProviderClrType);
@@ -163,7 +202,7 @@ public class SqlServerCollectionParameterFactory : ICollectionParameterFactory
 
       var ctor = parameterType.GetConstructors().Single();
       var ctorCall = Expression.New(ctor,
-                                    Expression.Convert(valuesParam, typeof(IEnumerable<T>)),
+                                    Expression.Convert(valuesParam, typeof(IReadOnlyCollection<T>)),
                                     optionsParam,
                                     Expression.Constant(converter.ConvertToProvider));
 
@@ -171,5 +210,5 @@ public class SqlServerCollectionParameterFactory : ICollectionParameterFactory
                        .Compile();
    }
 
-   private readonly record struct CollectionParameterInfo(string Statement, Func<IEnumerable, JsonSerializerOptions, JsonCollectionParameter> ParameterFactory);
+   private readonly record struct CollectionParameterInfo(string Statement, string StatementWithDistinct, Func<IEnumerable, JsonSerializerOptions, JsonCollectionParameter> ParameterFactory);
 }

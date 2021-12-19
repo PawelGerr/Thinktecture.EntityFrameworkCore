@@ -312,12 +312,16 @@ public static class BulkOperationsDbContextExtensions
    /// </summary>
    /// <param name="ctx">An instance of <see cref="DbContext"/> to use the <paramref name="values"/> with.</param>
    /// <param name="values">A collection of <paramref name="values"/> to create a query from.</param>
+   /// <param name="applyDistinct">
+   /// Indication whether the query should apply 'DISTINCT' on <paramref name="values"/>.
+   /// It is highly recommended to set this parameter to <c>true</c> to get better execution plans.
+   /// </param>
    /// <typeparam name="T">Type of the <paramref name="values"/>.</typeparam>
    /// <returns>An <see cref="IQueryable{T}"/> giving access to the provided <paramref name="values"/>.</returns>
-   public static IQueryable<T> ToScalarCollectionParameter<T>(this DbContext ctx, IEnumerable<T> values)
+   public static IQueryable<T> CreateScalarCollectionParameter<T>(this DbContext ctx, IReadOnlyCollection<T> values, bool applyDistinct = true)
    {
       return ctx.GetService<ICollectionParameterFactory>()
-                .CreateScalarQuery(ctx, values);
+                .CreateScalarQuery(ctx, values, applyDistinct);
    }
 
    /// <summary>
@@ -325,12 +329,16 @@ public static class BulkOperationsDbContextExtensions
    /// </summary>
    /// <param name="ctx">An instance of <see cref="DbContext"/> to use the <paramref name="objects"/> with.</param>
    /// <param name="objects">A collection of <paramref name="objects"/> to create a query from.</param>
+   /// <param name="applyDistinct">
+   /// Indication whether the query should apply 'DISTINCT' on <paramref name="objects"/>.
+   /// It is highly recommended to set this parameter to <c>true</c> to get better execution plans.
+   /// </param>
    /// <typeparam name="T">Type of the <paramref name="objects"/>.</typeparam>
    /// <returns>An <see cref="IQueryable{T}"/> giving access to the provided <paramref name="objects"/>.</returns>
-   public static IQueryable<T> ToComplexCollectionParameter<T>(this DbContext ctx, IEnumerable<T> objects)
+   public static IQueryable<T> CreateComplexCollectionParameter<T>(this DbContext ctx, IReadOnlyCollection<T> objects, bool applyDistinct = true)
       where T : class
    {
       return ctx.GetService<ICollectionParameterFactory>()
-                .CreateComplexQuery(ctx, objects);
+                .CreateComplexQuery(ctx, objects, applyDistinct);
    }
 }

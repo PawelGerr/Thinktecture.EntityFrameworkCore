@@ -6,9 +6,9 @@ namespace Thinktecture.EntityFrameworkCore.Parameters;
 /// <summary>
 /// Represents a collection parameter.
 /// </summary>
-public class JsonCollectionParameter<T, TConverted> : JsonCollectionParameter
+internal class JsonCollectionParameter<T, TConverted> : JsonCollectionParameter
 {
-   private readonly IEnumerable<T> _values;
+   private readonly IReadOnlyCollection<T> _values;
    private readonly Func<object?, object?> _convertValue;
    private readonly JsonSerializerOptions _jsonSerializerOptions;
 
@@ -19,7 +19,7 @@ public class JsonCollectionParameter<T, TConverted> : JsonCollectionParameter
    /// <param name="convertValue">EF value converter.</param>
    /// <param name="jsonSerializerOptions">JSON serialization settings.</param>
    public JsonCollectionParameter(
-      IEnumerable<T> values,
+      IReadOnlyCollection<T> values,
       JsonSerializerOptions jsonSerializerOptions,
       Func<object?, object?> convertValue)
    {
@@ -28,7 +28,6 @@ public class JsonCollectionParameter<T, TConverted> : JsonCollectionParameter
       _convertValue = convertValue ?? throw new ArgumentNullException(nameof(convertValue));
    }
 
-   /// <inheritdoc />
    public override string ToString(IFormatProvider? provider)
    {
       var convert = _convertValue;
@@ -36,14 +35,19 @@ public class JsonCollectionParameter<T, TConverted> : JsonCollectionParameter
 
       return JsonSerializer.Serialize(values, typeof(IEnumerable<TConverted>), _jsonSerializerOptions);
    }
+
+   public override long ToInt64(IFormatProvider? provider)
+   {
+      return _values.Count;
+   }
 }
 
 /// <summary>
 /// Represents a collection parameter.
 /// </summary>
-public class JsonCollectionParameter<T> : JsonCollectionParameter
+internal class JsonCollectionParameter<T> : JsonCollectionParameter
 {
-   private readonly IEnumerable<T> _values;
+   private readonly IReadOnlyCollection<T> _values;
    private readonly JsonSerializerOptions _jsonSerializerOptions;
 
    /// <summary>
@@ -52,27 +56,31 @@ public class JsonCollectionParameter<T> : JsonCollectionParameter
    /// <param name="values">Values to serialize.</param>
    /// <param name="jsonSerializerOptions">JSON serialization settings.</param>
    public JsonCollectionParameter(
-      IEnumerable<T> values,
+      IReadOnlyCollection<T> values,
       JsonSerializerOptions jsonSerializerOptions)
    {
       _values = values ?? throw new ArgumentNullException(nameof(values));
       _jsonSerializerOptions = jsonSerializerOptions ?? throw new ArgumentNullException(nameof(jsonSerializerOptions));
    }
 
-   /// <inheritdoc />
    public override string ToString(IFormatProvider? provider)
    {
       return JsonSerializer.Serialize(_values, typeof(IEnumerable<T>), _jsonSerializerOptions);
+   }
+
+   public override long ToInt64(IFormatProvider? provider)
+   {
+      return _values.Count;
    }
 }
 
 /// <summary>
 /// Represents a collection parameter.
 /// </summary>
-public abstract class JsonCollectionParameter : IConvertible
+internal abstract class JsonCollectionParameter : IConvertible
 {
-   /// <inheritdoc />
    public abstract string ToString(IFormatProvider? provider);
+   public abstract long ToInt64(IFormatProvider? provider);
 
 #pragma warning disable CS1591
    // ReSharper disable ArrangeMethodOrOperatorBody
@@ -85,7 +93,6 @@ public abstract class JsonCollectionParameter : IConvertible
    public double ToDouble(IFormatProvider? provider) => throw new NotSupportedException();
    public short ToInt16(IFormatProvider? provider) => throw new NotSupportedException();
    public int ToInt32(IFormatProvider? provider) => throw new NotSupportedException();
-   public long ToInt64(IFormatProvider? provider) => throw new NotSupportedException();
    public sbyte ToSByte(IFormatProvider? provider) => throw new NotSupportedException();
    public float ToSingle(IFormatProvider? provider) => throw new NotSupportedException();
    public object ToType(Type conversionType, IFormatProvider? provider) => throw new NotSupportedException();
