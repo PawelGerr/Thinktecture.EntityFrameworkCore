@@ -29,6 +29,8 @@ public class DemoDbContext : DbContext, IDbDefaultSchema
       modelBuilder.ConfigureTempTable<Guid>();
       modelBuilder.ConfigureTempTable<Guid, Guid>();
 
+      modelBuilder.ConfigureComplexCollectionParameter<MyParameter>();
+
       modelBuilder.Entity<Customer>(builder =>
                                     {
                                        builder.Property(c => c.FirstName).HasMaxLength(100);

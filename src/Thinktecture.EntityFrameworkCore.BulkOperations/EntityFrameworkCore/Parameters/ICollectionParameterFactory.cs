@@ -10,9 +10,19 @@ public interface ICollectionParameterFactory
    /// <summary>
    /// Creates an <see cref="IQueryable{T}"/> out of provided <paramref name="values"/>.
    /// </summary>
-   /// <param name="ctx">An instance of <see cref="DbContext"/> to use the values with.</param>
-   /// <param name="values">A collection of values to create a query from.</param>
-   /// <typeparam name="T">Type of the values.</typeparam>
+   /// <param name="ctx">An instance of <see cref="DbContext"/> to use the <paramref name="values"/> with.</param>
+   /// <param name="values">A collection of <paramref name="values"/> to create a query from.</param>
+   /// <typeparam name="T">Type of the <paramref name="values"/>.</typeparam>
    /// <returns>An <see cref="IQueryable{T}"/> giving access to the provided <paramref name="values"/>.</returns>
    IQueryable<T> CreateScalarQuery<T>(DbContext ctx, IEnumerable<T> values);
+
+   /// <summary>
+   /// Creates an <see cref="IQueryable{T}"/> out of provided <paramref name="objects"/>.
+   /// </summary>
+   /// <param name="ctx">An instance of <see cref="DbContext"/> to use the <paramref name="objects"/> with.</param>
+   /// <param name="objects">A collection of <paramref name="objects"/> to create a query from.</param>
+   /// <typeparam name="T">Type of the <paramref name="objects"/>.</typeparam>
+   /// <returns>An <see cref="IQueryable{T}"/> giving access to the provided <paramref name="objects"/>.</returns>
+   IQueryable<T> CreateComplexQuery<T>(DbContext ctx, IEnumerable<T> objects)
+      where T : class;
 }

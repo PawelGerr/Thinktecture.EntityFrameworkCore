@@ -310,14 +310,27 @@ public static class BulkOperationsDbContextExtensions
    /// <summary>
    /// Converts the provided <paramref name="values"/> to a "parameter" to be used in queries.
    /// </summary>
-   /// <param name="ctx">An instance of <see cref="DbContext"/> to use the values with.</param>
-   /// <param name="values">A collection of values to create a query from.</param>
-   /// <typeparam name="T">Type of the values.</typeparam>
+   /// <param name="ctx">An instance of <see cref="DbContext"/> to use the <paramref name="values"/> with.</param>
+   /// <param name="values">A collection of <paramref name="values"/> to create a query from.</param>
+   /// <typeparam name="T">Type of the <paramref name="values"/>.</typeparam>
    /// <returns>An <see cref="IQueryable{T}"/> giving access to the provided <paramref name="values"/>.</returns>
    public static IQueryable<T> ToScalarCollectionParameter<T>(this DbContext ctx, IEnumerable<T> values)
    {
-      var factory = ctx.GetService<ICollectionParameterFactory>();
+      return ctx.GetService<ICollectionParameterFactory>()
+                .CreateScalarQuery(ctx, values);
+   }
 
-      return factory.CreateScalarQuery(ctx, values);
+   /// <summary>
+   /// Converts the provided <paramref name="objects"/> to a "parameter" to be used in queries.
+   /// </summary>
+   /// <param name="ctx">An instance of <see cref="DbContext"/> to use the <paramref name="objects"/> with.</param>
+   /// <param name="objects">A collection of <paramref name="objects"/> to create a query from.</param>
+   /// <typeparam name="T">Type of the <paramref name="objects"/>.</typeparam>
+   /// <returns>An <see cref="IQueryable{T}"/> giving access to the provided <paramref name="objects"/>.</returns>
+   public static IQueryable<T> ToComplexCollectionParameter<T>(this DbContext ctx, IEnumerable<T> objects)
+      where T : class
+   {
+      return ctx.GetService<ICollectionParameterFactory>()
+                .CreateComplexQuery(ctx, objects);
    }
 }

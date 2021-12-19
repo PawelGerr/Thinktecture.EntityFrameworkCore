@@ -50,6 +50,12 @@ public class TestDbContext : DbContext, IDbDefaultSchema
                   .Property(e => e.Value)
                   .HasConversion(c => c.Key, k => new ConvertibleClass(k));
 
+      var myParamBuilder = modelBuilder.ConfigureComplexCollectionParameter<MyParameter>();
+      myParamBuilder.Property(e => e.Column1)
+                    .HasColumnName("Id");
+      myParamBuilder.Property(e => e.Column2)
+                    .HasConversion(c => c.Key, k => new ConvertibleClass(k));
+
       TestEntity.Configure(modelBuilder);
 
       modelBuilder.Entity<TestTemporalTableEntity>(builder => builder.ToTable("TestTemporalTableEntity", tableBuilder => tableBuilder.IsTemporal()));

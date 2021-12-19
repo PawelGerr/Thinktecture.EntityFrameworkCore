@@ -41,6 +41,22 @@ public static class BulkOperationsModelBuilderExtensions
    }
 
    /// <summary>
+   /// Introduces and configures a complex parameter.
+   /// </summary>
+   /// <param name="modelBuilder">A model builder.</param>
+   /// <typeparam name="T">Type of the parameter.</typeparam>
+   /// <returns>An entity type builder for further configuration.</returns>
+   /// <exception cref="ArgumentNullException"><paramref name="modelBuilder"/> is <c>null</c>.</exception>
+   public static EntityTypeBuilder<T> ConfigureComplexCollectionParameter<T>(this ModelBuilder modelBuilder)
+      where T : class
+   {
+      return modelBuilder.Entity<T>()
+                         .ToTable(typeof(T).ShortDisplayName(),
+                                  tableBuilder => tableBuilder.ExcludeFromMigrations())
+                         .HasNoKey();
+   }
+
+   /// <summary>
    /// Introduces and configures a temp table.
    /// </summary>
    /// <param name="modelBuilder">A model builder.</param>

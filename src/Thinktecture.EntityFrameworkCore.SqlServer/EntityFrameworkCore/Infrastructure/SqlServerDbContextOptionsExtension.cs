@@ -1,13 +1,16 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Text;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata.Conventions.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.SqlServer.Query.Internal;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.ObjectPool;
 using Thinktecture.EntityFrameworkCore.BulkOperations;
 using Thinktecture.EntityFrameworkCore.Migrations;
 using Thinktecture.EntityFrameworkCore.Parameters;
@@ -143,7 +146,9 @@ public sealed class SqlServerDbContextOptionsExtension : DbContextOptionsExtensi
       {
          var jsonSerializerOptions = _collectionParameterJsonSerializerOptions ?? new JsonSerializerOptions();
 
-         services.AddSingleton<ICollectionParameterFactory>(_ => new SqlServerCollectionParameterFactory(jsonSerializerOptions));
+         services.AddSingleton<ICollectionParameterFactory>(serviceProvider => new SqlServerCollectionParameterFactory(jsonSerializerOptions,
+                                                                                                                       serviceProvider.GetRequiredService<ObjectPool<StringBuilder>>(),
+                                                                                                                       serviceProvider.GetRequiredService<ISqlGenerationHelper>()));
          services.Add<IConventionSetPlugin, SqlServerCollectionParameterConventionSetPlugin>(GetLifetime<IConventionSetPlugin>());
       }
 
