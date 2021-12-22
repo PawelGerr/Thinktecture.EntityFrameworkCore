@@ -13,6 +13,7 @@ public class TestDbContext : DbContext, IDbDefaultSchema
 
 #nullable disable
    public DbSet<TestEntity> TestEntities { get; set; }
+   public DbSet<TestTemporalTableEntity> TestTemporalTableEntity { get; set; }
    public DbSet<TestEntityWithAutoIncrement> TestEntitiesWithAutoIncrement { get; set; }
    public DbSet<TestEntityWithRowVersion> TestEntitiesWithRowVersion { get; set; }
    public DbSet<TestEntityWithShadowProperties> TestEntitiesWithShadowProperties { get; set; }
@@ -46,6 +47,8 @@ public class TestDbContext : DbContext, IDbDefaultSchema
       base.OnModelCreating(modelBuilder);
 
       TestEntity.Configure(modelBuilder);
+
+      modelBuilder.Entity<TestTemporalTableEntity>(builder => builder.ToTable("TestTemporalTableEntity", tableBuilder => tableBuilder.IsTemporal()));
 
       modelBuilder.Entity<TestViewEntity>(builder => builder.ToView("TestView"));
 

@@ -6,6 +6,8 @@ using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Thinktecture.TestDatabaseContext;
 
+#nullable disable
+
 namespace Thinktecture.Migrations
 {
     [DbContext(typeof(TestDbContext))]
@@ -15,9 +17,10 @@ namespace Thinktecture.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("Relational:MaxIdentifierLength", 128)
-                .HasAnnotation("ProductVersion", "5.0.3")
-                .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+                .HasAnnotation("ProductVersion", "6.0.1")
+                .HasAnnotation("Relational:MaxIdentifierLength", 128);
+
+            SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder, 1L, 1);
 
             modelBuilder.Entity("Thinktecture.TestDatabaseContext.InformationSchemaColumn", b =>
                 {
@@ -211,130 +214,6 @@ namespace Thinktecture.Migrations
                     b.ToTable("TestEntities");
                 });
 
-            modelBuilder.Entity("Thinktecture.TestDatabaseContext.TestEntityWithAutoIncrement", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasAnnotation("SqlServer:IdentityIncrement", 1)
-                        .HasAnnotation("SqlServer:IdentitySeed", 1)
-                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
-
-                    b.Property<string>("Name")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("TestEntitiesWithAutoIncrement");
-                });
-
-            modelBuilder.Entity("Thinktecture.TestDatabaseContext.TestEntityWithDotnetDefaultValues", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier")
-                        .HasDefaultValue(new Guid("0b151271-79bb-4f6c-b85f-e8f61300ff1b"));
-
-                    b.Property<int>("Int")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(1);
-
-                    b.Property<int?>("NullableInt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(2);
-
-                    b.Property<string>("NullableString")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("nvarchar(max)")
-                        .HasDefaultValue("4");
-
-                    b.Property<string>("String")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("nvarchar(max)")
-                        .HasDefaultValue("3");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("TestEntitiesWithDotnetDefaultValues");
-                });
-
-            modelBuilder.Entity("Thinktecture.TestDatabaseContext.TestEntityWithRowVersion", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Name")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<byte[]>("RowVersion")
-                        .IsConcurrencyToken()
-                        .IsRequired()
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("rowversion");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("TestEntitiesWithRowVersion");
-                });
-
-            modelBuilder.Entity("Thinktecture.TestDatabaseContext.TestEntityWithShadowProperties", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Name")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int?>("ShadowIntProperty")
-                        .HasColumnType("int");
-
-                    b.Property<string>("ShadowStringProperty")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("TestEntitiesWithShadowProperties");
-                });
-
-            modelBuilder.Entity("Thinktecture.TestDatabaseContext.TestEntityWithSqlDefaultValues", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier")
-                        .HasDefaultValueSql("newid()");
-
-                    b.Property<int>("Int")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValueSql("1");
-
-                    b.Property<int?>("NullableInt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValueSql("2");
-
-                    b.Property<string>("NullableString")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("nvarchar(max)")
-                        .HasDefaultValueSql("'4'");
-
-                    b.Property<string>("String")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("nvarchar(max)")
-                        .HasDefaultValueSql("'3'");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("TestEntitiesWithDefaultValues");
-                });
-
             modelBuilder.Entity("Thinktecture.TestDatabaseContext.TestEntity_Owns_Inline", b =>
                 {
                     b.Property<Guid>("Id")
@@ -466,6 +345,161 @@ namespace Thinktecture.Migrations
                     b.ToTable("TestEntities_Own_SeparateOne_SeparateOne");
                 });
 
+            modelBuilder.Entity("Thinktecture.TestDatabaseContext.TestEntityWithAutoIncrement", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("TestEntitiesWithAutoIncrement");
+                });
+
+            modelBuilder.Entity("Thinktecture.TestDatabaseContext.TestEntityWithDotnetDefaultValues", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValue(new Guid("0b151271-79bb-4f6c-b85f-e8f61300ff1b"));
+
+                    b.Property<int>("Int")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(1);
+
+                    b.Property<int?>("NullableInt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(2);
+
+                    b.Property<string>("NullableString")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("nvarchar(max)")
+                        .HasDefaultValue("4");
+
+                    b.Property<string>("String")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("nvarchar(max)")
+                        .HasDefaultValue("3");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("TestEntitiesWithDotnetDefaultValues");
+                });
+
+            modelBuilder.Entity("Thinktecture.TestDatabaseContext.TestEntityWithRowVersion", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("TestEntitiesWithRowVersion");
+                });
+
+            modelBuilder.Entity("Thinktecture.TestDatabaseContext.TestEntityWithShadowProperties", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("ShadowIntProperty")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ShadowStringProperty")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("TestEntitiesWithShadowProperties");
+                });
+
+            modelBuilder.Entity("Thinktecture.TestDatabaseContext.TestEntityWithSqlDefaultValues", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("newid()");
+
+                    b.Property<int>("Int")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValueSql("1");
+
+                    b.Property<int?>("NullableInt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValueSql("2");
+
+                    b.Property<string>("NullableString")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("nvarchar(max)")
+                        .HasDefaultValueSql("'4'");
+
+                    b.Property<string>("String")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("nvarchar(max)")
+                        .HasDefaultValueSql("'3'");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("TestEntitiesWithDefaultValues");
+                });
+
+            modelBuilder.Entity("Thinktecture.TestDatabaseContext.TestTemporalTableEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("PeriodEnd")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasColumnName("PeriodEnd");
+
+                    b.Property<DateTime>("PeriodStart")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasColumnName("PeriodStart");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("TestTemporalTableEntity", (string)null);
+
+                    b.ToTable(tb => tb.IsTemporal(ttb =>
+                        {
+                            ttb
+                                .HasPeriodStart("PeriodStart")
+                                .HasColumnName("PeriodStart");
+                            ttb
+                                .HasPeriodEnd("PeriodEnd")
+                                .HasColumnName("PeriodEnd");
+                        }
+                    ));
+                });
+
             modelBuilder.Entity("Thinktecture.TestDatabaseContext.TestViewEntity", b =>
                 {
                     b.Property<Guid>("Id")
@@ -588,8 +622,9 @@ namespace Thinktecture.Migrations
 
                                     b2.Property<int>("Id")
                                         .ValueGeneratedOnAdd()
-                                        .HasColumnType("int")
-                                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+                                        .HasColumnType("int");
+
+                                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b2.Property<int>("Id"), 1L, 1);
 
                                     b2.Property<int>("IntColumn")
                                         .HasColumnType("int");
@@ -599,7 +634,7 @@ namespace Thinktecture.Migrations
 
                                     b2.HasKey("OwnedEntity_Owns_SeparateManyTestEntity_Owns_Inline_SeparateManyId", "Id");
 
-                                    b2.ToTable("InlineEntities_SeparateMany");
+                                    b2.ToTable("InlineEntities_SeparateMany", (string)null);
 
                                     b2.WithOwner()
                                         .HasForeignKey("OwnedEntity_Owns_SeparateManyTestEntity_Owns_Inline_SeparateManyId");
@@ -645,7 +680,7 @@ namespace Thinktecture.Migrations
 
                                     b2.HasKey("OwnedEntity_Owns_SeparateOneTestEntity_Owns_Inline_SeparateOneId");
 
-                                    b2.ToTable("InlineEntities_SeparateOne");
+                                    b2.ToTable("InlineEntities_SeparateOne", (string)null);
 
                                     b2.WithOwner()
                                         .HasForeignKey("OwnedEntity_Owns_SeparateOneTestEntity_Owns_Inline_SeparateOneId");
@@ -668,8 +703,9 @@ namespace Thinktecture.Migrations
 
                             b1.Property<int>("Id")
                                 .ValueGeneratedOnAdd()
-                                .HasColumnType("int")
-                                .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+                                .HasColumnType("int");
+
+                            SqlServerPropertyBuilderExtensions.UseIdentityColumn(b1.Property<int>("Id"), 1L, 1);
 
                             b1.Property<int>("IntColumn")
                                 .HasColumnType("int");
@@ -679,7 +715,7 @@ namespace Thinktecture.Migrations
 
                             b1.HasKey("TestEntity_Owns_SeparateManyId", "Id");
 
-                            b1.ToTable("SeparateEntitiesMany");
+                            b1.ToTable("SeparateEntitiesMany", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("TestEntity_Owns_SeparateManyId");
@@ -697,8 +733,9 @@ namespace Thinktecture.Migrations
 
                             b1.Property<int>("Id")
                                 .ValueGeneratedOnAdd()
-                                .HasColumnType("int")
-                                .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+                                .HasColumnType("int");
+
+                            SqlServerPropertyBuilderExtensions.UseIdentityColumn(b1.Property<int>("Id"), 1L, 1);
 
                             b1.Property<int>("IntColumn")
                                 .HasColumnType("int");
@@ -708,7 +745,7 @@ namespace Thinktecture.Migrations
 
                             b1.HasKey("TestEntity_Owns_SeparateMany_InlineId", "Id");
 
-                            b1.ToTable("SeparateEntitiesMany_Inline");
+                            b1.ToTable("SeparateEntitiesMany_Inline", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("TestEntity_Owns_SeparateMany_InlineId");
@@ -719,9 +756,7 @@ namespace Thinktecture.Migrations
                                         .HasColumnType("uniqueidentifier");
 
                                     b2.Property<int>("OwnedEntity_Owns_InlineId")
-                                        .ValueGeneratedOnAdd()
-                                        .HasColumnType("int")
-                                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+                                        .HasColumnType("int");
 
                                     b2.Property<int>("IntColumn")
                                         .HasColumnType("int");
@@ -753,8 +788,9 @@ namespace Thinktecture.Migrations
 
                             b1.Property<int>("Id")
                                 .ValueGeneratedOnAdd()
-                                .HasColumnType("int")
-                                .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+                                .HasColumnType("int");
+
+                            SqlServerPropertyBuilderExtensions.UseIdentityColumn(b1.Property<int>("Id"), 1L, 1);
 
                             b1.Property<int>("IntColumn")
                                 .HasColumnType("int");
@@ -764,7 +800,7 @@ namespace Thinktecture.Migrations
 
                             b1.HasKey("TestEntity_Owns_SeparateMany_SeparateManyId", "Id");
 
-                            b1.ToTable("SeparateEntitiesMany_SeparateEntitiesMany");
+                            b1.ToTable("SeparateEntitiesMany_SeparateEntitiesMany", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("TestEntity_Owns_SeparateMany_SeparateManyId");
@@ -779,8 +815,9 @@ namespace Thinktecture.Migrations
 
                                     b2.Property<int>("Id")
                                         .ValueGeneratedOnAdd()
-                                        .HasColumnType("int")
-                                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+                                        .HasColumnType("int");
+
+                                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b2.Property<int>("Id"), 1L, 1);
 
                                     b2.Property<int>("IntColumn")
                                         .HasColumnType("int");
@@ -790,7 +827,7 @@ namespace Thinktecture.Migrations
 
                                     b2.HasKey("OwnedEntity_Owns_SeparateManyTestEntity_Owns_SeparateMany_SeparateManyId", "OwnedEntity_Owns_SeparateManyId", "Id");
 
-                                    b2.ToTable("SeparateEntitiesMany_SeparateEntitiesMany_Inner");
+                                    b2.ToTable("SeparateEntitiesMany_SeparateEntitiesMany_Inner", (string)null);
 
                                     b2.WithOwner()
                                         .HasForeignKey("OwnedEntity_Owns_SeparateManyTestEntity_Owns_SeparateMany_SeparateManyId", "OwnedEntity_Owns_SeparateManyId");
@@ -811,8 +848,9 @@ namespace Thinktecture.Migrations
 
                             b1.Property<int>("Id")
                                 .ValueGeneratedOnAdd()
-                                .HasColumnType("int")
-                                .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+                                .HasColumnType("int");
+
+                            SqlServerPropertyBuilderExtensions.UseIdentityColumn(b1.Property<int>("Id"), 1L, 1);
 
                             b1.Property<int>("IntColumn")
                                 .HasColumnType("int");
@@ -822,7 +860,7 @@ namespace Thinktecture.Migrations
 
                             b1.HasKey("TestEntity_Owns_SeparateMany_SeparateOneId", "Id");
 
-                            b1.ToTable("SeparateEntitiesMany_SeparateEntitiesOne");
+                            b1.ToTable("SeparateEntitiesMany_SeparateEntitiesOne", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("TestEntity_Owns_SeparateMany_SeparateOneId");
@@ -843,7 +881,7 @@ namespace Thinktecture.Migrations
 
                                     b2.HasKey("OwnedEntity_Owns_SeparateOneTestEntity_Owns_SeparateMany_SeparateOneId", "OwnedEntity_Owns_SeparateOneId");
 
-                                    b2.ToTable("SeparateEntitiesMany_SeparateEntitiesOne_Inner");
+                                    b2.ToTable("SeparateEntitiesMany_SeparateEntitiesOne_Inner", (string)null);
 
                                     b2.WithOwner()
                                         .HasForeignKey("OwnedEntity_Owns_SeparateOneTestEntity_Owns_SeparateMany_SeparateOneId", "OwnedEntity_Owns_SeparateOneId");
@@ -871,7 +909,7 @@ namespace Thinktecture.Migrations
 
                             b1.HasKey("TestEntity_Owns_SeparateOneId");
 
-                            b1.ToTable("SeparateEntitiesOne");
+                            b1.ToTable("SeparateEntitiesOne", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("TestEntity_Owns_SeparateOneId");
@@ -896,7 +934,7 @@ namespace Thinktecture.Migrations
 
                             b1.HasKey("TestEntity_Owns_SeparateOne_InlineId");
 
-                            b1.ToTable("SeparateEntitiesOne_Inline");
+                            b1.ToTable("SeparateEntitiesOne_Inline", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("TestEntity_Owns_SeparateOne_InlineId");
@@ -943,7 +981,7 @@ namespace Thinktecture.Migrations
 
                             b1.HasKey("TestEntity_Owns_SeparateOne_SeparateManyId");
 
-                            b1.ToTable("SeparateEntitiesOne_SeparateMany");
+                            b1.ToTable("SeparateEntitiesOne_SeparateMany", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("TestEntity_Owns_SeparateOne_SeparateManyId");
@@ -955,8 +993,9 @@ namespace Thinktecture.Migrations
 
                                     b2.Property<int>("Id")
                                         .ValueGeneratedOnAdd()
-                                        .HasColumnType("int")
-                                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+                                        .HasColumnType("int");
+
+                                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b2.Property<int>("Id"), 1L, 1);
 
                                     b2.Property<int>("IntColumn")
                                         .HasColumnType("int");
@@ -966,7 +1005,7 @@ namespace Thinktecture.Migrations
 
                                     b2.HasKey("OwnedEntity_Owns_SeparateManyTestEntity_Owns_SeparateOne_SeparateManyId", "Id");
 
-                                    b2.ToTable("SeparateEntitiesOne_SeparateMany_Inner");
+                                    b2.ToTable("SeparateEntitiesOne_SeparateMany_Inner", (string)null);
 
                                     b2.WithOwner()
                                         .HasForeignKey("OwnedEntity_Owns_SeparateManyTestEntity_Owns_SeparateOne_SeparateManyId");
@@ -994,7 +1033,7 @@ namespace Thinktecture.Migrations
 
                             b1.HasKey("TestEntity_Owns_SeparateOne_SeparateOneId");
 
-                            b1.ToTable("SeparateEntitiesOne_SeparateOne");
+                            b1.ToTable("SeparateEntitiesOne_SeparateOne", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("TestEntity_Owns_SeparateOne_SeparateOneId");
@@ -1012,7 +1051,7 @@ namespace Thinktecture.Migrations
 
                                     b2.HasKey("OwnedEntity_Owns_SeparateOneTestEntity_Owns_SeparateOne_SeparateOneId");
 
-                                    b2.ToTable("SeparateEntitiesOne_SeparateOne_Inner");
+                                    b2.ToTable("SeparateEntitiesOne_SeparateOne_Inner", (string)null);
 
                                     b2.WithOwner()
                                         .HasForeignKey("OwnedEntity_Owns_SeparateOneTestEntity_Owns_SeparateOne_SeparateOneId");

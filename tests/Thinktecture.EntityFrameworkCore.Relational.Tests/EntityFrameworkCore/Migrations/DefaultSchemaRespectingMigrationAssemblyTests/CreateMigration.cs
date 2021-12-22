@@ -113,7 +113,7 @@ public class CreateMigration : DefaultSchemaRespectingMigrationAssemblyTestsBase
       migration.DownOperations[0].Should().BeOfType<DropColumnOperation>().Subject.Schema.Should().BeNull();
    }
 
-   private void VerifySchema(Migration migration, string? schema)
+   private void VerifySchema(Migration migration, string schema)
    {
       SchemaSetterMock.Verify(s => s.SetSchema(migration.UpOperations, schema), Times.Once);
       SchemaSetterMock.Verify(s => s.SetSchema(migration.DownOperations, schema), Times.Once);

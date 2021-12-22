@@ -17,7 +17,9 @@ public class SetSchema
          if (_operations == null)
          {
             _operations = _builder.Operations;
-            new MigrationOperationSchemaSetter().SetSchema(_operations, _schema?.Schema);
+
+            if (_schema?.Schema is not null)
+               new MigrationOperationSchemaSetter().SetSchema(_operations, _schema.Schema);
          }
 
          return _operations;

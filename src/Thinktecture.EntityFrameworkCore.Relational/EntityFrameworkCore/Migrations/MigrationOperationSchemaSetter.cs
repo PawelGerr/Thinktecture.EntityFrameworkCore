@@ -5,12 +5,13 @@ namespace Thinktecture.EntityFrameworkCore.Migrations;
 /// <summary>
 /// Applies the schema to operations.
 /// </summary>
-public sealed class MigrationOperationSchemaSetter : IMigrationOperationSchemaSetter
+public class MigrationOperationSchemaSetter : IMigrationOperationSchemaSetter
 {
    /// <inheritdoc />
-   public void SetSchema(IReadOnlyList<MigrationOperation> operations, string? schema)
+   public void SetSchema(IReadOnlyList<MigrationOperation> operations, string schema)
    {
       ArgumentNullException.ThrowIfNull(operations);
+      ArgumentNullException.ThrowIfNull(schema);
 
       foreach (var operation in operations)
       {
@@ -18,7 +19,7 @@ public sealed class MigrationOperationSchemaSetter : IMigrationOperationSchemaSe
       }
    }
 
-   private static void SetSchema(MigrationOperation operation, string? schema)
+   private void SetSchema(MigrationOperation operation, string schema)
    {
       ArgumentNullException.ThrowIfNull(operation);
 
@@ -41,7 +42,12 @@ public sealed class MigrationOperationSchemaSetter : IMigrationOperationSchemaSe
       }
    }
 
-   private static void SetSchema(CreateTableOperation op, string? schema)
+   /// <summary>
+   /// Sets the schema.
+   /// </summary>
+   /// <param name="op">Migration operation.</param>
+   /// <param name="schema">Schema.</param>
+   protected virtual void SetSchema(CreateTableOperation op, string schema)
    {
       ArgumentNullException.ThrowIfNull(op);
 
@@ -66,7 +72,7 @@ public sealed class MigrationOperationSchemaSetter : IMigrationOperationSchemaSe
       }
    }
 
-   private static void SetSchema(RenameTableOperation op, string? schema)
+   private static void SetSchema(RenameTableOperation op, string schema)
    {
       ArgumentNullException.ThrowIfNull(op);
 
@@ -77,7 +83,7 @@ public sealed class MigrationOperationSchemaSetter : IMigrationOperationSchemaSe
          op.NewSchema = schema;
    }
 
-   private static void SetSchema(AddForeignKeyOperation op, string? schema)
+   private static void SetSchema(AddForeignKeyOperation op, string schema)
    {
       ArgumentNullException.ThrowIfNull(op);
 
@@ -88,7 +94,7 @@ public sealed class MigrationOperationSchemaSetter : IMigrationOperationSchemaSe
          op.PrincipalSchema = schema;
    }
 
-   private static void SetSchema(MigrationOperation operation, Type opType, string propertyName, string? schema)
+   private static void SetSchema(MigrationOperation operation, Type opType, string propertyName, string schema)
    {
       var propInfo = opType.GetProperty(propertyName);
 

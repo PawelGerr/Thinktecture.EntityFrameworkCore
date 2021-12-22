@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
@@ -63,8 +62,11 @@ public sealed class DefaultSchemaRespectingMigrationAssembly<TMigrationsAssembly
       {
          var migration = hasCtorWithDefaultSchema ? CreateInstance(migrationClass, schema, activeProvider) : CreateInstance(migrationClass, activeProvider);
 
-         SetSchema(migration.UpOperations, schema);
-         SetSchema(migration.DownOperations, schema);
+         if (schema.Schema is not null)
+         {
+            _schemaSetter.SetSchema(migration.UpOperations, schema.Schema);
+            _schemaSetter.SetSchema(migration.DownOperations, schema.Schema);
+         }
 
          return migration;
       }
@@ -89,11 +91,5 @@ public sealed class DefaultSchemaRespectingMigrationAssembly<TMigrationsAssembly
       migration.ActiveProvider = activeProvider;
 
       return migration;
-   }
-
-   private void SetSchema(IReadOnlyList<MigrationOperation> operations, [AllowNull] IDbDefaultSchema schema)
-   {
-      if (schema?.Schema != null)
-         _schemaSetter.SetSchema(operations, schema.Schema);
    }
 }

@@ -12,5 +12,5 @@ public interface IMigrationOperationSchemaSetter
    /// </summary>
    /// <param name="operations">Operations to apply the schema to.</param>
    /// <param name="schema">Database schema.</param>
-   void SetSchema(IReadOnlyList<MigrationOperation> operations, string? schema);
+   void SetSchema(IReadOnlyList<MigrationOperation> operations, string schema);
 }

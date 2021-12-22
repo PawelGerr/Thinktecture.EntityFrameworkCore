@@ -137,6 +137,9 @@ public sealed class SqlServerDbContextOptionsExtension : DbContextOptionsExtensi
 
       if (UseThinktectureSqlServerMigrationsSqlGenerator)
          AddWithCheck<IMigrationsSqlGenerator, ThinktectureSqlServerMigrationsSqlGenerator, SqlServerMigrationsSqlGenerator>(services);
+
+      if (_relationalOptions.AddSchemaRespectingComponents)
+         services.AddSingleton<IMigrationOperationSchemaSetter, SqlServerMigrationOperationSchemaSetter>();
    }
 
    /// <summary>
