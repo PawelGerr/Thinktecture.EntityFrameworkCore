@@ -22,7 +22,7 @@ public class ThinktectureSqlServerParameterBasedSqlProcessor : SqlServerParamete
       ArgumentNullException.ThrowIfNull(selectExpression);
       ArgumentNullException.ThrowIfNull(parametersValues);
 
-      return new ThinktectureSqlNullabilityProcessor(Dependencies, UseRelationalNulls).Process(selectExpression, parametersValues, out canCache);
+      return new ThinktectureSqlServerSqlNullabilityProcessor(Dependencies, UseRelationalNulls).Process(selectExpression, parametersValues, out canCache);
    }
 
    /// <inheritdoc />
