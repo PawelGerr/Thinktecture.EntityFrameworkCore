@@ -273,4 +273,68 @@ public class RowNumber : IntegrationTestsBase
       result.Should().HaveCount(1);
       result[0].Name.Should().Be("1");
    }
+
+   [Fact]
+   public void Should_support_columns_with_converters()
+   {
+      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("4883F7E0-FC8C-45FF-A579-DF351A3E79BF"), Name = "1", ConvertibleClass = new ConvertibleClass(1) });
+      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("18C13F68-0981-4853-92FC-FB7B2551F70A"), Name = "1", ConvertibleClass = new ConvertibleClass(2) });
+      ArrangeDbContext.SaveChanges();
+
+      var result = ActDbContext.TestEntities
+                               .Select(e => new
+                                            {
+                                               e.ConvertibleClass,
+                                               RowNumber = EF.Functions.RowNumber(e.Name,
+                                                                                  EF.Functions.OrderBy(e.Name).ThenBy(e.ConvertibleClass))
+                                            })
+                               .ToList();
+
+      result.Should().HaveCount(2);
+      result.Select(e => e.ConvertibleClass?.Key).Should().BeEquivalentTo(new[] { 1, 2 });
+   }
+
+   [Fact]
+   public void Should_support_conversion_to_underlying_column_type()
+   {
+      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("4883F7E0-FC8C-45FF-A579-DF351A3E79BF"), Name = "1", ConvertibleClass = new ConvertibleClass(1) });
+      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("18C13F68-0981-4853-92FC-FB7B2551F70A"), Name = "1", ConvertibleClass = new ConvertibleClass(2) });
+      ArrangeDbContext.SaveChanges();
+
+      var result = ActDbContext.TestEntities
+                               .Select(e => new
+                                            {
+                                               ConvertibleClass = (int)e.ConvertibleClass!,
+#pragma warning disable CS8604
+                                               RowNumber = EF.Functions.RowNumber(e.Name, (int)e.ConvertibleClass, (int)e.Count,
+                                                                                  EF.Functions.OrderBy(e.Name).ThenBy((int)e.ConvertibleClass).ThenBy((int)e.Count))
+#pragma warning restore CS8604
+                                            })
+                               .ToList();
+
+      result.Should().HaveCount(2);
+      result.Select(e => e.ConvertibleClass).Should().AllBeOfType<int>().And.BeEquivalentTo(new[] { 1, 2 });
+   }
+
+   [Fact]
+   public void Should_support_conversion_if_column_type_is_convertable_on_database()
+   {
+      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("4883F7E0-FC8C-45FF-A579-DF351A3E79BF"), Name = "1", ConvertibleClass = new ConvertibleClass(1) });
+      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("18C13F68-0981-4853-92FC-FB7B2551F70A"), Name = "1", ConvertibleClass = new ConvertibleClass(2) });
+      ArrangeDbContext.SaveChanges();
+
+      var result = ActDbContext.TestEntities
+                               .Select(e => new
+                                            {
+                                               ConvertibleClass = (long)e.ConvertibleClass!,
+#pragma warning disable CS8604
+                                               RowNumber = EF.Functions.RowNumber(e.Name, (long)e.ConvertibleClass, (long)e.Count,
+                                                                                  EF.Functions.OrderBy(e.Name).ThenBy((long)e.ConvertibleClass).ThenBy((long)e.Count))
+#pragma warning restore CS8604
+                                            })
+                               .ToList();
+
+      result.Should().HaveCount(2);
+      result.Select(e => e.ConvertibleClass).Should().AllBeOfType<long>().And.BeEquivalentTo(new long[] { 1, 2 });
+   }
 }

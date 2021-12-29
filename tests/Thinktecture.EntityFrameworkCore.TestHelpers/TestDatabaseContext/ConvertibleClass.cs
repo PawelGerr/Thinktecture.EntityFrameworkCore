@@ -8,4 +8,9 @@ public class ConvertibleClass
    {
       Key = key;
    }
+
+   public static implicit operator int(ConvertibleClass convertibleClass)
+   {
+      return convertibleClass.Key;
+   }
 }
