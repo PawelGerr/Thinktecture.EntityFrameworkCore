@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore.Query;
-using Microsoft.EntityFrameworkCore.Storage;
 using Thinktecture.EntityFrameworkCore.Infrastructure;
 
 namespace Thinktecture.EntityFrameworkCore.Query.ExpressionTranslators;
@@ -15,14 +14,14 @@ public sealed class RelationalMethodCallTranslatorPlugin : IMethodCallTranslator
    /// <summary>
    /// Initializes new instance of <see cref="RelationalMethodCallTranslatorPlugin"/>.
    /// </summary>
-   public RelationalMethodCallTranslatorPlugin(RelationalDbContextOptionsExtension extension, IRelationalTypeMappingSource typeMappingSource)
+   public RelationalMethodCallTranslatorPlugin(RelationalDbContextOptionsExtension extension, ISqlExpressionFactory sqlExpressionFactory)
    {
       ArgumentNullException.ThrowIfNull(extension);
 
       var translators = new List<IMethodCallTranslator>();
 
       if (extension.AddRowNumberSupport)
-         translators.Add(new RowNumberTranslator(typeMappingSource));
+         translators.Add(new RowNumberTranslator(sqlExpressionFactory));
 
       Translators = translators;
    }

@@ -337,4 +337,26 @@ public class RowNumber : IntegrationTestsBase
       result.Should().HaveCount(2);
       result.Select(e => e.ConvertibleClass).Should().AllBeOfType<long>().And.BeEquivalentTo(new long[] { 1, 2 });
    }
+
+   [Fact]
+   public void Should_support_conversion_for_non_trivial_expressions()
+   {
+      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("4883F7E0-FC8C-45FF-A579-DF351A3E79BF"), Name = "1", ConvertibleClass = new ConvertibleClass(1) });
+      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("18C13F68-0981-4853-92FC-FB7B2551F70A"), Name = "1", ConvertibleClass = new ConvertibleClass(2) });
+      ArrangeDbContext.SaveChanges();
+
+      var result = ActDbContext.TestEntities
+                               .Select(e => new
+                                            {
+                                               ConvertibleClass = (long)e.ConvertibleClass!,
+#pragma warning disable CS8604
+                                               RowNumber = EF.Functions.RowNumber(e.Name, (long)e.ConvertibleClass + 1, (long)e.Count + 1,
+                                                                                  EF.Functions.OrderBy(e.Name).ThenBy((long)e.ConvertibleClass + 1).ThenBy((long)e.Count + 1))
+#pragma warning restore CS8604
+                                            })
+                               .ToList();
+
+      result.Should().HaveCount(2);
+      result.Select(e => e.ConvertibleClass).Should().AllBeOfType<long>().And.BeEquivalentTo(new long[] { 1, 2 });
+   }
 }
