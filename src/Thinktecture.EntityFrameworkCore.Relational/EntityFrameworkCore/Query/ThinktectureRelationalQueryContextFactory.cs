@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.Internal;
 using Thinktecture.EntityFrameworkCore.Infrastructure;
@@ -12,7 +13,7 @@ public class ThinktectureRelationalQueryContextFactory<TFactory> : IQueryContext
    private const string _TENANT_PARAM_PREFIX = "97B894F9-5CDA-4B43-B7AC-6BCCE58FC19E";
 
    private readonly TFactory _factory;
-   private readonly RelationalDbContextOptionsExtension _relationalOptions;
+   private readonly RelationalDbContextOptionsExtensionOptions _relationalOptions;
    private readonly ITenantDatabaseProviderFactory _tenantDatabaseProviderFactory;
 
    /// <summary>
@@ -23,7 +24,7 @@ public class ThinktectureRelationalQueryContextFactory<TFactory> : IQueryContext
    /// <param name="tenantDatabaseProviderFactory">Tenant provider.</param>
    public ThinktectureRelationalQueryContextFactory(
       TFactory factory,
-      RelationalDbContextOptionsExtension relationalOptions,
+      RelationalDbContextOptionsExtensionOptions relationalOptions,
       ITenantDatabaseProviderFactory tenantDatabaseProviderFactory)
    {
       _factory = factory ?? throw new ArgumentNullException(nameof(factory));
@@ -36,7 +37,7 @@ public class ThinktectureRelationalQueryContextFactory<TFactory> : IQueryContext
    {
       var ctx = _factory.Create();
 
-      if (_relationalOptions.AddTenantDatabaseSupport)
+      if (_relationalOptions.TenantDatabaseSupportEnabled)
          AddTenantParameter(ctx);
 
       return ctx;

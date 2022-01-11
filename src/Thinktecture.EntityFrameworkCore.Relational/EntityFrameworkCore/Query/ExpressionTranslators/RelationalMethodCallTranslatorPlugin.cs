@@ -14,13 +14,13 @@ public sealed class RelationalMethodCallTranslatorPlugin : IMethodCallTranslator
    /// <summary>
    /// Initializes new instance of <see cref="RelationalMethodCallTranslatorPlugin"/>.
    /// </summary>
-   public RelationalMethodCallTranslatorPlugin(RelationalDbContextOptionsExtension extension, ISqlExpressionFactory sqlExpressionFactory)
+   public RelationalMethodCallTranslatorPlugin(RelationalDbContextOptionsExtensionOptions options, ISqlExpressionFactory sqlExpressionFactory)
    {
-      ArgumentNullException.ThrowIfNull(extension);
+      ArgumentNullException.ThrowIfNull(options);
 
       var translators = new List<IMethodCallTranslator>();
 
-      if (extension.AddRowNumberSupport)
+      if (options.RowNumberSupportEnabled)
          translators.Add(new RowNumberTranslator(sqlExpressionFactory));
 
       Translators = translators;

@@ -87,8 +87,6 @@ public sealed class SqliteDbContextOptionsExtension : DbContextOptionsExtensionB
    [SuppressMessage("Usage", "EF1001", MessageId = "Internal EF Core API usage.")]
    public void ApplyServices(IServiceCollection services)
    {
-      services.TryAddSingleton(this);
-
       if (AddCustomQueryableMethodTranslatingExpressionVisitorFactory)
          AddWithCheck<IQueryableMethodTranslatingExpressionVisitorFactory, ThinktectureSqliteQueryableMethodTranslatingExpressionVisitorFactory, SqliteQueryableMethodTranslatingExpressionVisitorFactory>(services);
 

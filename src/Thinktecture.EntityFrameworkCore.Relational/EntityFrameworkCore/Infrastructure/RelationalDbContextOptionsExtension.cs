@@ -88,7 +88,9 @@ public sealed class RelationalDbContextOptionsExtension : DbContextOptionsExtens
    {
       ArgumentNullException.ThrowIfNull(services);
 
-      services.TryAddSingleton(this);
+      services.TryAddSingleton<RelationalDbContextOptionsExtensionOptions>();
+      services.AddSingleton<ISingletonOptions>(provider => provider.GetRequiredService<RelationalDbContextOptionsExtensionOptions>());
+
       services.TryAddSingleton<ITenantDatabaseProviderFactory>(DummyTenantDatabaseProviderFactory.Instance);
 
       services.TryAddSingleton<ObjectPoolProvider, DefaultObjectPoolProvider>();
