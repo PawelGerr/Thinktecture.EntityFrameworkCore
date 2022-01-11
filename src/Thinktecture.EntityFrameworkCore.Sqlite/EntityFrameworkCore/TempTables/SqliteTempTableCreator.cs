@@ -89,26 +89,28 @@ public sealed class SqliteTempTableCreator : ITempTableCreator
 
       var cachedStatement = _cache.GetOrAdd(new SqliteTempTableCreatorCacheKey(options, entityType), CreateCachedStatement);
 
-      return cachedStatement.GetSqlStatement(tableName);
+      return cachedStatement.GetSqlStatement(_sqlGenerationHelper, tableName);
    }
 
-   private CachedTempTableStatement CreateCachedStatement(SqliteTempTableCreatorCacheKey cacheKey)
+   private ICachedTempTableStatement CreateCachedStatement(SqliteTempTableCreatorCacheKey cacheKey)
    {
       var columnDefinitions = GetColumnsDefinitions(cacheKey);
 
       if (!cacheKey.TruncateTableIfExists)
       {
-         return new CachedTempTableStatement(name => $@"
-      CREATE TEMPORARY TABLE {_sqlGenerationHelper.DelimitIdentifier(name)}
+         return new CachedTempTableStatement<string>(columnDefinitions,
+                                                     static (sqlGenerationHelper, name, columnDefinitions) => $@"
+      CREATE TEMPORARY TABLE {sqlGenerationHelper.DelimitIdentifier(name)}
       (
 " + columnDefinitions + @"
       );");
       }
 
-      return new CachedTempTableStatement(name => $@"
-DROP TABLE IF EXISTS {_sqlGenerationHelper.DelimitIdentifier(name, "temp")};
+      return new CachedTempTableStatement<string>(columnDefinitions,
+                                                  static (sqlGenerationHelper, name, columnDefinitions) => $@"
+DROP TABLE IF EXISTS {sqlGenerationHelper.DelimitIdentifier(name, "temp")};
 
-CREATE TEMPORARY TABLE {_sqlGenerationHelper.DelimitIdentifier(name)}
+CREATE TEMPORARY TABLE {sqlGenerationHelper.DelimitIdentifier(name)}
 (
 " + columnDefinitions + @"
 );");

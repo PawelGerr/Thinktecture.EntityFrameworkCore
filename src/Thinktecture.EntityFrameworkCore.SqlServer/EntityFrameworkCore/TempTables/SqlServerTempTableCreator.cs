@@ -134,12 +134,12 @@ public sealed class SqlServerTempTableCreator : ISqlServerTempTableCreator
          return;
 
       var cachedStatement = _primaryKeyCache.GetOrAdd(new SqlServerTempTablePrimaryKeyCacheKey(keyProperties, checkForExistence), CreatePrimaryKeyStatement);
-      var sql = cachedStatement.GetSqlStatement(tableName);
+      var sql = cachedStatement.GetSqlStatement(_sqlGenerationHelper, tableName);
 
       await ctx.Database.ExecuteSqlRawAsync(sql, cancellationToken).ConfigureAwait(false);
    }
 
-   private CachedTempTableStatement CreatePrimaryKeyStatement(SqlServerTempTablePrimaryKeyCacheKey cacheKey)
+   private ICachedTempTableStatement CreatePrimaryKeyStatement(SqlServerTempTablePrimaryKeyCacheKey cacheKey)
    {
       var columnNames = cacheKey.KeyProperties.Select(p =>
                                                       {
@@ -151,18 +151,18 @@ public sealed class SqlServerTempTableCreator : ISqlServerTempTableCreator
 
       if (cacheKey.CheckForExistence)
       {
-         return new CachedTempTableStatement(name => $@"
+         return new CachedTempTableStatement<string>(commaSeparatedColumns, static (sqlGenerationHelper, name, commaSeparatedColumns) => $@"
 IF(NOT EXISTS (SELECT * FROM tempdb.INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE CONSTRAINT_TYPE = 'PRIMARY KEY' AND OBJECT_ID(TABLE_CATALOG + '..' + TABLE_NAME) = OBJECT_ID('tempdb..{name}')))
 BEGIN
-   ALTER TABLE {_sqlGenerationHelper.DelimitIdentifier(name)}
-   ADD CONSTRAINT {_sqlGenerationHelper.DelimitIdentifier($"PK_{name}_{Guid.NewGuid():N}")} PRIMARY KEY CLUSTERED ({commaSeparatedColumns});
+   ALTER TABLE {sqlGenerationHelper.DelimitIdentifier(name)}
+   ADD CONSTRAINT {sqlGenerationHelper.DelimitIdentifier($"PK_{name}_{Guid.NewGuid():N}")} PRIMARY KEY CLUSTERED ({commaSeparatedColumns});
 END
 ");
       }
 
-      return new CachedTempTableStatement(name => $@"
-ALTER TABLE {_sqlGenerationHelper.DelimitIdentifier(name)}
-ADD CONSTRAINT {_sqlGenerationHelper.DelimitIdentifier($"PK_{name}_{Guid.NewGuid():N}")} PRIMARY KEY CLUSTERED ({commaSeparatedColumns});
+      return new CachedTempTableStatement<string>(commaSeparatedColumns, static (sqlGenerationHelper, name, commaSeparatedColumns) => $@"
+ALTER TABLE {sqlGenerationHelper.DelimitIdentifier(name)}
+ADD CONSTRAINT {sqlGenerationHelper.DelimitIdentifier($"PK_{name}_{Guid.NewGuid():N}")} PRIMARY KEY CLUSTERED ({commaSeparatedColumns});
 ");
    }
 
@@ -172,27 +172,29 @@ ADD CONSTRAINT {_sqlGenerationHelper.DelimitIdentifier($"PK_{name}_{Guid.NewGuid
 
       var cachedStatement = _tempTableCache.GetOrAdd(new SqlServerTempTableCreatorCacheKey(options, entityType), CreateCachedStatement);
 
-      return cachedStatement.GetSqlStatement(tableName);
+      return cachedStatement.GetSqlStatement(_sqlGenerationHelper, tableName);
    }
 
-   private CachedTempTableStatement CreateCachedStatement(SqlServerTempTableCreatorCacheKey cacheKey)
+   private ICachedTempTableStatement CreateCachedStatement(SqlServerTempTableCreatorCacheKey cacheKey)
    {
       var columnDefinitions = GetColumnsDefinitions(cacheKey);
 
       if (!cacheKey.TruncateTableIfExists)
       {
-         return new CachedTempTableStatement(name => $@"
-CREATE TABLE {_sqlGenerationHelper.DelimitIdentifier(name)}
+         return new CachedTempTableStatement<string>(columnDefinitions,
+                                                     static (sqlGenerationHelper, name, columnDefinitions) => $@"
+CREATE TABLE {sqlGenerationHelper.DelimitIdentifier(name)}
 (
 {columnDefinitions}
 );");
       }
 
-      return new CachedTempTableStatement(name =>
-                                          {
-                                             var escapedTableName = _sqlGenerationHelper.DelimitIdentifier(name);
+      return new CachedTempTableStatement<string>(columnDefinitions,
+                                                  static (sqlGenerationHelper, name, columnDefinitions) =>
+                                                  {
+                                                     var escapedTableName = sqlGenerationHelper.DelimitIdentifier(name);
 
-                                             return $@"
+                                                     return $@"
 IF(OBJECT_ID('tempdb..{name}') IS NOT NULL)
    TRUNCATE TABLE {escapedTableName};
 ELSE
@@ -203,7 +205,7 @@ CREATE TABLE {escapedTableName}
 );
 END
 ";
-                                          });
+                                                  });
    }
 
    private string GetColumnsDefinitions(SqlServerTempTableCreatorCacheKey options)

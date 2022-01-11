@@ -1,28 +1,29 @@
+using Microsoft.EntityFrameworkCore.Storage;
+
 namespace Thinktecture.EntityFrameworkCore.TempTables;
 
 /// <summary>
 /// Cached SQL statement for creation of temp tables.
 /// </summary>
-public readonly struct CachedTempTableStatement
+public class CachedTempTableStatement<T> : ICachedTempTableStatement
 {
-   private readonly Func<string, string> _statementProvider;
+   private readonly Func<ISqlGenerationHelper, string, T, string> _statementProvider;
+   private readonly T _parameter;
 
    /// <summary>
-   /// Initializes new instance of <see cref="CachedTempTableStatement"/>.
+   /// Initializes new instance of <see cref="CachedTempTableStatement{T}"/>
    /// </summary>
-   /// <param name="statementProvider">Delegate for getting a SQL statement for provided table name.</param>
-   public CachedTempTableStatement(Func<string, string> statementProvider)
+   /// <param name="parameter"></param>
+   /// <param name="statementProvider"></param>
+   public CachedTempTableStatement(T parameter, Func<ISqlGenerationHelper, string, T, string> statementProvider)
    {
-      _statementProvider = statementProvider ?? throw new ArgumentNullException(nameof(statementProvider));
+      _statementProvider = statementProvider;
+      _parameter = parameter;
    }
 
-   /// <summary>
-   /// Get a SQL statement for provided <paramref name="tableName"/>.
-   /// </summary>
-   /// <param name="tableName">The name of the temp table.</param>
-   /// <returns>SQL statement for creation of a temp table.</returns>
-   public string GetSqlStatement(string tableName)
+   /// <inheritdoc />
+   public string GetSqlStatement(ISqlGenerationHelper sqlGenerationHelper, string tableName)
    {
-      return _statementProvider(tableName);
+      return _statementProvider(sqlGenerationHelper, tableName, _parameter);
    }
 }
