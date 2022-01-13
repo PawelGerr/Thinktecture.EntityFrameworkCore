@@ -3,62 +3,51 @@ using Thinktecture.EntityFrameworkCore.Data;
 
 namespace Thinktecture.EntityFrameworkCore.BulkOperations;
 
-internal class CompositeTempTableEntityPropertiesProvider : IEntityPropertiesProvider
+internal abstract class CompositeTempTableEntityPropertiesProvider : IEntityPropertiesProvider
 {
-   private readonly IEntityPropertiesProvider? _propertiesToInsert;
-   private readonly IEntityPropertiesProvider? _propertiesToUpdate;
    private readonly IEntityPropertiesProvider? _keyPropertiesProvider;
 
-   public CompositeTempTableEntityPropertiesProvider(
-      IEntityPropertiesProvider? propertiesToInsert,
-      IEntityPropertiesProvider? propertiesToUpdate,
-      IEntityPropertiesProvider? keyPropertiesProvider)
+   protected CompositeTempTableEntityPropertiesProvider(IEntityPropertiesProvider? keyPropertiesProvider)
    {
-      _propertiesToInsert = propertiesToInsert;
-      _propertiesToUpdate = propertiesToUpdate;
       _keyPropertiesProvider = keyPropertiesProvider;
    }
 
-   /// <inheritdoc />
-   public IReadOnlyList<PropertyWithNavigations> GetPropertiesForTempTable(
-      IEntityType entityType,
-      bool? inlinedOwnTypes,
-      Func<IProperty, IReadOnlyList<INavigation>, bool> filter)
+   public static IEntityPropertiesProvider CreateForInsertOrUpdate(
+      IEntityPropertiesProvider propertiesToInsert,
+      IEntityPropertiesProvider propertiesToUpdate,
+      IEntityPropertiesProvider? keyPropertiesProvider)
    {
-      return GetProperties(entityType, inlinedOwnTypes,
-                           _propertiesToInsert.DeterminePropertiesForTempTable(entityType, inlinedOwnTypes),
-                           _propertiesToUpdate.DeterminePropertiesForTempTable(entityType, inlinedOwnTypes));
+      return new PropertiesProviderForInsertOrUpdate(propertiesToInsert, propertiesToUpdate, keyPropertiesProvider);
    }
 
-   /// <inheritdoc />
+   public static IEntityPropertiesProvider CreateForUpdate(
+      IEntityPropertiesProvider propertiesToUpdate,
+      IEntityPropertiesProvider? keyPropertiesProvider)
+   {
+      return new PropertiesProviderForUpdate(propertiesToUpdate, keyPropertiesProvider);
+   }
+
+   public abstract IReadOnlyList<PropertyWithNavigations> GetPropertiesForTempTable(
+      IEntityType entityType,
+      bool? inlinedOwnTypes,
+      Func<IProperty, IReadOnlyList<INavigation>, bool> filter);
+
+   public abstract IReadOnlyList<PropertyWithNavigations> GetPropertiesForInsert(
+      IEntityType entityType,
+      bool? inlinedOwnTypes,
+      Func<IProperty, IReadOnlyList<INavigation>, bool> filter);
+
+   public abstract IReadOnlyList<PropertyWithNavigations> GetPropertiesForUpdate(
+      IEntityType entityType,
+      bool? inlinedOwnTypes,
+      Func<IProperty, IReadOnlyList<INavigation>, bool> filter);
+
    public IReadOnlyList<PropertyWithNavigations> GetKeyProperties(
       IEntityType entityType,
       bool? inlinedOwnTypes,
       Func<IProperty, IReadOnlyList<INavigation>, bool> filter)
    {
       return _keyPropertiesProvider.DetermineKeyProperties(entityType, inlinedOwnTypes);
-   }
-
-   /// <inheritdoc />
-   public IReadOnlyList<PropertyWithNavigations> GetPropertiesForInsert(
-      IEntityType entityType,
-      bool? inlinedOwnTypes,
-      Func<IProperty, IReadOnlyList<INavigation>, bool> filter)
-   {
-      return GetProperties(entityType, inlinedOwnTypes,
-                           _propertiesToInsert.DeterminePropertiesForInsert(entityType, inlinedOwnTypes),
-                           _propertiesToUpdate.DeterminePropertiesForInsert(entityType, inlinedOwnTypes));
-   }
-
-   /// <inheritdoc />
-   public IReadOnlyList<PropertyWithNavigations> GetPropertiesForUpdate(
-      IEntityType entityType,
-      bool? inlinedOwnTypes,
-      Func<IProperty, IReadOnlyList<INavigation>, bool> filter)
-   {
-      return GetProperties(entityType, inlinedOwnTypes,
-                           _propertiesToInsert.DeterminePropertiesForUpdate(entityType, inlinedOwnTypes),
-                           _propertiesToUpdate.DeterminePropertiesForUpdate(entityType, inlinedOwnTypes));
    }
 
    private IReadOnlyList<PropertyWithNavigations> GetProperties(
@@ -71,5 +60,94 @@ internal class CompositeTempTableEntityPropertiesProvider : IEntityPropertiesPro
                                    .Union(propertiesToInsert)
                                    .Union(propertiesToUpdate)
                                    .ToList();
+   }
+
+   private class PropertiesProviderForInsertOrUpdate : CompositeTempTableEntityPropertiesProvider
+   {
+      private readonly IEntityPropertiesProvider _propertiesToInsert;
+      private readonly IEntityPropertiesProvider _propertiesToUpdate;
+
+      public PropertiesProviderForInsertOrUpdate(
+         IEntityPropertiesProvider propertiesToInsert,
+         IEntityPropertiesProvider propertiesToUpdate,
+         IEntityPropertiesProvider? keyPropertiesProvider)
+         : base(keyPropertiesProvider)
+      {
+         _propertiesToInsert = propertiesToInsert;
+         _propertiesToUpdate = propertiesToUpdate;
+      }
+
+      public override IReadOnlyList<PropertyWithNavigations> GetPropertiesForTempTable(
+         IEntityType entityType,
+         bool? inlinedOwnTypes,
+         Func<IProperty, IReadOnlyList<INavigation>, bool> filter)
+      {
+         return GetProperties(entityType, inlinedOwnTypes,
+                              _propertiesToInsert.DeterminePropertiesForTempTable(entityType, inlinedOwnTypes),
+                              _propertiesToUpdate.DeterminePropertiesForTempTable(entityType, inlinedOwnTypes));
+      }
+
+      public override IReadOnlyList<PropertyWithNavigations> GetPropertiesForInsert(
+         IEntityType entityType,
+         bool? inlinedOwnTypes,
+         Func<IProperty, IReadOnlyList<INavigation>, bool> filter)
+      {
+         return GetProperties(entityType, inlinedOwnTypes,
+                              _propertiesToInsert.DeterminePropertiesForInsert(entityType, inlinedOwnTypes),
+                              _propertiesToUpdate.DeterminePropertiesForInsert(entityType, inlinedOwnTypes));
+      }
+
+      public override IReadOnlyList<PropertyWithNavigations> GetPropertiesForUpdate(
+         IEntityType entityType,
+         bool? inlinedOwnTypes,
+         Func<IProperty, IReadOnlyList<INavigation>, bool> filter)
+      {
+         return GetProperties(entityType, inlinedOwnTypes,
+                              _propertiesToInsert.DeterminePropertiesForUpdate(entityType, inlinedOwnTypes),
+                              _propertiesToUpdate.DeterminePropertiesForUpdate(entityType, inlinedOwnTypes));
+      }
+   }
+
+   private class PropertiesProviderForUpdate : CompositeTempTableEntityPropertiesProvider
+   {
+      private readonly IEntityPropertiesProvider _propertiesToUpdate;
+
+      public PropertiesProviderForUpdate(
+         IEntityPropertiesProvider propertiesToUpdate,
+         IEntityPropertiesProvider? keyPropertiesProvider)
+         : base(keyPropertiesProvider)
+      {
+         _propertiesToUpdate = propertiesToUpdate;
+      }
+
+      public override IReadOnlyList<PropertyWithNavigations> GetPropertiesForTempTable(
+         IEntityType entityType,
+         bool? inlinedOwnTypes,
+         Func<IProperty, IReadOnlyList<INavigation>, bool> filter)
+      {
+         return GetProperties(entityType, inlinedOwnTypes,
+                              Array.Empty<PropertyWithNavigations>(),
+                              _propertiesToUpdate.DeterminePropertiesForTempTable(entityType, inlinedOwnTypes));
+      }
+
+      public override IReadOnlyList<PropertyWithNavigations> GetPropertiesForInsert(
+         IEntityType entityType,
+         bool? inlinedOwnTypes,
+         Func<IProperty, IReadOnlyList<INavigation>, bool> filter)
+      {
+         return GetProperties(entityType, inlinedOwnTypes,
+                              Array.Empty<PropertyWithNavigations>(),
+                              _propertiesToUpdate.DeterminePropertiesForInsert(entityType, inlinedOwnTypes));
+      }
+
+      public override IReadOnlyList<PropertyWithNavigations> GetPropertiesForUpdate(
+         IEntityType entityType,
+         bool? inlinedOwnTypes,
+         Func<IProperty, IReadOnlyList<INavigation>, bool> filter)
+      {
+         return GetProperties(entityType, inlinedOwnTypes,
+                              Array.Empty<PropertyWithNavigations>(),
+                              _propertiesToUpdate.DeterminePropertiesForUpdate(entityType, inlinedOwnTypes));
+      }
    }
 }

@@ -48,7 +48,7 @@ public sealed class SqlServerBulkUpdateOptions : ISqlServerMergeOperationOptions
    {
       var options = new SqlServerTempTableBulkInsertOptions
                     {
-                       PropertiesToInsert = PropertiesToUpdate is null ? null : new CompositeTempTableEntityPropertiesProvider(null, PropertiesToUpdate, KeyProperties),
+                       PropertiesToInsert = PropertiesToUpdate is null ? null : CompositeTempTableEntityPropertiesProvider.CreateForUpdate(PropertiesToUpdate, KeyProperties),
                        Advanced = { UsePropertiesToInsertForTempTableCreation = true }
                     };
 

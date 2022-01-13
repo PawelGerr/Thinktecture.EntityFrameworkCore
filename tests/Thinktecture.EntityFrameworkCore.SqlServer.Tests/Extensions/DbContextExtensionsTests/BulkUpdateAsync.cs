@@ -245,4 +245,34 @@ public class BulkUpdateAsync : IntegrationTestsBase
                                            });
       loadedEntity.GetPrivateField().Should().Be(3);
    }
+
+   [Fact]
+   public async Task Should_update_entity_without_required_fields_if_excluded()
+   {
+      var entity = new TestEntity { Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"), RequiredName = "RequiredName" };
+      ArrangeDbContext.Add(entity);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      entity.Name = "Name";        // this would not be updated
+      entity.RequiredName = null!; // this would not be updated
+      entity.Count = 42;
+
+      var affectedRows = await ActDbContext.BulkUpdateAsync(new[] { entity },
+                                                            new SqlServerBulkUpdateOptions
+                                                            {
+                                                               PropertiesToUpdate = EntityPropertiesProvider.From<TestEntity>(e => e.Count)
+                                                            });
+
+      affectedRows.Should().Be(1);
+
+      var loadedEntities = await AssertDbContext.TestEntities.ToListAsync();
+      loadedEntities.Should().HaveCount(1);
+      var loadedEntity = loadedEntities[0];
+      loadedEntity.Should().BeEquivalentTo(new TestEntity
+                                           {
+                                              Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
+                                              Count = 42,
+                                              RequiredName = "RequiredName"
+                                           });
+   }
 }
