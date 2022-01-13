@@ -35,7 +35,7 @@ public class NestedTransactionTests : IntegrationTestsBase
    {
       using (var tx = SUT.BeginTransaction())
       {
-         ActDbContext.TestEntities.Add(new TestEntity());
+         ActDbContext.TestEntities.Add(new TestEntity { RequiredName = "RequiredName" });
          ActDbContext.SaveChanges();
 
          tx.Commit();
@@ -49,7 +49,7 @@ public class NestedTransactionTests : IntegrationTestsBase
    {
       using (var tx = SUT.BeginTransaction())
       {
-         ActDbContext.TestEntities.Add(new TestEntity());
+         ActDbContext.TestEntities.Add(new TestEntity { RequiredName = "RequiredName" });
          ActDbContext.SaveChanges();
 
          tx.Rollback();
@@ -64,7 +64,7 @@ public class NestedTransactionTests : IntegrationTestsBase
       // ReSharper disable once UnusedVariable
       using (var tx = SUT.BeginTransaction())
       {
-         ActDbContext.TestEntities.Add(new TestEntity());
+         ActDbContext.TestEntities.Add(new TestEntity { RequiredName = "RequiredName" });
          ActDbContext.SaveChanges();
       }
 
@@ -91,7 +91,7 @@ public class NestedTransactionTests : IntegrationTestsBase
       using (var tx = SUT.BeginTransaction())
       using (var child = SUT.BeginTransaction())
       {
-         ActDbContext.TestEntities.Add(new TestEntity());
+         ActDbContext.TestEntities.Add(new TestEntity { RequiredName = "RequiredName" });
          ActDbContext.SaveChanges();
 
          child.Commit();
@@ -107,7 +107,7 @@ public class NestedTransactionTests : IntegrationTestsBase
       using (var tx = SUT.BeginTransaction())
       using (var childTx = SUT.BeginTransaction())
       {
-         ActDbContext.TestEntities.Add(new TestEntity());
+         ActDbContext.TestEntities.Add(new TestEntity { RequiredName = "RequiredName" });
          ActDbContext.SaveChanges();
 
          childTx.Rollback();
@@ -123,7 +123,7 @@ public class NestedTransactionTests : IntegrationTestsBase
       using (var tx = SUT.BeginTransaction())
       using (var childTx = SUT.BeginTransaction())
       {
-         ActDbContext.TestEntities.Add(new TestEntity());
+         ActDbContext.TestEntities.Add(new TestEntity { RequiredName = "RequiredName" });
          ActDbContext.SaveChanges();
       }
 
@@ -136,17 +136,17 @@ public class NestedTransactionTests : IntegrationTestsBase
       using (var tx = SUT.BeginTransaction())
       using (var child = SUT.BeginTransaction())
       {
-         ActDbContext.TestEntities.Add(new TestEntity { Id = new Guid("7631FF3B-E5B1-485A-ABD5-386C6B37E991") });
+         ActDbContext.TestEntities.Add(new TestEntity { Id = new Guid("7631FF3B-E5B1-485A-ABD5-386C6B37E991"), RequiredName = "RequiredName" });
          ActDbContext.SaveChanges();
 
          child.Commit();
-         ActDbContext.TestEntities.Add(new TestEntity { Id = new Guid("7A4397B0-C9B6-46FF-B8C8-F39A9D6F5105") });
+         ActDbContext.TestEntities.Add(new TestEntity { Id = new Guid("7A4397B0-C9B6-46FF-B8C8-F39A9D6F5105"), RequiredName = "RequiredName" });
          ActDbContext.SaveChanges();
 
          tx.Rollback();
 
          // outside of the transaction
-         ActDbContext.TestEntities.Add(new TestEntity { Id = new Guid("CB682609-1503-4FBE-8A29-66E2DF8F00E5") });
+         ActDbContext.TestEntities.Add(new TestEntity { Id = new Guid("CB682609-1503-4FBE-8A29-66E2DF8F00E5"), RequiredName = "RequiredName" });
          ActDbContext.SaveChanges();
       }
 
@@ -169,7 +169,7 @@ public class NestedTransactionTests : IntegrationTestsBase
             child.Commit();
          }
 
-         ActDbContext.TestEntities.Add(new TestEntity());
+         ActDbContext.TestEntities.Add(new TestEntity { RequiredName = "RequiredName" });
          ActDbContext.SaveChanges();
 
          tx.Invoking(rootTx => rootTx.Commit())
@@ -186,7 +186,7 @@ public class NestedTransactionTests : IntegrationTestsBase
       {
          var child = SUT.BeginTransaction();
 
-         ActDbContext.TestEntities.Add(new TestEntity());
+         ActDbContext.TestEntities.Add(new TestEntity { RequiredName = "RequiredName" });
          ActDbContext.SaveChanges();
       }
 
@@ -202,7 +202,7 @@ public class NestedTransactionTests : IntegrationTestsBase
          var child = SUT.BeginTransaction();
          var otherChild = SUT.BeginTransaction();
 
-         ActDbContext.TestEntities.Add(new TestEntity());
+         ActDbContext.TestEntities.Add(new TestEntity { RequiredName = "RequiredName" });
          ActDbContext.SaveChanges();
 
          child.Dispose();

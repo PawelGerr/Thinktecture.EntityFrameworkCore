@@ -38,7 +38,7 @@ public class BulkInsertOrUpdateAsync : IntegrationTestsBase
    [Fact]
    public async Task Should_insert_column_with_converter()
    {
-      var existingEntity = new TestEntity { Id = new Guid("79DA4171-C90B-4A5D-B0B5-D0A1E1BDF966") };
+      var existingEntity = new TestEntity { Id = new Guid("79DA4171-C90B-4A5D-B0B5-D0A1E1BDF966"), RequiredName = "RequiredName" };
       ArrangeDbContext.Add(existingEntity);
       await ArrangeDbContext.SaveChangesAsync();
 
@@ -46,6 +46,7 @@ public class BulkInsertOrUpdateAsync : IntegrationTestsBase
       var newEntity = new TestEntity
                       {
                          Id = new Guid("3DAEA618-B732-4BCA-A5A1-D1E075022DEC"),
+                         RequiredName = "RequiredName",
                          ConvertibleClass = new ConvertibleClass(42)
                       };
 
@@ -56,8 +57,8 @@ public class BulkInsertOrUpdateAsync : IntegrationTestsBase
       var entities = AssertDbContext.TestEntities.ToList();
       entities.Should().BeEquivalentTo(new[]
                                        {
-                                          new TestEntity { Id = new Guid("79DA4171-C90B-4A5D-B0B5-D0A1E1BDF966"), ConvertibleClass = new ConvertibleClass(43) },
-                                          new TestEntity { Id = new Guid("3DAEA618-B732-4BCA-A5A1-D1E075022DEC"), ConvertibleClass = new ConvertibleClass(42) }
+                                          new TestEntity { Id = new Guid("79DA4171-C90B-4A5D-B0B5-D0A1E1BDF966"), RequiredName = "RequiredName", ConvertibleClass = new ConvertibleClass(43) },
+                                          new TestEntity { Id = new Guid("3DAEA618-B732-4BCA-A5A1-D1E075022DEC"), RequiredName = "RequiredName", ConvertibleClass = new ConvertibleClass(42) }
                                        });
    }
 
@@ -68,6 +69,7 @@ public class BulkInsertOrUpdateAsync : IntegrationTestsBase
                        {
                           Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
                           Name = "Name",
+                          RequiredName = "RequiredName",
                           Count = 42
                        };
 
@@ -80,6 +82,7 @@ public class BulkInsertOrUpdateAsync : IntegrationTestsBase
                                              {
                                                 Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
                                                 Name = "Name",
+                                                RequiredName = "RequiredName",
                                                 Count = 42
                                              });
    }
@@ -87,23 +90,23 @@ public class BulkInsertOrUpdateAsync : IntegrationTestsBase
    [Fact]
    public async Task Should_insert_private_property()
    {
-      var existingEntity = new TestEntity { Id = new Guid("7C200656-E633-4F93-9F73-C5C7628196DC") };
+      var existingEntity = new TestEntity { Id = new Guid("7C200656-E633-4F93-9F73-C5C7628196DC"), RequiredName = "RequiredName" };
       ArrangeDbContext.Add(existingEntity);
       await ArrangeDbContext.SaveChangesAsync();
 
       existingEntity.SetPrivateField(1);
 
-      var newEntity = new TestEntity { Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866") };
+      var newEntity = new TestEntity { Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"), RequiredName = "RequiredName" };
       newEntity.SetPrivateField(3);
 
       var affectedRows = await SUT.BulkInsertOrUpdateAsync(new[] { newEntity, existingEntity }, new SqliteBulkInsertOrUpdateOptions());
 
       affectedRows.Should().Be(2);
 
-      var expectedExistingEntity = new TestEntity { Id = new Guid("7C200656-E633-4F93-9F73-C5C7628196DC") };
+      var expectedExistingEntity = new TestEntity { Id = new Guid("7C200656-E633-4F93-9F73-C5C7628196DC"), RequiredName = "RequiredName" };
       expectedExistingEntity.SetPrivateField(1);
 
-      var expectedNewEntity = new TestEntity { Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866") };
+      var expectedNewEntity = new TestEntity { Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"), RequiredName = "RequiredName" };
       expectedNewEntity.SetPrivateField(3);
 
       var loadedEntities = await AssertDbContext.TestEntities.ToListAsync();
@@ -163,6 +166,7 @@ public class BulkInsertOrUpdateAsync : IntegrationTestsBase
                        {
                           Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
                           Name = "Name",
+                          RequiredName = "RequiredName",
                           Count = 42,
                           PropertyWithBackingField = 7
                        };
@@ -181,6 +185,7 @@ public class BulkInsertOrUpdateAsync : IntegrationTestsBase
       loadedEntity.Should().BeEquivalentTo(new TestEntity
                                            {
                                               Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
+                                              RequiredName = "RequiredName",
                                               Count = 42,
                                               PropertyWithBackingField = 7
                                            });
@@ -203,8 +208,8 @@ public class BulkInsertOrUpdateAsync : IntegrationTestsBase
    [Fact]
    public async Task Should_update_entities()
    {
-      var entity_1 = new TestEntity { Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866") };
-      var entity_2 = new TestEntity { Id = new Guid("8AF163D7-D316-4B2D-A62F-6326A80C8BEE") };
+      var entity_1 = new TestEntity { Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"), RequiredName = "RequiredName" };
+      var entity_2 = new TestEntity { Id = new Guid("8AF163D7-D316-4B2D-A62F-6326A80C8BEE"), RequiredName = "RequiredName" };
       ArrangeDbContext.AddRange(entity_1, entity_2);
       await ArrangeDbContext.SaveChangesAsync();
 
@@ -234,8 +239,8 @@ public class BulkInsertOrUpdateAsync : IntegrationTestsBase
    [Fact]
    public async Task Should_update_provided_entity_only()
    {
-      var entity_1 = new TestEntity { Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866") };
-      var entity_2 = new TestEntity { Id = new Guid("8AF163D7-D316-4B2D-A62F-6326A80C8BEE") };
+      var entity_1 = new TestEntity { Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"), RequiredName = "RequiredName" };
+      var entity_2 = new TestEntity { Id = new Guid("8AF163D7-D316-4B2D-A62F-6326A80C8BEE"), RequiredName = "RequiredName" };
       ArrangeDbContext.AddRange(entity_1, entity_2);
       await ArrangeDbContext.SaveChangesAsync();
 
@@ -292,7 +297,7 @@ public class BulkInsertOrUpdateAsync : IntegrationTestsBase
    [Fact]
    public async Task Should_update_specified_properties_only()
    {
-      var entity = new TestEntity { Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"), Name = "original value" };
+      var entity = new TestEntity { Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"), Name = "original value", RequiredName = "RequiredName" };
       ArrangeDbContext.Add(entity);
       await ArrangeDbContext.SaveChangesAsync();
 
@@ -317,7 +322,8 @@ public class BulkInsertOrUpdateAsync : IntegrationTestsBase
                                               Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
                                               Count = 42,
                                               PropertyWithBackingField = 7,
-                                              Name = "original value"
+                                              Name = "original value",
+                                              RequiredName = "RequiredName"
                                            });
       loadedEntity.GetPrivateField().Should().Be(3);
    }
@@ -329,6 +335,7 @@ public class BulkInsertOrUpdateAsync : IntegrationTestsBase
                            {
                               Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
                               Name = "Name",
+                              RequiredName = "RequiredName",
                               Count = 42
                            };
       ArrangeDbContext.Add(existingEntity);
@@ -338,6 +345,7 @@ public class BulkInsertOrUpdateAsync : IntegrationTestsBase
                       {
                          Id = new Guid("3AA6D70D-C619-4EB5-9819-8030506EA637"),
                          Name = "new",
+                         RequiredName = "RequiredName",
                          Count = 1
                       };
 
@@ -361,12 +369,14 @@ public class BulkInsertOrUpdateAsync : IntegrationTestsBase
                                                 {
                                                    Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
                                                    Name = "Name",
+                                                   RequiredName = "RequiredName",
                                                    Count = 42
                                                 },
                                                 new TestEntity
                                                 {
                                                    Id = new Guid("3AA6D70D-C619-4EB5-9819-8030506EA637"),
                                                    Name = null, // is not a required property
+                                                   RequiredName = "RequiredName",
                                                    Count = 1
                                                 }
                                              });
@@ -379,6 +389,7 @@ public class BulkInsertOrUpdateAsync : IntegrationTestsBase
                            {
                               Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
                               Name = "Name",
+                              RequiredName = "RequiredName",
                               Count = 42
                            };
       ArrangeDbContext.Add(existingEntity);
@@ -388,6 +399,7 @@ public class BulkInsertOrUpdateAsync : IntegrationTestsBase
                       {
                          Id = new Guid("3AA6D70D-C619-4EB5-9819-8030506EA637"),
                          Name = "new",
+                         RequiredName = "RequiredName",
                          Count = 1
                       };
 
@@ -411,12 +423,14 @@ public class BulkInsertOrUpdateAsync : IntegrationTestsBase
                                                 {
                                                    Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
                                                    Name = "Name",
+                                                   RequiredName = "RequiredName",
                                                    Count = 42
                                                 },
                                                 new TestEntity
                                                 {
                                                    Id = new Guid("3AA6D70D-C619-4EB5-9819-8030506EA637"),
                                                    Name = null, // is not a required property
+                                                   RequiredName = "RequiredName",
                                                    Count = 1
                                                 }
                                              });

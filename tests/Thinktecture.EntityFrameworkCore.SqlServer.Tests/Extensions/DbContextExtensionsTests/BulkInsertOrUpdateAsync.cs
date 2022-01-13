@@ -19,6 +19,7 @@ public class BulkInsertOrUpdateAsync : IntegrationTestsBase
                        {
                           Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
                           Name = "Name",
+                          RequiredName = "RequiredName",
                           Count = 42
                        };
 
@@ -33,6 +34,7 @@ public class BulkInsertOrUpdateAsync : IntegrationTestsBase
                                                 {
                                                    Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
                                                    Name = "Name",
+                                                   RequiredName = "RequiredName",
                                                    Count = 42
                                                 }
                                              });
@@ -45,6 +47,7 @@ public class BulkInsertOrUpdateAsync : IntegrationTestsBase
                        {
                           Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
                           Name = "Name",
+                          RequiredName = "RequiredName",
                           Count = 42
                        };
       ArrangeDbContext.Add(testEntity);
@@ -64,6 +67,7 @@ public class BulkInsertOrUpdateAsync : IntegrationTestsBase
                                                 {
                                                    Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
                                                    Name = "changed",
+                                                   RequiredName = "RequiredName",
                                                    Count = 43
                                                 }
                                              });
@@ -76,6 +80,7 @@ public class BulkInsertOrUpdateAsync : IntegrationTestsBase
                            {
                               Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
                               Name = "Name",
+                              RequiredName = "RequiredName",
                               Count = 42
                            };
       ArrangeDbContext.Add(existingEntity);
@@ -85,6 +90,7 @@ public class BulkInsertOrUpdateAsync : IntegrationTestsBase
                       {
                          Id = new Guid("3AA6D70D-C619-4EB5-9819-8030506EA637"),
                          Name = "new",
+                         RequiredName = "RequiredName",
                          Count = 1
                       };
 
@@ -108,12 +114,14 @@ public class BulkInsertOrUpdateAsync : IntegrationTestsBase
                                                 {
                                                    Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
                                                    Name = "changed",
+                                                   RequiredName = "RequiredName",
                                                    Count = 42
                                                 },
                                                 new TestEntity
                                                 {
                                                    Id = new Guid("3AA6D70D-C619-4EB5-9819-8030506EA637"),
                                                    Name = null, // is not a required property
+                                                   RequiredName = "RequiredName",
                                                    Count = 1
                                                 }
                                              });
@@ -126,12 +134,14 @@ public class BulkInsertOrUpdateAsync : IntegrationTestsBase
                      {
                         Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
                         Name = "Name", // matching criteria
+                        RequiredName = "RequiredName",
                         Count = 42
                      };
       var entity_2 = new TestEntity
                      {
                         Id = new Guid("3AA6D70D-C619-4EB5-9819-8030506EA637"),
                         Name = "other",
+                        RequiredName = "RequiredName",
                         Count = 1
                      };
       ArrangeDbContext.AddRange(entity_1, entity_2);
@@ -141,6 +151,7 @@ public class BulkInsertOrUpdateAsync : IntegrationTestsBase
                        {
                           Id = entity_2.Id,
                           Name = entity_1.Name, // matching criteria
+                          RequiredName = "RequiredName",
                           Count = 100
                        };
 
@@ -157,12 +168,14 @@ public class BulkInsertOrUpdateAsync : IntegrationTestsBase
                                                 {
                                                    Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
                                                    Name = "Name",
+                                                   RequiredName = "RequiredName",
                                                    Count = 100 // the only updated value
                                                 },
                                                 new TestEntity
                                                 {
                                                    Id = new Guid("3AA6D70D-C619-4EB5-9819-8030506EA637"),
                                                    Name = "other",
+                                                   RequiredName = "RequiredName",
                                                    Count = 1
                                                 }
                                              });
@@ -175,6 +188,7 @@ public class BulkInsertOrUpdateAsync : IntegrationTestsBase
                            {
                               Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
                               Name = "Name",
+                              RequiredName = "RequiredName",
                               Count = 42
                            };
       ArrangeDbContext.Add(existingEntity);
@@ -184,6 +198,7 @@ public class BulkInsertOrUpdateAsync : IntegrationTestsBase
                       {
                          Id = new Guid("3AA6D70D-C619-4EB5-9819-8030506EA637"),
                          Name = "new",
+                         RequiredName = "RequiredName",
                          Count = 1
                       };
 
@@ -207,12 +222,14 @@ public class BulkInsertOrUpdateAsync : IntegrationTestsBase
                                                 {
                                                    Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
                                                    Name = "Name",
+                                                   RequiredName = "RequiredName",
                                                    Count = 42
                                                 },
                                                 new TestEntity
                                                 {
                                                    Id = new Guid("3AA6D70D-C619-4EB5-9819-8030506EA637"),
                                                    Name = null, // is not a required property
+                                                   RequiredName = "RequiredName",
                                                    Count = 1
                                                 }
                                              });
@@ -225,6 +242,7 @@ public class BulkInsertOrUpdateAsync : IntegrationTestsBase
                            {
                               Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
                               Name = "Name",
+                              RequiredName = "RequiredName",
                               Count = 42
                            };
       ArrangeDbContext.Add(existingEntity);
@@ -234,6 +252,7 @@ public class BulkInsertOrUpdateAsync : IntegrationTestsBase
                       {
                          Id = new Guid("3AA6D70D-C619-4EB5-9819-8030506EA637"),
                          Name = "new",
+                         RequiredName = "RequiredName",
                          Count = 1
                       };
 
@@ -257,12 +276,14 @@ public class BulkInsertOrUpdateAsync : IntegrationTestsBase
                                                 {
                                                    Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
                                                    Name = "Name",
+                                                   RequiredName = "RequiredName",
                                                    Count = 42
                                                 },
                                                 new TestEntity
                                                 {
                                                    Id = new Guid("3AA6D70D-C619-4EB5-9819-8030506EA637"),
                                                    Name = null, // is not a required property
+                                                   RequiredName = "RequiredName",
                                                    Count = 1
                                                 }
                                              });

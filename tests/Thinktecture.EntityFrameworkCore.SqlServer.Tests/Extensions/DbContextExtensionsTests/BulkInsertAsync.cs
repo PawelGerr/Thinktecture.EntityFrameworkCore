@@ -19,6 +19,7 @@ public class BulkInsertAsync : IntegrationTestsBase
                        {
                           Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
                           Name = "Name",
+                          RequiredName = "RequiredName",
                           Count = 42
                        };
       var testEntities = new[] { testEntity };
@@ -32,6 +33,7 @@ public class BulkInsertAsync : IntegrationTestsBase
                                            {
                                               Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
                                               Name = "Name",
+                                              RequiredName = "RequiredName",
                                               Count = 42
                                            });
    }
@@ -43,6 +45,7 @@ public class BulkInsertAsync : IntegrationTestsBase
                        {
                           Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
                           Name = "Name",
+                          RequiredName = "RequiredName",
                           Count = 42
                        };
       var testEntities = new[] { testEntity };
@@ -58,6 +61,7 @@ public class BulkInsertAsync : IntegrationTestsBase
       loadedEntity.Should().BeEquivalentTo(new TestEntity
                                            {
                                               Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
+                                              RequiredName = "RequiredName",
                                               Count = 42
                                            });
    }

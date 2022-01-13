@@ -31,6 +31,7 @@ public class BulkInsertAsync : IntegrationTestsBase
                        {
                           Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
                           Name = "Name",
+                          RequiredName = "RequiredName",
                           Count = 42
                        };
 
@@ -45,6 +46,7 @@ public class BulkInsertAsync : IntegrationTestsBase
                                              {
                                                 Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
                                                 Name = "Name",
+                                                RequiredName = "RequiredName",
                                                 Count = 42
                                              });
    }
@@ -52,7 +54,7 @@ public class BulkInsertAsync : IntegrationTestsBase
    [Fact]
    public async Task Should_insert_private_property()
    {
-      var testEntity = new TestEntity { Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866") };
+      var testEntity = new TestEntity { Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"), RequiredName = "RequiredName" };
       testEntity.SetPrivateField(3);
 
       var testEntities = new[] { testEntity };
@@ -205,6 +207,7 @@ public class BulkInsertAsync : IntegrationTestsBase
                        {
                           Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
                           Name = "Name",
+                          RequiredName = "RequiredName",
                           Count = 42,
                           PropertyWithBackingField = 7
                        };
@@ -223,6 +226,7 @@ public class BulkInsertAsync : IntegrationTestsBase
       loadedEntity.Should().BeEquivalentTo(new TestEntity
                                            {
                                               Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
+                                              RequiredName = "RequiredName",
                                               Count = 42,
                                               PropertyWithBackingField = 7
                                            });

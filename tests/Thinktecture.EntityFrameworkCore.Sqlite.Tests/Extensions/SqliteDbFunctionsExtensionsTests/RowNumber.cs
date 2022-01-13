@@ -15,8 +15,8 @@ public class RowNumber : IntegrationTestsBase
    [Fact]
    public void Generates_RowNumber_with_orderby_and_one_column()
    {
-      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("4883F7E0-FC8C-45FF-A579-DF351A3E79BF"), Name = "1" });
-      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("18C13F68-0981-4853-92FC-FB7B2551F70A"), Name = "2" });
+      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("4883F7E0-FC8C-45FF-A579-DF351A3E79BF"), Name = "1", RequiredName = "RequiredName" });
+      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("18C13F68-0981-4853-92FC-FB7B2551F70A"), Name = "2", RequiredName = "RequiredName" });
       ArrangeDbContext.SaveChanges();
 
       var result = ActDbContext.TestEntities
@@ -34,8 +34,8 @@ public class RowNumber : IntegrationTestsBase
    [Fact]
    public void Generates_RowNumber_with_orderby_and_one_column_generic_approach()
    {
-      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("4883F7E0-FC8C-45FF-A579-DF351A3E79BF"), Name = "1" });
-      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("18C13F68-0981-4853-92FC-FB7B2551F70A"), Name = "2" });
+      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("4883F7E0-FC8C-45FF-A579-DF351A3E79BF"), Name = "1", RequiredName = "RequiredName" });
+      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("18C13F68-0981-4853-92FC-FB7B2551F70A"), Name = "2", RequiredName = "RequiredName" });
       ArrangeDbContext.SaveChanges();
 
       var propertyName = nameof(TestEntity.Name);
@@ -78,8 +78,8 @@ public class RowNumber : IntegrationTestsBase
    [Fact]
    public void Generates_RowNumber_with_orderby_and_one_struct_column()
    {
-      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("18CF65B3-F53D-4F45-8DF5-DD62DCC8B2EB") });
-      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("28CF65B3-F53D-4F45-8DF5-DD62DCC8B2EB") });
+      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("18CF65B3-F53D-4F45-8DF5-DD62DCC8B2EB"), RequiredName = "RequiredName" });
+      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("28CF65B3-F53D-4F45-8DF5-DD62DCC8B2EB"), RequiredName = "RequiredName" });
       ArrangeDbContext.SaveChanges();
 
       var result = ActDbContext.TestEntities
@@ -97,8 +97,8 @@ public class RowNumber : IntegrationTestsBase
    [Fact]
    public void Generates_RowNumber_with_orderby_desc_and_one_column()
    {
-      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("4883F7E0-FC8C-45FF-A579-DF351A3E79BF"), Name = "1" });
-      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("18C13F68-0981-4853-92FC-FB7B2551F70A"), Name = "2" });
+      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("4883F7E0-FC8C-45FF-A579-DF351A3E79BF"), Name = "1", RequiredName = "RequiredName" });
+      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("18C13F68-0981-4853-92FC-FB7B2551F70A"), Name = "2", RequiredName = "RequiredName" });
       ArrangeDbContext.SaveChanges();
 
       var result = ActDbContext.TestEntities
@@ -116,8 +116,8 @@ public class RowNumber : IntegrationTestsBase
    [Fact]
    public void Generates_RowNumber_with_orderby_and_two_columns()
    {
-      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("4883F7E0-FC8C-45FF-A579-DF351A3E79BF"), Name = "1", Count = 1 });
-      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("18C13F68-0981-4853-92FC-FB7B2551F70A"), Name = "1", Count = 2 });
+      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("4883F7E0-FC8C-45FF-A579-DF351A3E79BF"), Name = "1", Count = 1, RequiredName = "RequiredName" });
+      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("18C13F68-0981-4853-92FC-FB7B2551F70A"), Name = "1", Count = 2, RequiredName = "RequiredName" });
       ArrangeDbContext.SaveChanges();
 
       var result = ActDbContext.TestEntities
@@ -135,8 +135,8 @@ public class RowNumber : IntegrationTestsBase
    [Fact]
    public void Generates_RowNumber_with_orderby_desc_and_two_columns()
    {
-      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("4883F7E0-FC8C-45FF-A579-DF351A3E79BF"), Name = "1", Count = 1 });
-      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("18C13F68-0981-4853-92FC-FB7B2551F70A"), Name = "1", Count = 2 });
+      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("4883F7E0-FC8C-45FF-A579-DF351A3E79BF"), Name = "1", Count = 1, RequiredName = "RequiredName" });
+      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("18C13F68-0981-4853-92FC-FB7B2551F70A"), Name = "1", Count = 2, RequiredName = "RequiredName" });
       ArrangeDbContext.SaveChanges();
 
       var result = ActDbContext.TestEntities
@@ -154,8 +154,8 @@ public class RowNumber : IntegrationTestsBase
    [Fact]
    public void Generates_RowNumber_with_partitionby_and_orderby_and_one_column()
    {
-      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("4883F7E0-FC8C-45FF-A579-DF351A3E79BF"), Name = "1" });
-      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("18C13F68-0981-4853-92FC-FB7B2551F70A"), Name = "2" });
+      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("4883F7E0-FC8C-45FF-A579-DF351A3E79BF"), Name = "1", RequiredName = "RequiredName" });
+      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("18C13F68-0981-4853-92FC-FB7B2551F70A"), Name = "2", RequiredName = "RequiredName" });
       ArrangeDbContext.SaveChanges();
 
       var result = ActDbContext.TestEntities
@@ -173,8 +173,8 @@ public class RowNumber : IntegrationTestsBase
    [Fact]
    public void Generates_RowNumber_with_partitionby_and_orderby_and_two_columns()
    {
-      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("4883F7E0-FC8C-45FF-A579-DF351A3E79BF"), Name = "1", Count = 1 });
-      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("18C13F68-0981-4853-92FC-FB7B2551F70A"), Name = "1", Count = 2 });
+      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("4883F7E0-FC8C-45FF-A579-DF351A3E79BF"), Name = "1", Count = 1, RequiredName = "RequiredName" });
+      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("18C13F68-0981-4853-92FC-FB7B2551F70A"), Name = "1", Count = 2, RequiredName = "RequiredName" });
       ArrangeDbContext.SaveChanges();
 
       var result = ActDbContext.TestEntities
@@ -193,8 +193,8 @@ public class RowNumber : IntegrationTestsBase
    [Fact]
    public void Throws_if_RowNumber_contains_NewExpression()
    {
-      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("4883F7E0-FC8C-45FF-A579-DF351A3E79BF"), Name = "1", Count = 1 });
-      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("18C13F68-0981-4853-92FC-FB7B2551F70A"), Name = "1", Count = 2 });
+      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("4883F7E0-FC8C-45FF-A579-DF351A3E79BF"), Name = "1", Count = 1, RequiredName = "RequiredName" });
+      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("18C13F68-0981-4853-92FC-FB7B2551F70A"), Name = "1", Count = 2, RequiredName = "RequiredName" });
       ArrangeDbContext.SaveChanges();
 
       var query = ActDbContext.TestEntities
@@ -211,7 +211,7 @@ public class RowNumber : IntegrationTestsBase
    [Fact]
    public void Should_throw_if_accessing_RowNumber_not_within_subquery()
    {
-      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("4883F7E0-FC8C-45FF-A579-DF351A3E79BF"), Name = "1" });
+      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("4883F7E0-FC8C-45FF-A579-DF351A3E79BF"), Name = "1", RequiredName = "RequiredName" });
       ArrangeDbContext.SaveChanges();
 
       var query = ActDbContext.TestEntities
@@ -230,7 +230,7 @@ public class RowNumber : IntegrationTestsBase
    [Fact]
    public void Should_be_able_to_fetch_whole_entity()
    {
-      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("4883F7E0-FC8C-45FF-A579-DF351A3E79BF"), Name = "1" });
+      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("4883F7E0-FC8C-45FF-A579-DF351A3E79BF"), Name = "1", RequiredName = "RequiredName" });
       ArrangeDbContext.SaveChanges();
 
       var query = ActDbContext.TestEntities
@@ -247,7 +247,8 @@ public class RowNumber : IntegrationTestsBase
                                              e = new TestEntity
                                                  {
                                                     Id = new Guid("4883F7E0-FC8C-45FF-A579-DF351A3E79BF"),
-                                                    Name = "1"
+                                                    Name = "1",
+                                                    RequiredName = "RequiredName"
                                                  },
                                              RowNumber = 1
                                           });
@@ -256,8 +257,8 @@ public class RowNumber : IntegrationTestsBase
    [Fact]
    public void Should_filter_for_RowNumber_if_accessing_within_subquery()
    {
-      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("4883F7E0-FC8C-45FF-A579-DF351A3E79BF"), Name = "1" });
-      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("18C13F68-0981-4853-92FC-FB7B2551F70A"), Name = "2" });
+      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("4883F7E0-FC8C-45FF-A579-DF351A3E79BF"), Name = "1", RequiredName = "RequiredName" });
+      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("18C13F68-0981-4853-92FC-FB7B2551F70A"), Name = "2", RequiredName = "RequiredName" });
       ArrangeDbContext.SaveChanges();
 
       var result = ActDbContext.TestEntities
@@ -277,8 +278,8 @@ public class RowNumber : IntegrationTestsBase
    [Fact]
    public void Should_support_columns_with_converters()
    {
-      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("4883F7E0-FC8C-45FF-A579-DF351A3E79BF"), Name = "1", ConvertibleClass = new ConvertibleClass(1) });
-      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("18C13F68-0981-4853-92FC-FB7B2551F70A"), Name = "1", ConvertibleClass = new ConvertibleClass(2) });
+      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("4883F7E0-FC8C-45FF-A579-DF351A3E79BF"), Name = "1", ConvertibleClass = new ConvertibleClass(1), RequiredName = "RequiredName" });
+      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("18C13F68-0981-4853-92FC-FB7B2551F70A"), Name = "1", ConvertibleClass = new ConvertibleClass(2), RequiredName = "RequiredName" });
       ArrangeDbContext.SaveChanges();
 
       var result = ActDbContext.TestEntities
@@ -297,8 +298,8 @@ public class RowNumber : IntegrationTestsBase
    [Fact]
    public void Should_support_conversion_to_underlying_column_type()
    {
-      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("4883F7E0-FC8C-45FF-A579-DF351A3E79BF"), Name = "1", ConvertibleClass = new ConvertibleClass(1) });
-      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("18C13F68-0981-4853-92FC-FB7B2551F70A"), Name = "1", ConvertibleClass = new ConvertibleClass(2) });
+      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("4883F7E0-FC8C-45FF-A579-DF351A3E79BF"), Name = "1", ConvertibleClass = new ConvertibleClass(1), RequiredName = "RequiredName" });
+      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("18C13F68-0981-4853-92FC-FB7B2551F70A"), Name = "1", ConvertibleClass = new ConvertibleClass(2), RequiredName = "RequiredName" });
       ArrangeDbContext.SaveChanges();
 
       var result = ActDbContext.TestEntities
@@ -319,8 +320,8 @@ public class RowNumber : IntegrationTestsBase
    [Fact]
    public void Should_support_conversion_if_column_type_is_convertable_on_database()
    {
-      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("4883F7E0-FC8C-45FF-A579-DF351A3E79BF"), Name = "1", ConvertibleClass = new ConvertibleClass(1) });
-      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("18C13F68-0981-4853-92FC-FB7B2551F70A"), Name = "1", ConvertibleClass = new ConvertibleClass(2) });
+      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("4883F7E0-FC8C-45FF-A579-DF351A3E79BF"), Name = "1", ConvertibleClass = new ConvertibleClass(1), RequiredName = "RequiredName" });
+      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("18C13F68-0981-4853-92FC-FB7B2551F70A"), Name = "1", ConvertibleClass = new ConvertibleClass(2), RequiredName = "RequiredName" });
       ArrangeDbContext.SaveChanges();
 
       var result = ActDbContext.TestEntities
@@ -341,8 +342,8 @@ public class RowNumber : IntegrationTestsBase
    [Fact]
    public void Should_support_conversion_for_non_trivial_expressions()
    {
-      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("4883F7E0-FC8C-45FF-A579-DF351A3E79BF"), Name = "1", ConvertibleClass = new ConvertibleClass(1) });
-      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("18C13F68-0981-4853-92FC-FB7B2551F70A"), Name = "1", ConvertibleClass = new ConvertibleClass(2) });
+      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("4883F7E0-FC8C-45FF-A579-DF351A3E79BF"), Name = "1", ConvertibleClass = new ConvertibleClass(1), RequiredName = "RequiredName" });
+      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = new Guid("18C13F68-0981-4853-92FC-FB7B2551F70A"), Name = "1", ConvertibleClass = new ConvertibleClass(2), RequiredName = "RequiredName" });
       ArrangeDbContext.SaveChanges();
 
       var result = ActDbContext.TestEntities

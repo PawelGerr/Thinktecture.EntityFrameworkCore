@@ -160,7 +160,7 @@ public class NestedRelationalTransactionManager : IRelationalTransactionManager
    /// <inheritdoc />
    public async Task ResetStateAsync(CancellationToken cancellationToken = default)
    {
-      _logger.Logger.LogInformation($"Resetting inner state.");
+      _logger.Logger.LogInformation("Resetting inner state.");
       await _innerManager.ResetStateAsync(cancellationToken).ConfigureAwait(false);
 
       while (_transactions.Count > 0)

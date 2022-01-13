@@ -167,7 +167,8 @@ public class BulkInsertValuesIntoTempTableAsync_1_Column : IntegrationTestsBase
       ArrangeDbContext.TestEntities.Add(new TestEntity
                                         {
                                            Id = parentId,
-                                           Children = { new() { Id = childId } }
+                                           RequiredName = "RequiredName",
+                                           Children = { new() { Id = childId, RequiredName = "RequiredName" } }
                                         });
       await ArrangeDbContext.SaveChangesAsync();
 

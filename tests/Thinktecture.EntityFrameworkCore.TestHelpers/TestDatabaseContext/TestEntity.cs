@@ -6,6 +6,7 @@ public class TestEntity
 {
    public Guid Id { get; set; }
    public string? Name { get; set; }
+   public string RequiredName { get; set; }
    public int Count { get; set; }
    public ConvertibleClass? ConvertibleClass { get; set; }
 
@@ -39,9 +40,10 @@ public class TestEntity
       return new MemberInfo[]
              {
                 typeof(TestEntity).GetProperty(nameof(Id)) ?? throw new Exception($"Property {nameof(Id)} not found."),
+                typeof(TestEntity).GetProperty(nameof(RequiredName)) ?? throw new Exception($"Property {nameof(RequiredName)} not found."),
                 typeof(TestEntity).GetProperty(nameof(Count)) ?? throw new Exception($"Property {nameof(Count)} not found."),
                 typeof(TestEntity).GetProperty(nameof(PropertyWithBackingField)) ?? throw new Exception($"Property {nameof(PropertyWithBackingField)} not found."),
-                typeof(TestEntity).GetField("_privateField", BindingFlags.Instance | BindingFlags.NonPublic) ?? throw new Exception($"Field _privateField not found.")
+                typeof(TestEntity).GetField("_privateField", BindingFlags.Instance | BindingFlags.NonPublic) ?? throw new Exception("Field _privateField not found.")
              };
    }
 

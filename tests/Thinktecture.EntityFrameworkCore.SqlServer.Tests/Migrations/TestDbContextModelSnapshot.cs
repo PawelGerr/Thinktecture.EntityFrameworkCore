@@ -204,6 +204,10 @@ namespace Thinktecture.Migrations
                     b.Property<int>("PropertyWithBackingField")
                         .HasColumnType("int");
 
+                    b.Property<string>("RequiredName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<int>("_privateField")
                         .HasColumnType("int");
 

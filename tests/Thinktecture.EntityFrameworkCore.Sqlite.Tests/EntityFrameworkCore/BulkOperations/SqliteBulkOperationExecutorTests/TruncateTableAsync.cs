@@ -27,7 +27,7 @@ public class TruncateTableAsync : IntegrationTestsBase
       ArrangeDbContext.Add(new TestEntity
                            {
                               Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
-                              Name = "Name",
+                              RequiredName = "RequiredName",
                               Count = 42
                            });
       await ArrangeDbContext.SaveChangesAsync();

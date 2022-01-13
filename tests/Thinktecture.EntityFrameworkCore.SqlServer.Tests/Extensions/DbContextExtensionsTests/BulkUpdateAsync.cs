@@ -32,7 +32,7 @@ public class BulkUpdateAsync : IntegrationTestsBase
    [Fact]
    public async Task Should_update_column_with_converter()
    {
-      var entity = new TestEntity();
+      var entity = new TestEntity { RequiredName = "RequiredName" };
       ArrangeDbContext.Add(entity);
       await ArrangeDbContext.SaveChangesAsync();
 
@@ -50,8 +50,8 @@ public class BulkUpdateAsync : IntegrationTestsBase
    [Fact]
    public async Task Should_update_entities()
    {
-      var entity_1 = new TestEntity { Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866") };
-      var entity_2 = new TestEntity { Id = new Guid("8AF163D7-D316-4B2D-A62F-6326A80C8BEE") };
+      var entity_1 = new TestEntity { Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"), RequiredName = "RequiredName" };
+      var entity_2 = new TestEntity { Id = new Guid("8AF163D7-D316-4B2D-A62F-6326A80C8BEE"), RequiredName = "RequiredName" };
       ArrangeDbContext.AddRange(entity_1, entity_2);
       await ArrangeDbContext.SaveChangesAsync();
 
@@ -71,8 +71,8 @@ public class BulkUpdateAsync : IntegrationTestsBase
    [Fact]
    public async Task Should_update_entities_based_on_non_pk_property()
    {
-      var entity_1 = new TestEntity { Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"), Name = "value" };
-      var entity_2 = new TestEntity { Id = new Guid("8AF163D7-D316-4B2D-A62F-6326A80C8BEE"), Name = null };
+      var entity_1 = new TestEntity { Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"), Name = "value", RequiredName = "RequiredName" };
+      var entity_2 = new TestEntity { Id = new Guid("8AF163D7-D316-4B2D-A62F-6326A80C8BEE"), Name = null, RequiredName = "RequiredName" };
       ArrangeDbContext.AddRange(entity_1, entity_2);
       await ArrangeDbContext.SaveChangesAsync();
 
@@ -100,8 +100,8 @@ public class BulkUpdateAsync : IntegrationTestsBase
    [Fact]
    public async Task Should_update_provided_entity_only()
    {
-      var entity_1 = new TestEntity { Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866") };
-      var entity_2 = new TestEntity { Id = new Guid("8AF163D7-D316-4B2D-A62F-6326A80C8BEE") };
+      var entity_1 = new TestEntity { Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"), RequiredName = "RequiredName" };
+      var entity_2 = new TestEntity { Id = new Guid("8AF163D7-D316-4B2D-A62F-6326A80C8BEE"), RequiredName = "RequiredName" };
       ArrangeDbContext.AddRange(entity_1, entity_2);
       await ArrangeDbContext.SaveChangesAsync();
 
@@ -124,7 +124,7 @@ public class BulkUpdateAsync : IntegrationTestsBase
    [Fact]
    public async Task Should_update_private_property()
    {
-      var entity = new TestEntity { Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866") };
+      var entity = new TestEntity { Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"), RequiredName = "RequiredName" };
       ArrangeDbContext.Add(entity);
       await ArrangeDbContext.SaveChangesAsync();
 
@@ -215,7 +215,7 @@ public class BulkUpdateAsync : IntegrationTestsBase
    [Fact]
    public async Task Should_update_specified_properties_only()
    {
-      var entity = new TestEntity { Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"), Name = "original value" };
+      var entity = new TestEntity { Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"), Name = "original value", RequiredName = "RequiredName" };
       ArrangeDbContext.Add(entity);
       await ArrangeDbContext.SaveChangesAsync();
 
@@ -240,7 +240,8 @@ public class BulkUpdateAsync : IntegrationTestsBase
                                               Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
                                               Count = 42,
                                               PropertyWithBackingField = 7,
-                                              Name = "original value"
+                                              Name = "original value",
+                                              RequiredName = "RequiredName"
                                            });
       loadedEntity.GetPrivateField().Should().Be(3);
    }

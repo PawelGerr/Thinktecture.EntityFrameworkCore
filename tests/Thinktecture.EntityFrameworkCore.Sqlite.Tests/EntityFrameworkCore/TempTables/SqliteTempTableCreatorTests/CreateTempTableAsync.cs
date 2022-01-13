@@ -448,7 +448,7 @@ Missing columns: Column2.");
       await using var tempTable = await SUT.CreateTempTableAsync(ActDbContext.GetEntityType<TestEntity>(), _optionsWithNonUniqueNameAndNoPrimaryKey);
 
       var columns = AssertDbContext.GetTempTableColumns<TestEntity>().OrderBy(c => c.Name).ToList();
-      columns.Should().HaveCount(7);
+      columns.Should().HaveCount(8);
 
       ValidateColumn(columns[0], nameof(TestEntity.ConvertibleClass), "INTEGER", true);
       ValidateColumn(columns[1], nameof(TestEntity.Count), "INTEGER", false);
@@ -456,7 +456,8 @@ Missing columns: Column2.");
       ValidateColumn(columns[3], nameof(TestEntity.Name), "TEXT", true);
       ValidateColumn(columns[4], nameof(TestEntity.ParentId), "TEXT", true);
       ValidateColumn(columns[5], nameof(TestEntity.PropertyWithBackingField), "INTEGER", false);
-      ValidateColumn(columns[6], "_privateField", "INTEGER", false);
+      ValidateColumn(columns[6], nameof(TestEntity.RequiredName), "TEXT", false);
+      ValidateColumn(columns[7], "_privateField", "INTEGER", false);
    }
 
    [Fact]

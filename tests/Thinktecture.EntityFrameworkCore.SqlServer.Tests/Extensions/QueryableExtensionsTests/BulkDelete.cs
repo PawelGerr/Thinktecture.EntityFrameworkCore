@@ -13,8 +13,8 @@ public class BulkDelete : IntegrationTestsBase
    [Fact]
    public void Should_delete_all_entities()
    {
-      ArrangeDbContext.Add(new TestEntity { Id = new Guid("6C410EFE-2A40-4348-8BD6-8E9B9B72F0D0") });
-      ArrangeDbContext.Add(new TestEntity { Id = new Guid("C004AB82-803E-4A90-B254-6032B9BBB70E") });
+      ArrangeDbContext.Add(new TestEntity { Id = new Guid("6C410EFE-2A40-4348-8BD6-8E9B9B72F0D0"), RequiredName = "RequiredName" });
+      ArrangeDbContext.Add(new TestEntity { Id = new Guid("C004AB82-803E-4A90-B254-6032B9BBB70E"), RequiredName = "RequiredName" });
       ArrangeDbContext.SaveChanges();
 
       var affectedRows = ActDbContext.TestEntities.BulkDelete();
@@ -27,8 +27,8 @@ public class BulkDelete : IntegrationTestsBase
    [Fact]
    public void Should_ignore_orderby()
    {
-      ArrangeDbContext.Add(new TestEntity { Id = new Guid("6C410EFE-2A40-4348-8BD6-8E9B9B72F0D0") });
-      ArrangeDbContext.Add(new TestEntity { Id = new Guid("C004AB82-803E-4A90-B254-6032B9BBB70E") });
+      ArrangeDbContext.Add(new TestEntity { Id = new Guid("6C410EFE-2A40-4348-8BD6-8E9B9B72F0D0"), RequiredName = "RequiredName" });
+      ArrangeDbContext.Add(new TestEntity { Id = new Guid("C004AB82-803E-4A90-B254-6032B9BBB70E"), RequiredName = "RequiredName" });
       ArrangeDbContext.SaveChanges();
 
       var affectedRows = ActDbContext.TestEntities.OrderBy(e => e.Id).BulkDelete();
@@ -41,8 +41,8 @@ public class BulkDelete : IntegrationTestsBase
    [Fact]
    public void Should_delete_projected_entities()
    {
-      var parent = new TestEntity { Id = new Guid("6C410EFE-2A40-4348-8BD6-8E9B9B72F0D0") };
-      var child = new TestEntity { Id = new Guid("C004AB82-803E-4A90-B254-6032B9BBB70E"), Parent = parent };
+      var parent = new TestEntity { Id = new Guid("6C410EFE-2A40-4348-8BD6-8E9B9B72F0D0"), RequiredName = "RequiredName" };
+      var child = new TestEntity { Id = new Guid("C004AB82-803E-4A90-B254-6032B9BBB70E"), RequiredName = "RequiredName", Parent = parent };
       ArrangeDbContext.Add(parent);
       ArrangeDbContext.Add(child);
       ArrangeDbContext.SaveChanges();
@@ -53,14 +53,14 @@ public class BulkDelete : IntegrationTestsBase
       affectedRows.Should().Be(1);
 
       var loadedEntities = AssertDbContext.TestEntities.ToList();
-      loadedEntities.Should().BeEquivalentTo(new[] { new TestEntity { Id = new Guid("6C410EFE-2A40-4348-8BD6-8E9B9B72F0D0") } });
+      loadedEntities.Should().BeEquivalentTo(new[] { new TestEntity { Id = new Guid("6C410EFE-2A40-4348-8BD6-8E9B9B72F0D0"), RequiredName = "RequiredName" } });
    }
 
    [Fact]
    public void Should_ignore_included_entities()
    {
-      var parent = new TestEntity { Id = new Guid("6C410EFE-2A40-4348-8BD6-8E9B9B72F0D0") };
-      var child = new TestEntity { Id = new Guid("C004AB82-803E-4A90-B254-6032B9BBB70E"), Parent = parent };
+      var parent = new TestEntity { Id = new Guid("6C410EFE-2A40-4348-8BD6-8E9B9B72F0D0"), RequiredName = "RequiredName" };
+      var child = new TestEntity { Id = new Guid("C004AB82-803E-4A90-B254-6032B9BBB70E"), RequiredName = "RequiredName", Parent = parent };
       ArrangeDbContext.Add(parent);
       ArrangeDbContext.Add(child);
       ArrangeDbContext.SaveChanges();
@@ -72,14 +72,14 @@ public class BulkDelete : IntegrationTestsBase
       affectedRows.Should().Be(1);
 
       var loadedEntities = AssertDbContext.TestEntities.ToList();
-      loadedEntities.Should().BeEquivalentTo(new[] { new TestEntity { Id = new Guid("6C410EFE-2A40-4348-8BD6-8E9B9B72F0D0") } });
+      loadedEntities.Should().BeEquivalentTo(new[] { new TestEntity { Id = new Guid("6C410EFE-2A40-4348-8BD6-8E9B9B72F0D0"), RequiredName = "RequiredName" } });
    }
 
    [Fact]
    public void Should_throw_on_innerjoin_projecting_multiple_tables()
    {
-      var parent = new TestEntity { Id = new Guid("6C410EFE-2A40-4348-8BD6-8E9B9B72F0D0") };
-      var child = new TestEntity { Id = new Guid("C004AB82-803E-4A90-B254-6032B9BBB70E"), Parent = parent };
+      var parent = new TestEntity { Id = new Guid("6C410EFE-2A40-4348-8BD6-8E9B9B72F0D0"), RequiredName = "RequiredName" };
+      var child = new TestEntity { Id = new Guid("C004AB82-803E-4A90-B254-6032B9BBB70E"), RequiredName = "RequiredName", Parent = parent };
       ArrangeDbContext.Add(parent);
       ArrangeDbContext.Add(child);
       ArrangeDbContext.SaveChanges();
@@ -93,8 +93,8 @@ public class BulkDelete : IntegrationTestsBase
    [Fact]
    public void Should_throw_on_leftjoin_projecting_multiple_tables()
    {
-      var parent = new TestEntity { Id = new Guid("6C410EFE-2A40-4348-8BD6-8E9B9B72F0D0") };
-      var child = new TestEntity { Id = new Guid("C004AB82-803E-4A90-B254-6032B9BBB70E"), Parent = parent };
+      var parent = new TestEntity { Id = new Guid("6C410EFE-2A40-4348-8BD6-8E9B9B72F0D0"), RequiredName = "RequiredName" };
+      var child = new TestEntity { Id = new Guid("C004AB82-803E-4A90-B254-6032B9BBB70E"), RequiredName = "RequiredName", Parent = parent };
       ArrangeDbContext.Add(parent);
       ArrangeDbContext.Add(child);
       ArrangeDbContext.SaveChanges();
@@ -108,8 +108,8 @@ public class BulkDelete : IntegrationTestsBase
    [Fact]
    public void Should_delete_projected_right_table_on_innerjoin()
    {
-      var parent = new TestEntity { Id = new Guid("6C410EFE-2A40-4348-8BD6-8E9B9B72F0D0") };
-      var child = new TestEntity { Id = new Guid("C004AB82-803E-4A90-B254-6032B9BBB70E"), Parent = parent };
+      var parent = new TestEntity { Id = new Guid("6C410EFE-2A40-4348-8BD6-8E9B9B72F0D0"), RequiredName = "RequiredName" };
+      var child = new TestEntity { Id = new Guid("C004AB82-803E-4A90-B254-6032B9BBB70E"), RequiredName = "RequiredName", Parent = parent };
       ArrangeDbContext.Add(parent);
       ArrangeDbContext.Add(child);
       ArrangeDbContext.SaveChanges();
@@ -120,14 +120,14 @@ public class BulkDelete : IntegrationTestsBase
       affectedRows.Should().Be(1);
 
       var loadedEntities = AssertDbContext.TestEntities.ToList();
-      loadedEntities.Should().BeEquivalentTo(new[] { new TestEntity { Id = new Guid("6C410EFE-2A40-4348-8BD6-8E9B9B72F0D0") } });
+      loadedEntities.Should().BeEquivalentTo(new[] { new TestEntity { Id = new Guid("6C410EFE-2A40-4348-8BD6-8E9B9B72F0D0"), RequiredName = "RequiredName" } });
    }
 
    [Fact]
    public void Should_delete_projected_right_table_on_leftjoin()
    {
-      var parent = new TestEntity { Id = new Guid("6C410EFE-2A40-4348-8BD6-8E9B9B72F0D0") };
-      var child = new TestEntity { Id = new Guid("C004AB82-803E-4A90-B254-6032B9BBB70E"), Parent = parent };
+      var parent = new TestEntity { Id = new Guid("6C410EFE-2A40-4348-8BD6-8E9B9B72F0D0"), RequiredName = "RequiredName" };
+      var child = new TestEntity { Id = new Guid("C004AB82-803E-4A90-B254-6032B9BBB70E"), RequiredName = "RequiredName", Parent = parent };
       ArrangeDbContext.Add(parent);
       ArrangeDbContext.Add(child);
       ArrangeDbContext.SaveChanges();
@@ -138,14 +138,14 @@ public class BulkDelete : IntegrationTestsBase
       affectedRows.Should().Be(1);
 
       var loadedEntities = AssertDbContext.TestEntities.ToList();
-      loadedEntities.Should().BeEquivalentTo(new[] { new TestEntity { Id = new Guid("6C410EFE-2A40-4348-8BD6-8E9B9B72F0D0") } });
+      loadedEntities.Should().BeEquivalentTo(new[] { new TestEntity { Id = new Guid("6C410EFE-2A40-4348-8BD6-8E9B9B72F0D0"), RequiredName = "RequiredName" } });
    }
 
    [Fact]
    public void Should_delete_projected_left_table_on_innerjoin()
    {
-      var parent = new TestEntity { Id = new Guid("6C410EFE-2A40-4348-8BD6-8E9B9B72F0D0") };
-      var child = new TestEntity { Id = new Guid("C004AB82-803E-4A90-B254-6032B9BBB70E"), Parent = parent };
+      var parent = new TestEntity { Id = new Guid("6C410EFE-2A40-4348-8BD6-8E9B9B72F0D0"), RequiredName = "RequiredName" };
+      var child = new TestEntity { Id = new Guid("C004AB82-803E-4A90-B254-6032B9BBB70E"), RequiredName = "RequiredName", Parent = parent };
       ArrangeDbContext.Add(parent);
       ArrangeDbContext.Add(child);
       ArrangeDbContext.SaveChanges();
@@ -156,14 +156,14 @@ public class BulkDelete : IntegrationTestsBase
       affectedRows.Should().Be(1);
 
       var loadedEntities = AssertDbContext.TestEntities.ToList();
-      loadedEntities.Should().BeEquivalentTo(new[] { new TestEntity { Id = new Guid("6C410EFE-2A40-4348-8BD6-8E9B9B72F0D0") } });
+      loadedEntities.Should().BeEquivalentTo(new[] { new TestEntity { Id = new Guid("6C410EFE-2A40-4348-8BD6-8E9B9B72F0D0"), RequiredName = "RequiredName" } });
    }
 
    [Fact]
    public void Should_delete_projected_left_table_on_leftjoin()
    {
-      var parent = new TestEntity { Id = new Guid("6C410EFE-2A40-4348-8BD6-8E9B9B72F0D0") };
-      var child = new TestEntity { Id = new Guid("C004AB82-803E-4A90-B254-6032B9BBB70E"), Parent = parent };
+      var parent = new TestEntity { Id = new Guid("6C410EFE-2A40-4348-8BD6-8E9B9B72F0D0"), RequiredName = "RequiredName" };
+      var child = new TestEntity { Id = new Guid("C004AB82-803E-4A90-B254-6032B9BBB70E"), RequiredName = "RequiredName", Parent = parent };
       ArrangeDbContext.Add(parent);
       ArrangeDbContext.Add(child);
       ArrangeDbContext.SaveChanges();
@@ -180,8 +180,8 @@ public class BulkDelete : IntegrationTestsBase
    [Fact]
    public void Should_delete_entities_matching_where_clause()
    {
-      ArrangeDbContext.Add(new TestEntity { Id = new Guid("6C410EFE-2A40-4348-8BD6-8E9B9B72F0D0"), Name = "Test" });
-      ArrangeDbContext.Add(new TestEntity { Id = new Guid("C004AB82-803E-4A90-B254-6032B9BBB70E") });
+      ArrangeDbContext.Add(new TestEntity { Id = new Guid("6C410EFE-2A40-4348-8BD6-8E9B9B72F0D0"), Name = "Test", RequiredName = "RequiredName" });
+      ArrangeDbContext.Add(new TestEntity { Id = new Guid("C004AB82-803E-4A90-B254-6032B9BBB70E"), RequiredName = "RequiredName" });
       ArrangeDbContext.SaveChanges();
 
       var affectedRows = ActDbContext.TestEntities
@@ -190,14 +190,14 @@ public class BulkDelete : IntegrationTestsBase
       affectedRows.Should().Be(1);
 
       var loadedEntities = AssertDbContext.TestEntities.ToList();
-      loadedEntities.Should().BeEquivalentTo(new[] { new TestEntity { Id = new Guid("C004AB82-803E-4A90-B254-6032B9BBB70E") } });
+      loadedEntities.Should().BeEquivalentTo(new[] { new TestEntity { Id = new Guid("C004AB82-803E-4A90-B254-6032B9BBB70E"), RequiredName = "RequiredName" } });
    }
 
    [Fact]
    public void Should_delete_1_entity_only()
    {
-      ArrangeDbContext.Add(new TestEntity { Id = new Guid("6C410EFE-2A40-4348-8BD6-8E9B9B72F0D0") });
-      ArrangeDbContext.Add(new TestEntity { Id = new Guid("C004AB82-803E-4A90-B254-6032B9BBB70E") });
+      ArrangeDbContext.Add(new TestEntity { Id = new Guid("6C410EFE-2A40-4348-8BD6-8E9B9B72F0D0"), RequiredName = "RequiredName" });
+      ArrangeDbContext.Add(new TestEntity { Id = new Guid("C004AB82-803E-4A90-B254-6032B9BBB70E"), RequiredName = "RequiredName" });
       ArrangeDbContext.SaveChanges();
 
       var affectedRows = ActDbContext.TestEntities.Take(1).BulkDelete();
@@ -210,8 +210,8 @@ public class BulkDelete : IntegrationTestsBase
    [Fact]
    public void Should_throw_if_skip_is_present()
    {
-      ArrangeDbContext.Add(new TestEntity { Id = new Guid("6C410EFE-2A40-4348-8BD6-8E9B9B72F0D0") });
-      ArrangeDbContext.Add(new TestEntity { Id = new Guid("C004AB82-803E-4A90-B254-6032B9BBB70E") });
+      ArrangeDbContext.Add(new TestEntity { Id = new Guid("6C410EFE-2A40-4348-8BD6-8E9B9B72F0D0"), RequiredName = "RequiredName" });
+      ArrangeDbContext.Add(new TestEntity { Id = new Guid("C004AB82-803E-4A90-B254-6032B9BBB70E"), RequiredName = "RequiredName" });
       ArrangeDbContext.SaveChanges();
 
       ActDbContext.TestEntities.Skip(1).Invoking(q => q.BulkDelete())

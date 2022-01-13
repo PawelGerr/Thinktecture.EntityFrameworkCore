@@ -32,6 +32,7 @@ public class BulkInsertIntoTempTableAsync : IntegrationTestsBase
                    {
                       Id = new Guid("577BFD36-21BC-4F9E-97B4-367B8F29B730"),
                       Name = "Name",
+                      RequiredName = "RequiredName",
                       Count = 42,
                       ConvertibleClass = new ConvertibleClass(43)
                    };
@@ -48,6 +49,7 @@ public class BulkInsertIntoTempTableAsync : IntegrationTestsBase
                                            {
                                               Id = new Guid("577BFD36-21BC-4F9E-97B4-367B8F29B730"),
                                               Name = "Name",
+                                              RequiredName = "RequiredName",
                                               Count = 42,
                                               ConvertibleClass = new ConvertibleClass(43)
                                            }
