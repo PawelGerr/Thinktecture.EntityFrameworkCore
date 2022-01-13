@@ -2,6 +2,8 @@ namespace Thinktecture.Database;
 
 public abstract class BenchmarkDbContext : DbContext
 {
+   public DbSet<TestEntity> TestEntities { get; set; } = null!;
+
    protected BenchmarkDbContext(DbContextOptions options)
       : base(options)
    {
