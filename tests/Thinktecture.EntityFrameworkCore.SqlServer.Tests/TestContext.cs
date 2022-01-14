@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Serilog;
@@ -10,8 +9,6 @@ public class TestContext
    private static readonly Lazy<TestContext> _lazy = new(CreateTestConfiguration);
 
    public static TestContext Instance => _lazy.Value;
-
-   private readonly ConcurrentDictionary<ITestOutputHelper, ILoggerFactory> _loggerFactoryCache = new();
 
    public IConfiguration Configuration { get; }
 
@@ -40,13 +37,10 @@ public class TestContext
    {
       ArgumentNullException.ThrowIfNull(testOutputHelper);
 
-      return _loggerFactoryCache.GetOrAdd(testOutputHelper, helper =>
-                                                            {
-                                                               var loggerConfig = new LoggerConfiguration()
-                                                                                  .WriteTo.TestOutput(helper, outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}");
+      var loggerConfig = new LoggerConfiguration()
+                         .WriteTo.TestOutput(testOutputHelper, outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}");
 
-                                                               return new LoggerFactory()
-                                                                  .AddSerilog(loggerConfig.CreateLogger());
-                                                            });
+      return new LoggerFactory()
+         .AddSerilog(loggerConfig.CreateLogger());
    }
 }

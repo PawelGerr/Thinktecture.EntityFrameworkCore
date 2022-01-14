@@ -1,6 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
 using Thinktecture.Database;
-using Thinktecture.EntityFrameworkCore.BulkOperations;
 
 namespace Thinktecture;
 

@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using System.Data.Common;
 using System.Diagnostics;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -15,8 +14,6 @@ namespace Thinktecture;
 
 public class IntegrationTestsBase : SqliteDbContextIntegrationTests<TestDbContext>
 {
-   private static readonly ConcurrentDictionary<ITestOutputHelper, ILoggerFactory> _loggerFactoryCache = new();
-
    protected Action<DbContextOptionsBuilder<TestDbContext>>? ConfigureOptionsBuilder { get; set; }
    protected Action<ModelBuilder>? ConfigureModel { get; set; }
 
@@ -66,17 +63,14 @@ public class IntegrationTestsBase : SqliteDbContextIntegrationTests<TestDbContex
       return ctx;
    }
 
-   private ILoggerFactory CreateLoggerFactory(ITestOutputHelper testOutputHelper)
+   private static ILoggerFactory CreateLoggerFactory(ITestOutputHelper testOutputHelper)
    {
       ArgumentNullException.ThrowIfNull(testOutputHelper);
 
-      return _loggerFactoryCache.GetOrAdd(testOutputHelper, helper =>
-                                                            {
-                                                               var loggerConfig = new LoggerConfiguration()
-                                                                                  .WriteTo.TestOutput(helper, outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}");
+      var loggerConfig = new LoggerConfiguration()
+                         .WriteTo.TestOutput(testOutputHelper, outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}");
 
-                                                               return new LoggerFactory()
-                                                                  .AddSerilog(loggerConfig.CreateLogger());
-                                                            });
+      return new LoggerFactory()
+         .AddSerilog(loggerConfig.CreateLogger());
    }
 }

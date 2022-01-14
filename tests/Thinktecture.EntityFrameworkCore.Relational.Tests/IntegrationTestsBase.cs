@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using System.Data.Common;
 using Microsoft.Extensions.Logging;
 using Serilog;
@@ -10,8 +9,6 @@ namespace Thinktecture;
 
 public class IntegrationTestsBase : SqliteDbContextIntegrationTests<DbContextWithSchema>
 {
-   private static readonly ConcurrentDictionary<ITestOutputHelper, ILoggerFactory> _loggerFactoryCache = new();
-
    protected Action<DbContextOptionsBuilder<DbContextWithSchema>>? ConfigureOptionsBuilder { get; set; }
    protected Action<ModelBuilder>? ConfigureModel { get; set; }
    protected string? Schema { get; set; }
@@ -43,14 +40,11 @@ public class IntegrationTestsBase : SqliteDbContextIntegrationTests<DbContextWit
    {
       ArgumentNullException.ThrowIfNull(testOutputHelper);
 
-      return _loggerFactoryCache.GetOrAdd(testOutputHelper, _ =>
-                                                            {
-                                                               var loggerConfig = new LoggerConfiguration()
-                                                                                  .WriteTo.TestOutput(testOutputHelper, outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}");
+      var loggerConfig = new LoggerConfiguration()
+                         .WriteTo.TestOutput(testOutputHelper, outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}");
 
-                                                               return new LoggerFactory()
-                                                                  .AddSerilog(loggerConfig.CreateLogger());
-                                                            });
+      return new LoggerFactory()
+         .AddSerilog(loggerConfig.CreateLogger());
    }
 
    protected DbContextWithSchema CreateContextWithSchema(string schema)
