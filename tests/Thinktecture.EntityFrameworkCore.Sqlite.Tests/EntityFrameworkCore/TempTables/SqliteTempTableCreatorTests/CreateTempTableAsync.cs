@@ -603,6 +603,20 @@ Currently configured primary keys: []");
    }
 
    [Fact]
+   public async Task Should_create_temp_table_with_converter_and_default_value()
+   {
+      ConfigureModel = builder => builder.ConfigureTempTable<ConvertibleClass>()
+                                         .Property(t => t.Column1)
+                                         .HasConversion(c => c.Key, k => new ConvertibleClass(k))
+                                         .HasDefaultValue(new ConvertibleClass(1));
+
+      await using var tempTable = await SUT.CreateTempTableAsync(ActDbContext.GetEntityType<TempTable<ConvertibleClass>>(), _optionsWithNonUniqueNameAndNoPrimaryKey);
+
+      var columns = AssertDbContext.GetTempTableColumns<TempTable<ConvertibleClass>>().ToList();
+      ValidateColumn(columns[0], nameof(TempTable<ConvertibleClass>.Column1), "INTEGER", false, "1");
+   }
+
+   [Fact]
    public async Task Should_create_temp_table_with_string_with_max_length()
    {
       ConfigureModel = builder => builder.ConfigureTempTable<string>().Property(t => t.Column1).HasMaxLength(50);
@@ -714,12 +728,13 @@ Currently configured primary keys: []");
       ValidateColumn(columns[3], nameof(OwnedEntity.StringColumn), "TEXT", true);
    }
 
-   private static void ValidateColumn(SqliteTableInfo column, string name, string type, bool isNullable)
+   private static void ValidateColumn(SqliteTableInfo column, string name, string type, bool isNullable, string? defaultValue = null)
    {
       ArgumentNullException.ThrowIfNull(column);
 
       column.Name.Should().Be(name);
       column.Type.Should().Be(type);
       column.NotNull.Should().Be(isNullable ? 0 : 1);
+      column.Dflt_Value.Should().Be(defaultValue);
    }
 }

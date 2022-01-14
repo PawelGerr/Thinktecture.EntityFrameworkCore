@@ -9,6 +9,6 @@ public class SqliteTableInfo
    public string? Name { get; set; }
    public string? Type { get; set; }
    public long? NotNull { get; set; }
-   public byte[]? Dflt_Value { get; set; }
+   public string? Dflt_Value { get; set; }
    public long? PK { get; set; }
 }

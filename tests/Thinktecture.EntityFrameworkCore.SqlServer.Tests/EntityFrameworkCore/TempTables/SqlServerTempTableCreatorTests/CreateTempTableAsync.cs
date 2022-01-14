@@ -561,6 +561,20 @@ Missing columns: Column2.");
    }
 
    [Fact]
+   public async Task Should_create_temp_table_with_converter_and_default_value()
+   {
+      ConfigureModel = builder => builder.ConfigureTempTable<ConvertibleClass>()
+                                         .Property(t => t.Column1)
+                                         .HasConversion(c => c.Key, k => new ConvertibleClass(k))
+                                         .HasDefaultValue(new ConvertibleClass(1));
+
+      await using var tempTable = await SUT.CreateTempTableAsync(ActDbContext.GetEntityType<TempTable<ConvertibleClass>>(), _optionsWithNonUniqueName);
+
+      var columns = AssertDbContext.GetTempTableColumns<TempTable<ConvertibleClass>>().ToList();
+      ValidateColumn(columns[0], nameof(TempTable<ConvertibleClass>.Column1), "int", false, defaultValue: "((1))");
+   }
+
+   [Fact]
    public async Task Should_create_temp_table_with_string_with_max_length()
    {
       ConfigureModel = builder => builder.ConfigureTempTable<string>().Property(t => t.Column1).HasMaxLength(50);
@@ -694,13 +708,15 @@ Missing columns: Column2.");
       bool isNullable,
       byte? numericPrecision = null,
       int? numericScale = null,
-      int? charMaxLength = null)
+      int? charMaxLength = null,
+      string? defaultValue = null)
    {
       ArgumentNullException.ThrowIfNull(column);
 
       column.COLUMN_NAME.Should().Be(name);
       column.DATA_TYPE.Should().Be(type);
       column.IS_NULLABLE.Should().Be(isNullable ? "YES" : "NO");
+      column.COLUMN_DEFAULT.Should().Be(defaultValue);
 
       if (numericPrecision.HasValue)
          column.NUMERIC_PRECISION.Should().Be(numericPrecision.Value);

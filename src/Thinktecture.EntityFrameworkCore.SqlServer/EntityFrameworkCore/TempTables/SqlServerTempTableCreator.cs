@@ -246,10 +246,20 @@ END
             {
                sb.Append(" DEFAULT (").Append(defaultValueSql).Append(')');
             }
-            else if (property.Property.TryGetDefaultValue(storeObject.Value, out var defaultValue))
+            else if (property.Property.TryGetDefaultValue(storeObject.Value, out var defaultValue) && defaultValue is not null)
             {
-               var mappingForValue = _typeMappingSource.GetMappingForValue(defaultValue);
-               sb.Append(" DEFAULT ").Append(mappingForValue.GenerateSqlLiteral(defaultValue));
+               var converter = property.Property.GetValueConverter();
+
+               if (converter is not null)
+                  defaultValue = converter.ConvertToProvider(defaultValue);
+
+               if (defaultValue is not null)
+               {
+                  var mappingForValue = _typeMappingSource.FindMapping(defaultValue.GetType(), columnType)
+                                        ?? _typeMappingSource.GetMappingForValue(defaultValue);
+
+                  sb.Append(" DEFAULT ").Append(mappingForValue.GenerateSqlLiteral(defaultValue));
+               }
             }
 
             isFirst = false;
