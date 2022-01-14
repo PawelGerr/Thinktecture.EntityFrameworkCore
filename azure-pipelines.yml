@@ -3,10 +3,12 @@ trigger:
 - develop
 - feature/*
 - refs/tags/*
+- releases/*
 
 variables:
   solution: 'Thinktecture.EntityFrameworkCore.sln'
   buildConfiguration: 'Release'
+  SourceBranchName: '$(Build.SourceBranchName)'
 
 pool:
   vmImage: 'windows-latest'
