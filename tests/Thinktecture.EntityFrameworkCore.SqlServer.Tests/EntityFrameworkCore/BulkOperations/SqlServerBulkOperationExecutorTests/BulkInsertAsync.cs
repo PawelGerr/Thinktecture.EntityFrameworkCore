@@ -125,7 +125,7 @@ public class BulkInsertAsync : IntegrationTestsBase
       var options = new SqlServerBulkInsertOptions
                     {
                        // we skip TestEntityWithSqlDefaultValues.String
-                       PropertiesToInsert = EntityPropertiesProvider.From<TestEntityWithSqlDefaultValues>(e => new
+                       PropertiesToInsert = IEntityPropertiesProvider.Include<TestEntityWithSqlDefaultValues>(e => new
                                                                                                                {
                                                                                                                   e.Id,
                                                                                                                   e.Int,
@@ -174,7 +174,7 @@ public class BulkInsertAsync : IntegrationTestsBase
       var options = new SqlServerBulkInsertOptions
                     {
                        // we skip TestEntityWithDefaultValues.String
-                       PropertiesToInsert = EntityPropertiesProvider.From<TestEntityWithDotnetDefaultValues>(e => new
+                       PropertiesToInsert = IEntityPropertiesProvider.Include<TestEntityWithDotnetDefaultValues>(e => new
                                                                                                                   {
                                                                                                                      e.Id,
                                                                                                                      e.Int,
@@ -254,7 +254,7 @@ public class BulkInsertAsync : IntegrationTestsBase
       await SUT.BulkInsertAsync(new[] { testEntity },
                                 new SqlServerBulkInsertOptions
                                 {
-                                   PropertiesToInsert = new EntityPropertiesProvider(TestEntity.GetRequiredProperties())
+                                   PropertiesToInsert = IEntityPropertiesProvider.Include(TestEntity.GetRequiredProperties())
                                 });
 
       var loadedEntities = await AssertDbContext.TestEntities.ToListAsync();

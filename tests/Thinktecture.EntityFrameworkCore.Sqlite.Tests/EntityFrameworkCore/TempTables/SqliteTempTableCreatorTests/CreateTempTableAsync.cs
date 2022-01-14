@@ -238,7 +238,7 @@ public class CreateTempTableAsync : IntegrationTestsBase
    {
       ConfigureModel = builder => builder.ConfigureTempTableEntity<CustomTempTable>();
 
-      _optionsWithNonUniqueNameAndNoPrimaryKey.PropertiesToInclude = EntityPropertiesProvider.From<CustomTempTable>(t => t.Column1);
+      _optionsWithNonUniqueNameAndNoPrimaryKey.PropertiesToInclude = IEntityPropertiesProvider.Include<CustomTempTable>(t => t.Column1);
 
       // ReSharper disable once RedundantArgumentDefaultValue
       await using var tempTable = await SUT.CreateTempTableAsync(ActDbContext.GetEntityType<CustomTempTable>(), _optionsWithNonUniqueNameAndNoPrimaryKey);
@@ -269,7 +269,7 @@ public class CreateTempTableAsync : IntegrationTestsBase
    public async Task Should_throw_if_some_pk_columns_are_missing()
    {
       _optionsWithNonUniqueNameAndNoPrimaryKey.PrimaryKeyCreation = PrimaryKeyPropertiesProviders.EntityTypeConfiguration;
-      _optionsWithNonUniqueNameAndNoPrimaryKey.PropertiesToInclude = EntityPropertiesProvider.From<CustomTempTable>(t => t.Column1);
+      _optionsWithNonUniqueNameAndNoPrimaryKey.PropertiesToInclude = IEntityPropertiesProvider.Include<CustomTempTable>(t => t.Column1);
 
       ConfigureModel = builder =>
                        {
@@ -289,7 +289,7 @@ Missing columns: Column2.");
    public async Task Should_not_throw_if_some_pk_columns_are_missing_and_provider_is_Adaptive()
    {
       _optionsWithNonUniqueNameAndNoPrimaryKey.PrimaryKeyCreation = PrimaryKeyPropertiesProviders.AdaptiveForced;
-      _optionsWithNonUniqueNameAndNoPrimaryKey.PropertiesToInclude = EntityPropertiesProvider.From<CustomTempTable>(t => t.Column1);
+      _optionsWithNonUniqueNameAndNoPrimaryKey.PropertiesToInclude = IEntityPropertiesProvider.Include<CustomTempTable>(t => t.Column1);
 
       ConfigureModel = builder =>
                        {
@@ -657,7 +657,7 @@ Currently configured primary keys: []");
    [Fact]
    public async Task Should_create_temp_table_for_entity_by_selecting_inlined_owned_type()
    {
-      _optionsWithNonUniqueNameAndNoPrimaryKey.PropertiesToInclude = EntityPropertiesProvider.From<TestEntity_Owns_Inline>(e => new
+      _optionsWithNonUniqueNameAndNoPrimaryKey.PropertiesToInclude = IEntityPropertiesProvider.Include<TestEntity_Owns_Inline>(e => new
                                                                                                                                 {
                                                                                                                                    e.Id,
                                                                                                                                    e.InlineEntity
@@ -696,7 +696,7 @@ Currently configured primary keys: []");
    [Fact]
    public async Task Should_throw_when_selecting_separated_owned_type()
    {
-      _optionsWithNonUniqueNameAndNoPrimaryKey.PropertiesToInclude = EntityPropertiesProvider.From<TestEntity_Owns_SeparateOne>(e => new
+      _optionsWithNonUniqueNameAndNoPrimaryKey.PropertiesToInclude = IEntityPropertiesProvider.Include<TestEntity_Owns_SeparateOne>(e => new
                                                                                                                                      {
                                                                                                                                         e.Id,
                                                                                                                                         e.SeparateEntity

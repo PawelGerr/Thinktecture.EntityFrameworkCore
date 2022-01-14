@@ -28,7 +28,7 @@ public class BulkUpdateAsync : IntegrationTestsBase
    [Fact]
    public async Task Should_not_throw_if_key_property_is_not_present_in_PropertiesToUpdate()
    {
-      var propertiesProvider = EntityPropertiesProvider.From<TestEntity>(entity => new { entity.Name });
+      var propertiesProvider = IEntityPropertiesProvider.Include<TestEntity>(entity => new { entity.Name });
 
       var affectedRows = await SUT.BulkUpdateAsync(new List<TestEntity>(), new SqlServerBulkUpdateOptions
                                                                            {
@@ -102,8 +102,8 @@ public class BulkUpdateAsync : IntegrationTestsBase
       entity_2.Name = "value";
       entity_2.Count = 2;
 
-      var properties = EntityPropertiesProvider.From<TestEntity>(e => new { e.Count });
-      var keyProperties = EntityPropertiesProvider.From<TestEntity>(e => e.Name);
+      var properties = IEntityPropertiesProvider.Include<TestEntity>(e => new { e.Count });
+      var keyProperties = IEntityPropertiesProvider.Include<TestEntity>(e => e.Name);
       var affectedRows = await SUT.BulkUpdateAsync(new[] { entity_1, entity_2 }, new SqlServerBulkUpdateOptions { PropertiesToUpdate = properties, KeyProperties = keyProperties });
 
       affectedRows.Should().Be(2);
@@ -248,7 +248,7 @@ public class BulkUpdateAsync : IntegrationTestsBase
       var affectedRows = await SUT.BulkUpdateAsync(new[] { entity },
                                                    new SqlServerBulkUpdateOptions
                                                    {
-                                                      PropertiesToUpdate = new EntityPropertiesProvider(TestEntity.GetRequiredProperties())
+                                                      PropertiesToUpdate = IEntityPropertiesProvider.Include(TestEntity.GetRequiredProperties())
                                                    });
 
       affectedRows.Should().Be(1);

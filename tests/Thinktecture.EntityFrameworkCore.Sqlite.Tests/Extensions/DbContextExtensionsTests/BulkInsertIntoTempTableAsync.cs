@@ -66,7 +66,7 @@ public class BulkInsertIntoTempTableAsync : IntegrationTestsBase
       var entities = new List<TestEntity> { entity };
       await using var query = await ActDbContext.BulkInsertIntoTempTableAsync(entities, new SqliteTempTableBulkInsertOptions
                                                                                         {
-                                                                                           PropertiesToInsert = EntityPropertiesProvider.From<TestEntity>(e => e.Id),
+                                                                                           PropertiesToInsert = IEntityPropertiesProvider.Include<TestEntity>(e => e.Id),
                                                                                            Advanced = { UsePropertiesToInsertForTempTableCreation = true }
                                                                                         });
 

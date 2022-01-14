@@ -404,7 +404,7 @@ INSERT BULK {Table} ({Columns})", (long)duration.TotalMilliseconds,
    {
       var entityType = _ctx.Model.GetEntityType(typeof(T));
       var propertiesForInsert = options.PropertiesToInsert.DeterminePropertiesForInsert(entityType, true);
-      var propertiesForUpdate = options.PropertiesToUpdate.DeterminePropertiesForUpdate(entityType, true);
+      var propertiesForUpdate = options.PropertiesToUpdate.DeterminePropertiesForInsert(entityType, true);
 
       if (propertiesForInsert.Count == 0)
          throw new ArgumentException("The number of properties to insert cannot be 0.");

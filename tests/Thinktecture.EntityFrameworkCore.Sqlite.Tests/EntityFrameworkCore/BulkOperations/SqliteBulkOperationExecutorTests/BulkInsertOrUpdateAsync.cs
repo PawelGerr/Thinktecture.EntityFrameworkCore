@@ -151,7 +151,7 @@ public class BulkInsertOrUpdateAsync : IntegrationTestsBase
 
       await SUT.BulkInsertOrUpdateAsync(testEntities, new SqliteBulkInsertOrUpdateOptions
                                                       {
-                                                         PropertiesToInsert = EntityPropertiesProvider.From<TestEntityWithAutoIncrement>(entity => entity.Name)
+                                                         PropertiesToInsert = IEntityPropertiesProvider.Include<TestEntityWithAutoIncrement>(entity => entity.Name)
                                                       });
 
       var loadedEntity = await AssertDbContext.TestEntitiesWithAutoIncrement.FirstOrDefaultAsync();
@@ -176,7 +176,7 @@ public class BulkInsertOrUpdateAsync : IntegrationTestsBase
       await SUT.BulkInsertOrUpdateAsync(testEntities,
                                         new SqliteBulkInsertOrUpdateOptions
                                         {
-                                           PropertiesToInsert = new EntityPropertiesProvider(TestEntity.GetRequiredProperties())
+                                           PropertiesToInsert = IEntityPropertiesProvider.Include(TestEntity.GetRequiredProperties())
                                         });
 
       var loadedEntities = await AssertDbContext.TestEntities.ToListAsync();
@@ -195,7 +195,7 @@ public class BulkInsertOrUpdateAsync : IntegrationTestsBase
    [Fact]
    public async Task Should_not_throw_if_key_property_is_not_present_in_PropertiesToUpdate()
    {
-      var propertiesProvider = EntityPropertiesProvider.From<TestEntity>(entity => new { entity.Name });
+      var propertiesProvider = IEntityPropertiesProvider.Include<TestEntity>(entity => new { entity.Name });
 
       var affectedRows = await SUT.BulkInsertOrUpdateAsync(new List<TestEntity>(), new SqliteBulkInsertOrUpdateOptions
                                                                                    {
@@ -229,7 +229,7 @@ public class BulkInsertOrUpdateAsync : IntegrationTestsBase
    [Fact]
    public async Task Should_update_entities_based_on_non_pk_property()
    {
-      var keyProperties = EntityPropertiesProvider.From<TestEntity>(e => e.Name);
+      var keyProperties = IEntityPropertiesProvider.Include<TestEntity>(e => e.Name);
 
       await SUT.Awaiting(sut => sut.BulkInsertOrUpdateAsync(new TestEntity[0], new SqliteBulkInsertOrUpdateOptions { KeyProperties = keyProperties }))
                .Should().ThrowAsync<InvalidOperationException>().WithMessage("Error during bulk operation on table '\"TestEntities\"'. See inner exception for more details.")
@@ -309,7 +309,7 @@ public class BulkInsertOrUpdateAsync : IntegrationTestsBase
       var affectedRows = await SUT.BulkInsertOrUpdateAsync(new[] { entity },
                                                            new SqliteBulkInsertOrUpdateOptions
                                                            {
-                                                              PropertiesToUpdate = new EntityPropertiesProvider(TestEntity.GetRequiredProperties())
+                                                              PropertiesToUpdate = IEntityPropertiesProvider.Include(TestEntity.GetRequiredProperties())
                                                            });
 
       affectedRows.Should().Be(1);
@@ -355,8 +355,8 @@ public class BulkInsertOrUpdateAsync : IntegrationTestsBase
       var affectedRows = await ActDbContext.BulkInsertOrUpdateAsync(new[] { existingEntity, newEntity },
                                                                     new SqliteBulkInsertOrUpdateOptions
                                                                     {
-                                                                       PropertiesToInsert = new EntityPropertiesProvider(TestEntity.GetRequiredProperties()),
-                                                                       PropertiesToUpdate = EntityPropertiesProvider.Empty
+                                                                       PropertiesToInsert = IEntityPropertiesProvider.Include(TestEntity.GetRequiredProperties()),
+                                                                       PropertiesToUpdate = IEntityPropertiesProvider.Empty
                                                                     }
                                                                    );
 
@@ -409,8 +409,8 @@ public class BulkInsertOrUpdateAsync : IntegrationTestsBase
       var affectedRows = await ActDbContext.BulkInsertOrUpdateAsync(new[] { existingEntity, newEntity },
                                                                     new SqliteBulkInsertOrUpdateOptions
                                                                     {
-                                                                       PropertiesToInsert = new EntityPropertiesProvider(TestEntity.GetRequiredProperties()),
-                                                                       PropertiesToUpdate = EntityPropertiesProvider.From<TestEntity>(entity => entity.Id)
+                                                                       PropertiesToInsert = IEntityPropertiesProvider.Include(TestEntity.GetRequiredProperties()),
+                                                                       PropertiesToUpdate = IEntityPropertiesProvider.Include<TestEntity>(entity => entity.Id)
                                                                     }
                                                                    );
 

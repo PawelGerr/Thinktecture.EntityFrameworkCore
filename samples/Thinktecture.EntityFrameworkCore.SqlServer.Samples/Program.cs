@@ -193,7 +193,7 @@ public class Program
       // alternative ways to specify the column:
       // * c => new { c.Id }
       // * c => c.Id
-      // * new SqlBulkInsertOptions { PropertiesProvider = PropertiesProvider.From<Customer>(c => new { c.Id })}
+      // * new SqlServerBulkInsertOptions { PropertiesToInsert = IPropertiesProvider.Include<Customer>(c => new { c.Id })}
       await ctx.BulkInsertAsync(new[] { customersToInsert }, c => new { c.Id });
 
       var insertedCustomer = await ctx.Customers.FirstAsync(c => c.Id == customersToInsert.Id);

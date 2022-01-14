@@ -100,8 +100,8 @@ public class BulkInsertOrUpdateAsync : IntegrationTestsBase
       var affectedRows = await ActDbContext.BulkInsertOrUpdateAsync(new[] { existingEntity, newEntity },
                                                                     new SqlServerBulkInsertOrUpdateOptions
                                                                     {
-                                                                       PropertiesToInsert = new EntityPropertiesProvider(TestEntity.GetRequiredProperties()),
-                                                                       PropertiesToUpdate = EntityPropertiesProvider.From<TestEntity>(entity => entity.Name)
+                                                                       PropertiesToInsert = IEntityPropertiesProvider.Include(TestEntity.GetRequiredProperties()),
+                                                                       PropertiesToUpdate = IEntityPropertiesProvider.Include<TestEntity>(entity => entity.Name)
                                                                     }
                                                                    );
 
@@ -208,8 +208,8 @@ public class BulkInsertOrUpdateAsync : IntegrationTestsBase
       var affectedRows = await ActDbContext.BulkInsertOrUpdateAsync(new[] { existingEntity, newEntity },
                                                                     new SqlServerBulkInsertOrUpdateOptions
                                                                     {
-                                                                       PropertiesToInsert = new EntityPropertiesProvider(TestEntity.GetRequiredProperties()),
-                                                                       PropertiesToUpdate = EntityPropertiesProvider.Empty
+                                                                       PropertiesToInsert = IEntityPropertiesProvider.Include(TestEntity.GetRequiredProperties()),
+                                                                       PropertiesToUpdate = IEntityPropertiesProvider.Empty
                                                                     }
                                                                    );
 
@@ -262,8 +262,8 @@ public class BulkInsertOrUpdateAsync : IntegrationTestsBase
       var affectedRows = await ActDbContext.BulkInsertOrUpdateAsync(new[] { existingEntity, newEntity },
                                                                     new SqlServerBulkInsertOrUpdateOptions
                                                                     {
-                                                                       PropertiesToInsert = new EntityPropertiesProvider(TestEntity.GetRequiredProperties()),
-                                                                       PropertiesToUpdate = EntityPropertiesProvider.From<TestEntity>(entity => entity.Id)
+                                                                       PropertiesToInsert = IEntityPropertiesProvider.Include(TestEntity.GetRequiredProperties()),
+                                                                       PropertiesToUpdate = IEntityPropertiesProvider.Include<TestEntity>(entity => entity.Id)
                                                                     }
                                                                    );
 

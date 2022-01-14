@@ -172,7 +172,7 @@ public class BulkInsertOrUpdateAsync : IntegrationTestsBase
 
       await SUT.BulkInsertOrUpdateAsync(testEntities, new SqlServerBulkInsertOrUpdateOptions
                                                       {
-                                                         PropertiesToInsert = EntityPropertiesProvider.From<TestEntityWithAutoIncrement>(entity => entity.Name)
+                                                         PropertiesToInsert = IEntityPropertiesProvider.Include<TestEntityWithAutoIncrement>(entity => entity.Name)
                                                       });
 
       var loadedEntity = await AssertDbContext.TestEntitiesWithAutoIncrement.FirstOrDefaultAsync();
@@ -197,7 +197,7 @@ public class BulkInsertOrUpdateAsync : IntegrationTestsBase
       await SUT.BulkInsertOrUpdateAsync(testEntities,
                                         new SqlServerBulkInsertOrUpdateOptions
                                         {
-                                           PropertiesToInsert = new EntityPropertiesProvider(TestEntity.GetRequiredProperties())
+                                           PropertiesToInsert = IEntityPropertiesProvider.Include(TestEntity.GetRequiredProperties())
                                         });
 
       var loadedEntities = await AssertDbContext.TestEntities.ToListAsync();
@@ -216,7 +216,7 @@ public class BulkInsertOrUpdateAsync : IntegrationTestsBase
    [Fact]
    public async Task Should_not_throw_if_key_property_is_not_present_in_PropertiesToUpdate()
    {
-      var propertiesProvider = EntityPropertiesProvider.From<TestEntity>(entity => new { entity.Name });
+      var propertiesProvider = IEntityPropertiesProvider.Include<TestEntity>(entity => new { entity.Name });
 
       var affectedRows = await SUT.BulkInsertOrUpdateAsync(new List<TestEntity>(), new SqlServerBulkInsertOrUpdateOptions
                                                                                    {
@@ -260,8 +260,8 @@ public class BulkInsertOrUpdateAsync : IntegrationTestsBase
       entity_2.Name = "value";
       entity_2.Count = 2;
 
-      var properties = EntityPropertiesProvider.From<TestEntity>(e => new { e.Count });
-      var keyProperties = EntityPropertiesProvider.From<TestEntity>(e => e.Name);
+      var properties = IEntityPropertiesProvider.Include<TestEntity>(e => new { e.Count });
+      var keyProperties = IEntityPropertiesProvider.Include<TestEntity>(e => e.Name);
       var affectedRows = await SUT.BulkInsertOrUpdateAsync(new[] { entity_1, entity_2 }, new SqlServerBulkInsertOrUpdateOptions { PropertiesToUpdate = properties, KeyProperties = keyProperties });
 
       affectedRows.Should().Be(2);
@@ -368,7 +368,7 @@ public class BulkInsertOrUpdateAsync : IntegrationTestsBase
       var affectedRows = await SUT.BulkInsertOrUpdateAsync(new[] { entity },
                                                            new SqlServerBulkInsertOrUpdateOptions
                                                            {
-                                                              PropertiesToUpdate = new EntityPropertiesProvider(TestEntity.GetRequiredProperties())
+                                                              PropertiesToUpdate = IEntityPropertiesProvider.Include(TestEntity.GetRequiredProperties())
                                                            });
 
       affectedRows.Should().Be(1);

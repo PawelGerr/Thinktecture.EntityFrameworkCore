@@ -24,9 +24,7 @@ public static class BulkOperationsEntityPropertiesProviderExtensions
    {
       ArgumentNullException.ThrowIfNull(entityType);
 
-      return entityPropertiesProvider == null
-                ? DetermineProperties(entityType, inlinedOwnTypes, TempTableFilter)
-                : entityPropertiesProvider.GetPropertiesForTempTable(entityType, inlinedOwnTypes, TempTableFilter);
+      return (entityPropertiesProvider ?? IEntityPropertiesProvider.Default).GetPropertiesForTempTable(entityType, inlinedOwnTypes);
    }
 
    /// <summary>
@@ -43,24 +41,10 @@ public static class BulkOperationsEntityPropertiesProviderExtensions
    {
       ArgumentNullException.ThrowIfNull(entityType);
 
-      IReadOnlyList<PropertyWithNavigations>? properties;
+      var properties = (entityPropertiesProvider ?? IEntityPropertiesProvider.Default).GetKeyProperties(entityType, inlinedOwnTypes);
 
-      if (entityPropertiesProvider is null)
-      {
-         var pk = entityType.FindPrimaryKey()?.Properties;
-
-         if (pk is null or { Count: 0 })
-            throw new InvalidOperationException($"The entity '{entityType.Name}' has no primary key. Please provide key properties to perform JOIN/match on.");
-
-         properties = pk.Select(p => new PropertyWithNavigations(p, Array.Empty<INavigation>())).ToList();
-      }
-      else
-      {
-         properties = entityPropertiesProvider.GetKeyProperties(entityType, inlinedOwnTypes, KeyPropertyFilter);
-
-         if (properties is null or { Count: 0 })
-            throw new ArgumentException("The number of key properties to perform JOIN/match on cannot be 0.");
-      }
+      if (properties is null or { Count: 0 })
+         throw new ArgumentException("The number of key properties to perform JOIN/match on cannot be 0.");
 
       return properties;
    }
@@ -79,9 +63,7 @@ public static class BulkOperationsEntityPropertiesProviderExtensions
    {
       ArgumentNullException.ThrowIfNull(entityType);
 
-      return entityPropertiesProvider == null
-                ? DetermineProperties(entityType, inlinedOwnTypes, InsertAndUpdateFilter)
-                : entityPropertiesProvider.GetPropertiesForInsert(entityType, inlinedOwnTypes, InsertAndUpdateFilter);
+      return (entityPropertiesProvider ?? IEntityPropertiesProvider.Default).GetPropertiesForInsert(entityType, inlinedOwnTypes);
    }
 
    /// <summary>
@@ -98,28 +80,7 @@ public static class BulkOperationsEntityPropertiesProviderExtensions
    {
       ArgumentNullException.ThrowIfNull(entityType);
 
-      return entityPropertiesProvider == null
-                ? DetermineProperties(entityType, inlinedOwnTypes, InsertAndUpdateFilter)
-                : entityPropertiesProvider.GetPropertiesForUpdate(entityType, inlinedOwnTypes, InsertAndUpdateFilter);
-   }
-
-   private static IReadOnlyList<PropertyWithNavigations> DetermineProperties(
-      IEntityType entityType,
-      bool? inlinedOwnTypes,
-      Func<IProperty, IReadOnlyList<INavigation>, bool> filter)
-   {
-      var properties = entityType.GetProperties()
-                                 .Where(p => filter(p, Array.Empty<INavigation>()))
-                                 .Select(p => new PropertyWithNavigations(p, Array.Empty<INavigation>()))
-                                 .ToList();
-
-      foreach (var navigation in entityType.GetOwnedTypesProperties(inlinedOwnTypes))
-      {
-         var navigations = new[] { navigation };
-         properties.AddPropertiesAndOwnedTypesRecursively(navigation.TargetEntityType, navigations, inlinedOwnTypes, filter);
-      }
-
-      return properties;
+      return (entityPropertiesProvider ?? IEntityPropertiesProvider.Default).GetPropertiesForUpdate(entityType, inlinedOwnTypes);
    }
 
    internal static void AddPropertiesAndOwnedTypesRecursively(
@@ -141,21 +102,5 @@ public static class BulkOperationsEntityPropertiesProviderExtensions
 
          properties.AddPropertiesAndOwnedTypesRecursively(ownedTypeNavigation.TargetEntityType, innerNavigations, inlinedOwnTypes, filter);
       }
-   }
-
-   private static bool TempTableFilter(IProperty property, IReadOnlyList<INavigation> navigations)
-   {
-      return navigations.Count == 0 || !property.IsKey();
-   }
-
-   private static bool KeyPropertyFilter(IProperty property, IReadOnlyList<INavigation> navigations)
-   {
-      return true;
-   }
-
-   private static bool InsertAndUpdateFilter(IProperty property, IReadOnlyList<INavigation> navigations)
-   {
-      return property.GetBeforeSaveBehavior() != PropertySaveBehavior.Ignore &&
-             (navigations.Count == 0 || !navigations[^1].IsInlined() || !property.IsKey());
    }
 }

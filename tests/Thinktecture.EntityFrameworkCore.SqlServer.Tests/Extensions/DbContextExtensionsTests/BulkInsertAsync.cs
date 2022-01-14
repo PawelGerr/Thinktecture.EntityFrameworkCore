@@ -52,7 +52,7 @@ public class BulkInsertAsync : IntegrationTestsBase
 
       await ActDbContext.BulkInsertAsync(testEntities, new SqlServerBulkInsertOptions
                                                        {
-                                                          PropertiesToInsert = new EntityPropertiesProvider(TestEntity.GetRequiredProperties())
+                                                          PropertiesToInsert = IEntityPropertiesProvider.Include(TestEntity.GetRequiredProperties())
                                                        });
 
       var loadedEntities = await AssertDbContext.TestEntities.ToListAsync();

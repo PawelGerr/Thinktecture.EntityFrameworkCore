@@ -227,7 +227,7 @@ public class BulkUpdateAsync : IntegrationTestsBase
       var affectedRows = await ActDbContext.BulkUpdateAsync(new[] { entity },
                                                             new SqlServerBulkUpdateOptions
                                                             {
-                                                               PropertiesToUpdate = new EntityPropertiesProvider(TestEntity.GetRequiredProperties())
+                                                               PropertiesToUpdate = IEntityPropertiesProvider.Include(TestEntity.GetRequiredProperties())
                                                             });
 
       affectedRows.Should().Be(1);
@@ -260,7 +260,7 @@ public class BulkUpdateAsync : IntegrationTestsBase
       var affectedRows = await ActDbContext.BulkUpdateAsync(new[] { entity },
                                                             new SqlServerBulkUpdateOptions
                                                             {
-                                                               PropertiesToUpdate = EntityPropertiesProvider.From<TestEntity>(e => e.Count)
+                                                               PropertiesToUpdate = IEntityPropertiesProvider.Include<TestEntity>(e => e.Count)
                                                             });
 
       affectedRows.Should().Be(1);

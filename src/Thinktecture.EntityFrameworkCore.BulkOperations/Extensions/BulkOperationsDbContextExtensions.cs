@@ -73,7 +73,7 @@ public static class BulkOperationsDbContextExtensions
       where T : class
    {
       var bulkInsertExecutor = ctx.GetService<IBulkInsertExecutor>();
-      var options = bulkInsertExecutor.CreateOptions(propertiesToInsert is null ? null : EntityPropertiesProvider.From(propertiesToInsert));
+      var options = bulkInsertExecutor.CreateOptions(propertiesToInsert is null ? null : IEntityPropertiesProvider.Include(propertiesToInsert));
 
       await bulkInsertExecutor.BulkInsertAsync(entities, options, cancellationToken).ConfigureAwait(false);
    }
@@ -119,8 +119,8 @@ public static class BulkOperationsDbContextExtensions
    {
       var bulkUpdateExecutor = ctx.GetService<IBulkUpdateExecutor>();
 
-      var options = bulkUpdateExecutor.CreateOptions(propertiesToUpdate is null ? null : EntityPropertiesProvider.From(propertiesToUpdate),
-                                                     propertiesToMatchOn is null ? null : EntityPropertiesProvider.From(propertiesToMatchOn));
+      var options = bulkUpdateExecutor.CreateOptions(propertiesToUpdate is null ? null : IEntityPropertiesProvider.Include(propertiesToUpdate),
+                                                     propertiesToMatchOn is null ? null : IEntityPropertiesProvider.Include(propertiesToMatchOn));
 
       return await bulkUpdateExecutor.BulkUpdateAsync(entities, options, cancellationToken).ConfigureAwait(false);
    }
@@ -169,9 +169,9 @@ public static class BulkOperationsDbContextExtensions
    {
       var bulkOperationExecutor = ctx.GetService<IBulkInsertOrUpdateExecutor>();
 
-      var options = bulkOperationExecutor.CreateOptions(propertiesToInsert is null ? null : EntityPropertiesProvider.From(propertiesToInsert),
-                                                        propertiesToUpdate is null ? null : EntityPropertiesProvider.From(propertiesToUpdate),
-                                                        propertiesToMatchOn is null ? null : EntityPropertiesProvider.From(propertiesToMatchOn));
+      var options = bulkOperationExecutor.CreateOptions(propertiesToInsert is null ? null : IEntityPropertiesProvider.Include(propertiesToInsert),
+                                                        propertiesToUpdate is null ? null : IEntityPropertiesProvider.Include(propertiesToUpdate),
+                                                        propertiesToMatchOn is null ? null : IEntityPropertiesProvider.Include(propertiesToMatchOn));
 
       return await bulkOperationExecutor.BulkInsertOrUpdateAsync(entities, options, cancellationToken).ConfigureAwait(false);
    }
@@ -263,7 +263,7 @@ public static class BulkOperationsDbContextExtensions
       where T : class
    {
       var executor = ctx.GetService<ITempTableBulkInsertExecutor>();
-      var options = executor.CreateOptions(propertiesToInsert is null ? null : EntityPropertiesProvider.From(propertiesToInsert));
+      var options = executor.CreateOptions(propertiesToInsert is null ? null : IEntityPropertiesProvider.Include(propertiesToInsert));
 
       return executor.BulkInsertIntoTempTableAsync(entities, options, cancellationToken);
    }
