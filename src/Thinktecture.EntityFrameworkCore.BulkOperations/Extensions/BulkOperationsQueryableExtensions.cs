@@ -26,7 +26,8 @@ public static class BulkOperationsQueryableExtensions
       ArgumentNullException.ThrowIfNull(source);
 
       var methodInfo = _bulkDelete.MakeGenericMethod(typeof(T));
-      var expression = Expression.Call(null, methodInfo, source.Expression);
+      var sourceExpression = IncludeRemovingVisitor.Instance.Visit(source.Expression);
+      var expression = Expression.Call(null, methodInfo, sourceExpression);
       return source.Provider.Execute<int>(expression);
    }
 
@@ -49,7 +50,23 @@ public static class BulkOperationsQueryableExtensions
          throw new InvalidOperationException(CoreStrings.IQueryableProviderNotAsync);
 
       var methodInfo = _bulkDelete.MakeGenericMethod(typeof(T));
-      var expression = Expression.Call(null, methodInfo, source.Expression);
+      var sourceExpression = IncludeRemovingVisitor.Instance.Visit(source.Expression);
+      var expression = Expression.Call(null, methodInfo, sourceExpression);
       return provider.ExecuteAsync<Task<int>>(expression, cancellationToken);
+   }
+
+   private class IncludeRemovingVisitor : ExpressionVisitor
+   {
+      public static readonly IncludeRemovingVisitor Instance = new();
+
+      protected override Expression VisitMethodCall(MethodCallExpression node)
+      {
+         // Include and ThenInclude may expand the query so it is unclear what table to DELETE from
+         if (node.Method.DeclaringType == typeof(EntityFrameworkQueryableExtensions)
+             && node.Method.Name is nameof(EntityFrameworkQueryableExtensions.Include) or nameof(EntityFrameworkQueryableExtensions.ThenInclude))
+            return node.Arguments[0];
+
+         return base.VisitMethodCall(node);
+      }
    }
 }

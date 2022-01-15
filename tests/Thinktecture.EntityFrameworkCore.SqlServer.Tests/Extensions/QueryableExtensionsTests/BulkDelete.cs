@@ -220,4 +220,64 @@ public class BulkDelete : IntegrationTestsBase
       var loadedEntities = AssertDbContext.TestEntities.ToList();
       loadedEntities.Should().HaveCount(2);
    }
+
+   [Fact]
+   public void Should_handle_Include_properly()
+   {
+      var parent = new TestEntity { Id = new Guid("6C410EFE-2A40-4348-8BD6-8E9B9B72F0D0"), RequiredName = "RequiredName" };
+      var child = new TestEntity { Id = new Guid("C004AB82-803E-4A90-B254-6032B9BBB70E"), RequiredName = "RequiredName", Parent = parent };
+      ArrangeDbContext.Add(parent);
+      ArrangeDbContext.Add(child);
+      ArrangeDbContext.SaveChanges();
+
+      var affectedRows = ActDbContext.TestEntities
+                                     .Include(e => e.Children)
+                                     .Where(e => e.Parent!.Count == 0)
+                                     .BulkDelete();
+
+      affectedRows.Should().Be(1);
+
+      var loadedEntities = AssertDbContext.TestEntities.ToList();
+      loadedEntities.Should().BeEquivalentTo(new[] { new TestEntity { Id = new Guid("6C410EFE-2A40-4348-8BD6-8E9B9B72F0D0"), RequiredName = "RequiredName" } });
+   }
+
+   [Fact]
+   public async Task Should_delete_entity_with_separate_owned_types_if_column_of_main_entity_is_provided()
+   {
+      ArrangeDbContext.Add(new TestEntity_Owns_SeparateOne { Id = new Guid("6C410EFE-2A40-4348-8BD6-8E9B9B72F0D0"), SeparateEntity = new OwnedEntity { IntColumn = 1 } });
+      ArrangeDbContext.Add(new TestEntity_Owns_SeparateOne { Id = new Guid("C004AB82-803E-4A90-B254-6032B9BBB70E"), SeparateEntity = new OwnedEntity { IntColumn = 2 } });
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var affectedRows = await ActDbContext.TestEntities_Own_SeparateOne
+                                           .Where(e => e.SeparateEntity.IntColumn == 1)
+                                           .Select(e => e.Id)
+                                           .BulkDeleteAsync();
+
+      affectedRows.Should().Be(1);
+
+      var loadedEntities = await AssertDbContext.TestEntities_Own_SeparateOne.ToListAsync();
+      loadedEntities.Should().BeEquivalentTo(new[] { new TestEntity_Owns_SeparateOne { Id = new Guid("C004AB82-803E-4A90-B254-6032B9BBB70E"), SeparateEntity = new OwnedEntity { IntColumn = 2 } } });
+   }
+
+   [Fact]
+   public async Task Should_delete_separate_owned_entity_only_if_column_of_owned_entity_is_provided()
+   {
+      ArrangeDbContext.Add(new TestEntity_Owns_SeparateOne { Id = new Guid("6C410EFE-2A40-4348-8BD6-8E9B9B72F0D0"), SeparateEntity = new OwnedEntity { IntColumn = 1 } });
+      ArrangeDbContext.Add(new TestEntity_Owns_SeparateOne { Id = new Guid("C004AB82-803E-4A90-B254-6032B9BBB70E"), SeparateEntity = new OwnedEntity { IntColumn = 2 } });
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var affectedRows = await ActDbContext.TestEntities_Own_SeparateOne
+                                           .Where(e => e.SeparateEntity.IntColumn == 1)
+                                           .Select(e => e.SeparateEntity)
+                                           .BulkDeleteAsync();
+
+      affectedRows.Should().Be(1);
+
+      var loadedEntities = await AssertDbContext.TestEntities_Own_SeparateOne.ToListAsync();
+      loadedEntities.Should().BeEquivalentTo(new[]
+                                             {
+                                                new TestEntity_Owns_SeparateOne { Id = new Guid("6C410EFE-2A40-4348-8BD6-8E9B9B72F0D0"), SeparateEntity = null! },
+                                                new TestEntity_Owns_SeparateOne { Id = new Guid("C004AB82-803E-4A90-B254-6032B9BBB70E"), SeparateEntity = new OwnedEntity { IntColumn = 2 } }
+                                             });
+   }
 }

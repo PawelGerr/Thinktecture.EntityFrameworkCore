@@ -100,8 +100,14 @@ public static class BulkOperationsRelationalQueryableMethodTranslatingExpression
    {
       TableExpressionBase? table = null;
 
-      if (selectExpression.Projection.Count == 0 && selectExpression.Tables.Count == 1)
-         return selectExpression.Tables[0];
+      if (selectExpression.Projection.Count == 0)
+      {
+         if (selectExpression.Tables.Count == 1)
+            return selectExpression.Tables[0];
+
+         if (selectExpression.Tables.Count > 1)
+            throw new NotSupportedException($"The provided query is referencing more than 1 table. If the entity has owned types, then please provide just one column of the table to DELETE from [example: Select(x => x.Id).BulkDeleteAsync()]. Found tables: [{String.Join(", ", selectExpression.Tables.Select(GetDisplayName))}].");
+      }
 
       foreach (ProjectionExpression projection in selectExpression.Projection)
       {
