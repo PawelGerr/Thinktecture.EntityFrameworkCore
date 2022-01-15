@@ -172,18 +172,23 @@ public static class RelationalDbContextOptionsBuilderExtensions
    /// </summary>
    /// <param name="optionsBuilder">Options builder.</param>
    /// <param name="callback">Callback that updates the extension.</param>
+   /// <param name="ensureDatabaseProviderRegistered">Indication whether to check whether a database provider is registered already.</param>
    /// <typeparam name="TExtension">Type of the extension.</typeparam>
    /// <exception cref="ArgumentNullException">
    /// <paramref name="optionsBuilder"/> is null
    /// - or
    /// <paramref name="callback"/> is null.
    /// </exception>
+   /// <exception cref="InvalidOperationException">
+   /// If <paramref name="ensureDatabaseProviderRegistered"/> is <c>true</c> and the database is not registered yet.
+   /// </exception>
    public static TExtension AddOrUpdateExtension<TExtension>(
       this DbContextOptionsBuilder optionsBuilder,
-      Action<TExtension> callback)
+      Action<TExtension> callback,
+      bool ensureDatabaseProviderRegistered = true)
       where TExtension : class, IDbContextOptionsExtension, new()
    {
-      return AddOrUpdateExtension(optionsBuilder, callback, () => new TExtension());
+      return AddOrUpdateExtension(optionsBuilder, callback, () => new TExtension(), ensureDatabaseProviderRegistered);
    }
 
    /// <summary>
@@ -192,22 +197,30 @@ public static class RelationalDbContextOptionsBuilderExtensions
    /// <param name="optionsBuilder">Options builder.</param>
    /// <param name="callback">Callback that updates the extension.</param>
    /// <param name="extensionFactory">Factory for creation of new instances of <typeparamref name="TExtension"/>.</param>
+   /// <param name="ensureDatabaseProviderRegistered">Indication whether to check whether a database provider is registered already.</param>
    /// <typeparam name="TExtension">Type of the extension.</typeparam>
    /// <exception cref="ArgumentNullException">
    /// <paramref name="optionsBuilder"/> is null
    /// - or
    /// <paramref name="callback"/> is null.
    /// </exception>
+   /// <exception cref="InvalidOperationException">
+   /// If <paramref name="ensureDatabaseProviderRegistered"/> is <c>true</c> and the database is not registered yet.
+   /// </exception>
    public static TExtension AddOrUpdateExtension<TExtension>(
       this DbContextOptionsBuilder optionsBuilder,
       Action<TExtension> callback,
-      Func<TExtension> extensionFactory
+      Func<TExtension> extensionFactory,
+      bool ensureDatabaseProviderRegistered = true
    )
       where TExtension : class, IDbContextOptionsExtension
    {
       ArgumentNullException.ThrowIfNull(optionsBuilder);
       ArgumentNullException.ThrowIfNull(callback);
       ArgumentNullException.ThrowIfNull(extensionFactory);
+
+      if (ensureDatabaseProviderRegistered && !optionsBuilder.Options.Extensions.Any(e => e.Info.IsDatabaseProvider))
+         throw new InvalidOperationException("Please register the database provider first (via 'UseSqlServer' or 'UseSqlite' etc).");
 
       var extension = optionsBuilder.Options.FindExtension<TExtension>() ?? extensionFactory();
 
