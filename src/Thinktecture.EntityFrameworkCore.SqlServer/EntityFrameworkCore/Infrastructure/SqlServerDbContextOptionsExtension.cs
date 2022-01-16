@@ -1,13 +1,19 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Text;
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Metadata.Conventions.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.SqlServer.Query.Internal;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.ObjectPool;
 using Thinktecture.EntityFrameworkCore.BulkOperations;
 using Thinktecture.EntityFrameworkCore.Migrations;
+using Thinktecture.EntityFrameworkCore.Parameters;
 using Thinktecture.EntityFrameworkCore.Query;
 using Thinktecture.EntityFrameworkCore.TempTables;
 
@@ -89,6 +95,9 @@ public sealed class SqlServerDbContextOptionsExtension : DbContextOptionsExtensi
    /// </summary>
    public bool AddBulkOperationSupport { get; set; }
 
+   private JsonSerializerOptions? _collectionParameterJsonSerializerOptions;
+   private bool _addCollectionParameterSupport;
+
    /// <summary>
    /// Changes the implementation of <see cref="IMigrationsSqlGenerator"/> to <see cref="ThinktectureSqlServerMigrationsSqlGenerator"/>.
    /// </summary>
@@ -133,6 +142,16 @@ public sealed class SqlServerDbContextOptionsExtension : DbContextOptionsExtensi
          services.TryAddScoped<ITruncateTableExecutor>(provider => provider.GetRequiredService<SqlServerBulkOperationExecutor>());
       }
 
+      if (_addCollectionParameterSupport)
+      {
+         var jsonSerializerOptions = _collectionParameterJsonSerializerOptions ?? new JsonSerializerOptions();
+
+         services.AddSingleton<ICollectionParameterFactory>(serviceProvider => new SqlServerCollectionParameterFactory(jsonSerializerOptions,
+                                                                                                                       serviceProvider.GetRequiredService<ObjectPool<StringBuilder>>(),
+                                                                                                                       serviceProvider.GetRequiredService<ISqlGenerationHelper>()));
+         services.Add<IConventionSetPlugin, SqlServerCollectionParameterConventionSetPlugin>(GetLifetime<IConventionSetPlugin>());
+      }
+
       if (UseThinktectureSqlServerMigrationsSqlGenerator)
          AddWithCheck<IMigrationsSqlGenerator, ThinktectureSqlServerMigrationsSqlGenerator, SqlServerMigrationsSqlGenerator>(services);
 
@@ -163,6 +182,15 @@ public sealed class SqlServerDbContextOptionsExtension : DbContextOptionsExtensi
       _relationalOptions.Register(serviceType, implementationInstance);
    }
 
+   /// <summary>
+   /// Enables and disables support for queryable parameters.
+   /// </summary>
+   public void AddCollectionParameterSupport(bool addCollectionParameterSupport, JsonSerializerOptions? jsonSerializerOptions)
+   {
+      _addCollectionParameterSupport = addCollectionParameterSupport;
+      _collectionParameterJsonSerializerOptions = jsonSerializerOptions;
+   }
+
    /// <inheritdoc />
    public void Validate(IDbContextOptions options)
    {
@@ -181,6 +209,7 @@ public sealed class SqlServerDbContextOptionsExtension : DbContextOptionsExtensi
    'Custom QuerySqlGeneratorFactory'={_extension.AddCustomQuerySqlGeneratorFactory},
    'Custom RelationalParameterBasedSqlProcessorFactory'={_extension.AddCustomRelationalParameterBasedSqlProcessorFactory},
    'BulkOperationSupport'={_extension.AddBulkOperationSupport},
+   'CollectionParameterSupport'={_extension._addCollectionParameterSupport},
    'TenantDatabaseSupport'={_extension.AddTenantDatabaseSupport},
    'TableHintSupport'={_extension.AddTableHintSupport},
    'UseThinktectureSqlServerMigrationsSqlGenerator'={_extension.UseThinktectureSqlServerMigrationsSqlGenerator}
@@ -196,13 +225,19 @@ public sealed class SqlServerDbContextOptionsExtension : DbContextOptionsExtensi
       /// <inheritdoc />
       public override int GetServiceProviderHashCode()
       {
-         return HashCode.Combine(_extension.AddCustomQueryableMethodTranslatingExpressionVisitorFactory,
-                                 _extension.AddCustomQuerySqlGeneratorFactory,
-                                 _extension.AddCustomRelationalParameterBasedSqlProcessorFactory,
-                                 _extension.AddBulkOperationSupport,
-                                 _extension.AddTenantDatabaseSupport,
-                                 _extension.AddTableHintSupport,
-                                 _extension.UseThinktectureSqlServerMigrationsSqlGenerator);
+         var hashCode = new HashCode();
+
+         hashCode.Add(_extension.AddCustomQueryableMethodTranslatingExpressionVisitorFactory);
+         hashCode.Add(_extension.AddCustomQuerySqlGeneratorFactory);
+         hashCode.Add(_extension.AddCustomRelationalParameterBasedSqlProcessorFactory);
+         hashCode.Add(_extension.AddBulkOperationSupport);
+         hashCode.Add(_extension._addCollectionParameterSupport);
+         hashCode.Add(_extension._collectionParameterJsonSerializerOptions);
+         hashCode.Add(_extension.AddTenantDatabaseSupport);
+         hashCode.Add(_extension.AddTableHintSupport);
+         hashCode.Add(_extension.UseThinktectureSqlServerMigrationsSqlGenerator);
+
+         return hashCode.ToHashCode();
       }
 
       /// <inheritdoc />
@@ -213,6 +248,8 @@ public sealed class SqlServerDbContextOptionsExtension : DbContextOptionsExtensi
                 && _extension.AddCustomQuerySqlGeneratorFactory == otherSqlServerInfo._extension.AddCustomQuerySqlGeneratorFactory
                 && _extension.AddCustomRelationalParameterBasedSqlProcessorFactory == otherSqlServerInfo._extension.AddCustomRelationalParameterBasedSqlProcessorFactory
                 && _extension.AddBulkOperationSupport == otherSqlServerInfo._extension.AddBulkOperationSupport
+                && _extension._addCollectionParameterSupport == otherSqlServerInfo._extension._addCollectionParameterSupport
+                && _extension._collectionParameterJsonSerializerOptions == otherSqlServerInfo._extension._collectionParameterJsonSerializerOptions
                 && _extension.AddTenantDatabaseSupport == otherSqlServerInfo._extension.AddTenantDatabaseSupport
                 && _extension.AddTableHintSupport == otherSqlServerInfo._extension.AddTableHintSupport
                 && _extension.UseThinktectureSqlServerMigrationsSqlGenerator == otherSqlServerInfo._extension.UseThinktectureSqlServerMigrationsSqlGenerator;
@@ -225,6 +262,7 @@ public sealed class SqlServerDbContextOptionsExtension : DbContextOptionsExtensi
          debugInfo["Thinktecture:CustomQuerySqlGeneratorFactory"] = _extension.AddCustomQuerySqlGeneratorFactory.ToString(CultureInfo.InvariantCulture);
          debugInfo["Thinktecture:CustomRelationalParameterBasedSqlProcessorFactory"] = _extension.AddCustomRelationalParameterBasedSqlProcessorFactory.ToString(CultureInfo.InvariantCulture);
          debugInfo["Thinktecture:BulkOperationSupport"] = _extension.AddBulkOperationSupport.ToString(CultureInfo.InvariantCulture);
+         debugInfo["Thinktecture:CollectionParameterSupport"] = _extension._addCollectionParameterSupport.ToString(CultureInfo.InvariantCulture);
          debugInfo["Thinktecture:TenantDatabaseSupport"] = _extension.AddTenantDatabaseSupport.ToString(CultureInfo.InvariantCulture);
          debugInfo["Thinktecture:TableHintSupport"] = _extension.AddTableHintSupport.ToString(CultureInfo.InvariantCulture);
          debugInfo["Thinktecture:UseThinktectureSqlServerMigrationsSqlGenerator"] = _extension.UseThinktectureSqlServerMigrationsSqlGenerator.ToString(CultureInfo.InvariantCulture);

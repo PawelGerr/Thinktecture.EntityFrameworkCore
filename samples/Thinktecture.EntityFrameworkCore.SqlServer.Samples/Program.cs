@@ -43,6 +43,10 @@ public class Program
          await DoBulkDeleteAsync(ctx);
          ctx.ChangeTracker.Clear();
 
+         await DoScalarCollectionParameterAsync(ctx, new List<Guid> { customerId });
+         await DoComplexCollectionParameterAsync(ctx, customerId);
+         ctx.ChangeTracker.Clear();
+
          // Bulk insert into temp tables
          await DoBulkInsertEntitiesIntoTempTableAsync(ctx);
          ctx.ChangeTracker.Clear();
@@ -71,6 +75,24 @@ public class Program
       }
 
       Console.WriteLine("Exiting samples...");
+   }
+
+   private static async Task DoScalarCollectionParameterAsync(DemoDbContext ctx, List<Guid> customerIds)
+   {
+      var customerIdsQuery = ctx.CreateScalarCollectionParameter(customerIds);
+
+      var customers = await ctx.Customers.Where(c => customerIdsQuery.Contains(c.Id)).ToListAsync();
+
+      Console.WriteLine($"Found customers: {String.Join(", ", customers.Select(c => c.Id))}");
+   }
+
+   private static async Task DoComplexCollectionParameterAsync(DemoDbContext ctx, Guid customerId)
+   {
+      var parameters = ctx.CreateComplexCollectionParameter(new[] { new MyParameter(customerId, 42) });
+
+      var customers = await ctx.Customers.Join(parameters, c => c.Id, t => t.Column1, (c, t) => new { Customer = c, Number = t.Column2}).ToListAsync();
+
+      Console.WriteLine($"Found customers: {String.Join(", ", customers.Select(c => c.Customer.Id))}");
    }
 
    private static async Task DoTenantQueriesAsync(DemoDbContext ctx)

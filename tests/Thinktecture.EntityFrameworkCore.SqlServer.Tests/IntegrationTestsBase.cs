@@ -1,6 +1,7 @@
 using System.Data.Common;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Diagnostics.Internal;
 using Microsoft.EntityFrameworkCore.Infrastructure;
@@ -9,6 +10,7 @@ using Thinktecture.EntityFrameworkCore;
 using Thinktecture.EntityFrameworkCore.Infrastructure;
 using Thinktecture.EntityFrameworkCore.Query;
 using Thinktecture.EntityFrameworkCore.Testing;
+using Thinktecture.Json;
 using Thinktecture.TestDatabaseContext;
 
 namespace Thinktecture;
@@ -16,6 +18,8 @@ namespace Thinktecture;
 [Collection("SqlServerTests")]
 public class IntegrationTestsBase : SqlServerDbContextIntegrationTests<TestDbContext>
 {
+   private static readonly JsonSerializerOptions _jsonSerializerOptions = new() { Converters = { new ConvertibleClassConverter() } };
+
    protected Action<ModelBuilder>? ConfigureModel { get; set; }
    protected IReadOnlyCollection<string> SqlStatements { get; }
 
@@ -74,7 +78,8 @@ public class IntegrationTestsBase : SqlServerDbContextIntegrationTests<TestDbCon
       base.ConfigureSqlServer(builder);
 
       builder.AddBulkOperationSupport()
-             .AddRowNumberSupport();
+             .AddRowNumberSupport()
+             .AddCollectionParameterSupport(_jsonSerializerOptions);
 
       if (IsTenantDatabaseSupportEnabled)
          builder.AddTenantDatabaseSupport<TestTenantDatabaseProviderFactory>();

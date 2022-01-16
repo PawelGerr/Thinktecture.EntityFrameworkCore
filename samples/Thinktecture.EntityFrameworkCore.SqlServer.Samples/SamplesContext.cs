@@ -50,6 +50,7 @@ public class SamplesContext
                                                                                     sqlOptions.AddRowNumberSupport()
                                                                                               .AddTenantDatabaseSupport<DemoTenantDatabaseProviderFactory>()
                                                                                               .AddBulkOperationSupport()
+                                                                                              .AddCollectionParameterSupport()
                                                                                               .UseThinktectureSqlServerMigrationsSqlGenerator();
                                                                                  })
                                                  .EnableSensitiveDataLogging()
