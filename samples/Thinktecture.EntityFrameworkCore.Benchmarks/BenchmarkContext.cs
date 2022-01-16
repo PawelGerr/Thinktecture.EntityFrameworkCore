@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
 using Thinktecture.Database;
 
 namespace Thinktecture;
@@ -14,11 +15,18 @@ public class BenchmarkContext : IDisposable
 
       var services = new ServiceCollection()
                      .AddDbContext<SqliteBenchmarkDbContext>(builder => builder.UseSqlite(config.GetConnectionString("sqlite"),
-                                                                                          optionsBuilder => optionsBuilder.AddBulkOperationSupport()))
+                                                                                          optionsBuilder => optionsBuilder
+                                                                                             .AddBulkOperationSupport())
+                                                                               .UseLoggerFactory(NullLoggerFactory.Instance)
+                                                            )
                      .AddDbContext<SqlServerBenchmarkDbContext>(builder => builder.UseSqlServer(config.GetConnectionString("sqlServer"),
-                                                                                                optionsBuilder => optionsBuilder.AddBulkOperationSupport()));
+                                                                                                optionsBuilder => optionsBuilder
+                                                                                                                  .AddBulkOperationSupport()
+                                                                                                                  .AddCollectionParameterSupport())
+                                                                                  .UseLoggerFactory(NullLoggerFactory.Instance)
+                                                               );
 
-      RootServiceProvider = services.BuildServiceProvider();
+      RootServiceProvider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true, ValidateOnBuild = true });
    }
 
    private static IConfiguration GetConfiguration()

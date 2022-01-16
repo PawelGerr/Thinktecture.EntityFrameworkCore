@@ -445,7 +445,7 @@ Missing columns: Column2.");
    [Fact]
    public async Task Should_throw_if_temp_table_is_not_introduced()
    {
-      await SUT.Awaiting(c => c.CreateTempTableAsync(ActDbContext.GetTempTableEntityType<TempTable<int>>(), _optionsWithNonUniqueName))
+      await SUT.Awaiting(c => c.CreateTempTableAsync(ActDbContext.GetTempTableEntityType<TempTable<ConvertibleClass>>(), _optionsWithNonUniqueName))
                .Should().ThrowAsync<ArgumentException>();
    }
 

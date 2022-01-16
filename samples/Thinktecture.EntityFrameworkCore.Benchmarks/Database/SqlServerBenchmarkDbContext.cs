@@ -6,4 +6,16 @@ public class SqlServerBenchmarkDbContext : BenchmarkDbContext
       : base(options)
    {
    }
+
+   /// <inheritdoc />
+   protected override void OnModelCreating(ModelBuilder modelBuilder)
+   {
+      base.OnModelCreating(modelBuilder);
+
+      modelBuilder.ConfigureScalarCollectionParameter<decimal>(builder => builder.Property(e => e.Value).HasPrecision(10, 4));
+
+      modelBuilder.ConfigureComplexCollectionParameter<MyParameter>();
+
+      modelBuilder.ConfigureTempTableEntity<MyParameter>();
+   }
 }

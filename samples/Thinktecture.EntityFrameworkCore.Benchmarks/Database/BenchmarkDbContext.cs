@@ -11,7 +11,6 @@ public abstract class BenchmarkDbContext : DbContext
 
    protected override void OnModelCreating(ModelBuilder modelBuilder)
    {
-      modelBuilder.ConfigureTempTable<int>();
       modelBuilder.ConfigureTempTable<int, int>();
    }
 }

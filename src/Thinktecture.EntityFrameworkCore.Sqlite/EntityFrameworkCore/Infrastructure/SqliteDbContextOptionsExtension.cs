@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Metadata.Conventions.Infrastructure;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.Internal;
 using Microsoft.EntityFrameworkCore.Sqlite.Query.Internal;
@@ -98,6 +99,8 @@ public sealed class SqliteDbContextOptionsExtension : DbContextOptionsExtensionB
 
       if (AddBulkOperationSupport)
       {
+         services.Add<IConventionSetPlugin, BulkOperationConventionSetPlugin>(GetLifetime<IConventionSetPlugin>());
+
          services.AddSingleton<TempTableStatementCache<SqliteTempTableCreatorCacheKey>>();
          services.TryAddScoped<ITempTableCreator, SqliteTempTableCreator>();
          services.AddTempTableSuffixComponents();

@@ -2,7 +2,9 @@
 using Thinktecture.Benchmarking;
 
 // BenchmarkRunner.Run<CreateTempTable>();
-BenchmarkRunner.Run<BulkInsertIntoTempTable>();
+// BenchmarkRunner.Run<BulkInsertIntoTempTable>();
+// BenchmarkRunner.Run<ScalarCollectionParameter>();
+BenchmarkRunner.Run<ComplexCollectionParameter>();
 
 // await ExecuteCreateTableAsync();
 // await ExecuteBulkInsertIntoTempTableAsync();

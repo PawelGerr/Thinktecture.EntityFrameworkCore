@@ -127,6 +127,8 @@ public sealed class SqlServerDbContextOptionsExtension : DbContextOptionsExtensi
 
       if (AddBulkOperationSupport)
       {
+         services.Add<IConventionSetPlugin, BulkOperationConventionSetPlugin>(GetLifetime<IConventionSetPlugin>());
+
          services.AddSingleton<TempTableStatementCache<SqlServerTempTableCreatorCacheKey>>();
          services.AddSingleton<TempTableStatementCache<SqlServerTempTablePrimaryKeyCacheKey>>();
          services.TryAddScoped<ISqlServerTempTableCreator, SqlServerTempTableCreator>();

@@ -489,7 +489,7 @@ Currently configured primary keys: []");
    [Fact]
    public async Task Should_throw_if_temp_table_is_not_introduced()
    {
-      await SUT.Awaiting(c => c.CreateTempTableAsync(ActDbContext.GetTempTableEntityType<TempTable<int>>(), _optionsWithNonUniqueNameAndNoPrimaryKey))
+      await SUT.Awaiting(c => c.CreateTempTableAsync(ActDbContext.GetTempTableEntityType<TempTable<ConvertibleClass>>(), _optionsWithNonUniqueNameAndNoPrimaryKey))
                .Should().ThrowAsync<ArgumentException>();
    }
 
