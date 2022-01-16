@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Microsoft.Extensions.ObjectPool;
+using Thinktecture.Internal;
 
 namespace Thinktecture.EntityFrameworkCore.Parameters;
 
@@ -41,14 +42,15 @@ public class SqlServerCollectionParameterFactory : ICollectionParameterFactory
    /// <inheritdoc />
    public IQueryable<T> CreateScalarQuery<T>(DbContext ctx, IReadOnlyCollection<T> values, bool applyDistinct)
    {
-      var entityType = ctx.Model.GetEntityType(typeof(ScalarCollectionParameter<T>));
+      var entityName = EntityNameProvider.GetCollectionParameterName(typeof(T), true);
+      var entityType = ctx.Model.GetEntityType(entityName);
       var parameterInfo = _cache.GetOrAdd(entityType,
                                           static (type, args) => GetScalarParameterInfo<T>(args._stringBuilderPool, args._sqlGenerationHelper, type),
                                           (_stringBuilderPool, _sqlGenerationHelper));
 
       var parameterValue = parameterInfo.ParameterFactory(values, _jsonSerializerOptions);
 
-      return ctx.Set<ScalarCollectionParameter<T>>()
+      return ctx.Set<ScalarCollectionParameter<T>>(entityName)
                 .FromSqlRaw(applyDistinct ? parameterInfo.StatementWithDistinct : parameterInfo.Statement,
                             CreateTopParameter(parameterValue),
                             CreateJsonParameter(parameterValue))
@@ -59,14 +61,16 @@ public class SqlServerCollectionParameterFactory : ICollectionParameterFactory
    public IQueryable<T> CreateComplexQuery<T>(DbContext ctx, IReadOnlyCollection<T> objects, bool applyDistinct)
       where T : class
    {
-      var entityType = ctx.Model.GetEntityType(typeof(T));
+      var entityName = EntityNameProvider.GetCollectionParameterName(typeof(T), false);
+      var entityType = ctx.Model.GetEntityType(entityName);
       var parameterInfo = _cache.GetOrAdd(entityType, GetComplexParameterInfo<T>);
 
       var parameterValue = parameterInfo.ParameterFactory(objects, _jsonSerializerOptions);
 
-      return ctx.Set<T>().FromSqlRaw(applyDistinct ? parameterInfo.StatementWithDistinct : parameterInfo.Statement,
-                                     CreateTopParameter(parameterValue),
-                                     CreateJsonParameter(parameterValue));
+      return ctx.Set<T>(entityName)
+                .FromSqlRaw(applyDistinct ? parameterInfo.StatementWithDistinct : parameterInfo.Statement,
+                            CreateTopParameter(parameterValue),
+                            CreateJsonParameter(parameterValue));
    }
 
    private static SqlParameter CreateJsonParameter(JsonCollectionParameter parameterValue)

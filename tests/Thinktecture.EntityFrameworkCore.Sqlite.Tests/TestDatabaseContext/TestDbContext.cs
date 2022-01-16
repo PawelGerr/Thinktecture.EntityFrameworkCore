@@ -9,6 +9,7 @@ public class TestDbContext : DbContext
 {
 #nullable disable
    public DbSet<TestEntity> TestEntities { get; set; }
+   public DbSet<KeylessTestEntity> KeylessEntities { get; set; }
    public DbSet<TestEntityWithAutoIncrement> TestEntitiesWithAutoIncrement { get; set; }
    public DbSet<TestEntityWithShadowProperties> TestEntitiesWithShadowProperties { get; set; }
    public DbSet<TestEntityWithSqlDefaultValues> TestEntitiesWithDefaultValues { get; set; }
@@ -39,6 +40,7 @@ public class TestDbContext : DbContext
       base.OnModelCreating(modelBuilder);
 
       TestEntity.Configure(modelBuilder);
+      KeylessTestEntity.Configure(modelBuilder);
 
       modelBuilder.Entity<TestEntityWithAutoIncrement>().Property(e => e.Id).ValueGeneratedOnAdd();
 
@@ -68,7 +70,7 @@ public class TestDbContext : DbContext
 
    public IQueryable<SqliteTableInfo> GetTempTableColumns<T>()
    {
-      var entityType = Model.GetEntityType(typeof(T));
+      var entityType = this.GetTempTableEntityType<T>();
       return GetTempTableColumns(entityType);
    }
 

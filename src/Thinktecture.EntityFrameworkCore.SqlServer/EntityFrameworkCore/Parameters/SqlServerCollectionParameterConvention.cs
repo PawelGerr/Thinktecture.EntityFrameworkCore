@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Metadata.Conventions;
+using Thinktecture.Internal;
 
 namespace Thinktecture.EntityFrameworkCore.Parameters;
 
@@ -27,7 +28,9 @@ internal class SqlServerCollectionParameterConvention : IModelInitializedConvent
 
    private static void AddScalarCollectionParameter<TColumn1>(IConventionModelBuilder modelBuilder)
    {
-      var builder = modelBuilder.Entity(typeof(ScalarCollectionParameter<TColumn1>), fromDataAnnotation: true);
+      var builder = modelBuilder.SharedTypeEntity(EntityNameProvider.GetCollectionParameterName(typeof(TColumn1), true),
+                                                  typeof(ScalarCollectionParameter<TColumn1>),
+                                                  fromDataAnnotation: true);
 
       if (builder is null)
          return;

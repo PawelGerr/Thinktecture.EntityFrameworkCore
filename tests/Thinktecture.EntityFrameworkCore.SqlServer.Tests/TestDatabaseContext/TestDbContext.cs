@@ -12,7 +12,9 @@ public class TestDbContext : DbContext, IDbDefaultSchema
    public string? Schema { get; }
 
 #nullable disable
+   // ReSharper disable UnusedAutoPropertyAccessor.Global
    public DbSet<TestEntity> TestEntities { get; set; }
+   public DbSet<KeylessTestEntity> KeylessEntities { get; set; }
    public DbSet<TestTemporalTableEntity> TestTemporalTableEntity { get; set; }
    public DbSet<TestEntityWithAutoIncrement> TestEntitiesWithAutoIncrement { get; set; }
    public DbSet<TestEntityWithRowVersion> TestEntitiesWithRowVersion { get; set; }
@@ -32,6 +34,7 @@ public class TestDbContext : DbContext, IDbDefaultSchema
    public DbSet<TestEntity_Owns_SeparateMany_SeparateOne> TestEntities_Own_SeparateMany_SeparateOne { get; set; }
    public DbSet<TestEntity_Owns_SeparateMany_SeparateMany> TestEntities_Own_SeparateMany_SeparateMany { get; set; }
    public IQueryable<TestViewEntity> TestView => Set<TestViewEntity>();
+   // ReSharper restore UnusedAutoPropertyAccessor.Global
 #nullable enable
 
    public Action<ModelBuilder>? ConfigureModel { get; set; }
@@ -46,17 +49,19 @@ public class TestDbContext : DbContext, IDbDefaultSchema
    {
       base.OnModelCreating(modelBuilder);
 
-      modelBuilder.ConfigureScalarCollectionParameter<ConvertibleClass>()
-                  .Property(e => e.Value)
-                  .HasConversion(c => c.Key, k => new ConvertibleClass(k));
+      modelBuilder.ConfigureScalarCollectionParameter<ConvertibleClass>(builder => builder.Property(e => e.Value)
+                                                                                          .HasConversion(c => c.Key, k => new ConvertibleClass(k)));
 
-      var myParamBuilder = modelBuilder.ConfigureComplexCollectionParameter<MyParameter>();
-      myParamBuilder.Property(e => e.Column1)
-                    .HasColumnName("Id");
-      myParamBuilder.Property(e => e.Column2)
-                    .HasConversion(c => c.Key, k => new ConvertibleClass(k));
+      modelBuilder.ConfigureComplexCollectionParameter<MyParameter>(myParamBuilder =>
+                                                                    {
+                                                                       myParamBuilder.Property(e => e.Column1)
+                                                                                     .HasColumnName("Id");
+                                                                       myParamBuilder.Property(e => e.Column2)
+                                                                                     .HasConversion(c => c.Key, k => new ConvertibleClass(k));
+                                                                    });
 
       TestEntity.Configure(modelBuilder);
+      KeylessTestEntity.Configure(modelBuilder);
 
       modelBuilder.Entity<TestTemporalTableEntity>(builder => builder.ToTable("TestTemporalTableEntity", tableBuilder => tableBuilder.IsTemporal()));
 
@@ -98,8 +103,7 @@ public class TestDbContext : DbContext, IDbDefaultSchema
    public IQueryable<InformationSchemaColumn> GetTempTableColumns<T>()
       where T : class
    {
-      var type = typeof(T);
-      var entityType = Model.GetEntityType(type);
+      var entityType = this.GetTempTableEntityType<T>();
       return GetTempTableColumns(entityType);
    }
 
@@ -128,7 +132,7 @@ WHERE
 
    public IQueryable<InformationSchemaTableConstraint> GetTempTableConstraints<T>()
    {
-      var tableName = this.GetEntityType<T>().GetTableName()
+      var tableName = this.GetTempTableEntityType<T>().GetTableName()
                       ?? throw new Exception("No table name");
 
       if (!tableName.StartsWith("#", StringComparison.Ordinal))
@@ -145,7 +149,7 @@ WHERE
 
    public IQueryable<InformationSchemaConstraintColumn> GetTempTableConstraintsColumns<T>()
    {
-      var tableName = this.GetEntityType<T>().GetTableName() ?? throw new Exception("No table name.");
+      var tableName = this.GetTempTableEntityType<T>().GetTableName() ?? throw new Exception("No table name.");
 
       if (!tableName.StartsWith("#", StringComparison.Ordinal))
          tableName = $"#{tableName}";
@@ -161,14 +165,14 @@ WHERE
 
    public IQueryable<InformationSchemaKeyColumn> GetTempTableKeyColumns<T>()
    {
-      var tableName = this.GetEntityType<T>().GetTableName() ?? throw new Exception("No table name.");
+      var tableName = this.GetTempTableEntityType<T>().GetTableName() ?? throw new Exception("No table name.");
 
       return GetTempTableKeyColumns(tableName);
    }
 
    public IQueryable<InformationSchemaKeyColumn> GetTempTableKeyColumns<TColumn1, TColumn2>()
    {
-      var tableName = this.GetEntityType<TempTable<TColumn1, TColumn2>>().GetTableName() ?? throw new Exception("No table name.");
+      var tableName = this.GetTempTableEntityType<TempTable<TColumn1, TColumn2>>().GetTableName() ?? throw new Exception("No table name.");
 
       return GetTempTableKeyColumns(tableName);
    }

@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Thinktecture.EntityFrameworkCore.BulkOperations;
 using Thinktecture.EntityFrameworkCore.Parameters;
 using Thinktecture.EntityFrameworkCore.TempTables;
+using Thinktecture.Internal;
 
 // ReSharper disable once CheckNamespace
 namespace Thinktecture;
@@ -53,7 +54,7 @@ public static class BulkOperationsDbContextExtensions
    {
       ArgumentNullException.ThrowIfNull(ctx);
 
-      var entityType = ctx.Model.GetEntityType(type);
+      var entityType = ctx.Model.GetEntityType(EntityNameProvider.GetTempTableName(type), type);
       return ctx.GetService<ITempTableCreator>().CreateTempTableAsync(entityType, options, cancellationToken);
    }
 

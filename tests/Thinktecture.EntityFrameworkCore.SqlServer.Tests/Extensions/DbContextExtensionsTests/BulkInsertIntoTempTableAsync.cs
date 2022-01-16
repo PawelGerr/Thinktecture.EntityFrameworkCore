@@ -16,7 +16,7 @@ public class BulkInsertIntoTempTableAsync : IntegrationTestsBase
    [Fact]
    public async Task Should_insert_keyless_type()
    {
-      ConfigureModel = builder => builder.ConfigureTempTableEntity<CustomTempTable>().Property(t => t.Column2).HasMaxLength(100).IsRequired();
+      ConfigureModel = builder => builder.ConfigureTempTableEntity<CustomTempTable>(typeBuilder => typeBuilder.Property(t => t.Column2).HasMaxLength(100).IsRequired());
 
       var entities = new List<CustomTempTable> { new(1, "value") };
       await using var query = await ActDbContext.BulkInsertIntoTempTableAsync(entities);

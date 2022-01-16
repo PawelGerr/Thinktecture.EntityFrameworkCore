@@ -64,12 +64,11 @@ public class BulkInsertValuesIntoTempTableAsync_1_Column : IntegrationTestsBase
    [Fact]
    public async Task Should_insert_nullable_int_of_entity_with_a_key()
    {
-      ConfigureModel = builder =>
-                       {
-                          var entityBuilder = builder.ConfigureTempTable<int?>(false);
-                          entityBuilder.HasKey(t => t.Column1);
-                          entityBuilder.Property(t => t.Column1).ValueGeneratedNever();
-                       };
+      ConfigureModel = builder => builder.ConfigureTempTable<int?>(false, typeBuilder =>
+                                                                          {
+                                                                             typeBuilder.HasKey(t => t.Column1);
+                                                                             typeBuilder.Property(t => t.Column1).ValueGeneratedNever();
+                                                                          });
 
       var values = new List<int?> { 1, 2 };
       await using var query = await ActDbContext.BulkInsertValuesIntoTempTableAsync(values, new SqlServerTempTableBulkInsertOptions { PrimaryKeyCreation = PrimaryKeyPropertiesProviders.None });
@@ -81,7 +80,7 @@ public class BulkInsertValuesIntoTempTableAsync_1_Column : IntegrationTestsBase
    [Fact]
    public async Task Should_insert_string()
    {
-      ConfigureModel = builder => builder.ConfigureTempTable<string?>().Property(t => t.Column1).IsRequired(false);
+      ConfigureModel = builder => builder.ConfigureTempTable<string?>(typeBuilder => typeBuilder.Property(t => t.Column1).IsRequired(false));
 
       var values = new List<string?> { "value1", null };
       await using var query = await ActDbContext.BulkInsertValuesIntoTempTableAsync(values, new SqlServerTempTableBulkInsertOptions { PrimaryKeyCreation = PrimaryKeyPropertiesProviders.None });
@@ -93,7 +92,7 @@ public class BulkInsertValuesIntoTempTableAsync_1_Column : IntegrationTestsBase
    [Fact]
    public async Task Should_create_pk_by_default_on_string_column()
    {
-      ConfigureModel = builder => builder.ConfigureTempTable<string>().Property(t => t.Column1).HasMaxLength(100).IsRequired();
+      ConfigureModel = builder => builder.ConfigureTempTable<string>(typeBuilder => typeBuilder.Property(t => t.Column1).HasMaxLength(100).IsRequired());
 
       await using var tempTable = await ActDbContext.BulkInsertValuesIntoTempTableAsync(new List<string> { "value" }, new SqlServerTempTableBulkInsertOptions
                                                                                                                       {

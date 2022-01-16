@@ -1,6 +1,5 @@
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Thinktecture.EntityFrameworkCore.TempTables;
 using Thinktecture.TestDatabaseContext;
 
 namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqliteBulkOperationExecutorTests;
@@ -20,11 +19,9 @@ public class BulkInsertOrUpdateAsync : IntegrationTestsBase
    [Fact]
    public async Task Should_throw_when_entity_has_no_key()
    {
-      ConfigureModel = builder => builder.ConfigureTempTable<int>();
-
-      await SUT.Invoking(sut => sut.BulkInsertOrUpdateAsync(new List<TempTable<int>> { new(0) }, new SqliteBulkInsertOrUpdateOptions()))
+      await SUT.Invoking(sut => sut.BulkInsertOrUpdateAsync(new List<KeylessTestEntity> { new() }, new SqliteBulkInsertOrUpdateOptions()))
                .Should().ThrowAsync<InvalidOperationException>()
-               .WithMessage("The entity 'Thinktecture.EntityFrameworkCore.TempTables.TempTable<int>' has no primary key. Please provide key properties to perform JOIN/match on.");
+               .WithMessage("The entity 'Thinktecture.TestDatabaseContext.KeylessTestEntity' has no primary key. Please provide key properties to perform JOIN/match on.");
    }
 
    [Fact]

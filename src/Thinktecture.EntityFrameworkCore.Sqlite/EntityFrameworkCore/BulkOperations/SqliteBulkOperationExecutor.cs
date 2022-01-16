@@ -357,7 +357,9 @@ public sealed class SqliteBulkOperationExecutor
       CancellationToken cancellationToken)
       where TEntity : class
    {
-      var entityType = _ctx.Model.GetEntityType(typeof(TEntity));
+      var type = typeof(TEntity);
+      var entityTypeName = EntityNameProvider.GetTempTableName(type);
+      var entityType = _ctx.Model.GetEntityType(entityTypeName, type);
       var selectedProperties = options.PropertiesToInsert.DeterminePropertiesForTempTable(entityType, null);
 
       if (selectedProperties.Any(p => !p.IsInlined))
@@ -372,7 +374,11 @@ public sealed class SqliteBulkOperationExecutor
          var bulkInsertOptions = options.GetBulkInsertOptions();
          await BulkInsertAsync(entityType, entitiesOrValues, null, tempTableReference.Name, bulkInsertOptions, bulkOperationContextFactory, cancellationToken).ConfigureAwait(false);
 
-         var query = _ctx.Set<TEntity>().FromTempTable(tempTableReference.Name);
+         var dbSet = entityType.Name == entityTypeName
+                        ? _ctx.Set<TEntity>(entityTypeName)
+                        : _ctx.Set<TEntity>();
+
+         var query = dbSet.FromTempTable(tempTableReference.Name);
 
          var pk = entityType.FindPrimaryKey();
 

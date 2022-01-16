@@ -16,7 +16,7 @@ public class ConfigureTempTable_2_Columns : IntegrationTestsBase
    {
       ConfigureModel = builder => builder.ConfigureTempTable<int, int?>();
 
-      var entityType = ActDbContext.Model.FindEntityType(typeof(TempTable<int, int?>));
+      var entityType = ActDbContext.GetTempTableEntityType<TempTable<int, int?>>();
       entityType.Should().NotBeNull();
       entityType!.GetKeys().Should().BeEmpty();
    }
@@ -26,9 +26,9 @@ public class ConfigureTempTable_2_Columns : IntegrationTestsBase
    {
       ConfigureModel = builder => builder.ConfigureTempTable<int, int?>();
 
-      var entityType = ActDbContext.Model.FindEntityType(typeof(TempTable<int, int?>));
+      var entityType = ActDbContext.GetTempTableEntityType<TempTable<int, int?>>();
       entityType.Should().NotBeNull();
-      entityType!.Name.Should().Be("Thinktecture.EntityFrameworkCore.TempTables.TempTable<int, int?>");
+      entityType!.Name.Should().Be("Thinktecture:TempTable:Thinktecture.EntityFrameworkCore.TempTables.TempTable<int, int?>");
 
       var properties = entityType.GetProperties().ToList();
       properties.Should().HaveCount(2);
@@ -43,9 +43,9 @@ public class ConfigureTempTable_2_Columns : IntegrationTestsBase
    {
       ConfigureModel = builder => builder.ConfigureTempTable<string, string>();
 
-      var entityType = ActDbContext.Model.FindEntityType(typeof(TempTable<string, string>));
+      var entityType = ActDbContext.GetTempTableEntityType<TempTable<string, string>>();
       entityType.Should().NotBeNull();
-      entityType!.Name.Should().Be("Thinktecture.EntityFrameworkCore.TempTables.TempTable<string, string>");
+      entityType!.Name.Should().Be("Thinktecture:TempTable:Thinktecture.EntityFrameworkCore.TempTables.TempTable<string, string>");
 
       var properties = entityType.GetProperties().ToList();
       properties.Should().HaveCount(2);
@@ -58,9 +58,9 @@ public class ConfigureTempTable_2_Columns : IntegrationTestsBase
    [Fact]
    public void Should_flag_col1_as_nullable_if_set_via_modelbuilder()
    {
-      ConfigureModel = builder => builder.ConfigureTempTable<string, string>().Property(t => t.Column1).IsRequired(false);
+      ConfigureModel = builder => builder.ConfigureTempTable<string, string>(typeBuilder => typeBuilder.Property(t => t.Column1).IsRequired(false));
 
-      var entityType = ActDbContext.Model.FindEntityType(typeof(TempTable<string, string>));
+      var entityType = ActDbContext.GetTempTableEntityType<TempTable<string, string>>();
       entityType.Should().NotBeNull();
       var properties = entityType!.GetProperties();
       properties.Select(p => p.IsNullable).Should().BeEquivalentTo(new[] { true, false });
@@ -71,7 +71,7 @@ public class ConfigureTempTable_2_Columns : IntegrationTestsBase
    {
       ConfigureModel = builder => builder.ConfigureTempTable<int, int?>();
 
-      var entityType = ActDbContext.Model.FindEntityType(typeof(TempTable<int, int?>));
+      var entityType = ActDbContext.GetTempTableEntityType<TempTable<int, int?>>();
       entityType.Should().NotBeNull();
       entityType!.GetTableName().Should().Be("#TempTable<int, int?>");
    }
@@ -81,7 +81,7 @@ public class ConfigureTempTable_2_Columns : IntegrationTestsBase
    {
       ConfigureModel = builder => builder.ConfigureTempTable<string, string>();
 
-      var entityType = ActDbContext.Model.FindEntityType(typeof(TempTable<string, string>));
+      var entityType = ActDbContext.GetTempTableEntityType<TempTable<string, string>>();
       entityType.Should().NotBeNull();
       entityType!.GetTableName().Should().Be("#TempTable<string, string>");
    }

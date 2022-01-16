@@ -21,25 +21,23 @@ public class CreatePrimaryKeyAsync : IntegrationTestsBase
    [Fact]
    public async Task Should_create_primary_key_for_keylessType()
    {
-      ConfigureModel = builder => builder.ConfigureTempTable<int>();
+      await using var tempTableReference = await ArrangeDbContext.CreateTempTableAsync<KeylessTestEntity>(new TempTableCreationOptions
+                                                                                                          {
+                                                                                                             TableNameProvider = DefaultTempTableNameProvider.Instance,
+                                                                                                             PrimaryKeyCreation = PrimaryKeyPropertiesProviders.None
+                                                                                                          });
 
-      await using var tempTableReference = await ArrangeDbContext.CreateTempTableAsync<TempTable<int>>(new TempTableCreationOptions
-                                                                                                       {
-                                                                                                          TableNameProvider = DefaultTempTableNameProvider.Instance,
-                                                                                                          PrimaryKeyCreation = PrimaryKeyPropertiesProviders.None
-                                                                                                       });
-
-      var entityType = ActDbContext.GetEntityType<TempTable<int>>();
+      var entityType = ActDbContext.GetEntityType<KeylessTestEntity>();
       var allProperties = entityType.GetProperties().Select(p => new PropertyWithNavigations(p, Array.Empty<INavigation>())).ToList();
       await SUT.CreatePrimaryKeyAsync(ActDbContext, PrimaryKeyPropertiesProviders.AdaptiveForced.GetPrimaryKeyProperties(entityType, allProperties), tempTableReference.Name);
 
-      var constraints = await AssertDbContext.GetTempTableConstraints<TempTable<int>>().ToListAsync();
+      var constraints = await AssertDbContext.GetTempTableConstraints<KeylessTestEntity>().ToListAsync();
       constraints.Should().HaveCount(1)
                  .And.Subject.First().CONSTRAINT_TYPE.Should().Be("PRIMARY KEY");
 
-      var keyColumns = await AssertDbContext.GetTempTableKeyColumns<TempTable<int>>().ToListAsync();
+      var keyColumns = await AssertDbContext.GetTempTableKeyColumns<KeylessTestEntity>().ToListAsync();
       keyColumns.Should().HaveCount(1)
-                .And.Subject.First().COLUMN_NAME.Should().Be(nameof(TempTable<int>.Column1));
+                .And.Subject.First().COLUMN_NAME.Should().Be(nameof(KeylessTestEntity.IntColumn));
    }
 
    [Fact]

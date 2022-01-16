@@ -27,7 +27,7 @@ public class BulkInsertValuesIntoTempTableAsync_2_Column : IntegrationTestsBase
    [Fact]
    public async Task Should_insert_string_string()
    {
-      ConfigureModel = builder => builder.ConfigureTempTable<string, string>().Property(t => t.Column2).IsRequired(false);
+      ConfigureModel = builder => builder.ConfigureTempTable<string, string>(typeBuilder => typeBuilder.Property(t => t.Column2).IsRequired(false));
 
       var values = new List<(string, string?)> { ("value1", null) };
       await using var query = await ActDbContext.BulkInsertValuesIntoTempTableAsync(values, new SqlServerTempTableBulkInsertOptions { PrimaryKeyCreation = PrimaryKeyPropertiesProviders.None });

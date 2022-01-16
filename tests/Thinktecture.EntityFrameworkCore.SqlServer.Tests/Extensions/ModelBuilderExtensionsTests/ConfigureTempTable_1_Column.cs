@@ -15,7 +15,7 @@ public class ConfigureTempTable_1_Column : IntegrationTestsBase
    {
       ConfigureModel = builder => builder.ConfigureTempTable<int>();
 
-      var entityType = ActDbContext.Model.FindEntityType(typeof(TempTable<int>));
+      var entityType = ActDbContext.GetTempTableEntityType<TempTable<int>>();
       entityType.Should().NotBeNull();
       entityType!.GetKeys().Should().BeEmpty();
    }
@@ -25,9 +25,9 @@ public class ConfigureTempTable_1_Column : IntegrationTestsBase
    {
       ConfigureModel = builder => builder.ConfigureTempTable<int>();
 
-      var entityType = ActDbContext.Model.FindEntityType(typeof(TempTable<int>));
+      var entityType = ActDbContext.GetTempTableEntityType<TempTable<int>>();
       entityType.Should().NotBeNull();
-      entityType!.Name.Should().Be("Thinktecture.EntityFrameworkCore.TempTables.TempTable<int>");
+      entityType!.Name.Should().Be("Thinktecture:TempTable:Thinktecture.EntityFrameworkCore.TempTables.TempTable<int>");
 
       var properties = entityType.GetProperties().ToList();
       properties.Should().HaveCount(1);
@@ -42,9 +42,9 @@ public class ConfigureTempTable_1_Column : IntegrationTestsBase
    {
       ConfigureModel = builder => builder.ConfigureTempTable<int?>();
 
-      var entityType = ActDbContext.Model.FindEntityType(typeof(TempTable<int?>));
+      var entityType = ActDbContext.GetTempTableEntityType<TempTable<int?>>();
       entityType.Should().NotBeNull();
-      entityType!.Name.Should().Be("Thinktecture.EntityFrameworkCore.TempTables.TempTable<int?>");
+      entityType!.Name.Should().Be("Thinktecture:TempTable:Thinktecture.EntityFrameworkCore.TempTables.TempTable<int?>");
 
       var properties = entityType.GetProperties();
       properties.Should().HaveCount(1);
@@ -57,11 +57,11 @@ public class ConfigureTempTable_1_Column : IntegrationTestsBase
    [Fact]
    public void Should_flag_nullable_int_as_not_nullable_if_set_via_modelbuilder()
    {
-      ConfigureModel = builder => builder.ConfigureTempTable<int?>().Property(t => t.Column1).IsRequired();
+      ConfigureModel = builder => builder.ConfigureTempTable<int?>(typeBuilder => typeBuilder.Property(t => t.Column1).IsRequired());
 
-      var entityType = ActDbContext.Model.FindEntityType(typeof(TempTable<int?>));
+      var entityType = ActDbContext.GetTempTableEntityType<TempTable<int?>>();
       entityType.Should().NotBeNull();
-      entityType!.Name.Should().Be("Thinktecture.EntityFrameworkCore.TempTables.TempTable<int?>");
+      entityType.Name.Should().Be("Thinktecture:TempTable:Thinktecture.EntityFrameworkCore.TempTables.TempTable<int?>");
 
       var properties = entityType.GetProperties();
       properties.First().IsNullable.Should().BeFalse();
@@ -70,11 +70,11 @@ public class ConfigureTempTable_1_Column : IntegrationTestsBase
    [Fact]
    public void Should_introduce_temp_table_with_string()
    {
-      ConfigureModel = builder => builder.ConfigureTempTable<string>().Property(t => t.Column1).IsRequired(false);
+      ConfigureModel = builder => builder.ConfigureTempTable<string>(typeBuilder => typeBuilder.Property(t => t.Column1).IsRequired(false));
 
-      var entityType = ActDbContext.Model.FindEntityType(typeof(TempTable<string>));
+      var entityType = ActDbContext.GetTempTableEntityType<TempTable<string>>();
       entityType.Should().NotBeNull();
-      entityType!.Name.Should().Be("Thinktecture.EntityFrameworkCore.TempTables.TempTable<string>");
+      entityType!.Name.Should().Be("Thinktecture:TempTable:Thinktecture.EntityFrameworkCore.TempTables.TempTable<string>");
 
       var properties = entityType.GetProperties();
       properties.Should().HaveCount(1);
@@ -89,7 +89,7 @@ public class ConfigureTempTable_1_Column : IntegrationTestsBase
    {
       ConfigureModel = builder => builder.ConfigureTempTable<int>();
 
-      var entityType = ActDbContext.Model.FindEntityType(typeof(TempTable<int>));
+      var entityType = ActDbContext.GetTempTableEntityType<TempTable<int>>();
       entityType.Should().NotBeNull();
       entityType!.GetTableName().Should().Be("#TempTable<int>");
    }
@@ -99,7 +99,7 @@ public class ConfigureTempTable_1_Column : IntegrationTestsBase
    {
       ConfigureModel = builder => builder.ConfigureTempTable<int?>();
 
-      var entityType = ActDbContext.Model.FindEntityType(typeof(TempTable<int?>));
+      var entityType = ActDbContext.GetTempTableEntityType<TempTable<int?>>();
       entityType.Should().NotBeNull();
       entityType!.GetTableName().Should().Be("#TempTable<int?>");
    }
@@ -109,7 +109,7 @@ public class ConfigureTempTable_1_Column : IntegrationTestsBase
    {
       ConfigureModel = builder => builder.ConfigureTempTable<string>();
 
-      var entityType = ActDbContext.Model.FindEntityType(typeof(TempTable<string>));
+      var entityType = ActDbContext.GetTempTableEntityType<TempTable<string>>();
       entityType.Should().NotBeNull();
       entityType!.GetTableName().Should().Be("#TempTable<string>");
    }

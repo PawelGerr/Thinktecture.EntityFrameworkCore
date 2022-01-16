@@ -18,13 +18,13 @@ public class BulkInsertAsync : IntegrationTestsBase
    }
 
    [Fact]
-   public async Task Should_throw_when_inserting_temp_table_entities_without_creating_table_first()
+   public async Task Should_throw_when_trying_to_insert_into_pure_temp_table_entity()
    {
       ConfigureModel = builder => builder.ConfigureTempTable<int>();
 
       await SUT.Invoking(sut => sut.BulkInsertAsync(new List<TempTable<int>> { new(0) }, new SqlServerBulkInsertOptions()))
-               .Should().ThrowAsync<InvalidOperationException>()
-               .WithMessage("Cannot access destination table '[*].[#TempTable<int>]'.");
+               .Should().ThrowAsync<ArgumentException>()
+               .WithMessage("The provided type 'TempTable<int>' is not part of the provided Entity Framework model. (Parameter 'type')");
    }
 
    [Fact]
@@ -126,12 +126,12 @@ public class BulkInsertAsync : IntegrationTestsBase
                     {
                        // we skip TestEntityWithSqlDefaultValues.String
                        PropertiesToInsert = IEntityPropertiesProvider.Include<TestEntityWithSqlDefaultValues>(e => new
-                                                                                                               {
-                                                                                                                  e.Id,
-                                                                                                                  e.Int,
-                                                                                                                  e.NullableInt,
-                                                                                                                  e.NullableString
-                                                                                                               })
+                                                                                                                   {
+                                                                                                                      e.Id,
+                                                                                                                      e.Int,
+                                                                                                                      e.NullableInt,
+                                                                                                                      e.NullableString
+                                                                                                                   })
                     };
 
       await SUT.BulkInsertAsync(testEntities, options);
@@ -175,12 +175,12 @@ public class BulkInsertAsync : IntegrationTestsBase
                     {
                        // we skip TestEntityWithDefaultValues.String
                        PropertiesToInsert = IEntityPropertiesProvider.Include<TestEntityWithDotnetDefaultValues>(e => new
-                                                                                                                  {
-                                                                                                                     e.Id,
-                                                                                                                     e.Int,
-                                                                                                                     e.NullableInt,
-                                                                                                                     e.NullableString
-                                                                                                                  })
+                                                                                                                      {
+                                                                                                                         e.Id,
+                                                                                                                         e.Int,
+                                                                                                                         e.NullableInt,
+                                                                                                                         e.NullableString
+                                                                                                                      })
                     };
 
       await SUT.BulkInsertAsync(testEntities, options);
