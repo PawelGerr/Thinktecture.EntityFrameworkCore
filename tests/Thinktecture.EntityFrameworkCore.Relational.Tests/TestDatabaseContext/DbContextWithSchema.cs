@@ -10,6 +10,7 @@ public class DbContextWithSchema : DbContext, IDbDefaultSchema
 #nullable disable
    public DbSet<TestEntity> TestEntities { get; set; }
    public DbSet<TestQuery> TestQuery { get; set; }
+   public DbSet<EntityWithArrayValueComparer> EntitiesWithArrayValueComparer { get; set; }
 #nullable enable
    public Action<ModelBuilder>? ConfigureModel { get; set; }
 
@@ -29,6 +30,9 @@ public class DbContextWithSchema : DbContext, IDbDefaultSchema
       base.OnModelCreating(modelBuilder);
 
       modelBuilder.Entity<TestQuery>().HasNoKey().ToView("TestQuery");
+
+      modelBuilder.Entity<EntityWithArrayValueComparer>(builder => builder.Property(e => e.Bytes)
+                                                                                 .UseReferenceEqualityComparer());
 
       modelBuilder.HasDbFunction(() => TestDbFunction());
 
