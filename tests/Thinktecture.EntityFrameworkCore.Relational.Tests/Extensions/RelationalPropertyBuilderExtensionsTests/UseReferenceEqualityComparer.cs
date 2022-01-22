@@ -6,7 +6,7 @@ namespace Thinktecture.Extensions.RelationalPropertyBuilderExtensionsTests;
 public class UseReferenceEqualityComparer : IntegrationTestsBase
 {
    public UseReferenceEqualityComparer(ITestOutputHelper testOutputHelper)
-      : base(testOutputHelper, MigrationExecutionStrategies.EnsureCreated)
+      : base(testOutputHelper, IMigrationExecutionStrategy.EnsureCreated)
    {
    }
 

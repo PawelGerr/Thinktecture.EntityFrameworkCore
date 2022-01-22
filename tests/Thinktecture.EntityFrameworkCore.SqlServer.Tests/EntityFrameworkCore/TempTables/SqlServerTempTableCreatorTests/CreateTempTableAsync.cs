@@ -1,4 +1,6 @@
 using System.Data;
+using System.Data.Common;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Thinktecture.EntityFrameworkCore.BulkOperations;
 using Thinktecture.TestDatabaseContext;
@@ -293,11 +295,11 @@ Missing columns: Column2.");
    [Fact]
    public async Task Should_open_connection()
    {
-      await using var con = CreateConnection(TestContext.Instance.ConnectionString);
+      await using var con = CreateConnection();
 
-      var builder = CreateOptionsBuilder(con);
+      var options = CreateOptions(con);
 
-      await using var ctx = new TestDbContext(builder.Options, new DbDefaultSchema(Schema));
+      await using var ctx = new TestDbContext(options, new DbDefaultSchema(Schema));
 
       ctx.Database.GetDbConnection().State.Should().Be(ConnectionState.Closed);
 
@@ -311,11 +313,11 @@ Missing columns: Column2.");
    [Fact]
    public async Task Should_return_reference_to_be_able_to_close_connection_using_dispose()
    {
-      await using var con = CreateConnection(TestContext.Instance.ConnectionString);
+      await using var con = CreateConnection();
 
-      var builder = CreateOptionsBuilder(con);
+      var options = CreateOptions(con);
 
-      await using var ctx = new TestDbContext(builder.Options, new DbDefaultSchema(Schema));
+      await using var ctx = new TestDbContext(options, new DbDefaultSchema(Schema));
 
       ctx.Database.GetDbConnection().State.Should().Be(ConnectionState.Closed);
 
@@ -330,11 +332,11 @@ Missing columns: Column2.");
    [Fact]
    public async Task Should_return_reference_to_be_able_to_close_connection_using_disposeAsync()
    {
-      await using var con = CreateConnection(TestContext.Instance.ConnectionString);
+      await using var con = CreateConnection();
 
-      var builder = CreateOptionsBuilder(con);
+      var options = CreateOptions(con);
 
-      await using var ctx = new TestDbContext(builder.Options, new DbDefaultSchema(Schema));
+      await using var ctx = new TestDbContext(options, new DbDefaultSchema(Schema));
 
       ctx.Database.GetDbConnection().State.Should().Be(ConnectionState.Closed);
 
@@ -347,15 +349,15 @@ Missing columns: Column2.");
    }
 
    [Fact]
-   public async Task Should_return_reference_to_be_able_to_close_connection_event_if_ctx_is_disposed()
+   public async Task Should_return_reference_to_be_able_to_close_connection_even_if_ctx_is_disposed()
    {
-      await using var con = CreateConnection(TestContext.Instance.ConnectionString);
+      await using var con = CreateConnection();
 
-      var builder = CreateOptionsBuilder(con);
+      var options = CreateOptions(con);
 
       ITempTableReference tempTableReference;
 
-      await using (var ctx = new TestDbContext(builder.Options, new DbDefaultSchema(Schema)))
+      await using (var ctx = new TestDbContext(options, new DbDefaultSchema(Schema)))
       {
          ctx.Database.GetDbConnection().State.Should().Be(ConnectionState.Closed);
 
@@ -372,11 +374,11 @@ Missing columns: Column2.");
    [Fact]
    public async Task Should_return_table_ref_that_does_nothing_after_connection_is_disposed()
    {
-      await using var con = CreateConnection(TestContext.Instance.ConnectionString);
+      await using var con = CreateConnection();
 
-      var builder = CreateOptionsBuilder(con);
+      var options = CreateOptions(con);
 
-      await using var ctx = new TestDbContext(builder.Options, new DbDefaultSchema(Schema));
+      await using var ctx = new TestDbContext(options, new DbDefaultSchema(Schema));
 
       ctx.Database.GetDbConnection().State.Should().Be(ConnectionState.Closed);
 
@@ -393,11 +395,11 @@ Missing columns: Column2.");
    [Fact]
    public async Task Should_return_table_ref_that_does_nothing_after_connection_is_closed()
    {
-      await using var con = CreateConnection(TestContext.Instance.ConnectionString);
+      await using var con = CreateConnection();
 
-      var builder = CreateOptionsBuilder(con);
+      var options = CreateOptions(con);
 
-      await using var ctx = new TestDbContext(builder.Options, new DbDefaultSchema(Schema));
+      await using var ctx = new TestDbContext(options, new DbDefaultSchema(Schema));
 
       ctx.Database.GetDbConnection().State.Should().Be(ConnectionState.Closed);
 
@@ -696,6 +698,16 @@ Missing columns: Column2.");
       ValidateColumn(columns[1], "Id", "int", false);
       ValidateColumn(columns[2], nameof(OwnedEntity.IntColumn), "int", false);
       ValidateColumn(columns[3], nameof(OwnedEntity.StringColumn), "nvarchar", true);
+   }
+
+   private static DbConnection CreateConnection()
+   {
+      return new SqlConnection(TestContext.Instance.ConnectionString);
+   }
+
+   private DbContextOptions<TestDbContext> CreateOptions(DbConnection connection)
+   {
+      return TestCtxProviderBuilder.CreateOptionsBuilder(connection, Schema).Options;
    }
 
    private static void ValidateColumn(

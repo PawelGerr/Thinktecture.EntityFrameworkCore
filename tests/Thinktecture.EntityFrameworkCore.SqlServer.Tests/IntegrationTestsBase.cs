@@ -1,11 +1,5 @@
-using System.Data.Common;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore.Diagnostics;
-using Microsoft.EntityFrameworkCore.Diagnostics.Internal;
-using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.SqlServer.Diagnostics.Internal;
 using Thinktecture.EntityFrameworkCore;
 using Thinktecture.EntityFrameworkCore.Infrastructure;
 using Thinktecture.EntityFrameworkCore.Query;
@@ -21,73 +15,40 @@ public class IntegrationTestsBase : SqlServerDbContextIntegrationTests<TestDbCon
    private static readonly JsonSerializerOptions _jsonSerializerOptions = new() { Converters = { new ConvertibleClassConverter() } };
 
    protected Action<ModelBuilder>? ConfigureModel { get; set; }
-   protected IReadOnlyCollection<string> SqlStatements { get; }
+   protected IReadOnlyCollection<string> ExecutedCommands => TestCtxProvider.ExecutedCommands ?? throw new InvalidOperationException("Capturing executed commands wasn't enabled.");
+   protected string Schema => TestCtxProvider.Schema;
 
    protected bool IsTenantDatabaseSupportEnabled { get; set; }
    protected Mock<ITenantDatabaseProvider> TenantDatabaseProviderMock { get; }
 
    protected IntegrationTestsBase(ITestOutputHelper testOutputHelper, bool useSharedTables)
-      : base(TestContext.Instance.ConnectionString, useSharedTables)
+      : base(TestContext.Instance.ConnectionString, useSharedTables, testOutputHelper)
    {
-      DisableModelCache = true;
-
-      var loggerFactory = TestContext.Instance.GetLoggerFactory(testOutputHelper);
-      SqlStatements = loggerFactory.CollectExecutedCommands();
-
-      UseLoggerFactory(loggerFactory);
-
       TenantDatabaseProviderMock = new Mock<ITenantDatabaseProvider>(MockBehavior.Strict);
    }
 
-   [SuppressMessage("Usage", "EF1001", MessageId = "Internal EF Core API usage.")]
-   protected IDiagnosticsLogger<TCategory> CreateDiagnosticsLogger<TCategory>(ILoggingOptions? options = null, DiagnosticSource? diagnosticSource = null)
-      where TCategory : LoggerCategory<TCategory>, new()
+   protected override void ConfigureTestDbContextProvider(SqlServerTestDbContextProviderBuilder<TestDbContext> builder)
    {
-      var loggerFactory = LoggerFactory ?? throw new InvalidOperationException($"The {nameof(LoggerFactory)} must be set first.");
+      builder.UseMigrationExecutionStrategy(IMigrationExecutionStrategy.Migrations)
+             .CollectExecutedCommands()
+             .ConfigureOptions((optionsBuilder, _) =>
+                               {
+                                  optionsBuilder.AddNestedTransactionSupport()
+                                                .ConfigureWarnings(warningsBuilder => warningsBuilder.Ignore(CoreEventId.ManyServiceProvidersCreatedWarning));
 
-      return new DiagnosticsLogger<TCategory>(loggerFactory, options ?? new LoggingOptions(),
-                                              diagnosticSource ?? new DiagnosticListener(typeof(TCategory).ShortDisplayName()),
-                                              new SqlServerLoggingDefinitions(),
-                                              new NullDbContextLogger());
-   }
+                                  optionsBuilder.AddOrUpdateExtension<RelationalDbContextOptionsExtension>(extension => extension.Register(typeof(Mock<ITenantDatabaseProvider>), TenantDatabaseProviderMock));
+                               })
+             .ConfigureSqlServerOptions((optionsBuilder, _) =>
+                                        {
+                                           optionsBuilder.AddBulkOperationSupport()
+                                                         .AddRowNumberSupport()
+                                                         .AddCollectionParameterSupport(_jsonSerializerOptions);
 
-   /// <inheritdoc />
-   protected override TestDbContext CreateContext(DbContextOptions<TestDbContext> options, IDbDefaultSchema schema)
-   {
-      var ctx = base.CreateContext(options, schema);
-      ctx.ConfigureModel = ConfigureModel;
-
-      return ctx;
-   }
-
-   /// <inheritdoc />
-   protected override DbContextOptionsBuilder<TestDbContext> CreateOptionsBuilder(DbConnection? connection)
-   {
-      var builder = base.CreateOptionsBuilder(connection)
-                        .AddNestedTransactionSupport()
-                        .ConfigureWarnings(warningsBuilder => warningsBuilder.Ignore(CoreEventId.ManyServiceProvidersCreatedWarning));
-
-      builder.AddOrUpdateExtension<RelationalDbContextOptionsExtension>(extension => extension.Register(typeof(Mock<ITenantDatabaseProvider>), TenantDatabaseProviderMock));
-
-      return builder;
-   }
-
-   /// <inheritdoc />
-   protected override void ConfigureSqlServer(SqlServerDbContextOptionsBuilder builder)
-   {
-      base.ConfigureSqlServer(builder);
-
-      builder.AddBulkOperationSupport()
-             .AddRowNumberSupport()
-             .AddCollectionParameterSupport(_jsonSerializerOptions);
-
-      if (IsTenantDatabaseSupportEnabled)
-         builder.AddTenantDatabaseSupport<TestTenantDatabaseProviderFactory>();
-   }
-
-   /// <inheritdoc />
-   protected override string DetermineSchema(bool useSharedTables)
-   {
-      return useSharedTables ? $"{TestContext.Instance.Configuration["SourceBranchName"]}_tests" : base.DetermineSchema(false);
+                                           if (IsTenantDatabaseSupportEnabled)
+                                              optionsBuilder.AddTenantDatabaseSupport<TestTenantDatabaseProviderFactory>();
+                                        })
+             .UseSharedTableSchema($"{TestContext.Instance.Configuration["SourceBranchName"]}_tests")
+             .InitializeContext(ctx => ctx.ConfigureModel = ConfigureModel)
+             .DisableModelCache();
    }
 }

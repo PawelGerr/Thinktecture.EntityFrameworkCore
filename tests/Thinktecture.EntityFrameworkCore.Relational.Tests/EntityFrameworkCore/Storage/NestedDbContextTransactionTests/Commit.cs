@@ -8,7 +8,7 @@ namespace Thinktecture.EntityFrameworkCore.Storage.NestedDbContextTransactionTes
 public class Commit : NestedRelationalTransactionManagerTestBase
 {
    public Commit(ITestOutputHelper testOutputHelper)
-      : base(testOutputHelper, MigrationExecutionStrategies.EnsureCreated)
+      : base(testOutputHelper, IMigrationExecutionStrategy.EnsureCreated)
    {
    }
 

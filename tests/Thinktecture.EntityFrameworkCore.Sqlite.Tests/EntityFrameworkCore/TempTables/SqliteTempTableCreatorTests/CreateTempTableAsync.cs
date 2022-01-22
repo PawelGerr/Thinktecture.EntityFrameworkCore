@@ -310,11 +310,11 @@ Missing columns: Column2.");
    [Fact]
    public async Task Should_open_connection()
    {
-      await using var con = new SqliteConnection(ConnectionString);
+      await using var con = CreateConnection();
 
-      var builder = CreateOptionsBuilder(con);
+      var options = CreateOptionsBuilder(con);
 
-      await using var ctx = new TestDbContext(builder.Options);
+      await using var ctx = new TestDbContext(options);
 
       ctx.Database.GetDbConnection().State.Should().Be(ConnectionState.Closed);
 
@@ -328,11 +328,11 @@ Missing columns: Column2.");
    [Fact]
    public async Task Should_return_reference_to_be_able_to_close_connection()
    {
-      await using var con = new SqliteConnection(ConnectionString);
+      await using var con = CreateConnection();
 
-      var builder = CreateOptionsBuilder(con);
+      var options = CreateOptionsBuilder(con);
 
-      await using var ctx = new TestDbContext(builder.Options);
+      await using var ctx = new TestDbContext(options);
 
       ctx.Database.GetDbConnection().State.Should().Be(ConnectionState.Closed);
 
@@ -347,13 +347,13 @@ Missing columns: Column2.");
    [Fact]
    public async Task Should_return_reference_to_be_able_to_close_connection_event_if_ctx_is_disposed()
    {
-      await using var con = new SqliteConnection(ConnectionString);
+      await using var con = CreateConnection();
 
-      var builder = CreateOptionsBuilder(con);
+      var options = CreateOptionsBuilder(con);
 
       ITempTableReference tempTableReference;
 
-      await using (var ctx = new TestDbContext(builder.Options))
+      await using (var ctx = new TestDbContext(options))
       {
          ctx.Database.GetDbConnection().State.Should().Be(ConnectionState.Closed);
 
@@ -370,11 +370,11 @@ Missing columns: Column2.");
    [Fact]
    public async Task Should_return_table_ref_that_does_nothing_after_connection_is_disposed()
    {
-      await using var con = new SqliteConnection(ConnectionString);
+      await using var con = CreateConnection();
 
-      var builder = CreateOptionsBuilder(con);
+      var options = CreateOptionsBuilder(con);
 
-      await using var ctx = new TestDbContext(builder.Options);
+      await using var ctx = new TestDbContext(options);
 
       ctx.Database.GetDbConnection().State.Should().Be(ConnectionState.Closed);
 
@@ -391,11 +391,11 @@ Missing columns: Column2.");
    [Fact]
    public async Task Should_return_table_ref_that_does_nothing_after_connection_is_disposedAsync()
    {
-      await using var con = new SqliteConnection(ConnectionString);
+      await using var con = CreateConnection();
 
-      var builder = CreateOptionsBuilder(con);
+      var options = CreateOptionsBuilder(con);
 
-      await using var ctx = new TestDbContext(builder.Options);
+      await using var ctx = new TestDbContext(options);
 
       ctx.Database.GetDbConnection().State.Should().Be(ConnectionState.Closed);
 
@@ -412,11 +412,11 @@ Missing columns: Column2.");
    [Fact]
    public async Task Should_return_table_ref_that_does_nothing_after_connection_is_closed()
    {
-      await using var con = new SqliteConnection(ConnectionString);
+      await using var con = CreateConnection();
 
-      var builder = CreateOptionsBuilder(con);
+      var options = CreateOptionsBuilder(con);
 
-      await using var ctx = new TestDbContext(builder.Options);
+      await using var ctx = new TestDbContext(options);
 
       ctx.Database.GetDbConnection().State.Should().Be(ConnectionState.Closed);
 
@@ -427,6 +427,11 @@ Missing columns: Column2.");
 
       tempTableReference.Dispose();
       con.State.Should().Be(ConnectionState.Closed);
+   }
+
+   private DbContextOptions<TestDbContext> CreateOptionsBuilder(SqliteConnection connection)
+   {
+      return TestCtxProviderBuilder.CreateOptionsBuilder(connection, TestCtxProvider.ConnectionString).Options;
    }
 
    [Fact]
@@ -726,6 +731,11 @@ Currently configured primary keys: []");
       ValidateColumn(columns[1], "Id", "INTEGER", false);
       ValidateColumn(columns[2], nameof(OwnedEntity.IntColumn), "INTEGER", false);
       ValidateColumn(columns[3], nameof(OwnedEntity.StringColumn), "TEXT", true);
+   }
+
+   private SqliteConnection CreateConnection()
+   {
+      return new SqliteConnection(TestCtxProvider.ConnectionString);
    }
 
    private static void ValidateColumn(SqliteTableInfo column, string name, string type, bool isNullable, string? defaultValue = null)

@@ -7,7 +7,7 @@ namespace Thinktecture.EntityFrameworkCore.Storage.NestedDbContextTransactionTes
 public class Dispose : NestedRelationalTransactionManagerTestBase
 {
    public Dispose(ITestOutputHelper testOutputHelper)
-      : base(testOutputHelper, MigrationExecutionStrategies.EnsureCreated)
+      : base(testOutputHelper, IMigrationExecutionStrategy.EnsureCreated)
    {
    }
 

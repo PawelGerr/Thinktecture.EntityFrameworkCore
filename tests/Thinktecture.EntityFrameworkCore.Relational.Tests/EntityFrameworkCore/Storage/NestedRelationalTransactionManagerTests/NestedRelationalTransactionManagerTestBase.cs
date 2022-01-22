@@ -11,7 +11,7 @@ public abstract class NestedRelationalTransactionManagerTestBase : IntegrationTe
    protected NestedRelationalTransactionManagerTestBase(
       ITestOutputHelper testOutputHelper,
       IMigrationExecutionStrategy? migrationExecutionStrategy = null)
-      : base(testOutputHelper, migrationExecutionStrategy ?? MigrationExecutionStrategies.NoMigration)
+      : base(testOutputHelper, migrationExecutionStrategy)
    {
       ConfigureOptionsBuilder = builder => builder.AddNestedTransactionSupport();
    }

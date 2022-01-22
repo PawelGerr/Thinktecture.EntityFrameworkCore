@@ -1,6 +1,4 @@
-using System.Data.Common;
 using Microsoft.Extensions.Logging;
-using Serilog;
 using Thinktecture.EntityFrameworkCore;
 using Thinktecture.EntityFrameworkCore.Testing;
 using Thinktecture.TestDatabaseContext;
@@ -9,42 +7,29 @@ namespace Thinktecture;
 
 public class IntegrationTestsBase : SqliteDbContextIntegrationTests<DbContextWithSchema>
 {
+   private readonly IMigrationExecutionStrategy? _migrationExecutionStrategy;
+
    protected Action<DbContextOptionsBuilder<DbContextWithSchema>>? ConfigureOptionsBuilder { get; set; }
    protected Action<ModelBuilder>? ConfigureModel { get; set; }
    protected string? Schema { get; set; }
+   protected ILoggerFactory LoggerFactory { get; }
 
-   protected IntegrationTestsBase(ITestOutputHelper testOutputHelper,
-                                  IMigrationExecutionStrategy? migrationExecutionStrategy = null)
-      : base(migrationExecutionStrategy ?? MigrationExecutionStrategies.NoMigration)
+   protected IntegrationTestsBase(
+      ITestOutputHelper testOutputHelper,
+      IMigrationExecutionStrategy? migrationExecutionStrategy = null)
+      : base(testOutputHelper)
    {
-      DisableModelCache = true;
-
-      var loggerFactory = CreateLoggerFactory(testOutputHelper);
-      UseLoggerFactory(loggerFactory);
+      _migrationExecutionStrategy = migrationExecutionStrategy;
+      LoggerFactory = testOutputHelper.ToLoggerFactory();
    }
 
-   protected override DbContextOptionsBuilder<DbContextWithSchema> CreateOptionsBuilder(DbConnection? connection)
+   protected override void ConfigureTestDbContextProvider(SqliteTestDbContextProviderBuilder<DbContextWithSchema> builder)
    {
-      var builder = base.CreateOptionsBuilder(connection);
-      ConfigureOptionsBuilder?.Invoke(builder);
-
-      return builder;
-   }
-
-   protected override DbContextWithSchema CreateContext(DbContextOptions<DbContextWithSchema> options)
-   {
-      return new(options, Schema) { ConfigureModel = ConfigureModel };
-   }
-
-   private static ILoggerFactory CreateLoggerFactory(ITestOutputHelper testOutputHelper)
-   {
-      ArgumentNullException.ThrowIfNull(testOutputHelper);
-
-      var loggerConfig = new LoggerConfiguration()
-                         .WriteTo.TestOutput(testOutputHelper, outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}");
-
-      return new LoggerFactory()
-         .AddSerilog(loggerConfig.CreateLogger());
+      builder.UseMigrationExecutionStrategy(_migrationExecutionStrategy ?? IMigrationExecutionStrategy.NoMigration)
+             .ConfigureOptions(optionsBuilder => ConfigureOptionsBuilder?.Invoke(optionsBuilder))
+             .InitializeContext(ctx => ctx.ConfigureModel = ConfigureModel)
+             .UseContextFactory(options => new DbContextWithSchema(options, Schema))
+             .DisableModelCache();
    }
 
    protected DbContextWithSchema CreateContextWithSchema(string schema)

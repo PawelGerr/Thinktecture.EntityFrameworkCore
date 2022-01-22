@@ -1,0 +1,330 @@
+using System.Data.Common;
+using System.Globalization;
+using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.Extensions.Logging;
+using Thinktecture.EntityFrameworkCore.Infrastructure;
+using Thinktecture.EntityFrameworkCore.Migrations;
+using Xunit.Abstractions;
+
+namespace Thinktecture.EntityFrameworkCore.Testing;
+
+/// <summary>
+/// Builder for the <see cref="SqlServerTestDbContextProvider{T}"/>.
+/// </summary>
+/// <typeparam name="T">Type of the <see cref="DbContext"/>.</typeparam>
+public class SqlServerTestDbContextProviderBuilder<T>
+   where T : DbContext
+{
+   private const string _HISTORY_TABLE_NAME = "__EFMigrationsHistory";
+
+   private readonly string _connectionString;
+   private readonly bool _useSharedTables;
+   private readonly List<Action<DbContextOptionsBuilder<T>, string>> _configuresOptionsCollection;
+   private readonly List<Action<SqlServerDbContextOptionsBuilder, string>> _configuresSqlServerOptionsCollection;
+   private readonly List<Action<T>> _ctxInitializations;
+
+   private IMigrationExecutionStrategy? _migrationExecutionStrategy;
+   private ILoggerFactory? _loggerFactory;
+   private bool _enableSensitiveDataLogging;
+   private bool _disableModelCache;
+   private bool _useThinktectureSqlServerMigrationsSqlGenerator = true;
+   private bool _collectExecutedCommands;
+   private string? _sharedTablesSchema;
+   private Func<DbContextOptions<T>, IDbDefaultSchema, T>? _contextFactory;
+
+   /// <summary>
+   /// Initializes new instance of <see cref="SqlServerTestDbContextProviderBuilder{T}"/>.
+   /// </summary>
+   /// <param name="connectionString">Connection string to use.</param>
+   /// <param name="useSharedTables">Indication whether to create new tables with a new schema or use the existing ones.</param>
+   public SqlServerTestDbContextProviderBuilder(string connectionString, bool useSharedTables)
+   {
+      _connectionString = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
+      _useSharedTables = useSharedTables;
+      _configuresOptionsCollection = new List<Action<DbContextOptionsBuilder<T>, string>>();
+      _configuresSqlServerOptionsCollection = new List<Action<SqlServerDbContextOptionsBuilder, string>>();
+      _ctxInitializations = new List<Action<T>>();
+   }
+
+   /// <summary>
+   /// Specifies the migration strategy to use.
+   /// Default is <see cref="IMigrationExecutionStrategy.Migrations"/>.
+   /// </summary>
+   /// <param name="migrationExecutionStrategy">Migration strategy to use.</param>
+   /// <returns>Current builder for chaining</returns>
+   public SqlServerTestDbContextProviderBuilder<T> UseMigrationExecutionStrategy(IMigrationExecutionStrategy migrationExecutionStrategy)
+   {
+      ArgumentNullException.ThrowIfNull(migrationExecutionStrategy);
+
+      _migrationExecutionStrategy = migrationExecutionStrategy;
+
+      return this;
+   }
+
+   /// <summary>
+   /// Sets the logger factory to be used by EF.
+   /// </summary>
+   /// <param name="loggerFactory">Logger factory to use.</param>
+   /// <param name="enableSensitiveDataLogging">Enables or disables sensitive data logging.</param>
+   public SqlServerTestDbContextProviderBuilder<T> UseLogging(ILoggerFactory? loggerFactory, bool enableSensitiveDataLogging = true)
+   {
+      _loggerFactory = loggerFactory;
+      _enableSensitiveDataLogging = enableSensitiveDataLogging;
+
+      return this;
+   }
+
+   /// <summary>
+   /// Sets output helper to be used by Serilog which is passed to EF.
+   /// </summary>
+   /// <param name="testOutputHelper">XUnit output.</param>
+   /// <param name="enableSensitiveDataLogging">Enables or disables sensitive data logging.</param>
+   /// <param name="outputTemplate">The serilog output template.</param>
+   public SqlServerTestDbContextProviderBuilder<T> UseLogging(
+      ITestOutputHelper? testOutputHelper,
+      bool enableSensitiveDataLogging = true,
+      string? outputTemplate = "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}")
+   {
+      var loggerFactory = testOutputHelper?.ToLoggerFactory(outputTemplate);
+
+      return UseLogging(loggerFactory, enableSensitiveDataLogging);
+   }
+
+   /// <summary>
+   /// Allows further configuration of the <see cref="DbContextOptionsBuilder{TContext}"/>.
+   /// </summary>
+   /// <param name="configure">Callback is called with the current <see cref="DbContextOptionsBuilder{TContext}"/> and the database schema.</param>
+   /// <returns>Current builder for chaining.</returns>
+   public SqlServerTestDbContextProviderBuilder<T> ConfigureOptions(Action<DbContextOptionsBuilder<T>, string> configure)
+   {
+      ArgumentNullException.ThrowIfNull(configure);
+
+      _configuresOptionsCollection.Add(configure);
+
+      return this;
+   }
+
+   /// <summary>
+   /// Allows further configuration of the <see cref="SqlServerDbContextOptionsBuilder"/>.
+   /// </summary>
+   /// <param name="configure">Callback is called with the current <see cref="DbContextOptionsBuilder{TContext}"/> and the database schema.</param>
+   /// <returns>Current builder for chaining.</returns>
+   public SqlServerTestDbContextProviderBuilder<T> ConfigureSqlServerOptions(Action<SqlServerDbContextOptionsBuilder, string> configure)
+   {
+      ArgumentNullException.ThrowIfNull(configure);
+
+      _configuresSqlServerOptionsCollection.Add(configure);
+
+      return this;
+   }
+
+   /// <summary>
+   /// Disables EF model cache.
+   /// </summary>
+   /// <returns>Current builder for chaining.</returns>
+   public SqlServerTestDbContextProviderBuilder<T> DisableModelCache(bool disableModelCache = true)
+   {
+      _disableModelCache = disableModelCache;
+
+      return this;
+   }
+
+   /// <summary>
+   /// Indication whether the <see cref="ThinktectureSqlServerMigrationsSqlGenerator"/> should be used or not.
+   /// </summary>
+   /// <param name="useThinktectureSqlServerMigrationsSqlGenerator"></param>
+   /// <returns>Current builder for chaining.</returns>
+   public SqlServerTestDbContextProviderBuilder<T> UseThinktectureSqlServerMigrationsSqlGenerator(bool useThinktectureSqlServerMigrationsSqlGenerator = true)
+   {
+      _useThinktectureSqlServerMigrationsSqlGenerator = useThinktectureSqlServerMigrationsSqlGenerator;
+
+      return this;
+   }
+
+   /// <summary>
+   /// Indication whether collect executed commands or not.
+   /// </summary>
+   /// <returns>Current builder for chaining</returns>
+   public SqlServerTestDbContextProviderBuilder<T> CollectExecutedCommands(bool collectExecutedCommands = true)
+   {
+      _collectExecutedCommands = collectExecutedCommands;
+
+      return this;
+   }
+
+   /// <summary>
+   /// Changes the schema if "useSharedTables" is set to <c>true</c>.
+   /// Default schema is "tests".
+   /// </summary>
+   /// <param name="schema">Schema to use</param>
+   /// <returns>Current builder for chaining.</returns>
+   public SqlServerTestDbContextProviderBuilder<T> UseSharedTableSchema(string schema)
+   {
+      _sharedTablesSchema = schema;
+
+      return this;
+   }
+
+   /// <summary>
+   /// Provides a callback to execute on every creation of a new <see cref="DbContext"/>.
+   /// </summary>
+   /// <param name="initialize">Initialization.</param>
+   /// <returns>Current builder for chaining.</returns>
+   public SqlServerTestDbContextProviderBuilder<T> InitializeContext(Action<T> initialize)
+   {
+      ArgumentNullException.ThrowIfNull(initialize);
+
+      _ctxInitializations.Add(initialize);
+
+      return this;
+   }
+
+   /// <summary>
+   /// Provides a custom factory to create <see cref="DbContext"/>.
+   /// </summary>
+   /// <param name="contextFactory">Factory to create the context of type <typeparamref name="T"/>.</param>
+   /// <returns>Current builder for chaining.</returns>
+   public SqlServerTestDbContextProviderBuilder<T> UseContextFactory(Func<DbContextOptions<T>, IDbDefaultSchema, T> contextFactory)
+   {
+      _contextFactory = contextFactory;
+
+      return this;
+   }
+
+   /// <summary>
+   /// Gets/generates schema to be used.
+   /// </summary>
+   /// <param name="useSharedTables">Indication whether a new schema should be generated or a shared one.</param>
+   /// <returns>A database schema.</returns>
+   protected virtual string DetermineSchema(bool useSharedTables)
+   {
+      return useSharedTables
+                ? _sharedTablesSchema ?? "tests"
+                : Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture);
+   }
+
+   /// <summary>
+   /// Creates and configures the <see cref="DbContextOptionsBuilder{TContext}"/>
+   /// </summary>
+   /// <param name="connection">Database connection to use.</param>
+   /// <param name="schema">Database schema to use.</param>
+   /// <returns>An instance of <see cref="DbContextOptionsBuilder{TContext}"/></returns>
+   public virtual DbContextOptionsBuilder<T> CreateOptionsBuilder(
+      DbConnection? connection,
+      string schema)
+   {
+      var loggerFactory = GetLoggerFactory(out _);
+
+      return CreateOptionsBuilder(connection, schema, loggerFactory);
+   }
+
+   /// <summary>
+   /// Creates and configures the <see cref="DbContextOptionsBuilder{TContext}"/>
+   /// </summary>
+   /// <param name="connection">Database connection to use.</param>
+   /// <param name="schema">Database schema to use.</param>
+   /// <param name="loggerFactory">Logger factory to use.</param>
+   /// <returns>An instance of <see cref="DbContextOptionsBuilder{TContext}"/></returns>
+   protected virtual DbContextOptionsBuilder<T> CreateOptionsBuilder(
+      DbConnection? connection,
+      string schema,
+      ILoggerFactory? loggerFactory)
+   {
+      var builder = new DbContextOptionsBuilder<T>();
+
+      if (connection is null)
+      {
+         builder.UseSqlServer(_connectionString, optionsBuilder => ConfigureSqlServer(optionsBuilder, schema));
+      }
+      else
+      {
+         builder.UseSqlServer(connection, optionsBuilder => ConfigureSqlServer(optionsBuilder, schema));
+      }
+
+      builder.AddSchemaRespectingComponents();
+
+      if (_disableModelCache)
+         builder.ReplaceService<IModelCacheKeyFactory, CachePerContextModelCacheKeyFactory>();
+
+      builder.EnableSensitiveDataLogging(_enableSensitiveDataLogging);
+
+      if (loggerFactory != null)
+         builder.UseLoggerFactory(loggerFactory);
+
+      _configuresOptionsCollection.ForEach(configure => configure(builder, schema));
+
+      return builder;
+   }
+
+   /// <summary>
+   /// Configures SQL Server options.
+   /// </summary>
+   /// <param name="builder">A builder for configuration of the options.</param>
+   /// <param name="schema">Schema to use</param>
+   /// <exception cref="ArgumentNullException">The <paramref name="builder"/> is null.</exception>
+   protected virtual void ConfigureSqlServer(SqlServerDbContextOptionsBuilder builder, string schema)
+   {
+      ArgumentNullException.ThrowIfNull(builder);
+
+      builder.MigrationsHistoryTable(_HISTORY_TABLE_NAME, schema);
+
+      if (_useThinktectureSqlServerMigrationsSqlGenerator)
+         builder.UseThinktectureSqlServerMigrationsSqlGenerator();
+
+      _configuresSqlServerOptionsCollection.ForEach(configure => configure(builder, schema));
+   }
+
+   /// <summary>
+   /// Builds the <see cref="SqlServerTestDbContextProvider{T}"/>.
+   /// </summary>
+   /// <returns>A new instance of <see cref="SqlServerTestDbContextProvider{T}"/>.</returns>
+   public SqlServerTestDbContextProvider<T> Build()
+   {
+      // create all dependencies immediately to decouple the provider from this builder
+
+      var schema = DetermineSchema(_useSharedTables);
+      var masterConnection = new SqlConnection(_connectionString);
+
+      try
+      {
+         var loggerFactory = GetLoggerFactory(out var executedCommands);
+         var masterDbContextOptions = CreateOptionsBuilder(masterConnection, schema, loggerFactory).Options;
+         var dbContextOptions = CreateOptionsBuilder(null, schema, loggerFactory).Options;
+
+         return new SqlServerTestDbContextProvider<T>(new SqlServerTestDbContextProviderOptions<T>(masterConnection,
+                                                                                                   _migrationExecutionStrategy ?? IMigrationExecutionStrategy.Migrations,
+                                                                                                   masterDbContextOptions,
+                                                                                                   dbContextOptions,
+                                                                                                   _ctxInitializations.ToList(),
+                                                                                                   schema)
+                                                      {
+                                                         IsUsingSharedTables = _useSharedTables,
+                                                         ExecutedCommands = executedCommands,
+                                                         ContextFactory = _contextFactory
+                                                      });
+      }
+      catch
+      {
+         masterConnection.Dispose();
+         throw;
+      }
+   }
+
+   private ILoggerFactory? GetLoggerFactory(out IReadOnlyCollection<string>? executedCommands)
+   {
+      var loggerFactory = _loggerFactory;
+
+      if (_collectExecutedCommands)
+      {
+         loggerFactory ??= new LoggerFactory();
+         executedCommands = loggerFactory.CollectExecutedCommands();
+      }
+      else
+      {
+         executedCommands = null;
+      }
+
+      return loggerFactory;
+   }
+}

@@ -1,11 +1,4 @@
-using System.Data.Common;
-using System.Diagnostics;
-using Microsoft.EntityFrameworkCore.Diagnostics;
-using Microsoft.EntityFrameworkCore.Diagnostics.Internal;
-using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Sqlite.Diagnostics.Internal;
 using Microsoft.Extensions.Logging;
-using Serilog;
 using Thinktecture.EntityFrameworkCore;
 using Thinktecture.EntityFrameworkCore.Testing;
 using Thinktecture.TestDatabaseContext;
@@ -14,63 +7,28 @@ namespace Thinktecture;
 
 public class IntegrationTestsBase : SqliteDbContextIntegrationTests<TestDbContext>
 {
+   private readonly IMigrationExecutionStrategy? _migrationExecutionStrategy;
+
    protected Action<DbContextOptionsBuilder<TestDbContext>>? ConfigureOptionsBuilder { get; set; }
    protected Action<ModelBuilder>? ConfigureModel { get; set; }
+   protected ILoggerFactory LoggerFactory { get; }
 
-   protected IntegrationTestsBase(ITestOutputHelper testOutputHelper,
-                                  IMigrationExecutionStrategy? migrationExecutionStrategy = null)
-      : base(migrationExecutionStrategy)
+   protected IntegrationTestsBase(
+      ITestOutputHelper testOutputHelper,
+      IMigrationExecutionStrategy? migrationExecutionStrategy = null)
+      : base(testOutputHelper)
    {
-      DisableModelCache = true;
-
-      var loggerFactory = CreateLoggerFactory(testOutputHelper);
-      UseLoggerFactory(loggerFactory);
+      _migrationExecutionStrategy = migrationExecutionStrategy;
+      LoggerFactory = testOutputHelper.ToLoggerFactory();
    }
 
-   protected IDiagnosticsLogger<TCategory> CreateDiagnosticsLogger<TCategory>(ILoggingOptions? options = null, DiagnosticSource? diagnosticSource = null)
-      where TCategory : LoggerCategory<TCategory>, new()
+   protected override void ConfigureTestDbContextProvider(SqliteTestDbContextProviderBuilder<TestDbContext> builder)
    {
-      var loggerFactory = LoggerFactory ?? throw new InvalidOperationException($"The '{nameof(LoggerFactory)}' must be set first.");
-
-      return new DiagnosticsLogger<TCategory>(loggerFactory, options ?? new LoggingOptions(),
-                                              diagnosticSource ?? new DiagnosticListener(typeof(TCategory).ShortDisplayName()),
-                                              new SqliteLoggingDefinitions(),
-                                              new NullDbContextLogger());
-   }
-
-   protected override DbContextOptionsBuilder<TestDbContext> CreateOptionsBuilder(DbConnection? connection)
-   {
-      var builder = base.CreateOptionsBuilder(connection);
-      ConfigureOptionsBuilder?.Invoke(builder);
-
-      return builder;
-   }
-
-   /// <inheritdoc />
-   protected override void ConfigureSqlite(SqliteDbContextOptionsBuilder builder)
-   {
-      base.ConfigureSqlite(builder);
-
-      builder.AddBulkOperationSupport()
-             .AddRowNumberSupport();
-   }
-
-   protected override TestDbContext CreateContext(DbContextOptions<TestDbContext> options)
-   {
-      var ctx = base.CreateContext(options);
-      ctx.ConfigureModel = ConfigureModel;
-
-      return ctx;
-   }
-
-   private static ILoggerFactory CreateLoggerFactory(ITestOutputHelper testOutputHelper)
-   {
-      ArgumentNullException.ThrowIfNull(testOutputHelper);
-
-      var loggerConfig = new LoggerConfiguration()
-                         .WriteTo.TestOutput(testOutputHelper, outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}");
-
-      return new LoggerFactory()
-         .AddSerilog(loggerConfig.CreateLogger());
+      builder.UseMigrationExecutionStrategy(_migrationExecutionStrategy ?? IMigrationExecutionStrategy.Migrations)
+             .ConfigureOptions(optionsBuilder => ConfigureOptionsBuilder?.Invoke(optionsBuilder))
+             .ConfigureSqliteOptions(optionsBuilder => optionsBuilder.AddBulkOperationSupport()
+                                                                     .AddRowNumberSupport())
+             .InitializeContext(ctx => ctx.ConfigureModel = ConfigureModel)
+             .DisableModelCache();
    }
 }

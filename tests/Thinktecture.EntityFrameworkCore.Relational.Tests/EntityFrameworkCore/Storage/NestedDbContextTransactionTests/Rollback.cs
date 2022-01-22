@@ -7,7 +7,7 @@ namespace Thinktecture.EntityFrameworkCore.Storage.NestedDbContextTransactionTes
 public class Rollback : NestedRelationalTransactionManagerTestBase
 {
    public Rollback(ITestOutputHelper testOutputHelper)
-      : base(testOutputHelper, MigrationExecutionStrategies.EnsureCreated)
+      : base(testOutputHelper, IMigrationExecutionStrategy.EnsureCreated)
    {
    }
 

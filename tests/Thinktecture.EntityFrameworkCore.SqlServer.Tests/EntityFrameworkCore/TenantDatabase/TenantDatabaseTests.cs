@@ -17,7 +17,7 @@ public class TenantDatabaseTests : IntegrationTestsBase
       TenantDatabaseProviderMock.Setup(p => p.GetDatabaseName(Schema, "TestEntities")).Returns((string)null!);
       await ActDbContext.TestEntities.ToListAsync();
 
-      SqlStatements.Last().Should().Contain($"FROM [{Schema}].[TestEntities]");
+      ExecutedCommands.Last().Should().Contain($"FROM [{Schema}].[TestEntities]");
    }
 
    [Fact]
@@ -30,7 +30,7 @@ public class TenantDatabaseTests : IntegrationTestsBase
 
       await ActDbContext.TestEntities.ToListAsync();
 
-      SqlStatements.Last().Should().Contain($"FROM [{database}].[{Schema}].[TestEntities]");
+      ExecutedCommands.Last().Should().Contain($"FROM [{database}].[{Schema}].[TestEntities]");
    }
 
    [Fact]
@@ -46,7 +46,7 @@ public class TenantDatabaseTests : IntegrationTestsBase
                         .Include(t => t.Children)
                         .ToListAsync();
 
-      SqlStatements.Last().Should().Contain($"FROM [{database}].[{Schema}].[TestEntities]")
+      ExecutedCommands.Last().Should().Contain($"FROM [{database}].[{Schema}].[TestEntities]")
                    .And.Contain($"LEFT JOIN [{database}].[{Schema}].[TestEntities] AS [t0]")
                    .And.Contain($"LEFT JOIN [{database}].[{Schema}].[TestEntities] AS [t1]");
    }
@@ -63,7 +63,7 @@ public class TenantDatabaseTests : IntegrationTestsBase
                         .Join(ActDbContext.TestEntities, t => t.ParentId, t => t.Id, (t1, t2) => new { t1, t2 })
                         .ToListAsync();
 
-      SqlStatements.Last().Should().Contain($"FROM [{database}].[{Schema}].[TestEntities]")
+      ExecutedCommands.Last().Should().Contain($"FROM [{database}].[{Schema}].[TestEntities]")
                    .And.Contain($"INNER JOIN [{database}].[{Schema}].[TestEntities]");
    }
 
@@ -77,6 +77,6 @@ public class TenantDatabaseTests : IntegrationTestsBase
 
       await ActDbContext.TestView.ToListAsync();
 
-      SqlStatements.Last().Should().Contain($"FROM [{database}].[{Schema}].[TestView]");
+      ExecutedCommands.Last().Should().Contain($"FROM [{database}].[{Schema}].[TestView]");
    }
 }
