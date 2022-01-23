@@ -133,6 +133,7 @@ Please provide the corresponding constructor or a custom factory via '{typeof(Sq
       lock (_lock)
       {
          var logLevel = LogLevelSwitch.MinimumLogLevel;
+
          try
          {
             LogLevelSwitch.MinimumLogLevel = _testingLoggingOptions.MigrationLogLevel;
@@ -172,6 +173,7 @@ Please provide the corresponding constructor or a custom factory via '{typeof(Sq
       }
 
       _masterConnection.Dispose();
+      _testingLoggingOptions.Dispose();
    }
 
    private void DisposeContexts()

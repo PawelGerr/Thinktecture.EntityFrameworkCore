@@ -221,6 +221,7 @@ Please provide the corresponding constructor or a custom factory via '{typeof(Sq
       }
 
       _masterConnection.Dispose();
+      _testingLoggingOptions.Dispose();
    }
 
    private void DisposeContextsAndRollbackMigrations()
