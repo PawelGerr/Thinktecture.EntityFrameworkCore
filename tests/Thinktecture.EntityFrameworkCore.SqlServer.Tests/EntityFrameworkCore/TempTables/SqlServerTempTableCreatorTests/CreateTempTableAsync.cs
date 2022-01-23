@@ -530,7 +530,7 @@ Missing columns: Column2.");
    [Fact]
    public async Task Should_create_temp_table_with_decimal_with_explicit_precision()
    {
-      ConfigureModel = builder => builder.ConfigureTempTable<decimal>(typeBuilder => typeBuilder.Property(t => t.Column1).HasColumnType("decimal(20,5)"));
+      ConfigureModel = builder => builder.ConfigureTempTable<decimal>(typeBuilder => typeBuilder.Property(t => t.Column1).HasPrecision(20,5));
 
       await using var tempTable = await SUT.CreateTempTableAsync(ActDbContext.GetTempTableEntityType<TempTable<decimal>>(), _optionsWithNonUniqueName);
 

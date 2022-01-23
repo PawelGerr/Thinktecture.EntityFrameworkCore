@@ -9,6 +9,14 @@ public class MigrationExtensionsTestDbContext : DbContext
    {
    }
 
+   /// <inheritdoc />
+   protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+   {
+      configurationBuilder.Properties<decimal>(builder => builder
+                                                          .HavePrecision(18, 5)
+                                                          .HaveColumnType("decimal(18, 5)"));
+   }
+
    protected override void OnModelCreating(ModelBuilder modelBuilder)
    {
       base.OnModelCreating(modelBuilder);
@@ -62,7 +70,6 @@ WHERE
 	i.object_id = OBJECT_ID({tableName})
    AND i.index_id = {indexId};");
    }
-
 
    public IQueryable<UniqueConstraint> GetUniqueConstraints(string constraintName)
    {
