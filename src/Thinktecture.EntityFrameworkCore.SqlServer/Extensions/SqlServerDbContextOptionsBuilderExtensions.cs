@@ -24,7 +24,11 @@ public static class SqlServerDbContextOptionsBuilderExtensions
       this SqlServerDbContextOptionsBuilder sqlServerOptionsBuilder,
       bool addBulkOperationSupport = true)
    {
-      return AddOrUpdateExtension(sqlServerOptionsBuilder, extension => extension.AddBulkOperationSupport = addBulkOperationSupport);
+      return AddOrUpdateExtension(sqlServerOptionsBuilder, extension =>
+                                                           {
+                                                              extension.AddBulkOperationSupport = addBulkOperationSupport;
+                                                              return extension;
+                                                           });
    }
 
    /// <summary>
@@ -52,7 +56,11 @@ public static class SqlServerDbContextOptionsBuilderExtensions
       this SqlServerDbContextOptionsBuilder builder,
       bool addCustomQueryableMethodTranslatingExpressionVisitorFactory = true)
    {
-      builder.AddOrUpdateExtension(extension => extension.AddCustomQueryableMethodTranslatingExpressionVisitorFactory = addCustomQueryableMethodTranslatingExpressionVisitorFactory);
+      builder.AddOrUpdateExtension(extension =>
+                                   {
+                                      extension.AddCustomQueryableMethodTranslatingExpressionVisitorFactory = addCustomQueryableMethodTranslatingExpressionVisitorFactory;
+                                      return extension;
+                                   });
       return builder;
    }
 
@@ -66,7 +74,11 @@ public static class SqlServerDbContextOptionsBuilderExtensions
       this SqlServerDbContextOptionsBuilder builder,
       bool addRowNumberSupport = true)
    {
-      builder.AddOrUpdateExtension(extension => extension.AddRowNumberSupport = addRowNumberSupport);
+      builder.AddOrUpdateExtension(extension =>
+                                   {
+                                      extension.AddRowNumberSupport = addRowNumberSupport;
+                                      return extension;
+                                   });
       return builder;
    }
 
@@ -80,7 +92,11 @@ public static class SqlServerDbContextOptionsBuilderExtensions
       this SqlServerDbContextOptionsBuilder builder,
       bool addTableHintSupport = true)
    {
-      builder.AddOrUpdateExtension(extension => extension.AddTableHintSupport = addTableHintSupport);
+      builder.AddOrUpdateExtension(extension =>
+                                   {
+                                      extension.AddTableHintSupport = addTableHintSupport;
+                                      return extension;
+                                   });
       return builder;
    }
 
@@ -101,6 +117,8 @@ public static class SqlServerDbContextOptionsBuilderExtensions
                                    {
                                       extension.AddTenantDatabaseSupport = addTenantSupport;
                                       extension.Register(typeof(ITenantDatabaseProviderFactory), typeof(TTenantDatabaseProviderFactory), databaseProviderLifetime);
+
+                                      return extension;
                                    });
       return builder;
    }
@@ -115,11 +133,15 @@ public static class SqlServerDbContextOptionsBuilderExtensions
       this SqlServerDbContextOptionsBuilder sqlServerOptionsBuilder,
       bool useSqlGenerator = true)
    {
-      return AddOrUpdateExtension(sqlServerOptionsBuilder, extension => extension.UseThinktectureSqlServerMigrationsSqlGenerator = useSqlGenerator);
+      return AddOrUpdateExtension(sqlServerOptionsBuilder, extension =>
+                                                           {
+                                                              extension.UseThinktectureSqlServerMigrationsSqlGenerator = useSqlGenerator;
+                                                              return extension;
+                                                           });
    }
 
    private static SqlServerDbContextOptionsBuilder AddOrUpdateExtension(this SqlServerDbContextOptionsBuilder sqlServerOptionsBuilder,
-                                                                        Action<SqlServerDbContextOptionsExtension> callback)
+                                                                        Func<SqlServerDbContextOptionsExtension, SqlServerDbContextOptionsExtension> callback)
    {
       ArgumentNullException.ThrowIfNull(sqlServerOptionsBuilder);
 

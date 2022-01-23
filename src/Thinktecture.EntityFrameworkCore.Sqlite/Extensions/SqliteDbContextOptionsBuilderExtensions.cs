@@ -18,7 +18,11 @@ public static class SqliteDbContextOptionsBuilderExtensions
    public static SqliteDbContextOptionsBuilder AddBulkOperationSupport(this SqliteDbContextOptionsBuilder sqliteOptionsBuilder,
                                                                        bool addBulkOperationSupport = true)
    {
-      return AddOrUpdateExtension(sqliteOptionsBuilder, extension => extension.AddBulkOperationSupport = addBulkOperationSupport);
+      return AddOrUpdateExtension(sqliteOptionsBuilder, extension =>
+                                                        {
+                                                           extension.AddBulkOperationSupport = addBulkOperationSupport;
+                                                           return extension;
+                                                        });
    }
 
    /// <summary>
@@ -31,7 +35,11 @@ public static class SqliteDbContextOptionsBuilderExtensions
       this SqliteDbContextOptionsBuilder builder,
       bool addCustomQueryableMethodTranslatingExpressionVisitorFactory = true)
    {
-      builder.AddOrUpdateExtension(extension => extension.AddCustomQueryableMethodTranslatingExpressionVisitorFactory = addCustomQueryableMethodTranslatingExpressionVisitorFactory);
+      builder.AddOrUpdateExtension(extension =>
+                                   {
+                                      extension.AddCustomQueryableMethodTranslatingExpressionVisitorFactory = addCustomQueryableMethodTranslatingExpressionVisitorFactory;
+                                      return extension;
+                                   });
       return builder;
    }
 
@@ -45,12 +53,16 @@ public static class SqliteDbContextOptionsBuilderExtensions
       this SqliteDbContextOptionsBuilder builder,
       bool addRowNumberSupport = true)
    {
-      builder.AddOrUpdateExtension(extension => extension.AddRowNumberSupport = addRowNumberSupport);
+      builder.AddOrUpdateExtension(extension =>
+                                   {
+                                      extension.AddRowNumberSupport = addRowNumberSupport;
+                                      return extension;
+                                   });
       return builder;
    }
 
    private static SqliteDbContextOptionsBuilder AddOrUpdateExtension(this SqliteDbContextOptionsBuilder sqliteOptionsBuilder,
-                                                                     Action<SqliteDbContextOptionsExtension> callback)
+                                                                     Func<SqliteDbContextOptionsExtension, SqliteDbContextOptionsExtension> callback)
    {
       ArgumentNullException.ThrowIfNull(sqliteOptionsBuilder);
 

@@ -187,10 +187,12 @@ public sealed class SqlServerDbContextOptionsExtension : DbContextOptionsExtensi
    /// <summary>
    /// Enables and disables support for queryable parameters.
    /// </summary>
-   public void AddCollectionParameterSupport(bool addCollectionParameterSupport, JsonSerializerOptions? jsonSerializerOptions)
+   public SqlServerDbContextOptionsExtension AddCollectionParameterSupport(bool addCollectionParameterSupport, JsonSerializerOptions? jsonSerializerOptions)
    {
       _addCollectionParameterSupport = addCollectionParameterSupport;
       _collectionParameterJsonSerializerOptions = jsonSerializerOptions;
+
+      return this;
    }
 
    /// <inheritdoc />

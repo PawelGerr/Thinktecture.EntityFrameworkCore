@@ -11,7 +11,11 @@ public class Customize : IntegrationTestsBase
    {
       ConfigureOptionsBuilder = builder =>
                                 {
-                                   builder.AddOrUpdateExtension<RelationalDbContextOptionsExtension>(extension => extension.Register(typeof(ModelCustomizer), typeof(ModelCustomizer), ServiceLifetime.Singleton));
+                                   builder.AddOrUpdateExtension<RelationalDbContextOptionsExtension>(extension =>
+                                                                                                     {
+                                                                                                        extension.Register(typeof(ModelCustomizer), typeof(ModelCustomizer), ServiceLifetime.Singleton);
+                                                                                                        return extension;
+                                                                                                     });
                                    builder.ReplaceService<IModelCustomizer, DefaultSchemaModelCustomizer<ModelCustomizer>>();
                                 };
    }

@@ -68,7 +68,11 @@ public static class RelationalDbContextOptionsBuilderExtensions
       this DbContextOptionsBuilder builder,
       bool addDefaultSchemaRespectingComponents = true)
    {
-      builder.AddOrUpdateExtension<RelationalDbContextOptionsExtension>(extension => extension.AddSchemaRespectingComponents = addDefaultSchemaRespectingComponents);
+      builder.AddOrUpdateExtension<RelationalDbContextOptionsExtension>(extension =>
+                                                                        {
+                                                                           extension.AddSchemaRespectingComponents = addDefaultSchemaRespectingComponents;
+                                                                           return extension;
+                                                                        });
       return builder;
    }
 
@@ -129,7 +133,11 @@ public static class RelationalDbContextOptionsBuilderExtensions
       this DbContextOptionsBuilder builder,
       bool addNestedTransactionsSupport = true)
    {
-      builder.AddOrUpdateExtension<RelationalDbContextOptionsExtension>(extension => extension.AddNestedTransactionsSupport = addNestedTransactionsSupport);
+      builder.AddOrUpdateExtension<RelationalDbContextOptionsExtension>(extension =>
+                                                                        {
+                                                                           extension.AddNestedTransactionsSupport = addNestedTransactionsSupport;
+                                                                           return extension;
+                                                                        });
       return builder;
    }
 
@@ -184,7 +192,7 @@ public static class RelationalDbContextOptionsBuilderExtensions
    /// </exception>
    public static TExtension AddOrUpdateExtension<TExtension>(
       this DbContextOptionsBuilder optionsBuilder,
-      Action<TExtension> callback,
+      Func<TExtension, TExtension> callback,
       bool ensureDatabaseProviderRegistered = true)
       where TExtension : class, IDbContextOptionsExtension, new()
    {
@@ -209,7 +217,7 @@ public static class RelationalDbContextOptionsBuilderExtensions
    /// </exception>
    public static TExtension AddOrUpdateExtension<TExtension>(
       this DbContextOptionsBuilder optionsBuilder,
-      Action<TExtension> callback,
+      Func<TExtension, TExtension> callback,
       Func<TExtension> extensionFactory,
       bool ensureDatabaseProviderRegistered = true
    )
@@ -224,7 +232,7 @@ public static class RelationalDbContextOptionsBuilderExtensions
 
       var extension = optionsBuilder.Options.FindExtension<TExtension>() ?? extensionFactory();
 
-      callback(extension);
+      extension = callback(extension);
 
       var builder = (IDbContextOptionsBuilderInfrastructure)optionsBuilder;
       builder.AddOrUpdateExtension(extension);

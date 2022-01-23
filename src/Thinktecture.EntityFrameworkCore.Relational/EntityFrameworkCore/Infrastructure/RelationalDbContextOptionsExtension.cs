@@ -156,7 +156,7 @@ public sealed class RelationalDbContextOptionsExtension : DbContextOptionsExtens
    /// <param name="initialCapacity">Initial capacity of a new <see cref="StringBuilder"/>.</param>
    /// <param name="maximumRetainedCapacity">Instances of <see cref="StringBuilder"/> with greater capacity are not reused.</param>
    /// <exception cref="ArgumentOutOfRangeException">If <paramref name="initialCapacity"/> or <paramref name="maximumRetainedCapacity"/> are negative.</exception>
-   public void ConfigureStringBuilderPool(int initialCapacity, int maximumRetainedCapacity)
+   public RelationalDbContextOptionsExtension ConfigureStringBuilderPool(int initialCapacity, int maximumRetainedCapacity)
    {
       if (initialCapacity < 0)
          throw new ArgumentOutOfRangeException(nameof(initialCapacity), "Initial capacity cannot be negative.");
@@ -166,6 +166,8 @@ public sealed class RelationalDbContextOptionsExtension : DbContextOptionsExtens
 
       _stringBuilderPolicy.InitialCapacity = initialCapacity;
       _stringBuilderPolicy.MaximumRetainedCapacity = maximumRetainedCapacity;
+
+      return this;
    }
 
    /// <summary>
@@ -173,7 +175,7 @@ public sealed class RelationalDbContextOptionsExtension : DbContextOptionsExtens
    /// </summary>
    /// <param name="type">An implementation of <see cref="IRelationalTypeMappingSourcePlugin"/>.</param>
    /// <exception cref="ArgumentNullException"><paramref name="type"/> is <c>null</c>.</exception>
-   public void AddRelationalTypeMappingSourcePlugin(Type type)
+   public RelationalDbContextOptionsExtension AddRelationalTypeMappingSourcePlugin(Type type)
    {
       ArgumentNullException.ThrowIfNull(type);
 
@@ -181,6 +183,8 @@ public sealed class RelationalDbContextOptionsExtension : DbContextOptionsExtens
          throw new ArgumentException($"The provided type '{type.ShortDisplayName()}' must implement '{nameof(IRelationalTypeMappingSourcePlugin)}'.", nameof(type));
 
       Register(typeof(IRelationalTypeMappingSourcePlugin), type, ServiceLifetime.Singleton);
+
+      return this;
    }
 
    /// <summary>
@@ -218,13 +222,15 @@ public sealed class RelationalDbContextOptionsExtension : DbContextOptionsExtens
    /// Adds an <see cref="IEvaluatableExpressionFilterPlugin"/> to the dependency injection.
    /// </summary>
    /// <typeparam name="T">Type of the plugin.</typeparam>
-   public void AddEvaluatableExpressionFilterPlugin<T>()
+   public RelationalDbContextOptionsExtension AddEvaluatableExpressionFilterPlugin<T>()
       where T : IEvaluatableExpressionFilterPlugin
    {
       var type = typeof(T);
 
       if (!_evaluatableExpressionFilterPlugins.Contains(type))
          _evaluatableExpressionFilterPlugins.Add(type);
+
+      return this;
    }
 
    private class RelationalDbContextOptionsExtensionInfo : DbContextOptionsExtensionInfo

@@ -9,9 +9,7 @@ public class AddOrUpdateExtension
    public void Should_throw_if_database_provider_not_registered()
    {
       new DbContextOptionsBuilder<DbContextWithoutSchema>()
-         .Invoking(b => b.AddOrUpdateExtension<RelationalDbContextOptionsExtension>(_ =>
-                                                                                    {
-                                                                                    }))
+         .Invoking(b => b.AddOrUpdateExtension<RelationalDbContextOptionsExtension>(extension => extension))
          .Should().Throw<InvalidOperationException>().WithMessage("Please register the database provider first (via 'UseSqlServer' or 'UseSqlite' etc).");
    }
 
@@ -20,9 +18,7 @@ public class AddOrUpdateExtension
    {
       new DbContextOptionsBuilder<DbContextWithoutSchema>()
          .UseSqlite("DataSource=:memory:")
-         .Invoking(b => b.AddOrUpdateExtension<RelationalDbContextOptionsExtension>(_ =>
-                                                                                    {
-                                                                                    }))
+         .Invoking(b => b.AddOrUpdateExtension<RelationalDbContextOptionsExtension>(extension => extension))
          .Should().NotThrow();
    }
 

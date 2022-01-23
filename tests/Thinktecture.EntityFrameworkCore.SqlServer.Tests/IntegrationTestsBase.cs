@@ -41,7 +41,11 @@ public class IntegrationTestsBase : SqlServerDbContextIntegrationTests<TestDbCon
                                   optionsBuilder.AddNestedTransactionSupport()
                                                 .ConfigureWarnings(warningsBuilder => warningsBuilder.Ignore(CoreEventId.ManyServiceProvidersCreatedWarning));
 
-                                  optionsBuilder.AddOrUpdateExtension<RelationalDbContextOptionsExtension>(extension => extension.Register(typeof(Mock<ITenantDatabaseProvider>), TenantDatabaseProviderMock));
+                                  optionsBuilder.AddOrUpdateExtension<RelationalDbContextOptionsExtension>(extension =>
+                                                                                                           {
+                                                                                                              extension.Register(typeof(Mock<ITenantDatabaseProvider>), TenantDatabaseProviderMock);
+                                                                                                              return extension;
+                                                                                                           });
                                })
              .ConfigureSqlServerOptions((optionsBuilder, _) =>
                                         {
