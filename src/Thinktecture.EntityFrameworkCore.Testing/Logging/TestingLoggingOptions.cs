@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Serilog;
 using Serilog.Extensions.Logging;
@@ -77,11 +78,13 @@ public class TestingLoggingOptions : IDisposable
                                                                                      builder.AddProvider(new SubLoggerFactory(loggerFactory));
 
                                                                                   if (serilogLogger is not null)
-                                                                                  {
                                                                                      builder.AddSerilog(serilogLogger);
-                                                                                     builder.AddFilter<SerilogLoggerProvider>(null, level => level >= logLevelSwitch.MinimumLogLevel);
-                                                                                  }
 
+                                                                                  builder.Services.Configure<LoggerFilterOptions>(options =>
+                                                                                                                                  {
+                                                                                                                                     options.MinLevel = LogLevel.Trace;
+                                                                                                                                     options.Rules.Clear();
+                                                                                                                                  });
                                                                                   builder.AddFilter(level => level >= logLevelSwitch.MinimumLogLevel);
                                                                                });
 

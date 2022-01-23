@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Logging;
 using Serilog;
 using Thinktecture.Logging;
@@ -63,6 +64,15 @@ public abstract class TestDbContextProviderBuilder
    protected void UseMigrationLogLevel(LogLevel logLevel)
    {
       _migrationLogLevel = logLevel;
+   }
+
+   /// <summary>
+   /// Disables "LoggingCacheTime" of EF which is required to be able to change the <see cref="LogLevel"/> at will.
+   /// </summary>
+   /// <param name="builder">Builder.</param>
+   protected virtual void DisableLoggingCacheTime(DbContextOptionsBuilder builder)
+   {
+      builder.AddOrUpdateExtension<CoreOptionsExtension>(extension => extension.WithLoggingCacheTime(TimeSpan.Zero));
    }
 
    /// <summary>

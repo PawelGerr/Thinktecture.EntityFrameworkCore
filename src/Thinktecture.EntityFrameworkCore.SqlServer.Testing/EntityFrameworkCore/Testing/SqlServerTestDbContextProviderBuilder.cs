@@ -262,6 +262,8 @@ public class SqlServerTestDbContextProviderBuilder<T> : TestDbContextProviderBui
              .UseLoggerFactory(loggingOptions.LoggerFactory)
              .EnableSensitiveDataLogging(loggingOptions.EnableSensitiveDataLogging);
 
+      DisableLoggingCacheTime(builder);
+
       if (_disableModelCache)
          builder.ReplaceService<IModelCacheKeyFactory, CachePerContextModelCacheKeyFactory>();
 

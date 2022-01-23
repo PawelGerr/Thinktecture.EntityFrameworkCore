@@ -1,9 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
    <ItemGroup>
-      <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="6.0.1" />
       <PackageReference Include="Serilog.Extensions.Logging" Version="3.1.0" />
       <PackageReference Include="Serilog.Sinks.XUnit" Version="3.0.3" />
+   </ItemGroup>
+
+   <ItemGroup>
+     <ProjectReference Include="..\Thinktecture.EntityFrameworkCore.Relational\Thinktecture.EntityFrameworkCore.Relational.csproj" />
    </ItemGroup>
 
 </Project>
