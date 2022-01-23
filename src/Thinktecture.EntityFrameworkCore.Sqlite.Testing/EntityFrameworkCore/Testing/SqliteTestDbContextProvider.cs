@@ -1,5 +1,6 @@
 using System.Data.Common;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Thinktecture.Logging;
 
 namespace Thinktecture.EntityFrameworkCore.Testing;
 
@@ -24,6 +25,7 @@ public class SqliteTestDbContextProvider<T> : ITestDbContextProvider<T>
    private T? _actDbContext;
    private T? _assertDbContext;
    private bool _isAtLeastOneContextCreated;
+   private readonly TestingLoggingOptions _testingLoggingOptions;
 
    /// <inheritdoc />
    public T ArrangeDbContext => _arrangeDbContext ??= CreateDbContext(true);
@@ -37,7 +39,12 @@ public class SqliteTestDbContextProvider<T> : ITestDbContextProvider<T>
    /// <summary>
    /// Contains executed commands if this feature was activated.
    /// </summary>
-   public IReadOnlyCollection<string>? ExecutedCommands { get; }
+   public IReadOnlyCollection<string>? ExecutedCommands => _testingLoggingOptions.ExecutedCommands;
+
+   /// <summary>
+   /// Log level switch.
+   /// </summary>
+   public TestingLogLevelSwitch LogLevelSwitch => _testingLoggingOptions.LogLevelSwitch;
 
    /// <summary>
    /// The connection string.
@@ -57,7 +64,7 @@ public class SqliteTestDbContextProvider<T> : ITestDbContextProvider<T>
       _masterDbContextOptions = options.MasterDbContextOptions ?? throw new ArgumentException($"The '{nameof(options.MasterDbContextOptions)}' cannot be null.", nameof(options));
       _dbContextOptions = options.DbContextOptions ?? throw new ArgumentException($"The '{nameof(options.DbContextOptions)}' cannot be null.", nameof(options));
       _migrationExecutionStrategy = options.MigrationExecutionStrategy ?? throw new ArgumentException($"The '{nameof(options.MigrationExecutionStrategy)}' cannot be null.", nameof(options));
-      ExecutedCommands = options.ExecutedCommands;
+      _testingLoggingOptions = options.TestingLoggingOptions ?? throw new ArgumentException($"The '{nameof(options.TestingLoggingOptions)}' cannot be null.", nameof(options));
       _contextInitializations = options.ContextInitializations ?? throw new ArgumentException($"The '{nameof(options.ContextInitializations)}' cannot be null.", nameof(options));
       _contextFactory = options.ContextFactory;
    }
@@ -125,7 +132,17 @@ Please provide the corresponding constructor or a custom factory via '{typeof(Sq
       // concurrent execution is not supported by EF migrations
       lock (_lock)
       {
-         _migrationExecutionStrategy.Migrate(ctx);
+         var logLevel = LogLevelSwitch.MinimumLogLevel;
+         try
+         {
+            LogLevelSwitch.MinimumLogLevel = _testingLoggingOptions.MigrationLogLevel;
+
+            _migrationExecutionStrategy.Migrate(ctx);
+         }
+         finally
+         {
+            LogLevelSwitch.MinimumLogLevel = logLevel;
+         }
       }
    }
 

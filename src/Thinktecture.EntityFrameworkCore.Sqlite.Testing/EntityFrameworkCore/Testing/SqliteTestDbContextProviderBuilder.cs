@@ -2,8 +2,8 @@ using System.Data.Common;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Logging;
-using Serilog;
 using Thinktecture.EntityFrameworkCore.Infrastructure;
+using Thinktecture.Logging;
 using Xunit.Abstractions;
 
 namespace Thinktecture.EntityFrameworkCore.Testing;
@@ -12,7 +12,7 @@ namespace Thinktecture.EntityFrameworkCore.Testing;
 /// Builder for the <see cref="SqliteTestDbContextProvider{T}"/>.
 /// </summary>
 /// <typeparam name="T">Type of the <see cref="DbContext"/>.</typeparam>
-public class SqliteTestDbContextProviderBuilder<T>
+public class SqliteTestDbContextProviderBuilder<T> : TestDbContextProviderBuilder
    where T : DbContext
 {
    private readonly List<Action<DbContextOptionsBuilder<T>>> _configuresOptionsCollection;
@@ -20,10 +20,7 @@ public class SqliteTestDbContextProviderBuilder<T>
    private readonly List<Action<T>> _ctxInitializations;
 
    private IMigrationExecutionStrategy? _migrationExecutionStrategy;
-   private ILoggerFactory? _loggerFactory;
-   private bool _enableSensitiveDataLogging;
    private bool _disableModelCache;
-   private bool _collectExecutedCommands;
    private Func<DbContextOptions<T>, T>? _contextFactory;
 
    /// <summary>
@@ -56,10 +53,12 @@ public class SqliteTestDbContextProviderBuilder<T>
    /// </summary>
    /// <param name="loggerFactory">Logger factory to use.</param>
    /// <param name="enableSensitiveDataLogging">Enables or disables sensitive data logging.</param>
-   public SqliteTestDbContextProviderBuilder<T> UseLogging(ILoggerFactory? loggerFactory, bool enableSensitiveDataLogging = true)
+   /// <returns>Current builder for chaining.</returns>
+   public new SqliteTestDbContextProviderBuilder<T> UseLogging(
+      ILoggerFactory? loggerFactory,
+      bool enableSensitiveDataLogging = true)
    {
-      _loggerFactory = loggerFactory;
-      _enableSensitiveDataLogging = enableSensitiveDataLogging;
+      base.UseLogging(loggerFactory, enableSensitiveDataLogging);
 
       return this;
    }
@@ -70,24 +69,27 @@ public class SqliteTestDbContextProviderBuilder<T>
    /// <param name="testOutputHelper">XUnit output.</param>
    /// <param name="enableSensitiveDataLogging">Enables or disables sensitive data logging.</param>
    /// <param name="outputTemplate">The serilog output template.</param>
-   public SqliteTestDbContextProviderBuilder<T> UseLogging(
+   /// <returns>Current builder for chaining.</returns>
+   public new SqliteTestDbContextProviderBuilder<T> UseLogging(
       ITestOutputHelper? testOutputHelper,
       bool enableSensitiveDataLogging = true,
       string? outputTemplate = "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}")
    {
-      ILoggerFactory? loggerFactory = null;
+      base.UseLogging(testOutputHelper, enableSensitiveDataLogging, outputTemplate);
 
-      if (testOutputHelper is not null)
-      {
-         var loggerConfig = new LoggerConfiguration()
-                            .WriteTo.TestOutput(testOutputHelper, outputTemplate: outputTemplate ?? "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}");
+      return this;
+   }
 
-         loggerFactory = LoggerFactory.Create(builder => builder.AddSerilog(loggerConfig.CreateLogger(), true));
+   /// <summary>
+   /// Sets the log level during migrations.
+   /// </summary>
+   /// <param name="logLevel">Minimum log level to use during migrations.</param>
+   /// <returns>Current builder for chaining.</returns>
+   public new SqliteTestDbContextProviderBuilder<T> UseMigrationLogLevel(LogLevel logLevel)
+   {
+      base.UseMigrationLogLevel(logLevel);
 
-         return UseLogging(loggerFactory, enableSensitiveDataLogging);
-      }
-
-      return UseLogging(loggerFactory, enableSensitiveDataLogging);
+      return this;
    }
 
    /// <summary>
@@ -133,9 +135,9 @@ public class SqliteTestDbContextProviderBuilder<T>
    /// Indication whether collect executed commands or not.
    /// </summary>
    /// <returns>Current builder for chaining</returns>
-   public SqliteTestDbContextProviderBuilder<T> CollectExecutedCommands(bool collectExecutedCommands = true)
+   public new SqliteTestDbContextProviderBuilder<T> CollectExecutedCommands(bool collectExecutedCommands = true)
    {
-      _collectExecutedCommands = collectExecutedCommands;
+      base.CollectExecutedCommands(collectExecutedCommands);
 
       return this;
    }
@@ -159,7 +161,7 @@ public class SqliteTestDbContextProviderBuilder<T>
    /// </summary>
    /// <param name="contextFactory">Factory to create the context of type <typeparamref name="T"/>.</param>
    /// <returns>Current builder for chaining.</returns>
-   public SqliteTestDbContextProviderBuilder<T> UseContextFactory(Func<DbContextOptions<T>, T> contextFactory)
+   public SqliteTestDbContextProviderBuilder<T> UseContextFactory(Func<DbContextOptions<T>, T>? contextFactory)
    {
       _contextFactory = contextFactory;
 
@@ -176,9 +178,9 @@ public class SqliteTestDbContextProviderBuilder<T>
       DbConnection? connection,
       string connectionString)
    {
-      var loggerFactory = GetLoggerFactory(out _);
+      var loggingOptions = CreateLoggingOptions();
 
-      return CreateOptionsBuilder(connection, connectionString, loggerFactory);
+      return CreateOptionsBuilder(connection, connectionString, loggingOptions);
    }
 
    /// <summary>
@@ -186,12 +188,12 @@ public class SqliteTestDbContextProviderBuilder<T>
    /// </summary>
    /// <param name="connection">Database connection to use.</param>
    /// <param name="connectionString">Connection string to use.</param>
-   /// <param name="loggerFactory">Logger factory to use.</param>
+   /// <param name="loggingOptions">Logging options.</param>
    /// <returns>An instance of <see cref="DbContextOptionsBuilder{TContext}"/></returns>
    protected virtual DbContextOptionsBuilder<T> CreateOptionsBuilder(
       DbConnection? connection,
       string connectionString,
-      ILoggerFactory? loggerFactory)
+      TestingLoggingOptions loggingOptions)
    {
       var builder = new DbContextOptionsBuilder<T>();
 
@@ -204,15 +206,12 @@ public class SqliteTestDbContextProviderBuilder<T>
          builder.UseSqlite(connection, ConfigureSqlite);
       }
 
-      builder.AddSchemaRespectingComponents();
+      builder.AddSchemaRespectingComponents()
+             .UseLoggerFactory(loggingOptions.LoggerFactory)
+             .EnableSensitiveDataLogging(loggingOptions.EnableSensitiveDataLogging);
 
       if (_disableModelCache)
          builder.ReplaceService<IModelCacheKeyFactory, CachePerContextModelCacheKeyFactory>();
-
-      builder.EnableSensitiveDataLogging(_enableSensitiveDataLogging);
-
-      if (loggerFactory != null)
-         builder.UseLoggerFactory(loggerFactory);
 
       _configuresOptionsCollection.ForEach(configure => configure(builder));
 
@@ -244,18 +243,18 @@ public class SqliteTestDbContextProviderBuilder<T>
 
       try
       {
-         var loggerFactory = GetLoggerFactory(out var executedCommands);
-         var masterDbContextOptions = CreateOptionsBuilder(masterConnection, connectionString, loggerFactory).Options;
-         var dbContextOptions = CreateOptionsBuilder(null, connectionString, loggerFactory).Options;
+         var loggingOptions = CreateLoggingOptions();
+         var masterDbContextOptions = CreateOptionsBuilder(masterConnection, connectionString, loggingOptions).Options;
+         var dbContextOptions = CreateOptionsBuilder(null, connectionString, loggingOptions).Options;
 
          return new SqliteTestDbContextProvider<T>(new SqliteTestDbContextProviderOptions<T>(masterConnection,
                                                                                              _migrationExecutionStrategy ?? IMigrationExecutionStrategy.Migrations,
                                                                                              masterDbContextOptions,
                                                                                              dbContextOptions,
+                                                                                             loggingOptions,
                                                                                              _ctxInitializations.ToList(),
                                                                                              connectionString)
                                                    {
-                                                      ExecutedCommands = executedCommands,
                                                       ContextFactory = _contextFactory
                                                    });
       }
@@ -264,22 +263,5 @@ public class SqliteTestDbContextProviderBuilder<T>
          masterConnection.Dispose();
          throw;
       }
-   }
-
-   private ILoggerFactory? GetLoggerFactory(out IReadOnlyCollection<string>? executedCommands)
-   {
-      var loggerFactory = _loggerFactory;
-
-      if (_collectExecutedCommands)
-      {
-         loggerFactory ??= new LoggerFactory();
-         executedCommands = loggerFactory.CollectExecutedCommands();
-      }
-      else
-      {
-         executedCommands = null;
-      }
-
-      return loggerFactory;
    }
 }

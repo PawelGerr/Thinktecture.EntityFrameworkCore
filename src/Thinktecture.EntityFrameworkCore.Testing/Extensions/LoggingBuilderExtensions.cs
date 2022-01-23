@@ -6,21 +6,21 @@ namespace Thinktecture;
 /// <summary>
 /// Extensions for <see cref="ILoggerFactory"/>.
 /// </summary>
-public static class LoggerFactoryExtensions
+public static class LoggingBuilderExtensions
 {
    /// <summary>
    /// Collects executed SQL statements and adds them to the <see cref="IReadOnlyCollection{T}"/>.
    /// </summary>
-   /// <param name="loggerFactory">Logger factory to register the statement collector with.</param>
+   /// <param name="loggingBuilder">Logging builder to register the statement collector with.</param>
    /// <returns></returns>
-   /// <exception cref="ArgumentNullException"></exception>
+   /// <exception cref="ArgumentNullException"><paramref name="loggingBuilder"/> is <c>null</c>.</exception>
    public static IReadOnlyCollection<string> CollectExecutedCommands(
-      this ILoggerFactory loggerFactory)
+      this ILoggingBuilder loggingBuilder)
    {
-      ArgumentNullException.ThrowIfNull(loggerFactory);
+      ArgumentNullException.ThrowIfNull(loggingBuilder);
 
       var sqlCommandLoggerProvider = new ExecutedCommandLoggerProvider();
-      loggerFactory.AddProvider(sqlCommandLoggerProvider);
+      loggingBuilder.AddProvider(sqlCommandLoggerProvider);
 
       return sqlCommandLoggerProvider.Commands;
    }

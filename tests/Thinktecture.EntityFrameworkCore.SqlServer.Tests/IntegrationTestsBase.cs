@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.Extensions.Logging;
 using Thinktecture.EntityFrameworkCore;
 using Thinktecture.EntityFrameworkCore.Infrastructure;
 using Thinktecture.EntityFrameworkCore.Query;
@@ -30,6 +31,7 @@ public class IntegrationTestsBase : SqlServerDbContextIntegrationTests<TestDbCon
    protected override void ConfigureTestDbContextProvider(SqlServerTestDbContextProviderBuilder<TestDbContext> builder)
    {
       builder.UseMigrationExecutionStrategy(IMigrationExecutionStrategy.Migrations)
+             .UseMigrationLogLevel(LogLevel.Warning)
              .CollectExecutedCommands()
              .ConfigureOptions((optionsBuilder, _) =>
                                {

@@ -1,4 +1,5 @@
 using System.Data.Common;
+using Thinktecture.Logging;
 
 namespace Thinktecture.EntityFrameworkCore.Testing;
 
@@ -32,7 +33,7 @@ public abstract class TestDbContextProviderOptions<T>
    /// <summary>
    /// Contains executed commands if this feature was activated.
    /// </summary>
-   public IReadOnlyCollection<string>? ExecutedCommands { get; set; }
+   public TestingLoggingOptions TestingLoggingOptions { get; set; }
 
    /// <summary>
    /// Callback to execute on every creation of a new <see cref="DbContext"/>.
@@ -47,6 +48,7 @@ public abstract class TestDbContextProviderOptions<T>
       IMigrationExecutionStrategy migrationExecutionStrategy,
       DbContextOptions<T> masterDbContextOptions,
       DbContextOptions<T> dbContextOptions,
+      TestingLoggingOptions testingLoggingOptions,
       IReadOnlyList<Action<T>> contextInitializations)
    {
       MasterConnection = masterConnection;
@@ -54,5 +56,6 @@ public abstract class TestDbContextProviderOptions<T>
       MasterDbContextOptions = masterDbContextOptions;
       DbContextOptions = dbContextOptions;
       ContextInitializations = contextInitializations;
+      TestingLoggingOptions = testingLoggingOptions;
    }
 }

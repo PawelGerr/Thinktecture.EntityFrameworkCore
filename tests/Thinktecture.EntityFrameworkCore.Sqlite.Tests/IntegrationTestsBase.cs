@@ -25,6 +25,7 @@ public class IntegrationTestsBase : SqliteDbContextIntegrationTests<TestDbContex
    protected override void ConfigureTestDbContextProvider(SqliteTestDbContextProviderBuilder<TestDbContext> builder)
    {
       builder.UseMigrationExecutionStrategy(_migrationExecutionStrategy ?? IMigrationExecutionStrategy.Migrations)
+             .UseMigrationLogLevel(LogLevel.Warning)
              .ConfigureOptions(optionsBuilder => ConfigureOptionsBuilder?.Invoke(optionsBuilder))
              .ConfigureSqliteOptions(optionsBuilder => optionsBuilder.AddBulkOperationSupport()
                                                                      .AddRowNumberSupport())

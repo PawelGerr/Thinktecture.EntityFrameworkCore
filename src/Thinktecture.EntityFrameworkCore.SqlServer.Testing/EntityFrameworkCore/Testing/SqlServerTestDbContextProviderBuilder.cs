@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Logging;
 using Thinktecture.EntityFrameworkCore.Infrastructure;
 using Thinktecture.EntityFrameworkCore.Migrations;
+using Thinktecture.Logging;
 using Xunit.Abstractions;
 
 namespace Thinktecture.EntityFrameworkCore.Testing;
@@ -13,7 +14,7 @@ namespace Thinktecture.EntityFrameworkCore.Testing;
 /// Builder for the <see cref="SqlServerTestDbContextProvider{T}"/>.
 /// </summary>
 /// <typeparam name="T">Type of the <see cref="DbContext"/>.</typeparam>
-public class SqlServerTestDbContextProviderBuilder<T>
+public class SqlServerTestDbContextProviderBuilder<T> : TestDbContextProviderBuilder
    where T : DbContext
 {
    private const string _HISTORY_TABLE_NAME = "__EFMigrationsHistory";
@@ -25,11 +26,8 @@ public class SqlServerTestDbContextProviderBuilder<T>
    private readonly List<Action<T>> _ctxInitializations;
 
    private IMigrationExecutionStrategy? _migrationExecutionStrategy;
-   private ILoggerFactory? _loggerFactory;
-   private bool _enableSensitiveDataLogging;
    private bool _disableModelCache;
    private bool _useThinktectureSqlServerMigrationsSqlGenerator = true;
-   private bool _collectExecutedCommands;
    private string? _sharedTablesSchema;
    private Func<DbContextOptions<T>, IDbDefaultSchema, T>? _contextFactory;
 
@@ -67,10 +65,12 @@ public class SqlServerTestDbContextProviderBuilder<T>
    /// </summary>
    /// <param name="loggerFactory">Logger factory to use.</param>
    /// <param name="enableSensitiveDataLogging">Enables or disables sensitive data logging.</param>
-   public SqlServerTestDbContextProviderBuilder<T> UseLogging(ILoggerFactory? loggerFactory, bool enableSensitiveDataLogging = true)
+   /// <returns>Current builder for chaining.</returns>
+   public new SqlServerTestDbContextProviderBuilder<T> UseLogging(
+      ILoggerFactory? loggerFactory,
+      bool enableSensitiveDataLogging = true)
    {
-      _loggerFactory = loggerFactory;
-      _enableSensitiveDataLogging = enableSensitiveDataLogging;
+      base.UseLogging(loggerFactory, enableSensitiveDataLogging);
 
       return this;
    }
@@ -81,14 +81,27 @@ public class SqlServerTestDbContextProviderBuilder<T>
    /// <param name="testOutputHelper">XUnit output.</param>
    /// <param name="enableSensitiveDataLogging">Enables or disables sensitive data logging.</param>
    /// <param name="outputTemplate">The serilog output template.</param>
-   public SqlServerTestDbContextProviderBuilder<T> UseLogging(
+   /// <returns>Current builder for chaining.</returns>
+   public new SqlServerTestDbContextProviderBuilder<T> UseLogging(
       ITestOutputHelper? testOutputHelper,
       bool enableSensitiveDataLogging = true,
       string? outputTemplate = "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}")
    {
-      var loggerFactory = testOutputHelper?.ToLoggerFactory(outputTemplate);
+      base.UseLogging(testOutputHelper, enableSensitiveDataLogging, outputTemplate);
 
-      return UseLogging(loggerFactory, enableSensitiveDataLogging);
+      return this;
+   }
+
+   /// <summary>
+   /// Sets the log level during migrations.
+   /// </summary>
+   /// <param name="logLevel">Minimum log level to use during migrations.</param>
+   /// <returns>Current builder for chaining.</returns>
+   public new SqlServerTestDbContextProviderBuilder<T> UseMigrationLogLevel(LogLevel logLevel)
+   {
+      base.UseMigrationLogLevel(logLevel);
+
+      return this;
    }
 
    /// <summary>
@@ -146,9 +159,9 @@ public class SqlServerTestDbContextProviderBuilder<T>
    /// Indication whether collect executed commands or not.
    /// </summary>
    /// <returns>Current builder for chaining</returns>
-   public SqlServerTestDbContextProviderBuilder<T> CollectExecutedCommands(bool collectExecutedCommands = true)
+   public new SqlServerTestDbContextProviderBuilder<T> CollectExecutedCommands(bool collectExecutedCommands = true)
    {
-      _collectExecutedCommands = collectExecutedCommands;
+      base.CollectExecutedCommands(collectExecutedCommands);
 
       return this;
    }
@@ -161,6 +174,9 @@ public class SqlServerTestDbContextProviderBuilder<T>
    /// <returns>Current builder for chaining.</returns>
    public SqlServerTestDbContextProviderBuilder<T> UseSharedTableSchema(string schema)
    {
+      if (String.IsNullOrWhiteSpace(schema))
+         throw new ArgumentException("Schema cannot be empty.", nameof(schema));
+
       _sharedTablesSchema = schema;
 
       return this;
@@ -185,7 +201,7 @@ public class SqlServerTestDbContextProviderBuilder<T>
    /// </summary>
    /// <param name="contextFactory">Factory to create the context of type <typeparamref name="T"/>.</param>
    /// <returns>Current builder for chaining.</returns>
-   public SqlServerTestDbContextProviderBuilder<T> UseContextFactory(Func<DbContextOptions<T>, IDbDefaultSchema, T> contextFactory)
+   public SqlServerTestDbContextProviderBuilder<T> UseContextFactory(Func<DbContextOptions<T>, IDbDefaultSchema, T>? contextFactory)
    {
       _contextFactory = contextFactory;
 
@@ -214,9 +230,9 @@ public class SqlServerTestDbContextProviderBuilder<T>
       DbConnection? connection,
       string schema)
    {
-      var loggerFactory = GetLoggerFactory(out _);
+      var loggingOptions = CreateLoggingOptions();
 
-      return CreateOptionsBuilder(connection, schema, loggerFactory);
+      return CreateOptionsBuilder(connection, schema, loggingOptions);
    }
 
    /// <summary>
@@ -224,12 +240,12 @@ public class SqlServerTestDbContextProviderBuilder<T>
    /// </summary>
    /// <param name="connection">Database connection to use.</param>
    /// <param name="schema">Database schema to use.</param>
-   /// <param name="loggerFactory">Logger factory to use.</param>
+   /// <param name="loggingOptions">Logging options.</param>
    /// <returns>An instance of <see cref="DbContextOptionsBuilder{TContext}"/></returns>
    protected virtual DbContextOptionsBuilder<T> CreateOptionsBuilder(
       DbConnection? connection,
       string schema,
-      ILoggerFactory? loggerFactory)
+      TestingLoggingOptions loggingOptions)
    {
       var builder = new DbContextOptionsBuilder<T>();
 
@@ -242,15 +258,12 @@ public class SqlServerTestDbContextProviderBuilder<T>
          builder.UseSqlServer(connection, optionsBuilder => ConfigureSqlServer(optionsBuilder, schema));
       }
 
-      builder.AddSchemaRespectingComponents();
+      builder.AddSchemaRespectingComponents()
+             .UseLoggerFactory(loggingOptions.LoggerFactory)
+             .EnableSensitiveDataLogging(loggingOptions.EnableSensitiveDataLogging);
 
       if (_disableModelCache)
          builder.ReplaceService<IModelCacheKeyFactory, CachePerContextModelCacheKeyFactory>();
-
-      builder.EnableSensitiveDataLogging(_enableSensitiveDataLogging);
-
-      if (loggerFactory != null)
-         builder.UseLoggerFactory(loggerFactory);
 
       _configuresOptionsCollection.ForEach(configure => configure(builder, schema));
 
@@ -288,19 +301,19 @@ public class SqlServerTestDbContextProviderBuilder<T>
 
       try
       {
-         var loggerFactory = GetLoggerFactory(out var executedCommands);
-         var masterDbContextOptions = CreateOptionsBuilder(masterConnection, schema, loggerFactory).Options;
-         var dbContextOptions = CreateOptionsBuilder(null, schema, loggerFactory).Options;
+         var loggingOptions = CreateLoggingOptions();
+         var masterDbContextOptions = CreateOptionsBuilder(masterConnection, schema, loggingOptions).Options;
+         var dbContextOptions = CreateOptionsBuilder(null, schema, loggingOptions).Options;
 
          return new SqlServerTestDbContextProvider<T>(new SqlServerTestDbContextProviderOptions<T>(masterConnection,
                                                                                                    _migrationExecutionStrategy ?? IMigrationExecutionStrategy.Migrations,
                                                                                                    masterDbContextOptions,
                                                                                                    dbContextOptions,
+                                                                                                   loggingOptions,
                                                                                                    _ctxInitializations.ToList(),
                                                                                                    schema)
                                                       {
                                                          IsUsingSharedTables = _useSharedTables,
-                                                         ExecutedCommands = executedCommands,
                                                          ContextFactory = _contextFactory
                                                       });
       }
@@ -309,22 +322,5 @@ public class SqlServerTestDbContextProviderBuilder<T>
          masterConnection.Dispose();
          throw;
       }
-   }
-
-   private ILoggerFactory? GetLoggerFactory(out IReadOnlyCollection<string>? executedCommands)
-   {
-      var loggerFactory = _loggerFactory;
-
-      if (_collectExecutedCommands)
-      {
-         loggerFactory ??= new LoggerFactory();
-         executedCommands = loggerFactory.CollectExecutedCommands();
-      }
-      else
-      {
-         executedCommands = null;
-      }
-
-      return loggerFactory;
    }
 }

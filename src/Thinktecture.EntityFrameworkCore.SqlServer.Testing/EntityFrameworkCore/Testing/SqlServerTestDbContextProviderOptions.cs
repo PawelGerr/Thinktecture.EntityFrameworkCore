@@ -1,4 +1,5 @@
 using System.Data.Common;
+using Thinktecture.Logging;
 
 namespace Thinktecture.EntityFrameworkCore.Testing;
 
@@ -33,9 +34,10 @@ public class SqlServerTestDbContextProviderOptions<T> : TestDbContextProviderOpt
       IMigrationExecutionStrategy migrationExecutionStrategy,
       DbContextOptions<T> masterDbContextOptions,
       DbContextOptions<T> dbContextOptions,
+      TestingLoggingOptions testingLoggingOptions,
       IReadOnlyList<Action<T>> contextInitializations,
       string schema)
-      : base(masterConnection, migrationExecutionStrategy, masterDbContextOptions, dbContextOptions, contextInitializations)
+      : base(masterConnection, migrationExecutionStrategy, masterDbContextOptions, dbContextOptions, testingLoggingOptions, contextInitializations)
    {
       Schema = schema;
    }

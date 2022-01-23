@@ -26,6 +26,7 @@ public class IntegrationTestsBase : SqliteDbContextIntegrationTests<DbContextWit
    protected override void ConfigureTestDbContextProvider(SqliteTestDbContextProviderBuilder<DbContextWithSchema> builder)
    {
       builder.UseMigrationExecutionStrategy(_migrationExecutionStrategy ?? IMigrationExecutionStrategy.NoMigration)
+             .UseMigrationLogLevel(LogLevel.Warning)
              .ConfigureOptions(optionsBuilder => ConfigureOptionsBuilder?.Invoke(optionsBuilder))
              .InitializeContext(ctx => ctx.ConfigureModel = ConfigureModel)
              .UseContextFactory(options => new DbContextWithSchema(options, Schema))
