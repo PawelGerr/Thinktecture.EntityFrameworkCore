@@ -19,7 +19,7 @@ public class SqliteTestDbContextProvider<T> : ITestDbContextProvider<T>
    private readonly IMigrationExecutionStrategy _migrationExecutionStrategy;
    private readonly DbConnection _masterConnection;
    private readonly IReadOnlyList<Action<T>> _contextInitializations;
-   private readonly Func<DbContextOptions<T>, T>? _contextFactory;
+   private readonly Func<DbContextOptions<T>, T?>? _contextFactory;
 
    private T? _arrangeDbContext;
    private T? _actDbContext;
@@ -111,14 +111,16 @@ public class SqliteTestDbContextProvider<T> : ITestDbContextProvider<T>
    /// <returns>A new instance of the database context.</returns>
    protected virtual T CreateDbContext(DbContextOptions<T> options)
    {
-      if (_contextFactory is not null)
-         return _contextFactory(options) ?? throw new Exception("The provided context factory must not return 'null'.");
+      var ctx = _contextFactory?.Invoke(options);
 
-      var ctx = Activator.CreateInstance(typeof(T), options)
+      if (ctx is not null)
+         return ctx;
+
+      ctx = (T)(Activator.CreateInstance(typeof(T), options)
                 ?? throw new Exception(@$"Could not create an instance of type of '{typeof(T).ShortDisplayName()}' using constructor parameters ({typeof(DbContextOptions<T>).ShortDisplayName()} options).
-Please provide the corresponding constructor or a custom factory via '{typeof(SqliteTestDbContextProviderBuilder<T>).ShortDisplayName()}.{nameof(SqliteTestDbContextProviderBuilder<T>.UseContextFactory)}'.");
+Please provide the corresponding constructor or a custom factory via '{typeof(SqliteTestDbContextProviderBuilder<T>).ShortDisplayName()}.{nameof(SqliteTestDbContextProviderBuilder<T>.UseContextFactory)}'."));
 
-      return (T)ctx;
+      return ctx;
    }
 
    /// <summary>

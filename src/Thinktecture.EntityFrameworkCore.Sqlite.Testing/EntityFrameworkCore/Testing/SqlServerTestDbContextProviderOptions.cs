@@ -13,7 +13,7 @@ public class SqliteTestDbContextProviderOptions<T> : TestDbContextProviderOption
    /// <summary>
    /// A factory method for creation of contexts of type <typeparamref name="T"/>.
    /// </summary>
-   public Func<DbContextOptions<T>, T>? ContextFactory { get; set; }
+   public Func<DbContextOptions<T>, T?>? ContextFactory { get; set; }
 
    /// <summary>
    /// The connection string.

@@ -17,7 +17,8 @@ public class SqliteTestDbContextProviderBuilder<T> : TestDbContextProviderBuilde
    private readonly List<Action<SqliteDbContextOptionsBuilder>> _configuresSqliteOptionsCollection;
    private readonly List<Action<T>> _ctxInitializations;
 
-   private Func<DbContextOptions<T>, T>? _contextFactory;
+   private Func<DbContextOptions<T>, T?>? _contextFactory;
+   private Func<SqliteTestDbContextProviderOptions<T>, SqliteTestDbContextProvider<T>?>? _providerFactory;
 
    /// <summary>
    /// Initializes new instance of <see cref="SqliteTestDbContextProviderBuilder{T}"/>.
@@ -155,9 +156,21 @@ public class SqliteTestDbContextProviderBuilder<T> : TestDbContextProviderBuilde
    /// </summary>
    /// <param name="contextFactory">Factory to create the context of type <typeparamref name="T"/>.</param>
    /// <returns>Current builder for chaining.</returns>
-   public SqliteTestDbContextProviderBuilder<T> UseContextFactory(Func<DbContextOptions<T>, T>? contextFactory)
+   public SqliteTestDbContextProviderBuilder<T> UseContextFactory(Func<DbContextOptions<T>, T?>? contextFactory)
    {
       _contextFactory = contextFactory;
+
+      return this;
+   }
+
+   /// <summary>
+   /// Delegates the creation of <see cref="SqliteTestDbContextProvider{T}"/> to the provided <paramref name="providerFactory"/>.
+   /// </summary>
+   /// <param name="providerFactory">Factory to use for creation of <see cref="SqliteTestDbContextProvider{T}"/>.</param>
+   /// <returns>Current builder for chaining.</returns>
+   public SqliteTestDbContextProviderBuilder<T> UseProviderFactory(Func<SqliteTestDbContextProviderOptions<T>, SqliteTestDbContextProvider<T>?>? providerFactory)
+   {
+      _providerFactory = providerFactory;
 
       return this;
    }
@@ -238,17 +251,19 @@ public class SqliteTestDbContextProviderBuilder<T> : TestDbContextProviderBuilde
          var masterDbContextOptions = CreateOptionsBuilder(state, masterConnection, connectionString).Options;
          var dbContextOptions = CreateOptionsBuilder(state, null, connectionString).Options;
 
-         return new SqliteTestDbContextProvider<T>(new SqliteTestDbContextProviderOptions<T>(masterConnection,
-                                                                                             state.MigrationExecutionStrategy ?? IMigrationExecutionStrategy.Migrations,
-                                                                                             masterDbContextOptions,
-                                                                                             dbContextOptions,
-                                                                                             loggingOptions,
-                                                                                             _ctxInitializations.ToList(),
-                                                                                             connectionString)
-                                                   {
-                                                      ContextFactory = _contextFactory,
-                                                      ExecutedCommands = state.CommandCapturingInterceptor?.Commands
-                                                   });
+         var options = new SqliteTestDbContextProviderOptions<T>(masterConnection,
+                                                                 state.MigrationExecutionStrategy ?? IMigrationExecutionStrategy.Migrations,
+                                                                 masterDbContextOptions,
+                                                                 dbContextOptions,
+                                                                 loggingOptions,
+                                                                 _ctxInitializations.ToList(),
+                                                                 connectionString)
+                       {
+                          ContextFactory = _contextFactory,
+                          ExecutedCommands = state.CommandCapturingInterceptor?.Commands
+                       };
+
+         return _providerFactory?.Invoke(options) ?? new SqliteTestDbContextProvider<T>(options);
       }
       catch
       {

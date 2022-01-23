@@ -25,7 +25,7 @@ public class SqlServerTestDbContextProviderOptions<T> : TestDbContextProviderOpt
    /// <summary>
    /// A factory method for creation of contexts of type <typeparamref name="T"/>.
    /// </summary>
-   public Func<DbContextOptions<T>, IDbDefaultSchema, T>? ContextFactory { get; set; }
+   public Func<DbContextOptions<T>, IDbDefaultSchema, T?>? ContextFactory { get; set; }
 
    /// <summary>
    /// Isolation level to be used with shared tables.

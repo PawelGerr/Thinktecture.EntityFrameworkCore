@@ -25,7 +25,8 @@ public class SqlServerTestDbContextProviderBuilder<T> : TestDbContextProviderBui
 
    private bool _useThinktectureSqlServerMigrationsSqlGenerator = true;
    private string? _sharedTablesSchema;
-   private Func<DbContextOptions<T>, IDbDefaultSchema, T>? _contextFactory;
+   private Func<DbContextOptions<T>, IDbDefaultSchema, T?>? _contextFactory;
+   private Func<SqlServerTestDbContextProviderOptions<T>, SqlServerTestDbContextProvider<T>?>? _providerFactory;
 
    /// <summary>
    /// Initializes new instance of <see cref="SqlServerTestDbContextProviderBuilder{T}"/>.
@@ -195,9 +196,21 @@ public class SqlServerTestDbContextProviderBuilder<T> : TestDbContextProviderBui
    /// </summary>
    /// <param name="contextFactory">Factory to create the context of type <typeparamref name="T"/>.</param>
    /// <returns>Current builder for chaining.</returns>
-   public SqlServerTestDbContextProviderBuilder<T> UseContextFactory(Func<DbContextOptions<T>, IDbDefaultSchema, T>? contextFactory)
+   public SqlServerTestDbContextProviderBuilder<T> UseContextFactory(Func<DbContextOptions<T>, IDbDefaultSchema, T?>? contextFactory)
    {
       _contextFactory = contextFactory;
+
+      return this;
+   }
+
+   /// <summary>
+   /// Delegates the creation of <see cref="SqlServerTestDbContextProvider{T}"/> to the provided <paramref name="providerFactory"/>.
+   /// </summary>
+   /// <param name="providerFactory">Factory to use for creation of <see cref="SqlServerTestDbContextProvider{T}"/>.</param>
+   /// <returns>Current builder for chaining.</returns>
+   public SqlServerTestDbContextProviderBuilder<T> UseProviderFactory(Func<SqlServerTestDbContextProviderOptions<T>, SqlServerTestDbContextProvider<T>?>? providerFactory)
+   {
+      _providerFactory = providerFactory;
 
       return this;
    }
@@ -296,18 +309,20 @@ public class SqlServerTestDbContextProviderBuilder<T> : TestDbContextProviderBui
          var masterDbContextOptions = CreateOptionsBuilder(state, masterConnection, schema).Options;
          var dbContextOptions = CreateOptionsBuilder(state, null, schema).Options;
 
-         return new SqlServerTestDbContextProvider<T>(new SqlServerTestDbContextProviderOptions<T>(masterConnection,
-                                                                                                   state.MigrationExecutionStrategy ?? IMigrationExecutionStrategy.Migrations,
-                                                                                                   masterDbContextOptions,
-                                                                                                   dbContextOptions,
-                                                                                                   loggingOptions,
-                                                                                                   _ctxInitializations.ToList(),
-                                                                                                   schema)
-                                                      {
-                                                         IsUsingSharedTables = _useSharedTables,
-                                                         ContextFactory = _contextFactory,
-                                                         ExecutedCommands = state.CommandCapturingInterceptor?.Commands
-                                                      });
+         var options = new SqlServerTestDbContextProviderOptions<T>(masterConnection,
+                                                                    state.MigrationExecutionStrategy ?? IMigrationExecutionStrategy.Migrations,
+                                                                    masterDbContextOptions,
+                                                                    dbContextOptions,
+                                                                    loggingOptions,
+                                                                    _ctxInitializations.ToList(),
+                                                                    schema)
+                       {
+                          IsUsingSharedTables = _useSharedTables,
+                          ContextFactory = _contextFactory,
+                          ExecutedCommands = state.CommandCapturingInterceptor?.Commands
+                       };
+
+         return _providerFactory?.Invoke(options) ?? new SqlServerTestDbContextProvider<T>(options);
       }
       catch
       {
