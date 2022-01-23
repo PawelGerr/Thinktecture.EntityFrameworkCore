@@ -1,3 +1,4 @@
+using System.Data;
 using System.Data.Common;
 using Thinktecture.Logging;
 
@@ -25,6 +26,11 @@ public class SqlServerTestDbContextProviderOptions<T> : TestDbContextProviderOpt
    /// A factory method for creation of contexts of type <typeparamref name="T"/>.
    /// </summary>
    public Func<DbContextOptions<T>, IDbDefaultSchema, T>? ContextFactory { get; set; }
+
+   /// <summary>
+   /// Isolation level to be used with shared tables.
+   /// </summary>
+   public IsolationLevel? SharedTablesIsolationLevel { get; set; }
 
    /// <summary>
    /// Initializes new instance of <see cref="SqlServerTestDbContextProviderOptions{T}"/>.

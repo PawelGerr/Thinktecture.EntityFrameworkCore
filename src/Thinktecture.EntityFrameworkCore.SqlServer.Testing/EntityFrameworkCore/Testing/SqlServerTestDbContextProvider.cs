@@ -33,6 +33,7 @@ public class SqlServerTestDbContextProvider<T> : ITestDbContextProvider<T>
    private T? _assertDbContext;
    private IDbContextTransaction? _tx;
    private bool _isAtLeastOneContextCreated;
+   private readonly IsolationLevel _sharedTablesIsolationLevel;
 
    /// <inheritdoc />
    public T ArrangeDbContext => _arrangeDbContext ??= CreateDbContext(true);
@@ -68,6 +69,7 @@ public class SqlServerTestDbContextProvider<T> : ITestDbContextProvider<T>
       ArgumentNullException.ThrowIfNull(options);
 
       Schema = options.Schema ?? throw new ArgumentException($"The '{nameof(options.Schema)}' cannot be null.", nameof(options));
+      _sharedTablesIsolationLevel = ValidateIsolationLevel(options);
       _isUsingSharedTables = options.IsUsingSharedTables;
       _masterConnection = options.MasterConnection ?? throw new ArgumentException($"The '{nameof(options.MasterConnection)}' cannot be null.", nameof(options));
       _masterDbContextOptions = options.MasterDbContextOptions ?? throw new ArgumentException($"The '{nameof(options.MasterDbContextOptions)}' cannot be null.", nameof(options));
@@ -77,6 +79,20 @@ public class SqlServerTestDbContextProvider<T> : ITestDbContextProvider<T>
       _contextInitializations = options.ContextInitializations ?? throw new ArgumentException($"The '{nameof(options.ContextInitializations)}' cannot be null.", nameof(options));
       ExecutedCommands = options.ExecutedCommands;
       _contextFactory = options.ContextFactory;
+   }
+
+   private static IsolationLevel ValidateIsolationLevel(SqlServerTestDbContextProviderOptions<T> options)
+   {
+      if (!options.SharedTablesIsolationLevel.HasValue)
+         return IsolationLevel.ReadCommitted;
+
+      if (Enum.IsDefined(options.SharedTablesIsolationLevel.Value))
+         throw new ArgumentException($"The provided isolation level '{options.SharedTablesIsolationLevel}' is invalid.");
+
+      if (options.SharedTablesIsolationLevel < IsolationLevel.ReadCommitted)
+         throw new ArgumentException($"The isolation level '{options.SharedTablesIsolationLevel}' cannot be less than '{nameof(IsolationLevel.ReadCommitted)}'.");
+
+      return options.SharedTablesIsolationLevel.Value;
    }
 
    /// <inheritdoc />
@@ -166,7 +182,7 @@ Please provide the corresponding constructor or a custom factory via '{typeof(Sq
    {
       ArgumentNullException.ThrowIfNull(ctx);
 
-      return ctx.Database.BeginTransaction(IsolationLevel.ReadCommitted);
+      return ctx.Database.BeginTransaction(_sharedTablesIsolationLevel);
    }
 
    /// <summary>
