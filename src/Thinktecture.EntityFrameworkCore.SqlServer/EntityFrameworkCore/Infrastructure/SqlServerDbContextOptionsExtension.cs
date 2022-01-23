@@ -205,17 +205,26 @@ public sealed class SqlServerDbContextOptionsExtension : DbContextOptionsExtensi
 
       private string? _logFragment;
 
-      public override string LogFragment => _logFragment ??= $@"
-{{
-   'Custom QueryableMethodTranslatingExpressionVisitorFactory'={_extension.AddCustomQueryableMethodTranslatingExpressionVisitorFactory},
-   'Custom QuerySqlGeneratorFactory'={_extension.AddCustomQuerySqlGeneratorFactory},
-   'Custom RelationalParameterBasedSqlProcessorFactory'={_extension.AddCustomRelationalParameterBasedSqlProcessorFactory},
-   'BulkOperationSupport'={_extension.AddBulkOperationSupport},
-   'CollectionParameterSupport'={_extension._addCollectionParameterSupport},
-   'TenantDatabaseSupport'={_extension.AddTenantDatabaseSupport},
-   'TableHintSupport'={_extension.AddTableHintSupport},
-   'UseThinktectureSqlServerMigrationsSqlGenerator'={_extension.UseThinktectureSqlServerMigrationsSqlGenerator}
-}}";
+      public override string LogFragment => _logFragment ??= CreateLogFragment();
+
+      private string CreateLogFragment()
+      {
+         var sb = new StringBuilder();
+
+         if (_extension.AddBulkOperationSupport)
+            sb.Append("BulkOperationSupport ");
+
+         if (_extension._addCollectionParameterSupport)
+            sb.Append("CollectionParameterSupport ");
+
+         if (_extension.AddTableHintSupport)
+            sb.Append("TableHintSupport ");
+
+         if (_extension.UseThinktectureSqlServerMigrationsSqlGenerator)
+            sb.Append("ThinktectureSqlServerMigrationsSqlGenerator ");
+
+         return sb.ToString();
+      }
 
       /// <inheritdoc />
       public SqlServerDbContextOptionsExtensionInfo(SqlServerDbContextOptionsExtension extension)

@@ -19,6 +19,9 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure;
 /// </summary>
 public sealed class RelationalDbContextOptionsExtension : DbContextOptionsExtensionBase, IDbContextOptionsExtension
 {
+   private const int _DEFAULT_INITIAL_CAPACITY = 300;
+   private const int _DEFAULT_MAXIMUM_RETAINED_CAPACITY = 4 * 1024;
+
    private static readonly IRelationalDbContextComponentDecorator _defaultDecorator = new RelationalDbContextComponentDecorator();
 
    private readonly List<ServiceDescriptor> _serviceDescriptors;
@@ -61,16 +64,16 @@ public sealed class RelationalDbContextOptionsExtension : DbContextOptionsExtens
    /// </summary>
    public bool AddTenantDatabaseSupport { get; set; }
 
-   private bool _addCustomRelationalQueryContextFactory;
+   private bool _useCustomRelationalQueryContextFactory;
 
    /// <summary>
    /// A custom factory is registered if <c>true</c>.
    /// The factory is required for some features.
    /// </summary>
-   public bool AddCustomRelationalQueryContextFactory
+   public bool UseThinktectureRelationalQueryContextFactory
    {
-      get => _addCustomRelationalQueryContextFactory || AddTenantDatabaseSupport;
-      set => _addCustomRelationalQueryContextFactory = value;
+      get => _useCustomRelationalQueryContextFactory || AddTenantDatabaseSupport;
+      set => _useCustomRelationalQueryContextFactory = value;
    }
 
    /// <summary>
@@ -80,7 +83,11 @@ public sealed class RelationalDbContextOptionsExtension : DbContextOptionsExtens
    {
       _serviceDescriptors = new List<ServiceDescriptor>();
       _evaluatableExpressionFilterPlugins = new List<Type>();
-      _stringBuilderPolicy = new StringBuilderPooledObjectPolicy { InitialCapacity = 300 };
+      _stringBuilderPolicy = new StringBuilderPooledObjectPolicy
+                             {
+                                InitialCapacity = _DEFAULT_INITIAL_CAPACITY,
+                                MaximumRetainedCapacity = _DEFAULT_MAXIMUM_RETAINED_CAPACITY
+                             };
    }
 
    /// <inheritdoc />
@@ -102,7 +109,7 @@ public sealed class RelationalDbContextOptionsExtension : DbContextOptionsExtens
 
       services.Add<IMethodCallTranslatorPlugin, RelationalMethodCallTranslatorPlugin>(GetLifetime<IMethodCallTranslatorPlugin>());
 
-      if (AddCustomRelationalQueryContextFactory)
+      if (UseThinktectureRelationalQueryContextFactory)
          ComponentDecorator.RegisterDecorator<IQueryContextFactory>(services, typeof(ThinktectureRelationalQueryContextFactory<>));
 
       if (_evaluatableExpressionFilterPlugins.Count > 0)
@@ -228,17 +235,29 @@ public sealed class RelationalDbContextOptionsExtension : DbContextOptionsExtens
 
       private string? _logFragment;
 
-      public override string LogFragment => _logFragment ??= $@"
-{{
-   'Custom RelationalQueryContextFactory'={_extension.AddCustomRelationalQueryContextFactory},
-   'Default schema respecting components added'={_extension.AddSchemaRespectingComponents},
-   'NestedTransactionsSupport'={_extension.AddNestedTransactionsSupport},
-   'RowNumberSupport'={_extension.AddRowNumberSupport},
-   'TenantDatabaseSupport'={_extension.AddTenantDatabaseSupport},
-   'Number of evaluatable expression filter plugins'={_extension._evaluatableExpressionFilterPlugins.Count},
-   'Number of custom services'={_extension._serviceDescriptors.Count},
-   'StringBuilderPool'= {{ InitialCapacity={_extension._stringBuilderPolicy.InitialCapacity}, MaximumRetainedCapacity={_extension._stringBuilderPolicy.MaximumRetainedCapacity} }}
-}}";
+      public override string LogFragment => _logFragment ??= CreateLogFragment();
+
+      private string CreateLogFragment()
+      {
+         var sb = new StringBuilder();
+
+         if (_extension.AddSchemaRespectingComponents)
+            sb.Append("SchemaRespectingComponents ");
+
+         if (_extension.AddNestedTransactionsSupport)
+            sb.Append("NestedTransactionsSupport ");
+
+         if (_extension.AddRowNumberSupport)
+            sb.Append("RowNumberSupport ");
+
+         if (_extension.AddTenantDatabaseSupport)
+            sb.Append("TenantDatabaseSupport ");
+
+         if (_extension._stringBuilderPolicy.InitialCapacity != _DEFAULT_INITIAL_CAPACITY || _extension._stringBuilderPolicy.MaximumRetainedCapacity != _DEFAULT_MAXIMUM_RETAINED_CAPACITY)
+            sb.Append("StringBuilderPool(InitialCapacity=").Append(_extension._stringBuilderPolicy.InitialCapacity).Append(", MaximumRetainedCapacity=").Append(_extension._stringBuilderPolicy.MaximumRetainedCapacity).Append(") ");
+
+         return sb.ToString();
+      }
 
       public RelationalDbContextOptionsExtensionInfo(RelationalDbContextOptionsExtension extension)
          : base(extension)
@@ -249,7 +268,7 @@ public sealed class RelationalDbContextOptionsExtension : DbContextOptionsExtens
       public override int GetServiceProviderHashCode()
       {
          var hashCode = new HashCode();
-         hashCode.Add(_extension.AddCustomRelationalQueryContextFactory);
+         hashCode.Add(_extension.UseThinktectureRelationalQueryContextFactory);
          hashCode.Add(_extension.AddSchemaRespectingComponents);
          hashCode.Add(_extension.AddNestedTransactionsSupport);
          hashCode.Add(_extension.AddTenantDatabaseSupport);
@@ -273,7 +292,7 @@ public sealed class RelationalDbContextOptionsExtension : DbContextOptionsExtens
          if (other is not RelationalDbContextOptionsExtensionInfo otherRelationalInfo)
             return false;
 
-         var areEqual = _extension.AddCustomRelationalQueryContextFactory == otherRelationalInfo._extension.AddCustomRelationalQueryContextFactory
+         var areEqual = _extension.UseThinktectureRelationalQueryContextFactory == otherRelationalInfo._extension.UseThinktectureRelationalQueryContextFactory
                         && _extension.AddSchemaRespectingComponents == otherRelationalInfo._extension.AddSchemaRespectingComponents
                         && _extension.AddNestedTransactionsSupport == otherRelationalInfo._extension.AddNestedTransactionsSupport
                         && _extension.AddTenantDatabaseSupport == otherRelationalInfo._extension.AddTenantDatabaseSupport
@@ -333,7 +352,7 @@ public sealed class RelationalDbContextOptionsExtension : DbContextOptionsExtens
 
       public override void PopulateDebugInfo(IDictionary<string, string> debugInfo)
       {
-         debugInfo["Thinktecture:CustomRelationalQueryContextFactory"] = _extension.AddCustomRelationalQueryContextFactory.ToString(CultureInfo.InvariantCulture);
+         debugInfo["Thinktecture:CustomRelationalQueryContextFactory"] = _extension.UseThinktectureRelationalQueryContextFactory.ToString(CultureInfo.InvariantCulture);
          debugInfo["Thinktecture:SchemaRespectingComponents"] = _extension.AddSchemaRespectingComponents.ToString(CultureInfo.InvariantCulture);
          debugInfo["Thinktecture:NestedTransactionsSupport"] = _extension.AddNestedTransactionsSupport.ToString(CultureInfo.InvariantCulture);
          debugInfo["Thinktecture:RowNumberSupport"] = _extension.AddRowNumberSupport.ToString(CultureInfo.InvariantCulture);

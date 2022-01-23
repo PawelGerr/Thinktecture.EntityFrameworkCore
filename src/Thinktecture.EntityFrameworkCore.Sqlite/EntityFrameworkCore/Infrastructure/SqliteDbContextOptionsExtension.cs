@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Text;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata.Conventions.Infrastructure;
 using Microsoft.EntityFrameworkCore.Query;
@@ -127,13 +128,12 @@ public sealed class SqliteDbContextOptionsExtension : DbContextOptionsExtensionB
 
       private string? _logFragment;
 
-      public override string LogFragment => _logFragment ??= $@"
-{{
-   'Custom QueryableMethodTranslatingExpressionVisitorFactory'={_extension.AddCustomQueryableMethodTranslatingExpressionVisitorFactory},
-   'Custom QuerySqlGeneratorFactory'={_extension.AddCustomQuerySqlGeneratorFactory},
-   'Custom RelationalParameterBasedSqlProcessorFactory'={_extension.AddCustomRelationalParameterBasedSqlProcessorFactory},
-   'BulkOperationSupport'={_extension.AddBulkOperationSupport}
-}}";
+      public override string LogFragment => _logFragment ??= CreateLogFragment();
+
+      private string CreateLogFragment()
+      {
+         return _extension.AddBulkOperationSupport ? "BulkOperationSupport " : String.Empty;
+      }
 
       /// <inheritdoc />
       public SqliteDbContextOptionsExtensionInfo(SqliteDbContextOptionsExtension extension)
