@@ -1,3 +1,4 @@
+using System.Data;
 using System.Data.Common;
 using System.Globalization;
 using Microsoft.Data.SqlClient;
@@ -25,6 +26,7 @@ public class SqlServerTestDbContextProviderBuilder<T> : TestDbContextProviderBui
 
    private bool _useThinktectureSqlServerMigrationsSqlGenerator = true;
    private string? _sharedTablesSchema;
+   private IsolationLevel? _sharedTablesIsolationLevel;
    private Func<DbContextOptions<T>, IDbDefaultSchema, T?>? _contextFactory;
    private Func<SqlServerTestDbContextProviderOptions<T>, SqlServerTestDbContextProvider<T>?>? _providerFactory;
 
@@ -40,6 +42,19 @@ public class SqlServerTestDbContextProviderBuilder<T> : TestDbContextProviderBui
       _configuresOptionsCollection = new List<Action<DbContextOptionsBuilder<T>, string>>();
       _configuresSqlServerOptionsCollection = new List<Action<SqlServerDbContextOptionsBuilder, string>>();
       _ctxInitializations = new List<Action<T>>();
+   }
+
+   /// <summary>
+   /// Specifies the isolation level to use with shared tables.
+   /// Default is <see cref="IsolationLevel.ReadCommitted"/>.
+   /// </summary>
+   /// <param name="sharedTablesIsolationLevel">Isolation level to use.</param>
+   /// <returns>Current builder for chaining</returns>
+   public SqlServerTestDbContextProviderBuilder<T> UseSharedTablesIsolationLevel(IsolationLevel sharedTablesIsolationLevel)
+   {
+      _sharedTablesIsolationLevel = sharedTablesIsolationLevel;
+
+      return this;
    }
 
    /// <summary>
@@ -319,7 +334,8 @@ public class SqlServerTestDbContextProviderBuilder<T> : TestDbContextProviderBui
                        {
                           IsUsingSharedTables = _useSharedTables,
                           ContextFactory = _contextFactory,
-                          ExecutedCommands = state.CommandCapturingInterceptor?.Commands
+                          ExecutedCommands = state.CommandCapturingInterceptor?.Commands,
+                          SharedTablesIsolationLevel = _sharedTablesIsolationLevel
                        };
 
          return _providerFactory?.Invoke(options) ?? new SqlServerTestDbContextProvider<T>(options);

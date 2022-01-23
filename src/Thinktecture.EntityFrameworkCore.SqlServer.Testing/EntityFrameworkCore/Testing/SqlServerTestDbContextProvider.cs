@@ -69,7 +69,7 @@ public class SqlServerTestDbContextProvider<T> : ITestDbContextProvider<T>
       ArgumentNullException.ThrowIfNull(options);
 
       Schema = options.Schema ?? throw new ArgumentException($"The '{nameof(options.Schema)}' cannot be null.", nameof(options));
-      _sharedTablesIsolationLevel = ValidateIsolationLevel(options);
+      _sharedTablesIsolationLevel = ValidateIsolationLevel(options.SharedTablesIsolationLevel);
       _isUsingSharedTables = options.IsUsingSharedTables;
       _masterConnection = options.MasterConnection ?? throw new ArgumentException($"The '{nameof(options.MasterConnection)}' cannot be null.", nameof(options));
       _masterDbContextOptions = options.MasterDbContextOptions ?? throw new ArgumentException($"The '{nameof(options.MasterDbContextOptions)}' cannot be null.", nameof(options));
@@ -81,18 +81,18 @@ public class SqlServerTestDbContextProvider<T> : ITestDbContextProvider<T>
       _contextFactory = options.ContextFactory;
    }
 
-   private static IsolationLevel ValidateIsolationLevel(SqlServerTestDbContextProviderOptions<T> options)
+   private static IsolationLevel ValidateIsolationLevel(IsolationLevel? isolationLevel)
    {
-      if (!options.SharedTablesIsolationLevel.HasValue)
+      if (!isolationLevel.HasValue)
          return IsolationLevel.ReadCommitted;
 
-      if (Enum.IsDefined(options.SharedTablesIsolationLevel.Value))
-         throw new ArgumentException($"The provided isolation level '{options.SharedTablesIsolationLevel}' is invalid.");
+      if (Enum.IsDefined(isolationLevel.Value))
+         throw new ArgumentException($"The provided isolation level '{isolationLevel}' is invalid.", nameof(isolationLevel));
 
-      if (options.SharedTablesIsolationLevel < IsolationLevel.ReadCommitted)
-         throw new ArgumentException($"The isolation level '{options.SharedTablesIsolationLevel}' cannot be less than '{nameof(IsolationLevel.ReadCommitted)}'.");
+      if (isolationLevel < IsolationLevel.ReadCommitted)
+         throw new ArgumentException($"The isolation level '{isolationLevel}' cannot be less than '{nameof(IsolationLevel.ReadCommitted)}'.", nameof(isolationLevel));
 
-      return options.SharedTablesIsolationLevel.Value;
+      return isolationLevel.Value;
    }
 
    /// <inheritdoc />
