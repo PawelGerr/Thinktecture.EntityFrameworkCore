@@ -22,6 +22,26 @@ namespace Thinktecture.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder, 1L, 1);
 
+            modelBuilder.Entity("Thinktecture:ComplexCollectionParameter:Thinktecture.TestDatabaseContext.MyParameter", b =>
+                {
+                    b.Property<Guid>("Column1")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("Id");
+
+                    b.Property<int>("Column2")
+                        .HasColumnType("int");
+
+                    b.ToTable("MyParameter", null, t => t.ExcludeFromMigrations());
+                });
+
+            modelBuilder.Entity("Thinktecture:ScalarCollectionParameter:Thinktecture.TestDatabaseContext.ConvertibleClass", b =>
+                {
+                    b.Property<int>("Value")
+                        .HasColumnType("int");
+
+                    b.ToTable("ScalarCollectionParameter<ConvertibleClass>", null, t => t.ExcludeFromMigrations());
+                });
+
             modelBuilder.Entity("Thinktecture.TestDatabaseContext.InformationSchemaColumn", b =>
                 {
                     b.Property<int?>("CHARACTER_MAXIMUM_LENGTH")
@@ -181,6 +201,14 @@ namespace Thinktecture.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.ToView("<<InformationSchemaTableConstraint>>");
+                });
+
+            modelBuilder.Entity("Thinktecture.TestDatabaseContext.KeylessTestEntity", b =>
+                {
+                    b.Property<int>("IntColumn")
+                        .HasColumnType("int");
+
+                    b.ToTable("KeylessEntities");
                 });
 
             modelBuilder.Entity("Thinktecture.TestDatabaseContext.TestEntity", b =>
