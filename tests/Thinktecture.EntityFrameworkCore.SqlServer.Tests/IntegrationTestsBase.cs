@@ -30,6 +30,9 @@ public class IntegrationTestsBase : SqlServerDbContextIntegrationTests<TestDbCon
 
    protected override void ConfigureTestDbContextProvider(SqlServerTestDbContextProviderBuilder<TestDbContext> builder)
    {
+      var gitBranchName = TestContext.Instance.Configuration["SourceBranchName"];
+      var schema = String.IsNullOrWhiteSpace(gitBranchName) ? "tests" : $"{TestContext.Instance.Configuration["SourceBranchName"]}_tests";
+
       builder.UseMigrationExecutionStrategy(IMigrationExecutionStrategy.Migrations)
              .UseMigrationLogLevel(LogLevel.Warning)
              .CollectExecutedCommands()
@@ -49,7 +52,7 @@ public class IntegrationTestsBase : SqlServerDbContextIntegrationTests<TestDbCon
                                            if (IsTenantDatabaseSupportEnabled)
                                               optionsBuilder.AddTenantDatabaseSupport<TestTenantDatabaseProviderFactory>();
                                         })
-             .UseSharedTableSchema($"{TestContext.Instance.Configuration["SourceBranchName"]}_tests")
+             .UseSharedTableSchema(schema)
              .InitializeContext(ctx => ctx.ConfigureModel = ConfigureModel)
              .DisableModelCache();
    }
