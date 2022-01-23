@@ -86,7 +86,7 @@ public class SqlServerTestDbContextProvider<T> : ITestDbContextProvider<T>
       if (!isolationLevel.HasValue)
          return IsolationLevel.ReadCommitted;
 
-      if (Enum.IsDefined(isolationLevel.Value))
+      if (!Enum.IsDefined(isolationLevel.Value))
          throw new ArgumentException($"The provided isolation level '{isolationLevel}' is invalid.", nameof(isolationLevel));
 
       if (isolationLevel < IsolationLevel.ReadCommitted)
