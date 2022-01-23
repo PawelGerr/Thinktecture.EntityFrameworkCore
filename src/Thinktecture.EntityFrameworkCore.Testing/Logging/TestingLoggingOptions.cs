@@ -1,7 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Serilog;
-using Serilog.Extensions.Logging;
 using Thinktecture.EntityFrameworkCore.Testing;
 
 namespace Thinktecture.Logging;
@@ -15,11 +14,6 @@ public class TestingLoggingOptions : IDisposable
    /// Logger factory.
    /// </summary>
    public ILoggerFactory LoggerFactory { get; }
-
-   /// <summary>
-   /// Executed commands, if the feature was activated.
-   /// </summary>
-   public IReadOnlyCollection<string>? ExecutedCommands { get; }
 
    /// <summary>
    /// Log level switch.
@@ -38,13 +32,11 @@ public class TestingLoggingOptions : IDisposable
 
    private TestingLoggingOptions(
       ILoggerFactory loggerFactory,
-      IReadOnlyCollection<string>? executedCommands,
       TestingLogLevelSwitch logLevelSwitch,
       bool enableSensitiveDataLogging,
       LogLevel migrationLogLevel)
    {
       LoggerFactory = loggerFactory;
-      ExecutedCommands = executedCommands;
       LogLevelSwitch = logLevelSwitch;
       EnableSensitiveDataLogging = enableSensitiveDataLogging;
       MigrationLogLevel = migrationLogLevel;
@@ -55,25 +47,19 @@ public class TestingLoggingOptions : IDisposable
    /// </summary>
    /// <param name="loggerFactory">Logger factory.</param>
    /// <param name="serilogLogger">Serilog config.</param>
-   /// <param name="collectExecutedCommands">Indication whether to collect executed commands or not.</param>
    /// <param name="enableSensitiveDataLogging">Indication whether EF should enable sensitive data logging or not.</param>
    /// <param name="migrationLogLevel">Log level to use during migrations.</param>
    /// <returns>A new instance of <see cref="TestingLoggingOptions"/>.</returns>
    public static TestingLoggingOptions Create(
       ILoggerFactory? loggerFactory,
       Serilog.ILogger? serilogLogger,
-      bool collectExecutedCommands,
       bool enableSensitiveDataLogging,
       LogLevel migrationLogLevel)
    {
-      IReadOnlyCollection<string>? executedCommands = null;
       var logLevelSwitch = new TestingLogLevelSwitch();
 
       var newLoggerFactory = Microsoft.Extensions.Logging.LoggerFactory.Create(builder =>
                                                                                {
-                                                                                  if (collectExecutedCommands)
-                                                                                     executedCommands = builder.CollectExecutedCommands();
-
                                                                                   if (loggerFactory is not null)
                                                                                      builder.AddProvider(new SubLoggerFactory(loggerFactory));
 
@@ -88,7 +74,7 @@ public class TestingLoggingOptions : IDisposable
                                                                                   builder.AddFilter(level => level >= logLevelSwitch.MinimumLogLevel);
                                                                                });
 
-      return new TestingLoggingOptions(newLoggerFactory, executedCommands, logLevelSwitch, enableSensitiveDataLogging, migrationLogLevel);
+      return new TestingLoggingOptions(newLoggerFactory, logLevelSwitch, enableSensitiveDataLogging, migrationLogLevel);
    }
 
    /// <inheritdoc />

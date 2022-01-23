@@ -3,9 +3,7 @@ using System.Globalization;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Logging;
-using Thinktecture.EntityFrameworkCore.Infrastructure;
 using Thinktecture.EntityFrameworkCore.Migrations;
-using Thinktecture.Logging;
 using Xunit.Abstractions;
 
 namespace Thinktecture.EntityFrameworkCore.Testing;
@@ -25,8 +23,6 @@ public class SqlServerTestDbContextProviderBuilder<T> : TestDbContextProviderBui
    private readonly List<Action<SqlServerDbContextOptionsBuilder, string>> _configuresSqlServerOptionsCollection;
    private readonly List<Action<T>> _ctxInitializations;
 
-   private IMigrationExecutionStrategy? _migrationExecutionStrategy;
-   private bool _disableModelCache;
    private bool _useThinktectureSqlServerMigrationsSqlGenerator = true;
    private string? _sharedTablesSchema;
    private Func<DbContextOptions<T>, IDbDefaultSchema, T>? _contextFactory;
@@ -51,11 +47,9 @@ public class SqlServerTestDbContextProviderBuilder<T> : TestDbContextProviderBui
    /// </summary>
    /// <param name="migrationExecutionStrategy">Migration strategy to use.</param>
    /// <returns>Current builder for chaining</returns>
-   public SqlServerTestDbContextProviderBuilder<T> UseMigrationExecutionStrategy(IMigrationExecutionStrategy migrationExecutionStrategy)
+   public new SqlServerTestDbContextProviderBuilder<T> UseMigrationExecutionStrategy(IMigrationExecutionStrategy migrationExecutionStrategy)
    {
-      ArgumentNullException.ThrowIfNull(migrationExecutionStrategy);
-
-      _migrationExecutionStrategy = migrationExecutionStrategy;
+      base.UseMigrationExecutionStrategy(migrationExecutionStrategy);
 
       return this;
    }
@@ -136,9 +130,9 @@ public class SqlServerTestDbContextProviderBuilder<T> : TestDbContextProviderBui
    /// Disables EF model cache.
    /// </summary>
    /// <returns>Current builder for chaining.</returns>
-   public SqlServerTestDbContextProviderBuilder<T> DisableModelCache(bool disableModelCache = true)
+   public new SqlServerTestDbContextProviderBuilder<T> DisableModelCache(bool disableModelCache = true)
    {
-      _disableModelCache = disableModelCache;
+      base.DisableModelCache(disableModelCache);
 
       return this;
    }
@@ -231,21 +225,22 @@ public class SqlServerTestDbContextProviderBuilder<T> : TestDbContextProviderBui
       string schema)
    {
       var loggingOptions = CreateLoggingOptions();
+      var state = new TestDbContextProviderBuilderState(loggingOptions);
 
-      return CreateOptionsBuilder(connection, schema, loggingOptions);
+      return CreateOptionsBuilder(state, connection, schema);
    }
 
    /// <summary>
    /// Creates and configures the <see cref="DbContextOptionsBuilder{TContext}"/>
    /// </summary>
+   /// <param name="state">Current building state.</param>
    /// <param name="connection">Database connection to use.</param>
    /// <param name="schema">Database schema to use.</param>
-   /// <param name="loggingOptions">Logging options.</param>
    /// <returns>An instance of <see cref="DbContextOptionsBuilder{TContext}"/></returns>
    protected virtual DbContextOptionsBuilder<T> CreateOptionsBuilder(
+      TestDbContextProviderBuilderState state,
       DbConnection? connection,
-      string schema,
-      TestingLoggingOptions loggingOptions)
+      string schema)
    {
       var builder = new DbContextOptionsBuilder<T>();
 
@@ -258,14 +253,7 @@ public class SqlServerTestDbContextProviderBuilder<T> : TestDbContextProviderBui
          builder.UseSqlServer(connection, optionsBuilder => ConfigureSqlServer(optionsBuilder, schema));
       }
 
-      builder.AddSchemaRespectingComponents()
-             .UseLoggerFactory(loggingOptions.LoggerFactory)
-             .EnableSensitiveDataLogging(loggingOptions.EnableSensitiveDataLogging);
-
-      DisableLoggingCacheTime(builder);
-
-      if (_disableModelCache)
-         builder.ReplaceService<IModelCacheKeyFactory, CachePerContextModelCacheKeyFactory>();
+      ApplyDefaultConfiguration(state, builder);
 
       _configuresOptionsCollection.ForEach(configure => configure(builder, schema));
 
@@ -304,11 +292,12 @@ public class SqlServerTestDbContextProviderBuilder<T> : TestDbContextProviderBui
       try
       {
          var loggingOptions = CreateLoggingOptions();
-         var masterDbContextOptions = CreateOptionsBuilder(masterConnection, schema, loggingOptions).Options;
-         var dbContextOptions = CreateOptionsBuilder(null, schema, loggingOptions).Options;
+         var state = new TestDbContextProviderBuilderState(loggingOptions);
+         var masterDbContextOptions = CreateOptionsBuilder(state, masterConnection, schema).Options;
+         var dbContextOptions = CreateOptionsBuilder(state, null, schema).Options;
 
          return new SqlServerTestDbContextProvider<T>(new SqlServerTestDbContextProviderOptions<T>(masterConnection,
-                                                                                                   _migrationExecutionStrategy ?? IMigrationExecutionStrategy.Migrations,
+                                                                                                   state.MigrationExecutionStrategy ?? IMigrationExecutionStrategy.Migrations,
                                                                                                    masterDbContextOptions,
                                                                                                    dbContextOptions,
                                                                                                    loggingOptions,
@@ -316,7 +305,8 @@ public class SqlServerTestDbContextProviderBuilder<T> : TestDbContextProviderBui
                                                                                                    schema)
                                                       {
                                                          IsUsingSharedTables = _useSharedTables,
-                                                         ContextFactory = _contextFactory
+                                                         ContextFactory = _contextFactory,
+                                                         ExecutedCommands = state.CommandCapturingInterceptor?.Commands
                                                       });
       }
       catch

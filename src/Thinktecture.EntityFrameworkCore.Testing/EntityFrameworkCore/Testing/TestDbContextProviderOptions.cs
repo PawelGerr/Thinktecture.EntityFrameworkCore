@@ -41,6 +41,11 @@ public abstract class TestDbContextProviderOptions<T>
    public IReadOnlyList<Action<T>> ContextInitializations { get; set; }
 
    /// <summary>
+   /// Contains executed commands if this feature was activated.
+   /// </summary>
+   public IReadOnlyCollection<string>? ExecutedCommands { get; set; }
+
+   /// <summary>
    /// Initializes new instance of <see cref="TestDbContextProviderOptions{T}"/>.
    /// </summary>
    protected TestDbContextProviderOptions(

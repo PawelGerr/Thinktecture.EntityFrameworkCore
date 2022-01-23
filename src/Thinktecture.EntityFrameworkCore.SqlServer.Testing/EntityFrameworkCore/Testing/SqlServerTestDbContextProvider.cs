@@ -52,7 +52,7 @@ public class SqlServerTestDbContextProvider<T> : ITestDbContextProvider<T>
    /// <summary>
    /// Contains executed commands if this feature was activated.
    /// </summary>
-   public IReadOnlyCollection<string>? ExecutedCommands => _testingLoggingOptions.ExecutedCommands;
+   public IReadOnlyCollection<string>? ExecutedCommands { get; }
 
    /// <summary>
    /// Log level switch.
@@ -75,6 +75,7 @@ public class SqlServerTestDbContextProvider<T> : ITestDbContextProvider<T>
       _migrationExecutionStrategy = options.MigrationExecutionStrategy ?? throw new ArgumentException($"The '{nameof(options.MigrationExecutionStrategy)}' cannot be null.", nameof(options));
       _testingLoggingOptions = options.TestingLoggingOptions ?? throw new ArgumentException($"The '{nameof(options.TestingLoggingOptions)}' cannot be null.", nameof(options));
       _contextInitializations = options.ContextInitializations ?? throw new ArgumentException($"The '{nameof(options.ContextInitializations)}' cannot be null.", nameof(options));
+      ExecutedCommands = options.ExecutedCommands;
       _contextFactory = options.ContextFactory;
    }
 

@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Logging;
 using Serilog;
+using Thinktecture.EntityFrameworkCore.Diagnostics;
+using Thinktecture.EntityFrameworkCore.Infrastructure;
 using Thinktecture.Logging;
 using Xunit.Abstractions;
 
@@ -16,6 +18,21 @@ public abstract class TestDbContextProviderBuilder
    private bool _enableSensitiveDataLogging;
    private bool _collectExecutedCommands;
    private LogLevel _migrationLogLevel = LogLevel.Information;
+   private bool _disableModelCache;
+   private IMigrationExecutionStrategy? _migrationExecutionStrategy;
+
+   /// <summary>
+   /// Specifies the migration strategy to use.
+   /// Default is <see cref="IMigrationExecutionStrategy.Migrations"/>.
+   /// </summary>
+   /// <param name="migrationExecutionStrategy">Migration strategy to use.</param>
+   /// <returns>Current builder for chaining</returns>
+   public void UseMigrationExecutionStrategy(IMigrationExecutionStrategy migrationExecutionStrategy)
+   {
+      ArgumentNullException.ThrowIfNull(migrationExecutionStrategy);
+
+      _migrationExecutionStrategy = migrationExecutionStrategy;
+   }
 
    /// <summary>
    /// Indication whether collect executed commands or not.
@@ -67,6 +84,15 @@ public abstract class TestDbContextProviderBuilder
    }
 
    /// <summary>
+   /// Disables EF model cache.
+   /// </summary>
+   /// <returns>Current builder for chaining.</returns>
+   protected void DisableModelCache(bool disableModelCache)
+   {
+      _disableModelCache = disableModelCache;
+   }
+
+   /// <summary>
    /// Disables "LoggingCacheTime" of EF which is required to be able to change the <see cref="LogLevel"/> at will.
    /// </summary>
    /// <param name="builder">Builder.</param>
@@ -76,11 +102,38 @@ public abstract class TestDbContextProviderBuilder
    }
 
    /// <summary>
+   /// Applies default settings to provided <paramref name="dbContextOptionsBuilder"/>.
+   /// </summary>
+   /// <param name="state">Current building state.</param>
+   /// <param name="dbContextOptionsBuilder">Builder to apply settings to.</param>
+   protected virtual void ApplyDefaultConfiguration(
+      TestDbContextProviderBuilderState state,
+      DbContextOptionsBuilder dbContextOptionsBuilder)
+   {
+      state.MigrationExecutionStrategy ??= _migrationExecutionStrategy;
+
+      dbContextOptionsBuilder.AddSchemaRespectingComponents()
+                             .UseLoggerFactory(state.LoggingOptions.LoggerFactory)
+                             .EnableSensitiveDataLogging(state.LoggingOptions.EnableSensitiveDataLogging);
+
+      DisableLoggingCacheTime(dbContextOptionsBuilder);
+
+      if (_collectExecutedCommands)
+      {
+         state.CommandCapturingInterceptor ??= new CommandCapturingInterceptor();
+         dbContextOptionsBuilder.AddInterceptors(state.CommandCapturingInterceptor);
+      }
+
+      if (_disableModelCache)
+         dbContextOptionsBuilder.ReplaceService<IModelCacheKeyFactory, CachePerContextModelCacheKeyFactory>();
+   }
+
+   /// <summary>
    /// Creates logging options.
    /// </summary>
    /// <returns>A new instance of <see cref="TestingLoggingOptions"/>.</returns>
    protected TestingLoggingOptions CreateLoggingOptions()
    {
-      return TestingLoggingOptions.Create(_loggerFactory, _serilogLogger, _collectExecutedCommands, _enableSensitiveDataLogging, _migrationLogLevel);
+      return TestingLoggingOptions.Create(_loggerFactory, _serilogLogger, _enableSensitiveDataLogging, _migrationLogLevel);
    }
 }

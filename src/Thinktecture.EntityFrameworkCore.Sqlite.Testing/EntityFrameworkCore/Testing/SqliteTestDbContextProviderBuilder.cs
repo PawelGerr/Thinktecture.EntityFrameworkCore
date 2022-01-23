@@ -2,8 +2,6 @@ using System.Data.Common;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Logging;
-using Thinktecture.EntityFrameworkCore.Infrastructure;
-using Thinktecture.Logging;
 using Xunit.Abstractions;
 
 namespace Thinktecture.EntityFrameworkCore.Testing;
@@ -19,8 +17,6 @@ public class SqliteTestDbContextProviderBuilder<T> : TestDbContextProviderBuilde
    private readonly List<Action<SqliteDbContextOptionsBuilder>> _configuresSqliteOptionsCollection;
    private readonly List<Action<T>> _ctxInitializations;
 
-   private IMigrationExecutionStrategy? _migrationExecutionStrategy;
-   private bool _disableModelCache;
    private Func<DbContextOptions<T>, T>? _contextFactory;
 
    /// <summary>
@@ -39,11 +35,9 @@ public class SqliteTestDbContextProviderBuilder<T> : TestDbContextProviderBuilde
    /// </summary>
    /// <param name="migrationExecutionStrategy">Migration strategy to use.</param>
    /// <returns>Current builder for chaining</returns>
-   public SqliteTestDbContextProviderBuilder<T> UseMigrationExecutionStrategy(IMigrationExecutionStrategy migrationExecutionStrategy)
+   public new SqliteTestDbContextProviderBuilder<T> UseMigrationExecutionStrategy(IMigrationExecutionStrategy migrationExecutionStrategy)
    {
-      ArgumentNullException.ThrowIfNull(migrationExecutionStrategy);
-
-      _migrationExecutionStrategy = migrationExecutionStrategy;
+      base.UseMigrationExecutionStrategy(migrationExecutionStrategy);
 
       return this;
    }
@@ -124,9 +118,9 @@ public class SqliteTestDbContextProviderBuilder<T> : TestDbContextProviderBuilde
    /// Disables EF model cache.
    /// </summary>
    /// <returns>Current builder for chaining.</returns>
-   public SqliteTestDbContextProviderBuilder<T> DisableModelCache(bool disableModelCache = true)
+   public new SqliteTestDbContextProviderBuilder<T> DisableModelCache(bool disableModelCache = true)
    {
-      _disableModelCache = disableModelCache;
+      base.DisableModelCache(disableModelCache);
 
       return this;
    }
@@ -179,21 +173,22 @@ public class SqliteTestDbContextProviderBuilder<T> : TestDbContextProviderBuilde
       string connectionString)
    {
       var loggingOptions = CreateLoggingOptions();
+      var state = new TestDbContextProviderBuilderState(loggingOptions);
 
-      return CreateOptionsBuilder(connection, connectionString, loggingOptions);
+      return CreateOptionsBuilder(state, connection, connectionString);
    }
 
    /// <summary>
    /// Creates and configures the <see cref="DbContextOptionsBuilder{TContext}"/>
    /// </summary>
+   /// <param name="state">Current building state.</param>
    /// <param name="connection">Database connection to use.</param>
    /// <param name="connectionString">Connection string to use.</param>
-   /// <param name="loggingOptions">Logging options.</param>
    /// <returns>An instance of <see cref="DbContextOptionsBuilder{TContext}"/></returns>
    protected virtual DbContextOptionsBuilder<T> CreateOptionsBuilder(
+      TestDbContextProviderBuilderState state,
       DbConnection? connection,
-      string connectionString,
-      TestingLoggingOptions loggingOptions)
+      string connectionString)
    {
       var builder = new DbContextOptionsBuilder<T>();
 
@@ -206,14 +201,7 @@ public class SqliteTestDbContextProviderBuilder<T> : TestDbContextProviderBuilde
          builder.UseSqlite(connection, ConfigureSqlite);
       }
 
-      builder.AddSchemaRespectingComponents()
-             .UseLoggerFactory(loggingOptions.LoggerFactory)
-             .EnableSensitiveDataLogging(loggingOptions.EnableSensitiveDataLogging);
-
-      DisableLoggingCacheTime(builder);
-
-      if (_disableModelCache)
-         builder.ReplaceService<IModelCacheKeyFactory, CachePerContextModelCacheKeyFactory>();
+      ApplyDefaultConfiguration(state, builder);
 
       _configuresOptionsCollection.ForEach(configure => configure(builder));
 
@@ -246,18 +234,20 @@ public class SqliteTestDbContextProviderBuilder<T> : TestDbContextProviderBuilde
       try
       {
          var loggingOptions = CreateLoggingOptions();
-         var masterDbContextOptions = CreateOptionsBuilder(masterConnection, connectionString, loggingOptions).Options;
-         var dbContextOptions = CreateOptionsBuilder(null, connectionString, loggingOptions).Options;
+         var state = new TestDbContextProviderBuilderState(loggingOptions);
+         var masterDbContextOptions = CreateOptionsBuilder(state, masterConnection, connectionString).Options;
+         var dbContextOptions = CreateOptionsBuilder(state, null, connectionString).Options;
 
          return new SqliteTestDbContextProvider<T>(new SqliteTestDbContextProviderOptions<T>(masterConnection,
-                                                                                             _migrationExecutionStrategy ?? IMigrationExecutionStrategy.Migrations,
+                                                                                             state.MigrationExecutionStrategy ?? IMigrationExecutionStrategy.Migrations,
                                                                                              masterDbContextOptions,
                                                                                              dbContextOptions,
                                                                                              loggingOptions,
                                                                                              _ctxInitializations.ToList(),
                                                                                              connectionString)
                                                    {
-                                                      ContextFactory = _contextFactory
+                                                      ContextFactory = _contextFactory,
+                                                      ExecutedCommands = state.CommandCapturingInterceptor?.Commands
                                                    });
       }
       catch
