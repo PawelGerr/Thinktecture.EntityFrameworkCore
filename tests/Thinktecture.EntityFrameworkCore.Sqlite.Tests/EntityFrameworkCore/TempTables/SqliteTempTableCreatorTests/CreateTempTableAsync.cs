@@ -34,7 +34,7 @@ public class CreateTempTableAsync : IntegrationTestsBase
       _sqlGenerationHelperMock.Setup(h => h.DelimitIdentifier(It.IsAny<string>()))
                               .Returns<string>(name => $"\"{name}\"");
 
-      _optionsWithNonUniqueNameAndNoPrimaryKey = new TempTableCreationOptions { TableNameProvider = DefaultTempTableNameProvider.Instance, PrimaryKeyCreation = PrimaryKeyPropertiesProviders.None };
+      _optionsWithNonUniqueNameAndNoPrimaryKey = new TempTableCreationOptions { TableNameProvider = DefaultTempTableNameProvider.Instance, PrimaryKeyCreation = IPrimaryKeyPropertiesProvider.None };
    }
 
    [Fact]
@@ -252,7 +252,7 @@ public class CreateTempTableAsync : IntegrationTestsBase
    [Fact]
    public async Task Should_create_pk_if_options_flag_is_set()
    {
-      _optionsWithNonUniqueNameAndNoPrimaryKey.PrimaryKeyCreation = PrimaryKeyPropertiesProviders.AdaptiveForced;
+      _optionsWithNonUniqueNameAndNoPrimaryKey.PrimaryKeyCreation = IPrimaryKeyPropertiesProvider.AdaptiveForced;
 
       ConfigureModel = builder => builder.ConfigureTempTable<int, string>(typeBuilder => typeBuilder.Property(s => s.Column2).HasMaxLength(100));
 
@@ -268,7 +268,7 @@ public class CreateTempTableAsync : IntegrationTestsBase
    [Fact]
    public async Task Should_throw_if_some_pk_columns_are_missing()
    {
-      _optionsWithNonUniqueNameAndNoPrimaryKey.PrimaryKeyCreation = PrimaryKeyPropertiesProviders.EntityTypeConfiguration;
+      _optionsWithNonUniqueNameAndNoPrimaryKey.PrimaryKeyCreation = IPrimaryKeyPropertiesProvider.EntityTypeConfiguration;
       _optionsWithNonUniqueNameAndNoPrimaryKey.PropertiesToInclude = IEntityPropertiesProvider.Include<CustomTempTable>(t => t.Column1);
 
       ConfigureModel = builder => builder.ConfigureTempTableEntity<CustomTempTable>(false, typeBuilder =>
@@ -287,7 +287,7 @@ Missing columns: Column2.");
    [Fact]
    public async Task Should_not_throw_if_some_pk_columns_are_missing_and_provider_is_Adaptive()
    {
-      _optionsWithNonUniqueNameAndNoPrimaryKey.PrimaryKeyCreation = PrimaryKeyPropertiesProviders.AdaptiveForced;
+      _optionsWithNonUniqueNameAndNoPrimaryKey.PrimaryKeyCreation = IPrimaryKeyPropertiesProvider.AdaptiveForced;
       _optionsWithNonUniqueNameAndNoPrimaryKey.PropertiesToInclude = IEntityPropertiesProvider.Include<CustomTempTable>(t => t.Column1);
 
       ConfigureModel = builder =>
@@ -469,7 +469,7 @@ Missing columns: Column2.");
    [Fact]
    public async Task Should_create_temp_table_with_autoincrement_if_it_is_primary_key()
    {
-      _optionsWithNonUniqueNameAndNoPrimaryKey.PrimaryKeyCreation = PrimaryKeyPropertiesProviders.EntityTypeConfiguration;
+      _optionsWithNonUniqueNameAndNoPrimaryKey.PrimaryKeyCreation = IPrimaryKeyPropertiesProvider.EntityTypeConfiguration;
 
       // ReSharper disable once RedundantArgumentDefaultValue
       await using var tempTable = await SUT.CreateTempTableAsync(ActDbContext.GetTempTableEntityType<TestEntityWithAutoIncrement>(), _optionsWithNonUniqueNameAndNoPrimaryKey);
@@ -512,7 +512,7 @@ Currently configured primary keys: []");
    public async Task Should_create_temp_table_without_primary_key()
    {
       ConfigureModel = builder => builder.ConfigureTempTable<int>();
-      _optionsWithNonUniqueNameAndNoPrimaryKey.PrimaryKeyCreation = PrimaryKeyPropertiesProviders.None;
+      _optionsWithNonUniqueNameAndNoPrimaryKey.PrimaryKeyCreation = IPrimaryKeyPropertiesProvider.None;
 
       await using var tempTable = await SUT.CreateTempTableAsync(ActDbContext.GetTempTableEntityType<TempTable<int>>(), _optionsWithNonUniqueNameAndNoPrimaryKey);
 

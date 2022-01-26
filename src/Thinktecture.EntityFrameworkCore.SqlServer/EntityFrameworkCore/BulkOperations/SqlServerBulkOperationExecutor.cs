@@ -304,7 +304,7 @@ INSERT BULK {Table} ({Columns})", (long)duration.TotalMilliseconds,
       var primaryKeyCreation = tempTableCreationOptions.PrimaryKeyCreation; // keep this one in a local variable because we may change it in the next line
 
       if (options.MomentOfPrimaryKeyCreation == MomentOfSqlServerPrimaryKeyCreation.AfterBulkInsert)
-         tempTableCreationOptions.PrimaryKeyCreation = PrimaryKeyPropertiesProviders.None;
+         tempTableCreationOptions.PrimaryKeyCreation = IPrimaryKeyPropertiesProvider.None;
 
       var tempTableCreator = _ctx.GetService<ISqlServerTempTableCreator>();
       var tempTableReference = await tempTableCreator.CreateTempTableAsync(entityType, tempTableCreationOptions, cancellationToken).ConfigureAwait(false);

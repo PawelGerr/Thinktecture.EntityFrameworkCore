@@ -24,12 +24,12 @@ public class CreatePrimaryKeyAsync : IntegrationTestsBase
       await using var tempTableReference = await ArrangeDbContext.CreateTempTableAsync<KeylessTestEntity>(new TempTableCreationOptions
                                                                                                           {
                                                                                                              TableNameProvider = DefaultTempTableNameProvider.Instance,
-                                                                                                             PrimaryKeyCreation = PrimaryKeyPropertiesProviders.None
+                                                                                                             PrimaryKeyCreation = IPrimaryKeyPropertiesProvider.None
                                                                                                           });
 
       var entityType = ActDbContext.GetEntityType<KeylessTestEntity>();
       var allProperties = entityType.GetProperties().Select(p => new PropertyWithNavigations(p, Array.Empty<INavigation>())).ToList();
-      await SUT.CreatePrimaryKeyAsync(ActDbContext, PrimaryKeyPropertiesProviders.AdaptiveForced.GetPrimaryKeyProperties(entityType, allProperties), tempTableReference.Name);
+      await SUT.CreatePrimaryKeyAsync(ActDbContext, IPrimaryKeyPropertiesProvider.AdaptiveForced.GetPrimaryKeyProperties(entityType, allProperties), tempTableReference.Name);
 
       var constraints = await AssertDbContext.GetTempTableConstraints<KeylessTestEntity>().ToListAsync();
       constraints.Should().HaveCount(1)
@@ -46,12 +46,12 @@ public class CreatePrimaryKeyAsync : IntegrationTestsBase
       await using var tempTableReference = await ArrangeDbContext.CreateTempTableAsync<TestEntity>(new TempTableCreationOptions
                                                                                                    {
                                                                                                       TableNameProvider = DefaultTempTableNameProvider.Instance,
-                                                                                                      PrimaryKeyCreation = PrimaryKeyPropertiesProviders.None
+                                                                                                      PrimaryKeyCreation = IPrimaryKeyPropertiesProvider.None
                                                                                                    });
 
       var entityType = ActDbContext.GetEntityType<TestEntity>();
       var allProperties = entityType.GetProperties().Select(p => new PropertyWithNavigations(p, Array.Empty<INavigation>())).ToList();
-      await SUT.CreatePrimaryKeyAsync(ActDbContext, PrimaryKeyPropertiesProviders.AdaptiveForced.GetPrimaryKeyProperties(entityType, allProperties), tempTableReference.Name);
+      await SUT.CreatePrimaryKeyAsync(ActDbContext, IPrimaryKeyPropertiesProvider.AdaptiveForced.GetPrimaryKeyProperties(entityType, allProperties), tempTableReference.Name);
 
       var constraints = await AssertDbContext.GetTempTableConstraints<TestEntity>().ToListAsync();
       constraints.Should().HaveCount(1)
@@ -68,11 +68,11 @@ public class CreatePrimaryKeyAsync : IntegrationTestsBase
       await using var tempTableReference = await ArrangeDbContext.CreateTempTableAsync<TestEntity>(new TempTableCreationOptions
                                                                                                    {
                                                                                                       TableNameProvider = DefaultTempTableNameProvider.Instance,
-                                                                                                      PrimaryKeyCreation = PrimaryKeyPropertiesProviders.None
+                                                                                                      PrimaryKeyCreation = IPrimaryKeyPropertiesProvider.None
                                                                                                    });
       var entityType = ArrangeDbContext.GetEntityType<TestEntity>();
       var allProperties = entityType.GetProperties().Select(p => new PropertyWithNavigations(p, Array.Empty<INavigation>())).ToList();
-      var keyProperties = PrimaryKeyPropertiesProviders.AdaptiveForced.GetPrimaryKeyProperties(entityType, allProperties);
+      var keyProperties = IPrimaryKeyPropertiesProvider.AdaptiveForced.GetPrimaryKeyProperties(entityType, allProperties);
       await SUT.CreatePrimaryKeyAsync(ArrangeDbContext, keyProperties, tempTableReference.Name, true);
 
       var constraints = await AssertDbContext.GetTempTableConstraints<TestEntity>().ToListAsync();
@@ -89,11 +89,11 @@ public class CreatePrimaryKeyAsync : IntegrationTestsBase
       await using var tempTableReference = await ArrangeDbContext.CreateTempTableAsync<TestEntity>(new TempTableCreationOptions
                                                                                                    {
                                                                                                       TableNameProvider = DefaultTempTableNameProvider.Instance,
-                                                                                                      PrimaryKeyCreation = PrimaryKeyPropertiesProviders.None
+                                                                                                      PrimaryKeyCreation = IPrimaryKeyPropertiesProvider.None
                                                                                                    });
       var entityType = ArrangeDbContext.GetEntityType<TestEntity>();
       var allProperties = entityType.GetProperties().Select(p => new PropertyWithNavigations(p, Array.Empty<INavigation>())).ToList();
-      var keyProperties = PrimaryKeyPropertiesProviders.AdaptiveForced.GetPrimaryKeyProperties(entityType, allProperties);
+      var keyProperties = IPrimaryKeyPropertiesProvider.AdaptiveForced.GetPrimaryKeyProperties(entityType, allProperties);
       await SUT.CreatePrimaryKeyAsync(ArrangeDbContext, keyProperties, tempTableReference.Name);
 
       // ReSharper disable once RedundantArgumentDefaultValue

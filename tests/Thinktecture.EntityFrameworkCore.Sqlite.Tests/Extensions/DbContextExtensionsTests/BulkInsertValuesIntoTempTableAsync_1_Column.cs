@@ -42,7 +42,7 @@ public class BulkInsertValuesIntoTempTableAsync_1_Column : IntegrationTestsBase
       ConfigureModel = builder => builder.ConfigureTempTable<int?>();
 
       var values = new List<int?> { 1, null };
-      await using var query = await ActDbContext.BulkInsertValuesIntoTempTableAsync(values, new SqliteTempTableBulkInsertOptions { PrimaryKeyCreation = PrimaryKeyPropertiesProviders.None });
+      await using var query = await ActDbContext.BulkInsertValuesIntoTempTableAsync(values, new SqliteTempTableBulkInsertOptions { PrimaryKeyCreation = IPrimaryKeyPropertiesProvider.None });
 
       var tempTable = await query.Query.ToListAsync();
       tempTable.Should().BeEquivalentTo(new[] { 1, (int?)null });
@@ -59,7 +59,7 @@ public class BulkInsertValuesIntoTempTableAsync_1_Column : IntegrationTestsBase
                                                                    });
 
       var values = new List<int?> { 1, 2 };
-      await using var query = await ActDbContext.BulkInsertValuesIntoTempTableAsync(values, new SqliteTempTableBulkInsertOptions { PrimaryKeyCreation = PrimaryKeyPropertiesProviders.None });
+      await using var query = await ActDbContext.BulkInsertValuesIntoTempTableAsync(values, new SqliteTempTableBulkInsertOptions { PrimaryKeyCreation = IPrimaryKeyPropertiesProvider.None });
 
       var tempTable = await query.Query.ToListAsync();
       tempTable.Should().BeEquivalentTo(new[] { 1, 2 });
@@ -71,7 +71,7 @@ public class BulkInsertValuesIntoTempTableAsync_1_Column : IntegrationTestsBase
       ConfigureModel = builder => builder.ConfigureTempTable<string?>(entityBuilder => entityBuilder.Property(t => t.Column1).IsRequired(false));
 
       var values = new List<string?> { "value1", null };
-      await using var query = await ActDbContext.BulkInsertValuesIntoTempTableAsync(values, new SqliteTempTableBulkInsertOptions { PrimaryKeyCreation = PrimaryKeyPropertiesProviders.None });
+      await using var query = await ActDbContext.BulkInsertValuesIntoTempTableAsync(values, new SqliteTempTableBulkInsertOptions { PrimaryKeyCreation = IPrimaryKeyPropertiesProvider.None });
 
       var tempTable = await query.Query.ToListAsync();
       tempTable.Should().BeEquivalentTo(new[] { "value1", null });
@@ -85,7 +85,7 @@ public class BulkInsertValuesIntoTempTableAsync_1_Column : IntegrationTestsBase
       await using var tempTable = await ActDbContext.BulkInsertValuesIntoTempTableAsync(new List<string> { "value" }, new SqliteTempTableBulkInsertOptions
                                                                                                                       {
                                                                                                                          TableNameProvider = DefaultTempTableNameProvider.Instance,
-                                                                                                                         PrimaryKeyCreation = PrimaryKeyPropertiesProviders.AdaptiveForced
+                                                                                                                         PrimaryKeyCreation = IPrimaryKeyPropertiesProvider.AdaptiveForced
                                                                                                                       });
 
       var keys = AssertDbContext.GetTempTableKeyColumns<TempTable<string>>().ToList();
@@ -101,7 +101,7 @@ public class BulkInsertValuesIntoTempTableAsync_1_Column : IntegrationTestsBase
       await ActDbContext.BulkInsertValuesIntoTempTableAsync(new List<int?> { 1 }, new SqliteTempTableBulkInsertOptions
                                                                                   {
                                                                                      TableNameProvider = DefaultTempTableNameProvider.Instance,
-                                                                                     PrimaryKeyCreation = PrimaryKeyPropertiesProviders.AdaptiveForced
+                                                                                     PrimaryKeyCreation = IPrimaryKeyPropertiesProvider.AdaptiveForced
                                                                                   });
 
       var keys = AssertDbContext.GetTempTableKeyColumns<TempTable<int?>>().ToList();
@@ -117,7 +117,7 @@ public class BulkInsertValuesIntoTempTableAsync_1_Column : IntegrationTestsBase
       await using var tempTable = await ActDbContext.BulkInsertValuesIntoTempTableAsync(new List<int> { 1 }, new SqliteTempTableBulkInsertOptions
                                                                                                              {
                                                                                                                 TableNameProvider = DefaultTempTableNameProvider.Instance,
-                                                                                                                PrimaryKeyCreation = PrimaryKeyPropertiesProviders.AdaptiveForced
+                                                                                                                PrimaryKeyCreation = IPrimaryKeyPropertiesProvider.AdaptiveForced
                                                                                                              });
 
       var keys = ArrangeDbContext.GetTempTableKeyColumns<TempTable<int>>().ToList();
@@ -133,7 +133,7 @@ public class BulkInsertValuesIntoTempTableAsync_1_Column : IntegrationTestsBase
       await using var tempTable = await ActDbContext.BulkInsertValuesIntoTempTableAsync(new List<int> { 1 }, new SqliteTempTableBulkInsertOptions
                                                                                                              {
                                                                                                                 TableNameProvider = DefaultTempTableNameProvider.Instance,
-                                                                                                                PrimaryKeyCreation = PrimaryKeyPropertiesProviders.EntityTypeConfiguration
+                                                                                                                PrimaryKeyCreation = IPrimaryKeyPropertiesProvider.EntityTypeConfiguration
                                                                                                              });
 
       var keys = ArrangeDbContext.GetTempTableKeyColumns<TempTable<int>>().ToList();
@@ -145,7 +145,7 @@ public class BulkInsertValuesIntoTempTableAsync_1_Column : IntegrationTestsBase
    {
       ConfigureModel = builder => builder.ConfigureTempTable<int>();
 
-      await using var tempTable = await ActDbContext.BulkInsertValuesIntoTempTableAsync(new List<int> { 1 }, new SqliteTempTableBulkInsertOptions { PrimaryKeyCreation = PrimaryKeyPropertiesProviders.None });
+      await using var tempTable = await ActDbContext.BulkInsertValuesIntoTempTableAsync(new List<int> { 1 }, new SqliteTempTableBulkInsertOptions { PrimaryKeyCreation = IPrimaryKeyPropertiesProvider.None });
 
       var keys = ArrangeDbContext.GetTempTableKeyColumns<TempTable<int>>().ToList();
       keys.Should().HaveCount(0);

@@ -13,7 +13,7 @@ public class SqlServerBulkOperationTempTableOptions
    {
       if (options is null)
       {
-         PrimaryKeyCreation = PrimaryKeyPropertiesProviders.None;
+         PrimaryKeyCreation = IPrimaryKeyPropertiesProvider.None;
          MomentOfPrimaryKeyCreation = MomentOfSqlServerPrimaryKeyCreation.AfterBulkInsert;
          DropTableOnDispose = true;
          EnableStreaming = true;
