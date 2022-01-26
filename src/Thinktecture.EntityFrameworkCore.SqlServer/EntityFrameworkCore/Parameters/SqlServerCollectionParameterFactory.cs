@@ -176,7 +176,7 @@ public class SqlServerCollectionParameterFactory : ICollectionParameterFactory
             var columnType = property.GetColumnType(storeObject) ?? throw new Exception($"The property '{property.Name}' has no column type.");
 
             sb.Append(escapedColumnName);
-            withClause.Append(escapedColumnName).Append(" ").Append(columnType).Append($" '$.{property.Name}'");
+            withClause.Append(escapedColumnName).Append(" ").Append(columnType).Append($" 'strict$.{property.Name}'");
 
             isFirst = false;
          }
