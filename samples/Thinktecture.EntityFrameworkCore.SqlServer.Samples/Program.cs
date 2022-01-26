@@ -25,10 +25,10 @@ public class Program
          ctx.ChangeTracker.Clear(); // resetting DbContext, as an alternative to create a new one
 
          // Bulk insert into "real" tables
-         await DoBulkInsertIntoRealTableAsync(ctx);
+         await DoBulkInsertAsync(ctx);
          ctx.ChangeTracker.Clear();
 
-         await DoBulkInsertSpecifiedColumnsIntoRealTableAsync(ctx);
+         await DoBulkInsertSpecificColumnsAsync(ctx);
          ctx.ChangeTracker.Clear();
 
          // Bulk update
@@ -43,18 +43,21 @@ public class Program
          await DoBulkDeleteAsync(ctx);
          ctx.ChangeTracker.Clear();
 
-         await DoScalarCollectionParameterAsync(ctx, new List<Guid> { customerId });
-         await DoComplexCollectionParameterAsync(ctx, customerId);
-         ctx.ChangeTracker.Clear();
-
          // Bulk insert into temp tables
-         await DoBulkInsertEntitiesIntoTempTableAsync(ctx);
-         ctx.ChangeTracker.Clear();
-
          await DoBulkInsertIntoTempTableAsync(ctx, new List<Guid> { customerId });
          ctx.ChangeTracker.Clear();
 
          await DoBulkInsertIntoTempTableAsync(ctx, new List<(Guid, Guid)> { (customerId, productId) });
+         ctx.ChangeTracker.Clear();
+
+         await DoBulkInsertIntoTempTableAsync(ctx);
+         ctx.ChangeTracker.Clear();
+
+         // Collection parameter
+         await DoScalarCollectionParameterAsync(ctx, new List<Guid> { customerId });
+         ctx.ChangeTracker.Clear();
+
+         await DoComplexCollectionParameterAsync(ctx, customerId);
          ctx.ChangeTracker.Clear();
 
          // LEFT JOIN
@@ -90,7 +93,7 @@ public class Program
    {
       var parameters = ctx.CreateComplexCollectionParameter(new[] { new MyParameter(customerId, 42) });
 
-      var customers = await ctx.Customers.Join(parameters, c => c.Id, t => t.Column1, (c, t) => new { Customer = c, Number = t.Column2}).ToListAsync();
+      var customers = await ctx.Customers.Join(parameters, c => c.Id, t => t.Column1, (c, t) => new { Customer = c, Number = t.Column2 }).ToListAsync();
 
       Console.WriteLine($"Found customers: {String.Join(", ", customers.Select(c => c.Customer.Id))}");
    }
@@ -196,7 +199,7 @@ public class Program
       Console.WriteLine($"Found customers: {String.Join(", ", customerOrder.Select(co => $"{{ CustomerId={co.Customer.Id}, OrderId={co.Order?.Id} }}"))}");
    }
 
-   private static async Task DoBulkInsertIntoRealTableAsync(DemoDbContext ctx)
+   private static async Task DoBulkInsertAsync(DemoDbContext ctx)
    {
       var id = Guid.NewGuid();
       var customersToInsert = new Customer(id, $"First name of '{id}'", $"Last name of '{id}'");
@@ -207,7 +210,7 @@ public class Program
       Console.WriteLine($"Inserted customers: {insertedCustomer.Id}");
    }
 
-   private static async Task DoBulkInsertSpecifiedColumnsIntoRealTableAsync(DemoDbContext ctx)
+   private static async Task DoBulkInsertSpecificColumnsAsync(DemoDbContext ctx)
    {
       var customersToInsert = new Customer(Guid.NewGuid(), "First name", "Last name");
 
@@ -280,7 +283,7 @@ public class Program
       Console.WriteLine($"Found order items: {String.Join(", ", orderItems.Select(i => $"{{ OrderId={i.OrderId}, ProductId={i.ProductId}, Count={i.Count} }}"))}");
    }
 
-   private static async Task DoBulkInsertEntitiesIntoTempTableAsync(DemoDbContext ctx)
+   private static async Task DoBulkInsertIntoTempTableAsync(DemoDbContext ctx)
    {
       var id = Guid.NewGuid();
       var customersToInsert = new[]

@@ -28,14 +28,14 @@ public class Program
             ctx.ChangeTracker.Clear(); // resetting DbContext, as an alternative to create a new one
 
             // Bulk insert into temp tables
-            await DoBulkInsertIntoTempTableAsync(ctx);
+            await BulkInsertIntoTempTableAsync(ctx);
             ctx.ChangeTracker.Clear();
 
             // Bulk insert into "real" tables
-            await DoBulkInsertIntoRealTableAsync(ctx);
+            await DoBulkInsertAsync(ctx);
             ctx.ChangeTracker.Clear();
 
-            await DoBulkInsertSpecifiedColumnsIntoRealTableAsync(ctx);
+            await DoBulkInsertSpecificColumnsAsync(ctx);
             ctx.ChangeTracker.Clear();
 
             // Bulk update
@@ -111,7 +111,7 @@ public class Program
       Console.WriteLine($"Found customers: {String.Join(", ", customerOrder.Select(co => $"{{ CustomerId={co.Customer.Id}, OrderId={co.Order?.Id} }}"))}");
    }
 
-   private static async Task DoBulkInsertIntoTempTableAsync(DemoDbContext ctx)
+   private static async Task BulkInsertIntoTempTableAsync(DemoDbContext ctx)
    {
       var customersToInsert = new Customer(Guid.NewGuid(), "First name", "Last name");
       await using var tempTable = await ctx.BulkInsertIntoTempTableAsync(new[] { customersToInsert });
@@ -121,7 +121,7 @@ public class Program
       Console.WriteLine($"Customer from temp table: {insertedCustomer.Id}");
    }
 
-   private static async Task DoBulkInsertIntoRealTableAsync(DemoDbContext ctx)
+   private static async Task DoBulkInsertAsync(DemoDbContext ctx)
    {
       var customersToInsert = new Customer(Guid.NewGuid(), "First name", "Last name");
       await ctx.BulkInsertAsync(new[] { customersToInsert });
@@ -131,7 +131,7 @@ public class Program
       Console.WriteLine($"Inserted customer: {insertedCustomer.Id}");
    }
 
-   private static async Task DoBulkInsertSpecifiedColumnsIntoRealTableAsync(DemoDbContext ctx)
+   private static async Task DoBulkInsertSpecificColumnsAsync(DemoDbContext ctx)
    {
       var customersToInsert = new Customer(Guid.NewGuid(), "First name", "Last name");
 
