@@ -12,17 +12,29 @@ internal class SqlServerCollectionParameterConvention : IModelInitializedConvent
    public void ProcessModelInitialized(IConventionModelBuilder modelBuilder, IConventionContext<IConventionModelBuilder> context)
    {
       AddScalarCollectionParameter<int>(modelBuilder);
+      AddScalarCollectionParameter<int?>(modelBuilder);
       AddScalarCollectionParameter<long>(modelBuilder);
+      AddScalarCollectionParameter<long?>(modelBuilder);
       AddScalarCollectionParameter<DateTime>(modelBuilder);
+      AddScalarCollectionParameter<DateTime?>(modelBuilder);
       AddScalarCollectionParameter<Guid>(modelBuilder);
+      AddScalarCollectionParameter<Guid?>(modelBuilder);
       AddScalarCollectionParameter<bool>(modelBuilder);
+      AddScalarCollectionParameter<bool?>(modelBuilder);
       AddScalarCollectionParameter<byte>(modelBuilder);
+      AddScalarCollectionParameter<byte?>(modelBuilder);
       AddScalarCollectionParameter<double>(modelBuilder);
+      AddScalarCollectionParameter<double?>(modelBuilder);
       AddScalarCollectionParameter<DateTimeOffset>(modelBuilder);
+      AddScalarCollectionParameter<DateTimeOffset?>(modelBuilder);
       AddScalarCollectionParameter<short>(modelBuilder);
+      AddScalarCollectionParameter<short?>(modelBuilder);
       AddScalarCollectionParameter<float>(modelBuilder);
+      AddScalarCollectionParameter<float?>(modelBuilder);
       AddScalarCollectionParameter<decimal>(modelBuilder);
+      AddScalarCollectionParameter<decimal?>(modelBuilder);
       AddScalarCollectionParameter<TimeSpan>(modelBuilder);
+      AddScalarCollectionParameter<TimeSpan?>(modelBuilder);
       AddScalarCollectionParameter<string>(modelBuilder);
    }
 
