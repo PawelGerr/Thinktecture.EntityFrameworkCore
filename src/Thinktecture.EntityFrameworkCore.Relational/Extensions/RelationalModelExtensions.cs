@@ -1,7 +1,6 @@
-using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Thinktecture.EntityFrameworkCore;
 
-// ReSharper disable once CheckNamespace
 namespace Thinktecture;
 
 /// <summary>
@@ -29,7 +28,7 @@ public static class RelationalModelExtensions
       var entityType = model.FindEntityType(type);
 
       if (entityType == null)
-         throw new ArgumentException($"The provided type '{type.ShortDisplayName()}' is not part of the provided Entity Framework model.", nameof(type));
+         throw new EntityTypeNotFoundException(type);
 
       return entityType;
    }
@@ -61,8 +60,8 @@ public static class RelationalModelExtensions
          return entityType;
 
       if (fallbackEntityType is not null)
-         throw new ArgumentException($"The provided name '{name}' and the type '{fallbackEntityType.ShortDisplayName()}' were not part of the provided Entity Framework model.", nameof(name));
+         throw new EntityTypeNotFoundException(name, fallbackEntityType);
 
-      throw new ArgumentException($"The provided name '{name}' is not part of the provided Entity Framework model.", nameof(name));
+      throw new EntityTypeNotFoundException(name);
    }
 }
