@@ -20,17 +20,29 @@ public class TempTableConvention : IModelInitializedConvention
    public void ProcessModelInitialized(IConventionModelBuilder modelBuilder, IConventionContext<IConventionModelBuilder> context)
    {
       AddTempTable<int>(modelBuilder);
+      AddTempTable<int?>(modelBuilder);
       AddTempTable<long>(modelBuilder);
+      AddTempTable<long?>(modelBuilder);
       AddTempTable<DateTime>(modelBuilder);
+      AddTempTable<DateTime?>(modelBuilder);
       AddTempTable<Guid>(modelBuilder);
+      AddTempTable<Guid?>(modelBuilder);
       AddTempTable<bool>(modelBuilder);
+      AddTempTable<bool?>(modelBuilder);
       AddTempTable<byte>(modelBuilder);
+      AddTempTable<byte?>(modelBuilder);
       AddTempTable<double>(modelBuilder);
+      AddTempTable<double?>(modelBuilder);
       AddTempTable<DateTimeOffset>(modelBuilder);
+      AddTempTable<DateTimeOffset?>(modelBuilder);
       AddTempTable<short>(modelBuilder);
+      AddTempTable<short?>(modelBuilder);
       AddTempTable<float>(modelBuilder);
+      AddTempTable<float?>(modelBuilder);
       AddTempTable<decimal>(modelBuilder);
+      AddTempTable<decimal?>(modelBuilder);
       AddTempTable<TimeSpan>(modelBuilder);
+      AddTempTable<TimeSpan?>(modelBuilder);
       AddTempTable<string>(modelBuilder);
    }
 
