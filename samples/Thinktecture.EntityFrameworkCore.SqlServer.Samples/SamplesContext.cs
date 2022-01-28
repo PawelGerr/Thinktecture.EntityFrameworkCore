@@ -1,8 +1,10 @@
+using Microsoft.EntityFrameworkCore.Metadata.Conventions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Thinktecture.Database;
 using Thinktecture.EntityFrameworkCore;
+using Thinktecture.EntityFrameworkCore.Conventions;
 
 namespace Thinktecture;
 
@@ -53,6 +55,7 @@ public class SamplesContext
                                                                                               .AddCollectionParameterSupport()
                                                                                               .UseThinktectureSqlServerMigrationsSqlGenerator();
                                                                                  })
+                                                 .RemoveConvention(ConventionType.EntityTypePrimaryKeyChangedConventions, typeof(SqlServerValueGenerationConvention))
                                                  .EnableSensitiveDataLogging()
                                                  .UseLoggerFactory(_loggerFactory)
                                                  .AddSchemaRespectingComponents()
