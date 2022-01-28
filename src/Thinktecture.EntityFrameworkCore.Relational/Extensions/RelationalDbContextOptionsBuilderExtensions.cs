@@ -186,6 +186,23 @@ public static class RelationalDbContextOptionsBuilderExtensions
    /// <param name="initialCapacity">Initial capacity of a new <see cref="StringBuilder"/>.</param>
    /// <param name="maximumRetainedCapacity">Instances of <see cref="StringBuilder"/> with greater capacity are not reused.</param>
    /// <returns>The provided <paramref name="builder"/>.</returns>
+   public static DbContextOptionsBuilder<T> ConfigureStringBuilderPool<T>(
+      this DbContextOptionsBuilder<T> builder,
+      int initialCapacity = 300,
+      int maximumRetainedCapacity = 4096)
+      where T : DbContext
+   {
+      ((DbContextOptionsBuilder)builder).ConfigureStringBuilderPool(initialCapacity, maximumRetainedCapacity);
+      return builder;
+   }
+
+   /// <summary>
+   /// Configures the string builder pool.
+   /// </summary>
+   /// <param name="builder">Options builder.</param>
+   /// <param name="initialCapacity">Initial capacity of a new <see cref="StringBuilder"/>.</param>
+   /// <param name="maximumRetainedCapacity">Instances of <see cref="StringBuilder"/> with greater capacity are not reused.</param>
+   /// <returns>The provided <paramref name="builder"/>.</returns>
    public static DbContextOptionsBuilder ConfigureStringBuilderPool(
       this DbContextOptionsBuilder builder,
       int initialCapacity = 300,
