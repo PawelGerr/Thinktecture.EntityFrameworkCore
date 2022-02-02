@@ -19,14 +19,17 @@ public static class SqlServerDbContextOptionsBuilderExtensions
    /// </summary>
    /// <param name="sqlServerOptionsBuilder">SQL Server options builder.</param>
    /// <param name="addBulkOperationSupport">Indication whether to enable or disable the feature.</param>
+   /// <param name="configureTempTablesForPrimitiveTypes">Indication whether to configure temp tables for primitive types.</param>
    /// <returns>Provided <paramref name="sqlServerOptionsBuilder"/>.</returns>
    public static SqlServerDbContextOptionsBuilder AddBulkOperationSupport(
       this SqlServerDbContextOptionsBuilder sqlServerOptionsBuilder,
-      bool addBulkOperationSupport = true)
+      bool addBulkOperationSupport = true,
+      bool configureTempTablesForPrimitiveTypes = true)
    {
       return AddOrUpdateExtension(sqlServerOptionsBuilder, extension =>
                                                            {
                                                               extension.AddBulkOperationSupport = addBulkOperationSupport;
+                                                              extension.ConfigureTempTablesForPrimitiveTypes = addBulkOperationSupport && configureTempTablesForPrimitiveTypes;
                                                               return extension;
                                                            });
    }
@@ -37,13 +40,15 @@ public static class SqlServerDbContextOptionsBuilderExtensions
    /// <param name="sqlServerOptionsBuilder">SQL Server options builder.</param>
    /// <param name="jsonSerializerOptions">JSON serialization options.</param>
    /// <param name="addCollectionParameterSupport">Indication whether to enable or disable the feature.</param>
+   /// <param name="configureCollectionParametersForPrimitiveTypes">Indication whether to configure collection parameters for primitive types.</param>
    /// <returns>Provided <paramref name="sqlServerOptionsBuilder"/>.</returns>
    public static SqlServerDbContextOptionsBuilder AddCollectionParameterSupport(
       this SqlServerDbContextOptionsBuilder sqlServerOptionsBuilder,
       JsonSerializerOptions? jsonSerializerOptions = null,
-      bool addCollectionParameterSupport = true)
+      bool addCollectionParameterSupport = true,
+      bool configureCollectionParametersForPrimitiveTypes = true)
    {
-      return AddOrUpdateExtension(sqlServerOptionsBuilder, extension => extension.AddCollectionParameterSupport(addCollectionParameterSupport, jsonSerializerOptions));
+      return AddOrUpdateExtension(sqlServerOptionsBuilder, extension => extension.AddCollectionParameterSupport(addCollectionParameterSupport, jsonSerializerOptions, configureCollectionParametersForPrimitiveTypes));
    }
 
    /// <summary>

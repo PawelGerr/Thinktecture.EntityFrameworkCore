@@ -14,13 +14,17 @@ public static class SqliteDbContextOptionsBuilderExtensions
    /// </summary>
    /// <param name="sqliteOptionsBuilder">SQLite options builder.</param>
    /// <param name="addBulkOperationSupport">Indication whether to enable or disable the feature.</param>
+   /// <param name="configureTempTablesForPrimitiveTypes">Indication whether to configure temp tables for primitive types.</param>
    /// <returns>Provided <paramref name="sqliteOptionsBuilder"/>.</returns>
-   public static SqliteDbContextOptionsBuilder AddBulkOperationSupport(this SqliteDbContextOptionsBuilder sqliteOptionsBuilder,
-                                                                       bool addBulkOperationSupport = true)
+   public static SqliteDbContextOptionsBuilder AddBulkOperationSupport(
+      this SqliteDbContextOptionsBuilder sqliteOptionsBuilder,
+      bool addBulkOperationSupport = true,
+      bool configureTempTablesForPrimitiveTypes = true)
    {
       return AddOrUpdateExtension(sqliteOptionsBuilder, extension =>
                                                         {
                                                            extension.AddBulkOperationSupport = addBulkOperationSupport;
+                                                           extension.ConfigureTempTablesForPrimitiveTypes = addBulkOperationSupport && configureTempTablesForPrimitiveTypes;
                                                            return extension;
                                                         });
    }

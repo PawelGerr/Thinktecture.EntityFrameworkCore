@@ -77,6 +77,11 @@ public sealed class SqliteDbContextOptionsExtension : DbContextOptionsExtensionB
    public bool AddBulkOperationSupport { get; set; }
 
    /// <summary>
+   /// Indication whether to configure temp tables for primitive types.
+   /// </summary>
+   public bool ConfigureTempTablesForPrimitiveTypes { get; set; }
+
+   /// <summary>
    /// Initializes new instance of <see cref="SqliteDbContextOptionsExtension"/>.
    /// </summary>
    /// <param name="relationalOptions">An instance of <see cref="RelationalDbContextOptionsExtension"/>.</param>
@@ -89,6 +94,10 @@ public sealed class SqliteDbContextOptionsExtension : DbContextOptionsExtensionB
    [SuppressMessage("Usage", "EF1001", MessageId = "Internal EF Core API usage.")]
    public void ApplyServices(IServiceCollection services)
    {
+      services.TryAddSingleton<SqliteDbContextOptionsExtensionOptions>();
+      services.AddSingleton<IBulkOperationsDbContextOptionsExtensionOptions>(provider => provider.GetRequiredService<SqliteDbContextOptionsExtensionOptions>());
+      services.AddSingleton<ISingletonOptions>(provider => provider.GetRequiredService<SqliteDbContextOptionsExtensionOptions>());
+
       if (AddCustomQueryableMethodTranslatingExpressionVisitorFactory)
          AddWithCheck<IQueryableMethodTranslatingExpressionVisitorFactory, ThinktectureSqliteQueryableMethodTranslatingExpressionVisitorFactory, SqliteQueryableMethodTranslatingExpressionVisitorFactory>(services);
 
@@ -148,7 +157,8 @@ public sealed class SqliteDbContextOptionsExtension : DbContextOptionsExtensionB
          return HashCode.Combine(_extension.AddCustomQueryableMethodTranslatingExpressionVisitorFactory,
                                  _extension.AddCustomQuerySqlGeneratorFactory,
                                  _extension.AddCustomRelationalParameterBasedSqlProcessorFactory,
-                                 _extension.AddBulkOperationSupport);
+                                 _extension.AddBulkOperationSupport,
+                                 _extension.ConfigureTempTablesForPrimitiveTypes);
       }
 
       /// <inheritdoc />
@@ -158,7 +168,8 @@ public sealed class SqliteDbContextOptionsExtension : DbContextOptionsExtensionB
                 && _extension.AddCustomQueryableMethodTranslatingExpressionVisitorFactory == otherSqliteInfo._extension.AddCustomQueryableMethodTranslatingExpressionVisitorFactory
                 && _extension.AddCustomQuerySqlGeneratorFactory == otherSqliteInfo._extension.AddCustomQuerySqlGeneratorFactory
                 && _extension.AddCustomRelationalParameterBasedSqlProcessorFactory == otherSqliteInfo._extension.AddCustomRelationalParameterBasedSqlProcessorFactory
-                && _extension.AddBulkOperationSupport == otherSqliteInfo._extension.AddBulkOperationSupport;
+                && _extension.AddBulkOperationSupport == otherSqliteInfo._extension.AddBulkOperationSupport
+                && _extension.ConfigureTempTablesForPrimitiveTypes == otherSqliteInfo._extension.ConfigureTempTablesForPrimitiveTypes;
       }
 
       /// <inheritdoc />
