@@ -19,6 +19,15 @@ public class ThinktectureSqlServerSqlNullabilityProcessor : SqlServerSqlNullabil
    }
 
    /// <inheritdoc />
+   protected override TableExpressionBase Visit(TableExpressionBase tableExpressionBase)
+   {
+      if (tableExpressionBase is INotNullableSqlExpression)
+         return tableExpressionBase;
+
+      return base.Visit(tableExpressionBase);
+   }
+
+   /// <inheritdoc />
    protected override SqlExpression VisitCustomSqlExpression(SqlExpression sqlExpression, bool allowOptimizedExpansion, out bool nullable)
    {
       if (sqlExpression is INotNullableSqlExpression)

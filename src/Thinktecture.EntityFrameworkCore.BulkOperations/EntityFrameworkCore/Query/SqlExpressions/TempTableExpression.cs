@@ -7,7 +7,7 @@ namespace Thinktecture.EntityFrameworkCore.Query.SqlExpressions;
 /// <summary>
 /// An expression that represents a temp table.
 /// </summary>
-public sealed class TempTableExpression : TableExpressionBase
+public sealed class TempTableExpression : TableExpressionBase, INotNullableSqlExpression
 {
    /// <summary>
    /// The name of the table or view.
@@ -38,12 +38,8 @@ public sealed class TempTableExpression : TableExpressionBase
    /// <inheritdoc />
    public override bool Equals(object? obj)
    {
-      return ReferenceEquals(this, obj) || Equals(obj as TempTableExpression);
-   }
-
-   private bool Equals(TempTableExpression? tempTableExpression)
-   {
-      return base.Equals(tempTableExpression) && string.Equals(Name, tempTableExpression.Name);
+      // This should be reference equal only.
+      return obj != null && ReferenceEquals(this, obj);
    }
 
    /// <inheritdoc />

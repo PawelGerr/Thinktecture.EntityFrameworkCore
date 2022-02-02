@@ -15,13 +15,15 @@ public static class BulkOperationsDbSetExtensions
    /// <summary>
    /// This is an internal API.
    /// </summary>
-   public static IQueryable<T> FromTempTable<T>(this IQueryable<T> source, string name)
+   public static IQueryable<T> FromTempTable<T>(
+      this IQueryable<T> source,
+      TempTableInfo info)
    {
       ArgumentNullException.ThrowIfNull(source);
-      ArgumentNullException.ThrowIfNull(name);
+      ArgumentNullException.ThrowIfNull(info);
 
       var methodInfo = _fromTempTable.MakeGenericMethod(typeof(T));
-      var expression = Expression.Call(null, methodInfo, source.Expression, new TempTableNameExpression(name));
+      var expression = Expression.Call(null, methodInfo, source.Expression, new TempTableInfoExpression(info));
 
       return source.Provider.CreateQuery<T>(expression);
    }

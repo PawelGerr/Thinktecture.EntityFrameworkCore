@@ -60,18 +60,20 @@ public static class RelationalQueryableMethodTranslatingExpressionVisitorExtensi
       QueryCompilationContext queryCompilationContext,
       TableHintContextFactory tableHintContextFactory)
    {
-      var tableHints = (TableHintsExpression)methodCallExpression.Arguments[1] ?? throw new InvalidOperationException("Table hints cannot be null.");
+      var tableHintsExpression = (TableHintsExpression)methodCallExpression.Arguments[1] ?? throw new InvalidOperationException("Table hints cannot be null.");
       var tables = ((SelectExpression)shapedQueryExpression.QueryExpression).Tables;
 
       if (tables.Count == 0)
-         throw new InvalidOperationException($"No tables found to apply table hints '{String.Join(", ", tableHints)}' to.");
+         throw new InvalidOperationException($"No tables found to apply table hints '{String.Join(", ", tableHintsExpression)}' to.");
 
       if (tables.Count > 1)
-         throw new InvalidOperationException($"Multiple tables found to apply table hints '{String.Join(", ", tableHints)}' to. Expression: {String.Join(", ", tables.Select(t => t.Print()))}");
+         throw new InvalidOperationException($"Multiple tables found to apply table hints '{String.Join(", ", tableHintsExpression)}' to. Expression: {String.Join(", ", tables.Select(t => t.Print()))}");
 
-      var tableExpression = ((SelectExpression)shapedQueryExpression.QueryExpression).Tables[0];
+      var selectExpression = (SelectExpression)shapedQueryExpression.QueryExpression;
+      var tableExpression = selectExpression.Tables[0];
+      var tableHints = tableHintsExpression.Value ?? throw new Exception("No table hints provided.");
 
-      var ctx = tableHintContextFactory.Create(tableExpression, tableHints.Value ?? throw new Exception("No table hints provided."));
+      var ctx = tableHintContextFactory.Create(tableExpression, tableHints);
       var extractor = Expression.Lambda<Func<QueryContext, TableHintContext>>(Expression.Constant(ctx), QueryCompilationContext.QueryContextParameter);
 
       queryCompilationContext.RegisterRuntimeParameter(ctx.ParameterName, extractor);

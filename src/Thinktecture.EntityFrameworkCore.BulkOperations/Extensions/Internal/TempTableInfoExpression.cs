@@ -1,18 +1,18 @@
 namespace Thinktecture.Internal;
 
 /// <summary>
-/// The name of the temp table.
+/// Temp table infos.
 /// </summary>
-public class TempTableNameExpression : NonEvaluatableConstantExpression<string>
+public class TempTableInfoExpression : NonEvaluatableConstantExpression<TempTableInfo>
 {
    /// <inheritdoc />
-   public TempTableNameExpression(string value)
+   public TempTableInfoExpression(TempTableInfo value)
       : base(value)
    {
    }
 
    /// <inheritdoc />
-   public override bool Equals(string? otherTempTableName)
+   public override bool Equals(TempTableInfo? otherTempTableName)
    {
       return Value.Equals(otherTempTableName);
    }

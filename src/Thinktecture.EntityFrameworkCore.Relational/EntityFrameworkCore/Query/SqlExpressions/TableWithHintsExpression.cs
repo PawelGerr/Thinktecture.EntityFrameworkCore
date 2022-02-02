@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 
@@ -6,7 +7,7 @@ namespace Thinktecture.EntityFrameworkCore.Query.SqlExpressions;
 /// <summary>
 /// An expression that represents table hints.
 /// </summary>
-public sealed class TableWithHintsExpression : TableExpressionBase
+public sealed class TableWithHintsExpression : TableExpressionBase, INotNullableSqlExpression
 {
    /// <summary>
    /// Table to apply hints to.
@@ -28,6 +29,16 @@ public sealed class TableWithHintsExpression : TableExpressionBase
    {
       Table = table;
       TableHints = tableHints;
+   }
+
+   /// <inheritdoc />
+   protected override Expression VisitChildren(ExpressionVisitor visitor)
+   {
+      var visited = (TableExpressionBase)visitor.Visit(Table);
+
+      return Table != visited
+                ? new TableWithHintsExpression(visited, TableHints)
+                : this;
    }
 
    /// <inheritdoc />

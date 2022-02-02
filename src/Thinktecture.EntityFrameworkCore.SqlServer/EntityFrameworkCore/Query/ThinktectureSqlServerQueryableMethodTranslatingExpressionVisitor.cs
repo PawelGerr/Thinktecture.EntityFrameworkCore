@@ -54,7 +54,7 @@ public class ThinktectureSqlServerQueryableMethodTranslatingExpressionVisitor
    protected override Expression VisitMethodCall(MethodCallExpression methodCallExpression)
    {
       return this.TranslateRelationalMethods(methodCallExpression, QueryCompilationContext, _tableHintContextFactory) ??
-             this.TranslateBulkMethods(methodCallExpression, _typeMappingSource, QueryCompilationContext, _tempTableQueryContextFactory) ??
+             this.TranslateBulkMethods(methodCallExpression, _typeMappingSource, QueryCompilationContext, _tempTableQueryContextFactory, RelationalDependencies.SqlExpressionFactory) ??
              base.VisitMethodCall(methodCallExpression);
    }
 }

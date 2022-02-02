@@ -1,4 +1,5 @@
 using Thinktecture.EntityFrameworkCore;
+using Thinktecture.TestDatabaseContext;
 
 namespace Thinktecture.Extensions.QueryableExtensionsTests;
 
@@ -87,6 +88,16 @@ public class WithTableHints : IntegrationTestsBase
                           .Join(ActDbContext.TestEntities.WithTableHints(SqlServerTableHint.UpdLock), e => e.Id, e => e.Id, (e1, e2) => new { e1, e2 });
 
       query.ToQueryString().Should().Be("SELECT [t].[Id], [t].[ConvertibleClass], [t].[Count], [t].[Name], [t].[ParentId], [t].[PropertyWithBackingField], [t].[RequiredName], [t].[_privateField], [t0].[Id], [t0].[ConvertibleClass], [t0].[Count], [t0].[Name], [t0].[ParentId], [t0].[PropertyWithBackingField], [t0].[RequiredName], [t0].[_privateField]" + Environment.NewLine +
+                                        $"FROM {EscapedSchema}.[TestEntities] AS [t] WITH (NOLOCK)" + Environment.NewLine +
+                                        $"INNER JOIN {EscapedSchema}.[TestEntities] AS [t0] WITH (UPDLOCK) ON [t].[Id] = [t0].[Id]");
+
+      (await query.ToListAsync()).Should().BeEmpty();
+
+      var tempQuery = ActDbContext.TestEntities.Select(e => new TestEntity { Id = e.Id });
+      query = tempQuery.WithTableHints(SqlServerTableHint.NoLock)
+                       .Join(tempQuery.WithTableHints(SqlServerTableHint.UpdLock), e => e.Id, e => e.Id, (e1, e2) => new { e1, e2 });
+
+      query.ToQueryString().Should().Be("SELECT [t].[Id], [t0].[Id]" + Environment.NewLine +
                                         $"FROM {EscapedSchema}.[TestEntities] AS [t] WITH (NOLOCK)" + Environment.NewLine +
                                         $"INNER JOIN {EscapedSchema}.[TestEntities] AS [t0] WITH (UPDLOCK) ON [t].[Id] = [t0].[Id]");
 
