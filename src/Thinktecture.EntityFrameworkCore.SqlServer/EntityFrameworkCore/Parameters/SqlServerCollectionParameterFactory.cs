@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Microsoft.Extensions.ObjectPool;
+using Thinktecture.EntityFrameworkCore.Infrastructure;
 using Thinktecture.Internal;
 
 namespace Thinktecture.EntityFrameworkCore.Parameters;
@@ -20,22 +21,26 @@ public class SqlServerCollectionParameterFactory : ICollectionParameterFactory
    private readonly JsonSerializerOptions _jsonSerializerOptions;
    private readonly ObjectPool<StringBuilder> _stringBuilderPool;
    private readonly ISqlGenerationHelper _sqlGenerationHelper;
+   private readonly SqlServerDbContextOptionsExtensionOptions _options;
 
    /// <summary>
    /// Initializes new instance of <see cref="SqlServerCollectionParameterFactory"/>.
    /// </summary>
    /// <param name="jsonSerializerOptions">JSON serialization options.</param>
    /// <param name="stringBuilderPool">String builder pool.</param>
-   /// <param name="sqlGenerationHelper"></param>
+   /// <param name="sqlGenerationHelper">SQL generation helper.</param>
+   /// <param name="options">Options.</param>
    /// <exception cref="ArgumentNullException">If <paramref name="jsonSerializerOptions"/> is <c>null</c>.</exception>
    public SqlServerCollectionParameterFactory(
       JsonSerializerOptions jsonSerializerOptions,
       ObjectPool<StringBuilder> stringBuilderPool,
-      ISqlGenerationHelper sqlGenerationHelper)
+      ISqlGenerationHelper sqlGenerationHelper,
+      SqlServerDbContextOptionsExtensionOptions options)
    {
       _jsonSerializerOptions = jsonSerializerOptions ?? throw new ArgumentNullException(nameof(jsonSerializerOptions));
       _stringBuilderPool = stringBuilderPool ?? throw new ArgumentNullException(nameof(stringBuilderPool));
       _sqlGenerationHelper = sqlGenerationHelper ?? throw new ArgumentNullException(nameof(sqlGenerationHelper));
+      _options = options ?? throw new ArgumentNullException(nameof(options));
       _cache = new ConcurrentDictionary<IEntityType, CollectionParameterInfo>();
    }
 
@@ -73,23 +78,29 @@ public class SqlServerCollectionParameterFactory : ICollectionParameterFactory
                             CreateJsonParameter(parameterValue));
    }
 
-   private static SqlParameter CreateJsonParameter(JsonCollectionParameter parameterValue)
+   private object CreateJsonParameter(JsonCollectionParameter parameter)
    {
+      if (!_options.UseDeferredCollectionParameterSerialization)
+         return parameter.ToString(null);
+
       return new SqlParameter
              {
                 DbType = DbType.String,
                 SqlDbType = SqlDbType.NVarChar,
-                Value = parameterValue
+                Value = parameter
              };
    }
 
-   private static SqlParameter CreateTopParameter(JsonCollectionParameter jsonCollection)
+   private object CreateTopParameter(JsonCollectionParameter parameter)
    {
+      if (!_options.UseDeferredCollectionParameterSerialization)
+         return parameter.ToInt64(null);
+
       return new SqlParameter
              {
                 DbType = DbType.Int64,
                 SqlDbType = SqlDbType.BigInt,
-                Value = jsonCollection
+                Value = parameter
              };
    }
 

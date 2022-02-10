@@ -16,6 +16,11 @@ public class SqlServerDbContextOptionsExtensionOptions : IBulkOperationsDbContex
    /// </summary>
    public bool ConfigureCollectionParametersForPrimitiveTypes { get; private set; }
 
+   /// <summary>
+   /// Indication whether to use deferred serialization or not.
+   /// </summary>
+   public bool UseDeferredCollectionParameterSerialization { get; private set; }
+
    /// <inheritdoc />
    public void Initialize(IDbContextOptions options)
    {
@@ -23,6 +28,7 @@ public class SqlServerDbContextOptionsExtensionOptions : IBulkOperationsDbContex
 
       ConfigureTempTablesForPrimitiveTypes = extension.ConfigureTempTablesForPrimitiveTypes;
       ConfigureCollectionParametersForPrimitiveTypes = extension.ConfigureCollectionParametersForPrimitiveTypes;
+      UseDeferredCollectionParameterSerialization = extension.UseDeferredCollectionParameterSerialization;
    }
 
    /// <inheritdoc />
@@ -35,6 +41,9 @@ public class SqlServerDbContextOptionsExtensionOptions : IBulkOperationsDbContex
 
       if (extension.ConfigureCollectionParametersForPrimitiveTypes != ConfigureCollectionParametersForPrimitiveTypes)
          throw new InvalidOperationException($"The setting '{nameof(SqlServerDbContextOptionsExtension.ConfigureCollectionParametersForPrimitiveTypes)}' has been changed.");
+
+      if (extension.UseDeferredCollectionParameterSerialization != UseDeferredCollectionParameterSerialization)
+         throw new InvalidOperationException($"The setting '{nameof(SqlServerDbContextOptionsExtension.UseDeferredCollectionParameterSerialization)}' has been changed.");
    }
 
    private static SqlServerDbContextOptionsExtension GetExtension(IDbContextOptions options)

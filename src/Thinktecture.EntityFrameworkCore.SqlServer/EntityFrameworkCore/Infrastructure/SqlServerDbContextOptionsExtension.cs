@@ -103,6 +103,7 @@ public sealed class SqlServerDbContextOptionsExtension : DbContextOptionsExtensi
    private JsonSerializerOptions? _collectionParameterJsonSerializerOptions;
    private bool _addCollectionParameterSupport;
    internal bool ConfigureCollectionParametersForPrimitiveTypes { get; private set; }
+   internal bool UseDeferredCollectionParameterSerialization { get; private set; }
 
    /// <summary>
    /// Changes the implementation of <see cref="IMigrationsSqlGenerator"/> to <see cref="ThinktectureSqlServerMigrationsSqlGenerator"/>.
@@ -158,9 +159,7 @@ public sealed class SqlServerDbContextOptionsExtension : DbContextOptionsExtensi
       {
          var jsonSerializerOptions = _collectionParameterJsonSerializerOptions ?? new JsonSerializerOptions();
 
-         services.AddSingleton<ICollectionParameterFactory>(serviceProvider => new SqlServerCollectionParameterFactory(jsonSerializerOptions,
-                                                                                                                       serviceProvider.GetRequiredService<ObjectPool<StringBuilder>>(),
-                                                                                                                       serviceProvider.GetRequiredService<ISqlGenerationHelper>()));
+         services.AddSingleton<ICollectionParameterFactory>(serviceProvider => ActivatorUtilities.CreateInstance<SqlServerCollectionParameterFactory>(serviceProvider, jsonSerializerOptions));
          services.Add<IConventionSetPlugin, SqlServerCollectionParameterConventionSetPlugin>(GetLifetime<IConventionSetPlugin>());
       }
 
@@ -200,11 +199,13 @@ public sealed class SqlServerDbContextOptionsExtension : DbContextOptionsExtensi
    public SqlServerDbContextOptionsExtension AddCollectionParameterSupport(
       bool addCollectionParameterSupport,
       JsonSerializerOptions? jsonSerializerOptions,
-      bool configureCollectionParametersForPrimitiveTypes)
+      bool configureCollectionParametersForPrimitiveTypes,
+      bool useDeferredSerialization)
    {
       _addCollectionParameterSupport = addCollectionParameterSupport;
       _collectionParameterJsonSerializerOptions = jsonSerializerOptions;
       ConfigureCollectionParametersForPrimitiveTypes = addCollectionParameterSupport && configureCollectionParametersForPrimitiveTypes;
+      UseDeferredCollectionParameterSerialization = addCollectionParameterSupport && useDeferredSerialization;
 
       return this;
    }
@@ -261,6 +262,7 @@ public sealed class SqlServerDbContextOptionsExtension : DbContextOptionsExtensi
          hashCode.Add(_extension.ConfigureTempTablesForPrimitiveTypes);
          hashCode.Add(_extension._addCollectionParameterSupport);
          hashCode.Add(_extension.ConfigureCollectionParametersForPrimitiveTypes);
+         hashCode.Add(_extension.UseDeferredCollectionParameterSerialization);
          hashCode.Add(_extension._collectionParameterJsonSerializerOptions);
          hashCode.Add(_extension.AddTenantDatabaseSupport);
          hashCode.Add(_extension.AddTableHintSupport);
@@ -280,6 +282,7 @@ public sealed class SqlServerDbContextOptionsExtension : DbContextOptionsExtensi
                 && _extension.ConfigureTempTablesForPrimitiveTypes == otherSqlServerInfo._extension.ConfigureTempTablesForPrimitiveTypes
                 && _extension._addCollectionParameterSupport == otherSqlServerInfo._extension._addCollectionParameterSupport
                 && _extension.ConfigureCollectionParametersForPrimitiveTypes == otherSqlServerInfo._extension.ConfigureCollectionParametersForPrimitiveTypes
+                && _extension.UseDeferredCollectionParameterSerialization == otherSqlServerInfo._extension.UseDeferredCollectionParameterSerialization
                 && _extension._collectionParameterJsonSerializerOptions == otherSqlServerInfo._extension._collectionParameterJsonSerializerOptions
                 && _extension.AddTenantDatabaseSupport == otherSqlServerInfo._extension.AddTenantDatabaseSupport
                 && _extension.AddTableHintSupport == otherSqlServerInfo._extension.AddTableHintSupport

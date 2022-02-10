@@ -41,14 +41,21 @@ public static class SqlServerDbContextOptionsBuilderExtensions
    /// <param name="jsonSerializerOptions">JSON serialization options.</param>
    /// <param name="addCollectionParameterSupport">Indication whether to enable or disable the feature.</param>
    /// <param name="configureCollectionParametersForPrimitiveTypes">Indication whether to configure collection parameters for primitive types.</param>
+   /// <param name="useDeferredSerialization">
+   /// If <c>true</c> then the provided collection will be serialized when the query is executed.
+   /// If <c>false</c> then the collection is going to be serialized when "collection parameter" is created,
+   /// i.e. when calling <see cref="BulkOperationsDbContextExtensions.CreateScalarCollectionParameter{T}"/> pr <see cref="BulkOperationsDbContextExtensions.CreateComplexCollectionParameter{T}"/>.
+   /// Default is <c>false</c>.
+   /// </param>
    /// <returns>Provided <paramref name="sqlServerOptionsBuilder"/>.</returns>
    public static SqlServerDbContextOptionsBuilder AddCollectionParameterSupport(
       this SqlServerDbContextOptionsBuilder sqlServerOptionsBuilder,
       JsonSerializerOptions? jsonSerializerOptions = null,
       bool addCollectionParameterSupport = true,
-      bool configureCollectionParametersForPrimitiveTypes = true)
+      bool configureCollectionParametersForPrimitiveTypes = true,
+      bool useDeferredSerialization = false)
    {
-      return AddOrUpdateExtension(sqlServerOptionsBuilder, extension => extension.AddCollectionParameterSupport(addCollectionParameterSupport, jsonSerializerOptions, configureCollectionParametersForPrimitiveTypes));
+      return AddOrUpdateExtension(sqlServerOptionsBuilder, extension => extension.AddCollectionParameterSupport(addCollectionParameterSupport, jsonSerializerOptions, configureCollectionParametersForPrimitiveTypes, useDeferredSerialization));
    }
 
    /// <summary>

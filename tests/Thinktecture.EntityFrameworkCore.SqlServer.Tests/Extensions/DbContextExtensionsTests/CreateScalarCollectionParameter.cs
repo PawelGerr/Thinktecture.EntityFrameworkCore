@@ -82,4 +82,34 @@ public class CreateScalarCollectionParameter : IntegrationTestsBase
                                               Count = 42
                                            });
    }
+
+   [Fact]
+   public async Task Should_work_GroupBy_and_aggregate()
+   {
+      var testEntity = new TestEntity
+                       {
+                          Id = new Guid("7F8B0E79-2C91-4682-9F61-6FC86B4E5244"),
+                          Name = "Name",
+                          RequiredName = "RequiredName",
+                          Count = 42
+                       };
+      await ArrangeDbContext.AddAsync(testEntity);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var collectionParameter = ActDbContext.CreateScalarCollectionParameter(new[] { testEntity.Id });
+      var loadedEntities = await ActDbContext.TestEntities
+                                             .Where(e => collectionParameter.Contains(e.Id))
+                                             .GroupBy(e => e.Id)
+                                             .Select(g => new { g.Key, Aggregate = g.Count() })
+                                             .ToListAsync();
+
+      loadedEntities.Should().BeEquivalentTo(new[]
+                                             {
+                                                new
+                                                {
+                                                   Key = new Guid("7F8B0E79-2C91-4682-9F61-6FC86B4E5244"),
+                                                   Aggregate = 1
+                                                }
+                                             });
+   }
 }
