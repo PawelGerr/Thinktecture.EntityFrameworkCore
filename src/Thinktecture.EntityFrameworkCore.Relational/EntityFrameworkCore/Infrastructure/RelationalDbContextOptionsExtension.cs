@@ -80,6 +80,9 @@ public sealed class RelationalDbContextOptionsExtension : DbContextOptionsExtens
 
    internal List<ConventionToRemove> ConventionsToRemove { get; }
 
+   private readonly List<ITableMetadataProcessor> _metadataProcessors;
+   internal IReadOnlyList<ITableMetadataProcessor> MetadataProcessors => _metadataProcessors;
+
    /// <summary>
    /// Initializes new instance of <see cref="RelationalDbContextOptionsExtension"/>.
    /// </summary>
@@ -88,6 +91,7 @@ public sealed class RelationalDbContextOptionsExtension : DbContextOptionsExtens
       _serviceDescriptors = new List<ServiceDescriptor>();
       _evaluatableExpressionFilterPlugins = new List<Type>();
       ConventionsToRemove = new List<ConventionToRemove>();
+      _metadataProcessors = new List<ITableMetadataProcessor> { TableHintsTableMetadataProcessor.Instance };
       _stringBuilderPolicy = new StringBuilderPooledObjectPolicy
                              {
                                 InitialCapacity = _DEFAULT_INITIAL_CAPACITY,
@@ -102,6 +106,8 @@ public sealed class RelationalDbContextOptionsExtension : DbContextOptionsExtens
 
       services.TryAddSingleton<RelationalDbContextOptionsExtensionOptions>();
       services.AddSingleton<ISingletonOptions>(provider => provider.GetRequiredService<RelationalDbContextOptionsExtensionOptions>());
+
+      services.AddSingleton<RelationalOptimizingVisitor>();
 
       services.Add<IConventionSetPlugin, RelationalConventionSetPlugin>(GetLifetime<IConventionSetPlugin>());
 
@@ -155,6 +161,20 @@ public sealed class RelationalDbContextOptionsExtension : DbContextOptionsExtens
    {
       if (AddTenantDatabaseSupport && _serviceDescriptors.All(d => d.ServiceType != typeof(ITenantDatabaseProviderFactory)))
          throw new InvalidOperationException($"TenantDatabaseSupport is enabled but there is no registration of an implementation of '{nameof(ITenantDatabaseProviderFactory)}'.");
+   }
+
+   /// <summary>
+   /// Adds <paramref name="tableMetadataProcessor"/>.
+   /// </summary>
+   /// <param name="tableMetadataProcessor">Table metadata processor.</param>
+   public RelationalDbContextOptionsExtension AddTableMetadataProcessor(ITableMetadataProcessor tableMetadataProcessor)
+   {
+      ArgumentNullException.ThrowIfNull(tableMetadataProcessor);
+
+      if (!_metadataProcessors.Contains(tableMetadataProcessor))
+         _metadataProcessors.Add(tableMetadataProcessor);
+
+      return this;
    }
 
    /// <summary>

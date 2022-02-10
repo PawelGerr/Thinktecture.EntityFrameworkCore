@@ -23,7 +23,7 @@ public sealed class TempTableExpression : TableExpressionBase, INotNullableSqlEx
    /// </summary>
    /// <param name="name">The name of the temp table.</param>
    /// <param name="alias">The alias of the temp table.</param>
-   public TempTableExpression(string name, string alias)
+   public TempTableExpression(string name, string? alias)
       : base(alias)
    {
       Name = name;

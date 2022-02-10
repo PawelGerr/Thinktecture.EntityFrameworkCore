@@ -1,9 +1,13 @@
 using System.Linq.Expressions;
+using System.Reflection;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
-using Thinktecture.EntityFrameworkCore.Query;
+using Thinktecture.EntityFrameworkCore;
+using Thinktecture.EntityFrameworkCore.Query.SqlExpressions;
 using Thinktecture.Internal;
 
 // ReSharper disable once CheckNamespace
@@ -19,17 +23,13 @@ public static class RelationalQueryableMethodTranslatingExpressionVisitorExtensi
    /// </summary>
    /// <param name="visitor">The visitor.</param>
    /// <param name="methodCallExpression">Method call to translate.</param>
-   /// <param name="queryCompilationContext"></param>
-   /// <param name="tableHintContextFactory">Factory for <see cref="TableHintContext"/>.</param>
    /// <returns>Translated method call if a custom method is found; otherwise <c>null</c>.</returns>
    /// <exception cref="ArgumentNullException">
    /// <paramref name="visitor"/> or <paramref name="methodCallExpression"/> is <c>null</c>.
    /// </exception>
    public static Expression? TranslateRelationalMethods(
       this RelationalQueryableMethodTranslatingExpressionVisitor visitor,
-      MethodCallExpression methodCallExpression,
-      QueryCompilationContext queryCompilationContext,
-      TableHintContextFactory tableHintContextFactory)
+      MethodCallExpression methodCallExpression)
    {
       ArgumentNullException.ThrowIfNull(visitor);
       ArgumentNullException.ThrowIfNull(methodCallExpression);
@@ -48,7 +48,7 @@ public static class RelationalQueryableMethodTranslatingExpressionVisitorExtensi
          }
 
          if (methodCallExpression.Method.Name == nameof(RelationalQueryableExtensions.WithTableHints))
-            return TranslateTableHints(GetShapedQueryExpression(visitor, methodCallExpression), methodCallExpression, queryCompilationContext, tableHintContextFactory);
+            return TranslateTableHints(GetShapedQueryExpression(visitor, methodCallExpression), methodCallExpression);
       }
 
       return null;
@@ -56,29 +56,18 @@ public static class RelationalQueryableMethodTranslatingExpressionVisitorExtensi
 
    private static Expression TranslateTableHints(
       ShapedQueryExpression shapedQueryExpression,
-      MethodCallExpression methodCallExpression,
-      QueryCompilationContext queryCompilationContext,
-      TableHintContextFactory tableHintContextFactory)
+      MethodCallExpression methodCallExpression)
    {
       var tableHintsExpression = (TableHintsExpression)methodCallExpression.Arguments[1] ?? throw new InvalidOperationException("Table hints cannot be null.");
-      var tables = ((SelectExpression)shapedQueryExpression.QueryExpression).Tables;
-
-      if (tables.Count == 0)
-         throw new InvalidOperationException($"No tables found to apply table hints '{String.Join(", ", tableHintsExpression)}' to.");
-
-      if (tables.Count > 1)
-         throw new InvalidOperationException($"Multiple tables found to apply table hints '{String.Join(", ", tableHintsExpression)}' to. Expression: {String.Join(", ", tables.Select(t => t.Print()))}");
-
-      var selectExpression = (SelectExpression)shapedQueryExpression.QueryExpression;
-      var tableExpression = selectExpression.Tables[0];
       var tableHints = tableHintsExpression.Value ?? throw new Exception("No table hints provided.");
 
-      var ctx = tableHintContextFactory.Create(tableExpression, tableHints);
-      var extractor = Expression.Lambda<Func<QueryContext, TableHintContext>>(Expression.Constant(ctx), QueryCompilationContext.QueryContextParameter);
+      if (tableHints.Count == 0)
+         return shapedQueryExpression;
 
-      queryCompilationContext.RegisterRuntimeParameter(ctx.ParameterName, extractor);
+      var selectExpression = (SelectExpression)shapedQueryExpression.QueryExpression;
+      var newSelectExpression = selectExpression.AddTableMetadata(nameof(TableWithHintsExpression), _ => tableHints);
 
-      return shapedQueryExpression;
+      return shapedQueryExpression.Update(newSelectExpression, shapedQueryExpression.ShaperExpression);
    }
 
    private static ShapedQueryExpression GetShapedQueryExpression(

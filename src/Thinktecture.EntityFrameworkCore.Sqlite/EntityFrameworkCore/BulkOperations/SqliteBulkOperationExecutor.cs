@@ -378,7 +378,7 @@ public sealed class SqliteBulkOperationExecutor
                         ? _ctx.Set<TEntity>(entityTypeName)
                         : _ctx.Set<TEntity>();
 
-         var query = dbSet.FromTempTable(new TempTableInfo(tempTableReference.Name, selectedProperties.Any(p => p.Navigations.Count != 0), entityType));
+         var query = dbSet.FromTempTable(new TempTableInfo(tempTableReference.Name));
 
          var pk = entityType.FindPrimaryKey();
 

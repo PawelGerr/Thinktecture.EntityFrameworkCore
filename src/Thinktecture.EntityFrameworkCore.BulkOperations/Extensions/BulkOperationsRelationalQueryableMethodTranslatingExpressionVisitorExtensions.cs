@@ -5,7 +5,6 @@ using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 using Microsoft.EntityFrameworkCore.Storage;
 using Thinktecture.EntityFrameworkCore.Query.SqlExpressions;
-using Thinktecture.EntityFrameworkCore.TempTables;
 using Thinktecture.Internal;
 
 // ReSharper disable once CheckNamespace
@@ -22,8 +21,6 @@ public static class BulkOperationsRelationalQueryableMethodTranslatingExpression
    /// <param name="visitor">The visitor.</param>
    /// <param name="methodCallExpression">Method call to translate.</param>
    /// <param name="typeMappingSource">Type mapping source.</param>
-   /// <param name="queryCompilationContext">Query compilation context.</param>
-   /// <param name="tempTableQueryContextFactory"></param>
    /// <param name="sqlExpressionFactory">SQL expression factory.</param>
    /// <returns>Translated method call if a custom method is found; otherwise <c>null</c>.</returns>
    /// <exception cref="ArgumentNullException">
@@ -33,8 +30,6 @@ public static class BulkOperationsRelationalQueryableMethodTranslatingExpression
       this RelationalQueryableMethodTranslatingExpressionVisitor visitor,
       MethodCallExpression methodCallExpression,
       IRelationalTypeMappingSource typeMappingSource,
-      QueryCompilationContext queryCompilationContext,
-      TempTableQueryContextFactory tempTableQueryContextFactory,
       ISqlExpressionFactory sqlExpressionFactory)
    {
       ArgumentNullException.ThrowIfNull(visitor);
@@ -53,13 +48,9 @@ public static class BulkOperationsRelationalQueryableMethodTranslatingExpression
          if (methodCallExpression.Method.Name == nameof(BulkOperationsDbSetExtensions.FromTempTable))
          {
             var tempTableInfo = ((TempTableInfoExpression)methodCallExpression.Arguments[1]).Value;
-
-            if (!tempTableInfo.HasOwnedEntities)
-               return CreateShapedQueryExpressionForTempTable(sqlExpressionFactory, tempTableInfo);
-
             var shapedQueryExpression = GetShapedQueryExpression(visitor, methodCallExpression);
 
-            return TranslateFromTempTable(shapedQueryExpression, tempTableInfo, queryCompilationContext, tempTableQueryContextFactory);
+            return TranslateFromTempTable(shapedQueryExpression, tempTableInfo);
          }
 
          throw new InvalidOperationException(CoreStrings.TranslationFailed(methodCallExpression.Print()));
@@ -70,32 +61,14 @@ public static class BulkOperationsRelationalQueryableMethodTranslatingExpression
 
    private static Expression TranslateFromTempTable(
       ShapedQueryExpression shapedQueryExpression,
-      TempTableInfo tempTableInfo,
-      QueryCompilationContext queryCompilationContext,
-      TempTableQueryContextFactory tempTableQueryContextFactory)
+      TempTableInfo tempTableInfo)
    {
       var tempTableName = tempTableInfo.Name ?? throw new Exception("No temp table name provided.");
+
       var selectExpression = (SelectExpression)shapedQueryExpression.QueryExpression;
-      var tableExpression = (TableExpression)selectExpression.Tables.Single();
+      var newSelectExpression = selectExpression.AddTableMetadata(nameof(TempTableExpression), _ => tempTableName);
 
-      var ctx = tempTableQueryContextFactory.Create(tableExpression, tempTableName ?? throw new Exception("No temp table name provided."));
-      var extractor = Expression.Lambda<Func<QueryContext, TempTableQueryContext>>(Expression.Constant(ctx), QueryCompilationContext.QueryContextParameter);
-
-      queryCompilationContext.RegisterRuntimeParameter(ctx.ParameterName, extractor);
-
-      return shapedQueryExpression;
-   }
-
-   private static Expression CreateShapedQueryExpressionForTempTable(ISqlExpressionFactory sqlExpressionFactory, TempTableInfo tempTableInfo)
-   {
-      var tempTableName = tempTableInfo.Name ?? throw new Exception("No temp table name provided.");
-      var tempTableExpression = new TempTableExpression(tempTableName, "#");
-      var selectExpression = sqlExpressionFactory.Select(tempTableInfo.EntityType, tempTableExpression);
-
-      return new ShapedQueryExpression(selectExpression,
-                                       new RelationalEntityShaperExpression(tempTableInfo.EntityType,
-                                                                            new ProjectionBindingExpression(selectExpression, new ProjectionMember(), typeof(ValueBuffer)),
-                                                                            false));
+      return shapedQueryExpression.Update(newSelectExpression, shapedQueryExpression.ShaperExpression);
    }
 
    private static Expression TranslateBulkDelete(ShapedQueryExpression shapedQueryExpression, IRelationalTypeMappingSource typeMappingSource)

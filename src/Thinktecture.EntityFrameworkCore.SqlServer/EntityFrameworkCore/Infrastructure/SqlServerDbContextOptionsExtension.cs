@@ -7,10 +7,8 @@ using Microsoft.EntityFrameworkCore.Metadata.Conventions.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.SqlServer.Query.Internal;
-using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.ObjectPool;
 using Thinktecture.EntityFrameworkCore.BulkOperations;
 using Thinktecture.EntityFrameworkCore.Migrations;
 using Thinktecture.EntityFrameworkCore.Parameters;
@@ -117,6 +115,7 @@ public sealed class SqlServerDbContextOptionsExtension : DbContextOptionsExtensi
    public SqlServerDbContextOptionsExtension(RelationalDbContextOptionsExtension relationalOptions)
    {
       _relationalOptions = relationalOptions ?? throw new ArgumentNullException(nameof(relationalOptions));
+      _relationalOptions.AddTableMetadataProcessor(TempTableTableMetadataProcessor.Instance);
    }
 
    /// <inheritdoc />

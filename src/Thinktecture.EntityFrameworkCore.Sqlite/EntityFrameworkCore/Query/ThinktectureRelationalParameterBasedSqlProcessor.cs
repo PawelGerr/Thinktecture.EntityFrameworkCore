@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
-using Thinktecture.EntityFrameworkCore.TempTables;
 
 namespace Thinktecture.EntityFrameworkCore.Query;
 
@@ -9,12 +8,16 @@ namespace Thinktecture.EntityFrameworkCore.Query;
 /// </summary>
 public class ThinktectureSqliteParameterBasedSqlProcessor : RelationalParameterBasedSqlProcessor
 {
+   private readonly RelationalOptimizingVisitor _relationalOptimizingVisitor;
+
    /// <inheritdoc />
    public ThinktectureSqliteParameterBasedSqlProcessor(
+      RelationalOptimizingVisitor relationalOptimizingVisitor,
       RelationalParameterBasedSqlProcessorDependencies dependencies,
       bool useRelationalNulls)
       : base(dependencies, useRelationalNulls)
    {
+      _relationalOptimizingVisitor = relationalOptimizingVisitor;
    }
 
    /// <inheritdoc />
@@ -31,9 +34,6 @@ public class ThinktectureSqliteParameterBasedSqlProcessor : RelationalParameterB
    {
       selectExpression = base.Optimize(selectExpression, parametersValues, out canCache);
 
-      if (TempTableQueryContext.TryGetTempTableContexts(parametersValues, out var ctxs))
-         selectExpression = new BulkOperationOptimizingVisitor(parametersValues, ctxs, Array.Empty<TableHintContext>()).Process(selectExpression);
-
-      return selectExpression;
+      return _relationalOptimizingVisitor.Process(selectExpression);
    }
 }

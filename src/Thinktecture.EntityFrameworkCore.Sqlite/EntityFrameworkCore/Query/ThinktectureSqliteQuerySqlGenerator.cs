@@ -20,16 +20,21 @@ public class ThinktectureSqliteQuerySqlGenerator : SqliteQuerySqlGenerator
    /// <inheritdoc />
    protected override Expression VisitExtension(Expression expression)
    {
-      if (expression is TempTableExpression tempTableExpression)
+      switch (expression)
       {
-         Sql.Append(Dependencies.SqlGenerationHelper.DelimitIdentifier(tempTableExpression.Name))
-            .Append(AliasSeparator)
-            .Append(Dependencies.SqlGenerationHelper.DelimitIdentifier(tempTableExpression.Alias));
-
-         return expression;
+         case TempTableExpression tempTableExpression:
+            VisitTempTable(tempTableExpression);
+            return expression;
+         default:
+            return base.VisitExtension(expression);
       }
+   }
 
-      return base.VisitExtension(expression);
+   private void VisitTempTable(TempTableExpression tempTableExpression)
+   {
+      Sql.Append(Dependencies.SqlGenerationHelper.DelimitIdentifier(tempTableExpression.Name))
+         .Append(AliasSeparator)
+         .Append(Dependencies.SqlGenerationHelper.DelimitIdentifier(tempTableExpression.Alias));
    }
 
    /// <inheritdoc />

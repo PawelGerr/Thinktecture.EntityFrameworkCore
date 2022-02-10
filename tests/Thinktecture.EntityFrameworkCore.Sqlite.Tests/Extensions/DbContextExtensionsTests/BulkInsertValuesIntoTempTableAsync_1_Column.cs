@@ -156,6 +156,16 @@ public class BulkInsertValuesIntoTempTableAsync_1_Column : IntegrationTestsBase
    {
       ConfigureModel = builder => builder.ConfigureTempTable<Guid>();
 
+      var parentId = new Guid("6EB48130-454B-46BC-9FEE-CDF411F69807");
+      var childId = new Guid("17A2014C-F7B2-40E8-82F4-42E754DCAA2D");
+      ArrangeDbContext.TestEntities.Add(new TestEntity
+                                        {
+                                           Id = parentId,
+                                           RequiredName = "RequiredName",
+                                           Children = { new() { Id = childId, RequiredName = "RequiredName" } }
+                                        });
+      await ArrangeDbContext.SaveChangesAsync();
+
       await using var tempTable = await ActDbContext.BulkInsertIntoTempTableAsync(new[]
                                                                                   {
                                                                                      new TestEntity_Owns_Inline
@@ -165,18 +175,24 @@ public class BulkInsertValuesIntoTempTableAsync_1_Column : IntegrationTestsBase
                                                                                      }
                                                                                   });
 
-      var query = ActDbContext.TestEntities
-                              .AsSplitQuery()
-                              .Where(c => tempTable.Query.Any(entityWithOwnedType => c.Id == entityWithOwnedType.Id))
-                              .Select(c => new
-                                           {
-                                              c.Id,
-                                              ChildrenIds = c.Children.Select(o => o.Id).ToList()
-                                           });
+      var query = await ActDbContext.TestEntities
+                                    .AsSplitQuery()
+                                    .Where(c => tempTable.Query.Any(entityWithOwnedType => c.Id == entityWithOwnedType.Id))
+                                    .Select(c => new
+                                                 {
+                                                    c.Id,
+                                                    ChildrenIds = c.Children.Select(o => o.Id).ToList()
+                                                 })
+                                    .ToListAsync();
 
-      await query.Awaiting(q => q.ToListAsync())
-                 .Should().ThrowAsync<NotSupportedException>()
-                 .WithMessage("Temp tables are not supported in queries with QuerySplittingBehavior 'SplitQuery'.");
+      query.Should().BeEquivalentTo(new[]
+                                    {
+                                       new
+                                       {
+                                          Id = parentId,
+                                          ChildrenIds = new List<Guid> { childId }
+                                       }
+                                    });
    }
 
    [Fact]

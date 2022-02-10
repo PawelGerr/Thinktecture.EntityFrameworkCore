@@ -3,7 +3,6 @@ using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.SqlServer.Query.Internal;
 using Microsoft.EntityFrameworkCore.Storage;
-using Thinktecture.EntityFrameworkCore.TempTables;
 
 namespace Thinktecture.EntityFrameworkCore.Query;
 
@@ -15,8 +14,6 @@ public class ThinktectureSqlServerQueryableMethodTranslatingExpressionVisitor
    : SqlServerQueryableMethodTranslatingExpressionVisitor
 {
    private readonly IRelationalTypeMappingSource _typeMappingSource;
-   private readonly TableHintContextFactory _tableHintContextFactory;
-   private readonly TempTableQueryContextFactory _tempTableQueryContextFactory;
 
    /// <inheritdoc />
    public ThinktectureSqlServerQueryableMethodTranslatingExpressionVisitor(
@@ -27,10 +24,6 @@ public class ThinktectureSqlServerQueryableMethodTranslatingExpressionVisitor
       : base(dependencies, relationalDependencies, queryCompilationContext)
    {
       _typeMappingSource = typeMappingSource ?? throw new ArgumentNullException(nameof(typeMappingSource));
-      _tableHintContextFactory = new TableHintContextFactory();
-
-      var querySplittingBehavior = ((RelationalQueryCompilationContext)QueryCompilationContext).QuerySplittingBehavior;
-      _tempTableQueryContextFactory = new TempTableQueryContextFactory(querySplittingBehavior);
    }
 
    /// <inheritdoc />
@@ -40,8 +33,6 @@ public class ThinktectureSqlServerQueryableMethodTranslatingExpressionVisitor
       : base(parentVisitor)
    {
       _typeMappingSource = typeMappingSource ?? throw new ArgumentNullException(nameof(typeMappingSource));
-      _tableHintContextFactory = parentVisitor._tableHintContextFactory;
-      _tempTableQueryContextFactory = parentVisitor._tempTableQueryContextFactory;
    }
 
    /// <inheritdoc />
@@ -53,8 +44,8 @@ public class ThinktectureSqlServerQueryableMethodTranslatingExpressionVisitor
    /// <inheritdoc />
    protected override Expression VisitMethodCall(MethodCallExpression methodCallExpression)
    {
-      return this.TranslateRelationalMethods(methodCallExpression, QueryCompilationContext, _tableHintContextFactory) ??
-             this.TranslateBulkMethods(methodCallExpression, _typeMappingSource, QueryCompilationContext, _tempTableQueryContextFactory, RelationalDependencies.SqlExpressionFactory) ??
+      return this.TranslateRelationalMethods(methodCallExpression) ??
+             this.TranslateBulkMethods(methodCallExpression, _typeMappingSource, RelationalDependencies.SqlExpressionFactory) ??
              base.VisitMethodCall(methodCallExpression);
    }
 }

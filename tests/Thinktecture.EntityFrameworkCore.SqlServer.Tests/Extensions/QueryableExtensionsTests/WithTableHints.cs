@@ -153,4 +153,59 @@ public class WithTableHints : IntegrationTestsBase
                                             "FROM [#TempTable<Guid>_1] AS [#] WITH (UPDLOCK, ROWLOCK)" + Environment.NewLine +
                                             "LEFT JOIN [#TempTable<Guid>_1] AS [#0] WITH (UPDLOCK, ROWLOCK) ON [#].[Column1] = [#0].[Column1]");
    }
+
+   [Fact]
+   public async Task Should_work_with_projection_using_SplitQuery_behavior()
+   {
+      ConfigureModel = builder => builder.ConfigureTempTable<Guid>();
+
+      var parentId = new Guid("6EB48130-454B-46BC-9FEE-CDF411F69807");
+      var childId = new Guid("17A2014C-F7B2-40E8-82F4-42E754DCAA2D");
+      ArrangeDbContext.TestEntities.Add(new TestEntity
+                                        {
+                                           Id = parentId,
+                                           RequiredName = "RequiredName",
+                                           Children = { new() { Id = childId, RequiredName = "RequiredName" } }
+                                        });
+      await ArrangeDbContext.SaveChangesAsync();
+
+      await using var tempTable = await ActDbContext.BulkInsertValuesIntoTempTableAsync(new[] { parentId });
+
+      var result = await ActDbContext.TestEntities.WithTableHints(SqlServerTableHint.UpdLock, SqlServerTableHint.RowLock)
+                                     .AsSplitQuery()
+                                     .Where(c => tempTable.Query
+                                                          .WithTableHints(SqlServerTableHint.UpdLock)
+                                                          .Any(id => c.Id == id))
+                                     .Select(c => new
+                                                  {
+                                                     c.Id,
+                                                     ChildrenIds = c.Children.Select(o => o.Id).ToList()
+                                                  })
+                                     .ToListAsync();
+
+      result.Should().BeEquivalentTo(new[]
+                                     {
+                                        new
+                                        {
+                                           Id = parentId,
+                                           ChildrenIds = new List<Guid> { childId }
+                                        }
+                                     });
+
+      ExecutedCommands.Skip(ExecutedCommands.Count - 2).First().Should().Be(@"SELECT [t].[Id]" + Environment.NewLine +
+                                                                            "FROM [tests].[TestEntities] AS [t] WITH (UPDLOCK, ROWLOCK)" + Environment.NewLine +
+                                                                            "WHERE EXISTS (" + Environment.NewLine +
+                                                                            "    SELECT 1" + Environment.NewLine +
+                                                                            "    FROM [#TempTable<Guid>_1] AS [#] WITH (UPDLOCK)" + Environment.NewLine +
+                                                                            "    WHERE [t].[Id] = [#].[Column1])" + Environment.NewLine +
+                                                                            "ORDER BY [t].[Id]");
+      ExecutedCommands.Last().Should().Be("SELECT [t0].[Id], [t].[Id]" + Environment.NewLine +
+                                          "FROM [tests].[TestEntities] AS [t] WITH (UPDLOCK, ROWLOCK)" + Environment.NewLine +
+                                          "INNER JOIN [tests].[TestEntities] AS [t0] ON [t].[Id] = [t0].[ParentId]" + Environment.NewLine +
+                                          "WHERE EXISTS (" + Environment.NewLine +
+                                          "    SELECT 1" + Environment.NewLine +
+                                          "    FROM [#TempTable<Guid>_1] AS [#] WITH (UPDLOCK)" + Environment.NewLine +
+                                          "    WHERE [t].[Id] = [#].[Column1])" + Environment.NewLine +
+                                          "ORDER BY [t].[Id]");
+   }
 }

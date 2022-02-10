@@ -25,19 +25,17 @@ public class ThinktectureSqlServerQuerySqlGenerator : SqlServerQuerySqlGenerator
    /// <inheritdoc />
    protected override Expression VisitExtension(Expression expression)
    {
-      if (expression is TempTableExpression tempTableExpression)
+      switch (expression)
       {
-         VisitTempTable(tempTableExpression);
-         return expression;
+         case TempTableExpression tempTableExpression:
+            VisitTempTable(tempTableExpression);
+            return expression;
+         case TableWithHintsExpression tableWithHints:
+            VisitTableWithHints(tableWithHints);
+            return expression;
+         default:
+            return base.VisitExtension(expression);
       }
-
-      if (expression is TableWithHintsExpression tableWithHints)
-      {
-         VisitTableWithHints(tableWithHints);
-         return expression;
-      }
-
-      return base.VisitExtension(expression);
    }
 
    private void VisitTableWithHints(TableWithHintsExpression tableWithHints)

@@ -2,7 +2,6 @@ using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 using Microsoft.EntityFrameworkCore.SqlServer.Query.Internal;
-using Thinktecture.EntityFrameworkCore.TempTables;
 
 namespace Thinktecture.EntityFrameworkCore.Query;
 
@@ -10,10 +9,16 @@ namespace Thinktecture.EntityFrameworkCore.Query;
 [SuppressMessage("Usage", "EF1001", MessageId = "Internal EF Core API usage.")]
 public class ThinktectureSqlServerParameterBasedSqlProcessor : SqlServerParameterBasedSqlProcessor
 {
+   private readonly RelationalOptimizingVisitor _relationalOptimizingVisitor;
+
    /// <inheritdoc />
-   public ThinktectureSqlServerParameterBasedSqlProcessor(RelationalParameterBasedSqlProcessorDependencies dependencies, bool useRelationalNulls)
+   public ThinktectureSqlServerParameterBasedSqlProcessor(
+      RelationalOptimizingVisitor relationalOptimizingVisitor,
+      RelationalParameterBasedSqlProcessorDependencies dependencies,
+      bool useRelationalNulls)
       : base(dependencies, useRelationalNulls)
    {
+      _relationalOptimizingVisitor = relationalOptimizingVisitor;
    }
 
    /// <inheritdoc />
@@ -30,16 +35,6 @@ public class ThinktectureSqlServerParameterBasedSqlProcessor : SqlServerParamete
    {
       selectExpression = base.Optimize(selectExpression, parametersValues, out canCache);
 
-      var hasTempTables = TempTableQueryContext.TryGetTempTableContexts(parametersValues, out var tempTableCtxs);
-      var hasTableHints = TableHintContext.TryGetTableHintContext(parametersValues, out var tableHintCtxs);
-
-      if (hasTempTables || hasTableHints)
-      {
-         selectExpression = new BulkOperationOptimizingVisitor(parametersValues,
-                                                               tempTableCtxs ?? Array.Empty<TempTableQueryContext>(),
-                                                               tableHintCtxs ?? Array.Empty<TableHintContext>()).Process(selectExpression);
-      }
-
-      return selectExpression;
+      return _relationalOptimizingVisitor.Process(selectExpression);
    }
 }
