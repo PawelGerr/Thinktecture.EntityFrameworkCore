@@ -88,7 +88,10 @@ IF(OBJECT_ID('tempdb..{Name}') IS NOT NULL)
          if (!_dropTableOnDispose || _database.GetDbConnection().State != ConnectionState.Open)
             return;
 
-         await _database.ExecuteSqlRawAsync($"DROP TABLE IF EXISTS {_sqlGenerationHelper.DelimitIdentifier(Name)}").ConfigureAwait(false);
+         await _database.ExecuteSqlRawAsync($@"
+IF(OBJECT_ID('tempdb..{Name}') IS NOT NULL)
+   DROP TABLE {_sqlGenerationHelper.DelimitIdentifier(Name)};
+").ConfigureAwait(false);
          await _database.CloseConnectionAsync().ConfigureAwait(false);
       }
       catch (ObjectDisposedException ex)
