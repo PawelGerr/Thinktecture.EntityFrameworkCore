@@ -59,7 +59,10 @@ public sealed class SqlServerTempTableReference : ITempTableReference
          if (!_dropTableOnDispose || _database.GetDbConnection().State != ConnectionState.Open)
             return;
 
-         _database.ExecuteSqlRaw($"DROP TABLE IF EXISTS {_sqlGenerationHelper.DelimitIdentifier(Name)}");
+         _database.ExecuteSqlRaw($@"
+IF(OBJECT_ID('tempdb..{Name}') IS NOT NULL)
+   DROP TABLE {_sqlGenerationHelper.DelimitIdentifier(Name)};
+");
          _database.CloseConnection();
       }
       catch (ObjectDisposedException ex)
