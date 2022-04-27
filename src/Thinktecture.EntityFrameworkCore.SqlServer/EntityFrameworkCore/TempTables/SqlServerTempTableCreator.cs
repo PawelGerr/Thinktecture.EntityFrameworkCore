@@ -215,6 +215,7 @@ END
       try
       {
          StoreObjectIdentifier? storeObject = null;
+         IEntityType? designTimeEntityType = null;
 
          var isFirst = true;
 
@@ -232,8 +233,22 @@ END
               .Append(_sqlGenerationHelper.DelimitIdentifier(columnName)).Append(' ')
               .Append(columnType);
 
-            if (options.UseDefaultDatabaseCollation && _stringColumnTypes.Any(t => columnType.StartsWith(t, StringComparison.OrdinalIgnoreCase)))
-               sb.Append(" COLLATE database_default");
+            if (_stringColumnTypes.Any(t => columnType.StartsWith(t, StringComparison.OrdinalIgnoreCase)))
+            {
+               // Collation information is not available from the runtime model, so we need to fetch it from the design time model
+               if (designTimeEntityType == null)
+               {
+                  var designTimeModel = _ctx.GetService<IDesignTimeModel>().Model;
+                  designTimeEntityType = designTimeModel.FindEntityType(property.Property.DeclaringEntityType.Name) ??
+                      throw new InvalidOperationException($"Entity type {property.Property.DeclaringEntityType.Name} is missing from design time model.");
+               }
+               var designTimeEntityProperty = designTimeEntityType.GetProperty(property.Property.Name);
+               var collation = designTimeEntityProperty.GetCollation(storeObject.Value);
+               if (string.IsNullOrWhiteSpace(collation) && options.UseDefaultDatabaseCollation)
+                  collation = "database_default";
+               if (!string.IsNullOrWhiteSpace(collation))
+                  sb.Append(" COLLATE ").Append(collation);
+            }
 
             sb.Append(property.Property.IsNullable ? " NULL" : " NOT NULL");
 
