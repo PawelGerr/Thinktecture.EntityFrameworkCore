@@ -2,6 +2,7 @@ using System.Data;
 using System.Data.Common;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Storage;
 using Thinktecture.EntityFrameworkCore.BulkOperations;
 using Thinktecture.TestDatabaseContext;
 
@@ -530,7 +531,7 @@ Missing columns: Column2.");
    [Fact]
    public async Task Should_create_temp_table_with_decimal_with_explicit_precision()
    {
-      ConfigureModel = builder => builder.ConfigureTempTable<decimal>(typeBuilder => typeBuilder.Property(t => t.Column1).HasPrecision(20,5));
+      ConfigureModel = builder => builder.ConfigureTempTable<decimal>(typeBuilder => typeBuilder.Property(t => t.Column1).HasPrecision(20, 5));
 
       await using var tempTable = await SUT.CreateTempTableAsync(ActDbContext.GetTempTableEntityType<TempTable<decimal>>(), _optionsWithNonUniqueName);
 
@@ -700,6 +701,26 @@ Missing columns: Column2.");
       ValidateColumn(columns[3], nameof(OwnedEntity.StringColumn), "nvarchar", true);
    }
 
+   [Fact]
+   public async Task Should_honor_collation()
+   {
+      var entityType = ActDbContext.GetTempTableEntityType<TestEntityWithCollation>();
+      await using var tempTable = await SUT.CreateTempTableAsync(entityType, _optionsWithNonUniqueName);
+
+      var columns = AssertDbContext.GetTempTableColumns<TestEntityWithCollation>().ToList();
+      columns.Should().HaveCount(3);
+
+      var connection = AssertDbContext.Database.GetDbConnection();
+      await using var command = connection.CreateCommand();
+      command.Transaction = AssertDbContext.Database.CurrentTransaction?.GetDbTransaction();
+      command.CommandText = "SELECT CONVERT (varchar(256), SERVERPROPERTY('collation'))";
+      var databaseCollation = (string?)await command.ExecuteScalarAsync() ?? throw new Exception("Couldn't fetch database collection.");
+
+      ValidateColumn(columns[0], nameof(TestEntityWithCollation.Id), "uniqueidentifier", false);
+      ValidateColumn(columns[1], nameof(TestEntityWithCollation.ColumnWithCollation), "nvarchar", false, collation: "Japanese_CI_AS");
+      ValidateColumn(columns[2], nameof(TestEntityWithCollation.ColumnWithoutCollation), "nvarchar", false, collation: databaseCollation);
+   }
+
    private static DbConnection CreateConnection()
    {
       return new SqlConnection(TestContext.Instance.ConnectionString);
@@ -718,7 +739,8 @@ Missing columns: Column2.");
       byte? numericPrecision = null,
       int? numericScale = null,
       int? charMaxLength = null,
-      string? defaultValue = null)
+      string? defaultValue = null,
+      string? collation = null)
    {
       ArgumentNullException.ThrowIfNull(column);
 
@@ -726,6 +748,9 @@ Missing columns: Column2.");
       column.DATA_TYPE.Should().Be(type);
       column.IS_NULLABLE.Should().Be(isNullable ? "YES" : "NO");
       column.COLUMN_DEFAULT.Should().Be(defaultValue);
+
+      if (collation is not null)
+         column.COLLATION_NAME.Should().Be(collation);
 
       if (numericPrecision.HasValue)
          column.NUMERIC_PRECISION.Should().Be(numericPrecision.Value);
