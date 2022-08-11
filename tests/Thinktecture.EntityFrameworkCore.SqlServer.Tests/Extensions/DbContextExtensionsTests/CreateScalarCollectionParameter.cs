@@ -10,36 +10,36 @@ public class CreateScalarCollectionParameter : IntegrationTestsBase
    {
    }
 
-   public static readonly IEnumerable<object[]> _values = new[]
-                                                          {
-                                                             new object[] { 42 },
-                                                             new object[] { 43L },
-                                                             new object[] { new DateTime(2021, 1, 15, 12, 30, 40) },
-                                                             new object[] { new Guid("CE5E3D80-13D6-43C3-BB41-6499E2AD6B63") },
-                                                             new object[] { true },
-                                                             new object[] { (byte)4 },
-                                                             new object[] { 4.2d },
-                                                             new object[] { new DateTimeOffset(new DateTime(2021, 1, 15, 12, 30, 40), TimeSpan.FromMinutes(60)) },
-                                                             new object[] { (short)5 },
-                                                             new object[] { 4.3f },
-                                                             new object[] { 4.4m },
-                                                             new object[] { TimeSpan.FromMinutes(60) },
-                                                             new object[] { "test" },
-                                                             new object[] { new ConvertibleClass(99) }
-                                                          };
+   public static readonly IEnumerable<object[]> Values = new[]
+                                                         {
+                                                            new object[] { 42 },
+                                                            new object[] { 43L },
+                                                            new object[] { new DateTime(2021, 1, 15, 12, 30, 40) },
+                                                            new object[] { new Guid("CE5E3D80-13D6-43C3-BB41-6499E2AD6B63") },
+                                                            new object[] { true },
+                                                            new object[] { (byte)4 },
+                                                            new object[] { 4.2d },
+                                                            new object[] { new DateTimeOffset(new DateTime(2021, 1, 15, 12, 30, 40), TimeSpan.FromMinutes(60)) },
+                                                            new object[] { (short)5 },
+                                                            new object[] { 4.3f },
+                                                            new object[] { 4.4m },
+                                                            new object[] { TimeSpan.FromMinutes(60) },
+                                                            new object[] { "test" },
+                                                            new object[] { new ConvertibleClass(99) }
+                                                         };
 
    private static readonly MethodInfo _genericDataTypeTest = typeof(CreateScalarCollectionParameter).GetMethod(nameof(MakeGenericCreateCollectionParameterTest), BindingFlags.Instance | BindingFlags.NonPublic)
                                                              ?? throw new Exception($"Method '{nameof(MakeGenericCreateCollectionParameterTest)}' not found.");
 
    [Theory]
-   [MemberData(nameof(_values))]
+   [MemberData(nameof(Values))]
    public void Should_work_with_default_data_types_with_distinct(object value)
    {
       _genericDataTypeTest.MakeGenericMethod(value.GetType()).Invoke(this, new[] { value, true });
    }
 
    [Theory]
-   [MemberData(nameof(_values))]
+   [MemberData(nameof(Values))]
    public void Should_work_with_default_data_types_without_distinct(object value)
    {
       _genericDataTypeTest.MakeGenericMethod(value.GetType()).Invoke(this, new[] { value, false });

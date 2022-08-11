@@ -12,7 +12,7 @@ public class GetPropertyIndex : IntegrationTestsBase
    private EntityDataReader<TestEntity>? _sut;
 
    // ReSharper disable once InconsistentNaming
-   private EntityDataReader<TestEntity> SUT => _sut ??= new EntityDataReader<TestEntity>(ActDbContext, new PropertyGetterCache(LoggerFactory!), Array.Empty<TestEntity>(), _propertiesToRead, false);
+   private EntityDataReader<TestEntity> SUT => _sut ??= new EntityDataReader<TestEntity>(ActDbContext, new PropertyGetterCache(LoggerFactory), Array.Empty<TestEntity>(), _propertiesToRead, false);
 
    public GetPropertyIndex(ITestOutputHelper testOutputHelper)
       : base(testOutputHelper)

@@ -40,7 +40,7 @@ public abstract class NonEvaluatableConstantExpression<T> : Expression, IEquatab
    {
       return obj != null
              && (ReferenceEquals(this, obj)
-                 || obj is NonEvaluatableConstantExpression<T> other && Equals(other.Value));
+                 || (obj is NonEvaluatableConstantExpression<T> other && Equals(other.Value)));
    }
 
    /// <summary>

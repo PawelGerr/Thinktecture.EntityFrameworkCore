@@ -16,7 +16,7 @@ public class GetFinishedEntities : IntegrationTestsBase
    private EntityDataReader<T> CreateReader<T>(IEnumerable<T> entities, bool ensureReadEntitiesCollection)
       where T : class
    {
-      return new(ActDbContext, new PropertyGetterCache(LoggerFactory!), entities, _propertiesToRead, ensureReadEntitiesCollection);
+      return new(ActDbContext, new PropertyGetterCache(LoggerFactory), entities, _propertiesToRead, ensureReadEntitiesCollection);
    }
 
    [Fact]

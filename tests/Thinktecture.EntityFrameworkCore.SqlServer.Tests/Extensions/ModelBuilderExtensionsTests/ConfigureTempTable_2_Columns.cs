@@ -17,7 +17,7 @@ public class ConfigureTempTable_2_Columns : IntegrationTestsBase
 
       var entityType = ActDbContext.GetTempTableEntityType<TempTable<int, int?>>();
       entityType.Should().NotBeNull();
-      entityType!.GetKeys().Should().BeEmpty();
+      entityType.GetKeys().Should().BeEmpty();
    }
 
    [Fact]
@@ -27,7 +27,7 @@ public class ConfigureTempTable_2_Columns : IntegrationTestsBase
 
       var entityType = ActDbContext.GetTempTableEntityType<TempTable<int, int?>>();
       entityType.Should().NotBeNull();
-      entityType!.Name.Should().Be("Thinktecture:TempTable:Thinktecture.EntityFrameworkCore.TempTables.TempTable<int, int?>");
+      entityType.Name.Should().Be("Thinktecture:TempTable:Thinktecture.EntityFrameworkCore.TempTables.TempTable<int, int?>");
 
       var properties = entityType.GetProperties().ToList();
       properties.Should().HaveCount(2);
@@ -44,7 +44,7 @@ public class ConfigureTempTable_2_Columns : IntegrationTestsBase
 
       var entityType = ActDbContext.GetTempTableEntityType<TempTable<string, string>>();
       entityType.Should().NotBeNull();
-      entityType!.Name.Should().Be("Thinktecture:TempTable:Thinktecture.EntityFrameworkCore.TempTables.TempTable<string, string>");
+      entityType.Name.Should().Be("Thinktecture:TempTable:Thinktecture.EntityFrameworkCore.TempTables.TempTable<string, string>");
 
       var properties = entityType.GetProperties().ToList();
       properties.Should().HaveCount(2);
@@ -76,7 +76,7 @@ public class ConfigureTempTable_2_Columns : IntegrationTestsBase
 
       var entityType = ActDbContext.GetTempTableEntityType<TempTable<int, int?>>();
       entityType.Should().NotBeNull();
-      entityType!.GetTableName().Should().Be("#TempTable<int, int?>");
+      entityType.GetTableName().Should().Be("#TempTable<int, int?>");
    }
 
    [Fact]
@@ -86,6 +86,6 @@ public class ConfigureTempTable_2_Columns : IntegrationTestsBase
 
       var entityType = ActDbContext.GetTempTableEntityType<TempTable<string, string>>();
       entityType.Should().NotBeNull();
-      entityType!.GetTableName().Should().Be("#TempTable<string, string>");
+      entityType.GetTableName().Should().Be("#TempTable<string, string>");
    }
 }

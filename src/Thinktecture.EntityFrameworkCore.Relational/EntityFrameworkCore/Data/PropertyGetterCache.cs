@@ -47,8 +47,7 @@ public class PropertyGetterCache : IPropertyGetterCache
                                property.DeclaringEntityType.ClrType.Name, property.Name);
          }
          else if (!property.ClrType.IsGenericType ||
-                  !property.ClrType.IsGenericTypeDefinition &&
-                  property.ClrType.GetGenericTypeDefinition() != typeof(Nullable<>))
+                  (!property.ClrType.IsGenericTypeDefinition && property.ClrType.GetGenericTypeDefinition() != typeof(Nullable<>)))
          {
             _logger.LogWarning("The corresponding column of '{Entity}.{Property}' has a DEFAULT value constraint in the database and is NOT NULL. Depending on the database vendor the \".NET default values\" (`false`, `0`, `00000000-0000-0000-0000-000000000000` etc.) may lead to unexpected results because these values are sent to the database as-is, i.e. the DEFAULT value constraint will NOT be used by database. Use 'PropertiesToInsert/PropertiesToUpdate' on corresponding options to specify properties to insert and skip the property so database uses the DEFAULT value.",
                                property.DeclaringEntityType.ClrType.Name, property.Name);

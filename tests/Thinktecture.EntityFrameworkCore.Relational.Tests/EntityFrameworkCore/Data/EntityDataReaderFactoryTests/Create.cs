@@ -10,7 +10,7 @@ public class Create : IntegrationTestsBase
    private readonly PropertyWithNavigations _column2Property;
 
    // ReSharper disable once InconsistentNaming
-   private EntityDataReaderFactory SUT => _sut ??= new EntityDataReaderFactory(new PropertyGetterCache(LoggerFactory!));
+   private EntityDataReaderFactory SUT => _sut ??= new EntityDataReaderFactory(new PropertyGetterCache(LoggerFactory));
 
    public Create(ITestOutputHelper testOutputHelper)
       : base(testOutputHelper)

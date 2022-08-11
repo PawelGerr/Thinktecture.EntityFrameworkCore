@@ -107,7 +107,7 @@ public readonly struct PropertyWithNavigations : IEquatable<PropertyWithNavigati
                separateNavigations.Add(Navigations[j]);
             }
 
-            return (droppedNavigation!, new PropertyWithNavigations(Property, separateNavigations));
+            return (droppedNavigation, new PropertyWithNavigations(Property, separateNavigations));
          }
       }
 

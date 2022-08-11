@@ -14,6 +14,7 @@ public class NestedTransactionTests : IntegrationTestsBase
    public NestedTransactionTests(ITestOutputHelper testOutputHelper)
       : base(testOutputHelper, false)
    {
+      TestCtxProviderBuilder.UseSharedTablesIsolationLevel(IsolationLevel.Serializable);
    }
 
    [Fact]
