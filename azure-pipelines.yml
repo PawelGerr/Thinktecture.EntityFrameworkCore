@@ -16,10 +16,18 @@ pool:
 steps:
 
 - task: UseDotNet@2
-  displayName: 'Use .NET 6.0'
+  displayName: 'install .NET 6.0 runtime'
+  inputs:
+    packageType: runtime
+    version: 6.0.x
+    installationPath: $(Agent.ToolsDirectory)/dotnet
+      
+- task: UseDotNet@2
+  displayName: 'use .NET 7.0 SDK'
   inputs:
     packageType: sdk
-    version: 6.0.x
+    version: 7.0.x
+    includePreviewVersions: true
     installationPath: $(Agent.ToolsDirectory)/dotnet
       
 - script: |
