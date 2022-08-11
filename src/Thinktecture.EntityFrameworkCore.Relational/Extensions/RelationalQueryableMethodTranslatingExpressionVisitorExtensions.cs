@@ -1,12 +1,8 @@
 using System.Linq.Expressions;
-using System.Reflection;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
-using Thinktecture.EntityFrameworkCore;
 using Thinktecture.EntityFrameworkCore.Query.SqlExpressions;
 using Thinktecture.Internal;
 

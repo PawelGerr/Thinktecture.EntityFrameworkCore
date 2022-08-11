@@ -25,6 +25,26 @@ public class TableWithMetadata : ITableBase
       Metadata = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
    }
 
+   /// <summary>
+   /// Adds or updates the metadata.
+   /// </summary>
+   /// <param name="metadataName">The name of the metadata.</param>
+   /// <param name="addOrUpdateMetadata">Callback that provides the new metadata value.</param>
+   public void AddOrUpdateMetadata(string metadataName, Func<object?, object?> addOrUpdateMetadata)
+   {
+      var foundOldMetadata = Metadata.TryGetValue(metadataName, out var oldMetadata);
+      var newMetadata = addOrUpdateMetadata(oldMetadata);
+
+      if (newMetadata is not null)
+      {
+         Metadata[metadataName] = newMetadata;
+      }
+      else if (foundOldMetadata)
+      {
+         Metadata.Remove(metadataName);
+      }
+   }
+
    /// <inheritdoc />
    public IAnnotation? FindAnnotation(string name)
    {
