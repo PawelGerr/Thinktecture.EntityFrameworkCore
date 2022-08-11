@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore.Storage;
 
 namespace Thinktecture.Extensions.SqlServerOperationBuilderExtensionsTests;
 
+[Collection("SqlServerTests")]
 public class ExistTestBase
 {
    protected MigrationExtensionsTestDbContext Context { get; }

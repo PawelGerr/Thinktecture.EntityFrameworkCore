@@ -1,3 +1,4 @@
+using System.Data;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
@@ -6,7 +7,6 @@ using Thinktecture.TestDatabaseContext;
 
 namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorTests;
 
-[Collection("BulkInsertTempTableAsync")]
 // ReSharper disable once InconsistentNaming
 public class CreatePrimaryKeyAsync : IntegrationTestsBase
 {
@@ -16,6 +16,7 @@ public class CreatePrimaryKeyAsync : IntegrationTestsBase
    public CreatePrimaryKeyAsync(ITestOutputHelper testOutputHelper)
       : base(testOutputHelper, true)
    {
+      TestCtxProviderBuilder.UseSharedTablesIsolationLevel(IsolationLevel.Serializable);
    }
 
    [Fact]

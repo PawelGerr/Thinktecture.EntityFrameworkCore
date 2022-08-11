@@ -239,7 +239,7 @@ public class CreateTempTableAsync : IntegrationTestsBase
    {
       _optionsWithNonUniqueName.PrimaryKeyCreation = IPrimaryKeyPropertiesProvider.AdaptiveForced;
 
-      ConfigureModel = builder => builder.ConfigureTempTable<int, string>(typeBuilder => typeBuilder.Property(s => s.Column2).HasMaxLength(100));
+      ConfigureModel = builder => builder.ConfigureTempTable<int, string>(typeBuilder => typeBuilder.Property(s => s.Column2).IsRequired().HasMaxLength(100));
 
       // ReSharper disable once RedundantArgumentDefaultValue
       await using var tempTable = await SUT.CreateTempTableAsync(ActDbContext.GetTempTableEntityType<TempTable<int, string>>(), _optionsWithNonUniqueName);
@@ -269,7 +269,7 @@ public class CreateTempTableAsync : IntegrationTestsBase
       // ReSharper disable once RedundantArgumentDefaultValue
       await SUT.Awaiting(sut => sut.CreateTempTableAsync(ActDbContext.GetTempTableEntityType<CustomTempTable>(), _optionsWithNonUniqueName))
                .Should().ThrowAsync<ArgumentException>().WithMessage(@"Cannot create PRIMARY KEY because not all key columns are part of the temp table.
-You may use other key properties providers like 'PrimaryKeyPropertiesProviders.AdaptiveEntityTypeConfiguration' instead of 'PrimaryKeyPropertiesProviders.EntityTypeConfiguration' to get different behaviors.
+You may use other key properties providers like 'IPrimaryKeyPropertiesProvider.AdaptiveEntityTypeConfiguration' instead of 'IPrimaryKeyPropertiesProvider.EntityTypeConfiguration' to get different behaviors.
 Missing columns: Column2.");
    }
 
@@ -558,7 +558,7 @@ Missing columns: Column2.");
       await using var tempTable = await SUT.CreateTempTableAsync(ActDbContext.GetTempTableEntityType<TempTable<string>>(), _optionsWithNonUniqueName);
 
       var columns = AssertDbContext.GetTempTableColumns<TempTable<string>>().ToList();
-      ValidateColumn(columns[0], nameof(TempTable<string>.Column1), "nvarchar", false);
+      ValidateColumn(columns[0], nameof(TempTable<string>.Column1), "nvarchar", true);
    }
 
    [Fact]
@@ -571,7 +571,7 @@ Missing columns: Column2.");
       await using var tempTable = await SUT.CreateTempTableAsync(ActDbContext.GetTempTableEntityType<TempTable<ConvertibleClass>>(), _optionsWithNonUniqueName);
 
       var columns = AssertDbContext.GetTempTableColumns<TempTable<ConvertibleClass>>().ToList();
-      ValidateColumn(columns[0], nameof(TempTable<ConvertibleClass>.Column1), "int", false, defaultValue: "((1))");
+      ValidateColumn(columns[0], nameof(TempTable<ConvertibleClass>.Column1), "int", true, defaultValue: "((1))");
    }
 
    [Fact]
@@ -582,7 +582,7 @@ Missing columns: Column2.");
       await using var tempTable = await SUT.CreateTempTableAsync(ActDbContext.GetTempTableEntityType<TempTable<string>>(), _optionsWithNonUniqueName);
 
       var columns = AssertDbContext.GetTempTableColumns<TempTable<string>>().ToList();
-      ValidateColumn(columns[0], nameof(TempTable<string>.Column1), "nvarchar", false, charMaxLength: 50);
+      ValidateColumn(columns[0], nameof(TempTable<string>.Column1), "nvarchar", true, charMaxLength: 50);
    }
 
    [Fact]
@@ -596,7 +596,7 @@ Missing columns: Column2.");
       columns.Should().HaveCount(2);
 
       ValidateColumn(columns[0], nameof(TempTable<int, string>.Column1), "int", false);
-      ValidateColumn(columns[1], nameof(TempTable<int, string>.Column2), "nvarchar", false);
+      ValidateColumn(columns[1], nameof(TempTable<int, string>.Column2), "nvarchar", true);
    }
 
    [Fact]

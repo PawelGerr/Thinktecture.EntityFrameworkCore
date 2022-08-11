@@ -33,6 +33,8 @@ public class IntegrationTestsBase : SqlServerDbContextIntegrationTests<TestDbCon
       var gitBranchName = TestContext.Instance.Configuration["SourceBranchName"];
       var schema = String.IsNullOrWhiteSpace(gitBranchName) ? "tests" : $"{TestContext.Instance.Configuration["SourceBranchName"]}_tests";
 
+      schema += "_" + Environment.Version.Major; // for multi-targeting
+
       builder.UseMigrationExecutionStrategy(IMigrationExecutionStrategy.Migrations)
              .UseMigrationLogLevel(LogLevel.Warning)
              .CollectExecutedCommands()
