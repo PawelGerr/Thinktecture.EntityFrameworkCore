@@ -3,6 +3,7 @@ using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 using Microsoft.EntityFrameworkCore.SqlServer.Query.Internal;
+using Microsoft.EntityFrameworkCore.Storage;
 using Thinktecture.EntityFrameworkCore.Query.SqlExpressions;
 
 namespace Thinktecture.EntityFrameworkCore.Query;
@@ -16,8 +17,9 @@ public class ThinktectureSqlServerQuerySqlGenerator : SqlServerQuerySqlGenerator
    /// <inheritdoc />
    public ThinktectureSqlServerQuerySqlGenerator(
       QuerySqlGeneratorDependencies dependencies,
+      IRelationalTypeMappingSource typeMappingSource,
       ITenantDatabaseProvider databaseProvider)
-      : base(dependencies)
+      : base(dependencies, typeMappingSource)
    {
       _databaseProvider = databaseProvider ?? throw new ArgumentNullException(nameof(databaseProvider));
    }

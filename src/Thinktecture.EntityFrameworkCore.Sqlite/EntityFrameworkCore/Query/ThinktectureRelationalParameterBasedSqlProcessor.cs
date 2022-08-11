@@ -1,5 +1,5 @@
+using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore.Query;
-using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 
 namespace Thinktecture.EntityFrameworkCore.Query;
 
@@ -21,19 +21,19 @@ public class ThinktectureSqliteParameterBasedSqlProcessor : RelationalParameterB
    }
 
    /// <inheritdoc />
-   protected override SelectExpression ProcessSqlNullability(SelectExpression selectExpression, IReadOnlyDictionary<string, object?> parametersValues, out bool canCache)
+   protected override Expression ProcessSqlNullability(Expression expression, IReadOnlyDictionary<string, object?> parametersValues, out bool canCache)
    {
-      ArgumentNullException.ThrowIfNull(selectExpression);
+      ArgumentNullException.ThrowIfNull(expression);
       ArgumentNullException.ThrowIfNull(parametersValues);
 
-      return new ThinktectureSqlNullabilityProcessor(Dependencies, UseRelationalNulls).Process(selectExpression, parametersValues, out canCache);
+      return new ThinktectureSqlNullabilityProcessor(Dependencies, UseRelationalNulls).Process(expression, parametersValues, out canCache);
    }
 
    /// <inheritdoc />
-   public override SelectExpression Optimize(SelectExpression selectExpression, IReadOnlyDictionary<string, object?> parametersValues, out bool canCache)
+   public override Expression Optimize(Expression expression, IReadOnlyDictionary<string, object?> parametersValues, out bool canCache)
    {
-      selectExpression = base.Optimize(selectExpression, parametersValues, out canCache);
+      expression = base.Optimize(expression, parametersValues, out canCache);
 
-      return _relationalOptimizingVisitor.Process(selectExpression);
+      return _relationalOptimizingVisitor.Process(expression);
    }
 }

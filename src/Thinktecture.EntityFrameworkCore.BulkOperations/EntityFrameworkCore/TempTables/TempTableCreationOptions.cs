@@ -27,7 +27,7 @@ public class TempTableCreationOptions : ITempTableCreationOptions
    [AllowNull]
    public IPrimaryKeyPropertiesProvider PrimaryKeyCreation
    {
-      get => _primaryKeyCreation ?? PrimaryKeyPropertiesProviders.EntityTypeConfiguration;
+      get => _primaryKeyCreation ?? IPrimaryKeyPropertiesProvider.EntityTypeConfiguration;
       set => _primaryKeyCreation = value;
    }
 

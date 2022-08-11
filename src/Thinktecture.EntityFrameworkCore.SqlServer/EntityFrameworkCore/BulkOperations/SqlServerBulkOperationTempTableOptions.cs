@@ -64,7 +64,7 @@ public class SqlServerBulkOperationTempTableOptions
 
    /// <summary>
    /// Provides the corresponding columns if the primary key should be created.
-   /// The default is <see cref="PrimaryKeyPropertiesProviders.EntityTypeConfiguration"/>.
+   /// The default is <see cref="IPrimaryKeyPropertiesProvider.EntityTypeConfiguration"/>.
    /// </summary>
    public IPrimaryKeyPropertiesProvider? PrimaryKeyCreation { get; set; }
 

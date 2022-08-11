@@ -1,6 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore.Query;
-using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 using Microsoft.EntityFrameworkCore.SqlServer.Query.Internal;
 
 namespace Thinktecture.EntityFrameworkCore.Query;
@@ -22,7 +22,7 @@ public class ThinktectureSqlServerParameterBasedSqlProcessor : SqlServerParamete
    }
 
    /// <inheritdoc />
-   protected override SelectExpression ProcessSqlNullability(SelectExpression selectExpression, IReadOnlyDictionary<string, object?> parametersValues, out bool canCache)
+   protected override Expression ProcessSqlNullability(Expression selectExpression, IReadOnlyDictionary<string, object?> parametersValues, out bool canCache)
    {
       ArgumentNullException.ThrowIfNull(selectExpression);
       ArgumentNullException.ThrowIfNull(parametersValues);
@@ -31,7 +31,7 @@ public class ThinktectureSqlServerParameterBasedSqlProcessor : SqlServerParamete
    }
 
    /// <inheritdoc />
-   public override SelectExpression Optimize(SelectExpression selectExpression, IReadOnlyDictionary<string, object?> parametersValues, out bool canCache)
+   public override Expression Optimize(Expression selectExpression, IReadOnlyDictionary<string, object?> parametersValues, out bool canCache)
    {
       selectExpression = base.Optimize(selectExpression, parametersValues, out canCache);
 

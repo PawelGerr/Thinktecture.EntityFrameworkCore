@@ -13,13 +13,18 @@ public class BenchmarkContext : IDisposable
    {
       var config = GetConfiguration();
 
+      var sqliteConnString = config.GetConnectionString("sqlite")
+                             ?? throw new Exception("No connection string with name 'sqlite' found.");
+      var sqlServerConnString = config.GetConnectionString("sqlServer")
+                                ?? throw new Exception("No connection string with name 'sqlite' found.");
+
       var services = new ServiceCollection()
-                     .AddDbContext<SqliteBenchmarkDbContext>(builder => builder.UseSqlite(config.GetConnectionString("sqlite"),
+                     .AddDbContext<SqliteBenchmarkDbContext>(builder => builder.UseSqlite(sqliteConnString,
                                                                                           optionsBuilder => optionsBuilder
                                                                                              .AddBulkOperationSupport())
                                                                                .UseLoggerFactory(NullLoggerFactory.Instance)
                                                             )
-                     .AddDbContext<SqlServerBenchmarkDbContext>(builder => builder.UseSqlServer(config.GetConnectionString("sqlServer"),
+                     .AddDbContext<SqlServerBenchmarkDbContext>(builder => builder.UseSqlServer(sqlServerConnString,
                                                                                                 optionsBuilder => optionsBuilder
                                                                                                                   .AddBulkOperationSupport()
                                                                                                                   .AddCollectionParameterSupport())

@@ -309,4 +309,11 @@ public abstract class DefaultSqlExpressionVisitor : SqlExpressionVisitor
       return unionExpression.Update((SelectExpression)Visit(unionExpression.Source1),
                                     (SelectExpression)Visit(unionExpression.Source2));
    }
+
+   /// <inheritdoc />
+   protected override Expression VisitAtTimeZone(AtTimeZoneExpression atTimeZoneExpression)
+   {
+      return atTimeZoneExpression.Update((SqlExpression)Visit(atTimeZoneExpression.Operand),
+                                         (SqlExpression)Visit(atTimeZoneExpression.TimeZone));
+   }
 }

@@ -14,7 +14,8 @@ public class SamplesContext
 
    public IConfiguration Configuration { get; }
 
-   public string ConnectionString => Configuration.GetConnectionString("default");
+   public string ConnectionString => Configuration.GetConnectionString("default")
+                                     ?? throw new Exception("No connection string with name 'default' found.");
 
    private static SamplesContext CreateTestConfiguration()
    {
