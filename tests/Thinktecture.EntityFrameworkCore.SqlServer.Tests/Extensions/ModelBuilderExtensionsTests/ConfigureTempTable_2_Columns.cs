@@ -50,7 +50,7 @@ public class ConfigureTempTable_2_Columns : IntegrationTestsBase
       var properties = entityType.GetProperties().ToList();
       properties.Should().HaveCount(2);
 
-      properties.Select(p => p.IsNullable).Should().BeEquivalentTo(new[] { false, false });
+      properties.Select(p => p.IsNullable).Should().BeEquivalentTo(new[] { true, true });
       properties.First().Name.Should().Be("Column1");
       properties.Skip(1).First().Name.Should().Be("Column2");
    }
@@ -58,12 +58,16 @@ public class ConfigureTempTable_2_Columns : IntegrationTestsBase
    [Fact]
    public void Should_flag_col1_as_nullable_if_set_via_modelbuilder()
    {
-      ConfigureModel = builder => builder.ConfigureTempTable<string, string>(typeBuilder => typeBuilder.Property(t => t.Column1).IsRequired(false));
+      ConfigureModel = builder => builder.ConfigureTempTable<string, string>(typeBuilder =>
+                                                                             {
+                                                                                typeBuilder.Property(t => t.Column1).IsRequired(false);
+                                                                                typeBuilder.Property(t => t.Column2).IsRequired();
+                                                                             });
 
       var entityType = ActDbContext.GetTempTableEntityType<TempTable<string, string>>();
       entityType.Should().NotBeNull();
-      var properties = entityType!.GetProperties();
-      properties.Select(p => p.IsNullable).Should().BeEquivalentTo(new[] { true, false });
+      var properties = entityType.GetProperties();
+      properties.OrderBy(p => p.Name).Select(p => p.IsNullable).Should().BeEquivalentTo(new[] { true, false });
    }
 
    [Fact]

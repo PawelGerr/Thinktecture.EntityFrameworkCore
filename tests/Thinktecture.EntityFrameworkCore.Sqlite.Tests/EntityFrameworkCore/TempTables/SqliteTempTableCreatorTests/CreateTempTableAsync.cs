@@ -280,7 +280,7 @@ public class CreateTempTableAsync : IntegrationTestsBase
       // ReSharper disable once RedundantArgumentDefaultValue
       await SUT.Awaiting(sut => sut.CreateTempTableAsync(ActDbContext.GetTempTableEntityType<CustomTempTable>(), _optionsWithNonUniqueNameAndNoPrimaryKey))
                .Should().ThrowAsync<ArgumentException>().WithMessage(@"Cannot create PRIMARY KEY because not all key columns are part of the temp table.
-You may use other key properties providers like 'PrimaryKeyPropertiesProviders.AdaptiveEntityTypeConfiguration' instead of 'PrimaryKeyPropertiesProviders.EntityTypeConfiguration' to get different behaviors.
+You may use other key properties providers like 'IPrimaryKeyPropertiesProvider.AdaptiveEntityTypeConfiguration' instead of 'IPrimaryKeyPropertiesProvider.EntityTypeConfiguration' to get different behaviors.
 Missing columns: Column2.");
    }
 
@@ -605,7 +605,7 @@ Currently configured primary keys: []");
       await using var tempTable = await SUT.CreateTempTableAsync(ActDbContext.GetTempTableEntityType<TempTable<string>>(), _optionsWithNonUniqueNameAndNoPrimaryKey);
 
       var columns = AssertDbContext.GetTempTableColumns<TempTable<string>>().ToList();
-      ValidateColumn(columns[0], nameof(TempTable<string>.Column1), "TEXT", false);
+      ValidateColumn(columns[0], nameof(TempTable<string>.Column1), "TEXT", true);
    }
 
    [Fact]
@@ -618,7 +618,7 @@ Currently configured primary keys: []");
       await using var tempTable = await SUT.CreateTempTableAsync(ActDbContext.GetTempTableEntityType<TempTable<ConvertibleClass>>(), _optionsWithNonUniqueNameAndNoPrimaryKey);
 
       var columns = AssertDbContext.GetTempTableColumns<TempTable<ConvertibleClass>>().ToList();
-      ValidateColumn(columns[0], nameof(TempTable<ConvertibleClass>.Column1), "INTEGER", false, "1");
+      ValidateColumn(columns[0], nameof(TempTable<ConvertibleClass>.Column1), "INTEGER", true, "1");
    }
 
    [Fact]
@@ -629,7 +629,7 @@ Currently configured primary keys: []");
       await using var tempTable = await SUT.CreateTempTableAsync(ActDbContext.GetTempTableEntityType<TempTable<string>>(), _optionsWithNonUniqueNameAndNoPrimaryKey);
 
       var columns = AssertDbContext.GetTempTableColumns<TempTable<string>>().ToList();
-      ValidateColumn(columns[0], nameof(TempTable<string>.Column1), "TEXT", false);
+      ValidateColumn(columns[0], nameof(TempTable<string>.Column1), "TEXT", true);
    }
 
    [Fact]
@@ -643,7 +643,7 @@ Currently configured primary keys: []");
       columns.Should().HaveCount(2);
 
       ValidateColumn(columns[0], nameof(TempTable<int, string>.Column1), "INTEGER", false);
-      ValidateColumn(columns[1], nameof(TempTable<int, string>.Column2), "TEXT", false);
+      ValidateColumn(columns[1], nameof(TempTable<int, string>.Column2), "TEXT", true);
    }
 
    [Fact]
