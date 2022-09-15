@@ -243,16 +243,16 @@ public abstract class ConventionType
    /// <returns><c>true</c> if the <paramref name="conventionToRemove"/> is found and removed from <paramref name="conventionSet"/>; otherwise <c>false</c>.</returns>
    public abstract bool RemoveConvention(ConventionSet conventionSet, Type conventionToRemove);
 
-   private static GenericConventionType<TConvention> Create<TConvention>(string name, Func<ConventionSet, IList<TConvention>> conventionSelector)
+   private static GenericConventionType<TConvention> Create<TConvention>(string name, Func<ConventionSet, List<TConvention>> conventionSelector)
    {
       return new GenericConventionType<TConvention>(name, conventionSelector);
    }
 
    private class GenericConventionType<TConvention> : ConventionType
    {
-      private readonly Func<ConventionSet, IList<TConvention>> _conventionSelector;
+      private readonly Func<ConventionSet, List<TConvention>> _conventionSelector;
 
-      public GenericConventionType(string collectionName, Func<ConventionSet, IList<TConvention>> conventionSelector)
+      public GenericConventionType(string collectionName, Func<ConventionSet, List<TConvention>> conventionSelector)
          : base(collectionName, typeof(TConvention))
       {
          _conventionSelector = conventionSelector;

@@ -316,4 +316,32 @@ public abstract class DefaultSqlExpressionVisitor : SqlExpressionVisitor
       return atTimeZoneExpression.Update((SqlExpression)Visit(atTimeZoneExpression.Operand),
                                          (SqlExpression)Visit(atTimeZoneExpression.TimeZone));
    }
+
+   /// <inheritdoc />
+   protected override Expression VisitDelete(DeleteExpression deleteExpression)
+   {
+      return deleteExpression.Update((SelectExpression)Visit(deleteExpression.SelectExpression));
+   }
+
+   /// <inheritdoc />
+   protected override Expression VisitUpdate(UpdateExpression updateExpression)
+   {
+      var valueSetters = new List<ColumnValueSetter>();
+
+      for (var i = 0; i < updateExpression.ColumnValueSetters.Count; i++)
+      {
+         var valueSetter = updateExpression.ColumnValueSetters[i];
+         var newValue = (SqlExpression)Visit(valueSetter.Value);
+         valueSetters.Add(new ColumnValueSetter(valueSetter.Column, newValue));
+      }
+
+      return updateExpression.Update((SelectExpression)Visit(updateExpression.SelectExpression), valueSetters);
+   }
+
+   /// <inheritdoc />
+   protected override Expression VisitJsonScalar(JsonScalarExpression jsonScalarExpression)
+   {
+      return jsonScalarExpression.Update((ColumnExpression)Visit(jsonScalarExpression.JsonColumn),
+                                         (SqlExpression)Visit(jsonScalarExpression.Path));
+   }
 }

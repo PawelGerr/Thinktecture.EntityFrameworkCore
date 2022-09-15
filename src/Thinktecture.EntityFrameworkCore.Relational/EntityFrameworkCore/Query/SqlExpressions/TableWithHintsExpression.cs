@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 
@@ -31,6 +32,13 @@ public sealed class TableWithHintsExpression : TableExpressionBase, INotNullable
       TableHints = tableHints;
    }
 
+   private TableWithHintsExpression(TableExpressionBase table, IReadOnlyList<ITableHint> tableHints, IEnumerable<IAnnotation>? annotations)
+      : base(table.Alias, annotations)
+   {
+      Table = table;
+      TableHints = tableHints;
+   }
+
    /// <inheritdoc />
    protected override Expression VisitChildren(ExpressionVisitor visitor)
    {
@@ -39,6 +47,12 @@ public sealed class TableWithHintsExpression : TableExpressionBase, INotNullable
       return Table != visited
                 ? new TableWithHintsExpression(visited, TableHints)
                 : this;
+   }
+
+   /// <inheritdoc />
+   protected override TableExpressionBase CreateWithAnnotations(IEnumerable<IAnnotation> annotations)
+   {
+      return new TableWithHintsExpression(Table, TableHints, annotations);
    }
 
    /// <inheritdoc />

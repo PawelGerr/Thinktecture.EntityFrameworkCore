@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 
@@ -27,6 +28,18 @@ public sealed class TempTableExpression : TableExpressionBase, INotNullableSqlEx
       : base(alias)
    {
       Name = name;
+   }
+
+   private TempTableExpression(string name, string? alias, IEnumerable<IAnnotation> annotatables)
+      : base(alias, annotatables)
+   {
+      Name = name;
+   }
+
+   /// <inheritdoc />
+   protected override TableExpressionBase CreateWithAnnotations(IEnumerable<IAnnotation> annotations)
+   {
+      return new TempTableExpression(Name, Alias, annotations);
    }
 
    /// <inheritdoc />

@@ -83,7 +83,7 @@ public static class BulkOperationsRelationalQueryableMethodTranslatingExpression
       clone.ApplyProjection(shapedQueryExpression.ShaperExpression, shapedQueryExpression.ResultCardinality, QuerySplittingBehavior.SingleQuery);
       var tableToDeleteIn = GetTableForDeleteOperation(clone);
 
-      var projectionMapping = new Dictionary<ProjectionMember, Expression> { { new ProjectionMember(), new DeleteExpression(tableToDeleteIn, intTypeMapping) } };
+      var projectionMapping = new Dictionary<ProjectionMember, Expression> { { new ProjectionMember(), new EntityFrameworkCore.Query.SqlExpressions.DeleteExpression(tableToDeleteIn, intTypeMapping) } };
       selectExpression.ReplaceProjection(Array.Empty<Expression>());
       selectExpression.ReplaceProjection(projectionMapping);
 

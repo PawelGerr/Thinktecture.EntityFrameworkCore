@@ -1,6 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
-using Thinktecture.EntityFrameworkCore.Query.SqlExpressions;
 
 // ReSharper disable once CheckNamespace
 namespace Thinktecture;
@@ -22,7 +21,7 @@ public static class SelectExpressionExtensions
       ArgumentNullException.ThrowIfNull(selectExpression);
 
       if (selectExpression.Projection.Count == 1 &&
-          selectExpression.Projection[0].Expression is DeleteExpression deleteExpression)
+          selectExpression.Projection[0].Expression is Thinktecture.EntityFrameworkCore.Query.SqlExpressions.DeleteExpression deleteExpression)
       {
          tableToDeleteIn = deleteExpression.Table;
          return true;
