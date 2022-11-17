@@ -164,6 +164,8 @@ EXEC(@sql);
    {
       ArgumentNullException.ThrowIfNull(sqlHelper);
 
-      return $"DROP SCHEMA {sqlHelper.DelimitIdentifier(schema)}";
+      return @$"
+IF SCHEMA_ID('{sqlHelper.DelimitIdentifier(schema)}') IS NOT NULL
+   DROP SCHEMA {sqlHelper.DelimitIdentifier(schema)};";
    }
 }
