@@ -251,7 +251,7 @@ Please provide the corresponding constructor or a custom factory via '{typeof(Sq
       if (_isolationOptions.NeedsCleanup)
       {
          // Create a new ctx as a last resort to rollback migrations and clean up the database
-         using var ctx = _actDbContext ?? _arrangeDbContext ?? _assertDbContext ?? CreateDbContext(true);
+         using var ctx = _actDbContext ?? _arrangeDbContext ?? _assertDbContext ?? CreateDbContext(_masterDbContextOptions, new DbDefaultSchema(Schema));
 
          _isolationOptions.Cleanup(ctx, Schema);
       }
