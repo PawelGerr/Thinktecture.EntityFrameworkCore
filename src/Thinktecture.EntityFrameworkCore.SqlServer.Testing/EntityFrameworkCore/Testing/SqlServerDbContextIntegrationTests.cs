@@ -51,12 +51,29 @@ public abstract class SqlServerDbContextIntegrationTests<T> : ITestDbContextProv
    /// <param name="connectionString">Connection string to use.</param>
    /// <param name="useSharedTables">Indication whether to create new tables with a new schema or use the existing ones.</param>
    /// <param name="testOutputHelper">Output helper to use for logging.</param>
+   [Obsolete($"Use the overload with '{nameof(ITestIsolationOptions)}' instead.")]
    protected SqlServerDbContextIntegrationTests(
       string connectionString,
       bool useSharedTables = true,
       ITestOutputHelper? testOutputHelper = null)
+      : this(connectionString,
+             useSharedTables ? ITestIsolationOptions.SharedTablesAmbientTransaction : ITestIsolationOptions.RollbackMigrationsAndCleanup,
+             testOutputHelper)
    {
-      _testCtxProviderBuilder = new SqlServerTestDbContextProviderBuilder<T>(connectionString, useSharedTables)
+   }
+
+   /// <summary>
+   /// Initializes new instance of <see cref="SqlServerDbContextIntegrationTests{T}"/>.
+   /// </summary>
+   /// <param name="connectionString">Connection string to use.</param>
+   /// <param name="isolationOptions">Test isolation behavior.</param>
+   /// <param name="testOutputHelper">Output helper to use for logging.</param>
+   protected SqlServerDbContextIntegrationTests(
+      string connectionString,
+      ITestIsolationOptions isolationOptions,
+      ITestOutputHelper? testOutputHelper = null)
+   {
+      _testCtxProviderBuilder = new SqlServerTestDbContextProviderBuilder<T>(connectionString, isolationOptions)
          .UseLogging(testOutputHelper);
    }
 

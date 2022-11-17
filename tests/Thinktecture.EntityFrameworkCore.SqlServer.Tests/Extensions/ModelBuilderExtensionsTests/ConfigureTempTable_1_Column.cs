@@ -1,4 +1,5 @@
 using Thinktecture.EntityFrameworkCore.TempTables;
+using Thinktecture.EntityFrameworkCore.Testing;
 
 namespace Thinktecture.Extensions.ModelBuilderExtensionsTests;
 
@@ -6,7 +7,7 @@ namespace Thinktecture.Extensions.ModelBuilderExtensionsTests;
 public class ConfigureTempTable_1_Column : IntegrationTestsBase
 {
    public ConfigureTempTable_1_Column(ITestOutputHelper testOutputHelper)
-      : base(testOutputHelper, true)
+      : base(testOutputHelper, ITestIsolationOptions.SharedTablesAmbientTransaction)
    {
    }
 

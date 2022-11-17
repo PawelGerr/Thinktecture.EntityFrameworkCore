@@ -1,14 +1,14 @@
 using Thinktecture.EntityFrameworkCore.BulkOperations;
 using Thinktecture.EntityFrameworkCore.TempTables;
+using Thinktecture.EntityFrameworkCore.Testing;
 
 namespace Thinktecture.Extensions.DbContextExtensionsTests;
 
 // ReSharper disable once InconsistentNaming
-[Collection("BulkInsertTempTableAsync")]
 public class BulkInsertValuesIntoTempTableAsync_2_Column : IntegrationTestsBase
 {
    public BulkInsertValuesIntoTempTableAsync_2_Column(ITestOutputHelper testOutputHelper)
-      : base(testOutputHelper, true)
+      : base(testOutputHelper, ITestIsolationOptions.SharedTablesAmbientTransaction)
    {
    }
 

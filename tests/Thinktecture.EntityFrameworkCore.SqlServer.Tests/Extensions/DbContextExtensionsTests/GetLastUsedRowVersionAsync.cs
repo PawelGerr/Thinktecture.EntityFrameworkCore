@@ -1,10 +1,12 @@
+using Thinktecture.EntityFrameworkCore.Testing;
+
 namespace Thinktecture.Extensions.DbContextExtensionsTests;
 
 // ReSharper disable once InconsistentNaming
 public class GetLastUsedRowVersionAsync : IntegrationTestsBase
 {
    public GetLastUsedRowVersionAsync(ITestOutputHelper testOutputHelper)
-      : base(testOutputHelper, true)
+      : base(testOutputHelper, ITestIsolationOptions.SharedTablesAmbientTransaction)
    {
    }
 

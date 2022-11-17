@@ -19,7 +19,7 @@ public class SqlServerTestDbContextProvider<T> : ITestDbContextProvider<T>
    // ReSharper disable once StaticMemberInGenericType because the locks are all for the same database context but for different schemas.
    private static readonly ConcurrentDictionary<string, object> _locks = new(StringComparer.OrdinalIgnoreCase);
 
-   private readonly bool _isUsingSharedTables;
+   private readonly ITestIsolationOptions _isolationOptions;
    private readonly DbContextOptions<T> _masterDbContextOptions;
    private readonly DbContextOptions<T> _dbContextOptions;
    private readonly IMigrationExecutionStrategy _migrationExecutionStrategy;
@@ -70,7 +70,7 @@ public class SqlServerTestDbContextProvider<T> : ITestDbContextProvider<T>
 
       Schema = options.Schema ?? throw new ArgumentException($"The '{nameof(options.Schema)}' cannot be null.", nameof(options));
       _sharedTablesIsolationLevel = ValidateIsolationLevel(options.SharedTablesIsolationLevel);
-      _isUsingSharedTables = options.IsUsingSharedTables;
+      _isolationOptions = options.IsolationOptions;
       _masterConnection = options.MasterConnection ?? throw new ArgumentException($"The '{nameof(options.MasterConnection)}' cannot be null.", nameof(options));
       _masterDbContextOptions = options.MasterDbContextOptions ?? throw new ArgumentException($"The '{nameof(options.MasterDbContextOptions)}' cannot be null.", nameof(options));
       _dbContextOptions = options.DbContextOptions ?? throw new ArgumentException($"The '{nameof(options.DbContextOptions)}' cannot be null.", nameof(options));
@@ -110,7 +110,7 @@ public class SqlServerTestDbContextProvider<T> : ITestDbContextProvider<T>
    /// <returns>A new instance of <typeparamref name="T"/>.</returns>
    public T CreateDbContext(bool useMasterConnection)
    {
-      if (!useMasterConnection && _isUsingSharedTables)
+      if (!useMasterConnection && _isolationOptions == ITestIsolationOptions.SharedTablesAmbientTransaction)
          throw new NotSupportedException($"A database transaction cannot be shared among different connections, so the isolation of tests couldn't be guaranteed. Set 'useMasterConnection' to 'true' or 'useSharedTables' to 'false' or use '{nameof(ArrangeDbContext)}/{nameof(ActDbContext)}/{nameof(AssertDbContext)}' which use the same database connection.");
 
       bool isFirstCtx;
@@ -133,7 +133,7 @@ public class SqlServerTestDbContextProvider<T> : ITestDbContextProvider<T>
       {
          RunMigrations(ctx);
 
-         if (_isUsingSharedTables)
+         if (_isolationOptions == ITestIsolationOptions.SharedTablesAmbientTransaction)
             _tx = BeginTransaction(ctx);
       }
       else if (_tx != null)
@@ -161,7 +161,7 @@ public class SqlServerTestDbContextProvider<T> : ITestDbContextProvider<T>
 
       if (ctx is null)
       {
-         if (!_isUsingSharedTables)
+         if (_isolationOptions != ITestIsolationOptions.SharedTablesAmbientTransaction)
          {
             throw new Exception(@$"Could not create an instance of type of '{typeof(T).ShortDisplayName()}' using constructor parameters ({typeof(DbContextOptions<T>).ShortDisplayName()} options, {nameof(IDbDefaultSchema)} schema).
 Please provide the corresponding constructor or a custom factory via '{typeof(SqlServerTestDbContextProviderBuilder<T>).ShortDisplayName()}.{nameof(SqlServerTestDbContextProviderBuilder<T>.UseContextFactory)}'.");
@@ -245,18 +245,15 @@ Please provide the corresponding constructor or a custom factory via '{typeof(Sq
 
    private void DisposeContextsAndRollbackMigrations()
    {
-      if (_isUsingSharedTables)
-      {
-         _tx?.Rollback();
-         _tx?.Dispose();
-      }
-      else
+      _tx?.Rollback();
+      _tx?.Dispose();
+
+      if (_isolationOptions.NeedsCleanup)
       {
          // Create a new ctx as a last resort to rollback migrations and clean up the database
          using var ctx = _actDbContext ?? _arrangeDbContext ?? _assertDbContext ?? CreateDbContext(true);
 
-         RollbackMigrations(ctx);
-         CleanUpDatabase(ctx, Schema);
+         _isolationOptions.Cleanup(ctx, Schema);
       }
 
       _arrangeDbContext?.Dispose();
@@ -268,88 +265,6 @@ Please provide the corresponding constructor or a custom factory via '{typeof(Sq
       _assertDbContext = null;
    }
 
-   private static void RollbackMigrations(T ctx)
-   {
-      ArgumentNullException.ThrowIfNull(ctx);
 
-      ctx.GetService<IMigrator>().Migrate("0");
-   }
 
-   private static void CleanUpDatabase(T ctx, string schema)
-   {
-      ArgumentNullException.ThrowIfNull(ctx);
-      ArgumentNullException.ThrowIfNull(schema);
-
-      var sqlHelper = ctx.GetService<ISqlGenerationHelper>();
-
-      ctx.Database.ExecuteSqlRaw(GetSqlForCleanup(), new SqlParameter("@schema", schema));
-      ctx.Database.ExecuteSqlRaw(GetDropSchemaSql(sqlHelper, schema));
-   }
-
-   private static string GetDropSchemaSql(ISqlGenerationHelper sqlHelper, string schema)
-   {
-      ArgumentNullException.ThrowIfNull(sqlHelper);
-
-      return $"DROP SCHEMA {sqlHelper.DelimitIdentifier(schema)}";
-   }
-
-   private static string GetSqlForCleanup()
-   {
-      return @"
-DECLARE @crlf NVARCHAR(MAX) = CHAR(13) + CHAR(10);
-DECLARE @sql NVARCHAR(MAX);
-DECLARE @cursor CURSOR
-
--- Drop Constraints
-SET @cursor = CURSOR FAST_FORWARD FOR
-SELECT DISTINCT sql = 'ALTER TABLE ' + QUOTENAME(tc.TABLE_SCHEMA) + '.' +  QUOTENAME(tc.TABLE_NAME) + ' DROP ' + QUOTENAME(rc.CONSTRAINT_NAME) + ';' + @crlf
-FROM
-	INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS rc
-	LEFT JOIN
-		INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc
-		ON tc.CONSTRAINT_NAME = rc.CONSTRAINT_NAME
-WHERE
-   tc.TABLE_SCHEMA = @schema
-
-OPEN @cursor FETCH NEXT FROM @cursor INTO @sql
-
-WHILE (@@FETCH_STATUS = 0)
-BEGIN
-Exec sp_executesql @sql
-FETCH NEXT FROM @cursor INTO @sql
-END
-
-CLOSE @cursor
-DEALLOCATE @cursor
-
--- Drop Views
-SELECT	@sql = N'';
-SELECT @sql = @sql + 'DROP VIEW ' + QUOTENAME(SCHEMA_NAME(schema_id)) + '.' + QUOTENAME(name) +';' + @crlf
-FROM
-	SYS.VIEWS
-WHERE
-   schema_id = SCHEMA_ID(@schema)
-
-EXEC(@sql);
-
--- Drop Functions
-SELECT @sql = N'';
-SELECT @sql = @sql + N' DROP FUNCTION ' + QUOTENAME(SCHEMA_NAME(schema_id)) + N'.' + QUOTENAME(name)
-FROM sys.objects
-WHERE type_desc LIKE '%FUNCTION%'
-   AND schema_id = SCHEMA_ID(@schema);
-
-EXEC(@sql);
-
--- Drop tables
-SELECT	@sql = N'';
-SELECT @sql = @sql + 'DROP TABLE ' + QUOTENAME(SCHEMA_NAME(schema_id)) + '.' + QUOTENAME(name) +';' + @crlf
-FROM
-	SYS.TABLES
-WHERE
-   schema_id = SCHEMA_ID(@schema)
-
-EXEC(@sql);
-";
-   }
 }

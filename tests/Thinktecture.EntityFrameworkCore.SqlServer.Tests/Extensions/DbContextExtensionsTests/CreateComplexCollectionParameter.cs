@@ -1,3 +1,4 @@
+using Thinktecture.EntityFrameworkCore.Testing;
 using Thinktecture.TestDatabaseContext;
 
 namespace Thinktecture.Extensions.DbContextExtensionsTests;
@@ -5,7 +6,7 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests;
 public class CreateComplexCollectionParameter : IntegrationTestsBase
 {
    public CreateComplexCollectionParameter(ITestOutputHelper testOutputHelper)
-      : base(testOutputHelper, true)
+      : base(testOutputHelper, ITestIsolationOptions.SharedTablesAmbientTransaction)
    {
    }
 

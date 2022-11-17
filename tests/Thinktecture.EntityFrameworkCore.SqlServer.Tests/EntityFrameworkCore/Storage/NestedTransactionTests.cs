@@ -2,6 +2,7 @@ using System.Data.Common;
 using System.Transactions;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
+using Thinktecture.EntityFrameworkCore.Testing;
 using Thinktecture.TestDatabaseContext;
 using IsolationLevel = System.Data.IsolationLevel;
 
@@ -12,7 +13,7 @@ public class NestedTransactionTests : IntegrationTestsBase
    protected NestedRelationalTransactionManager SUT => (NestedRelationalTransactionManager)ActDbContext.GetService<IDbContextTransactionManager>();
 
    public NestedTransactionTests(ITestOutputHelper testOutputHelper)
-      : base(testOutputHelper, false)
+      : base(testOutputHelper, ITestIsolationOptions.CleanupOnly)
    {
    }
 
