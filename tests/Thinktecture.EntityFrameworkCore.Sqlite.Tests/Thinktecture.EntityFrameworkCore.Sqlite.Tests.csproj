@@ -22,8 +22,4 @@
       <ProjectReference Include="..\Thinktecture.EntityFrameworkCore.TestHelpers\Thinktecture.EntityFrameworkCore.TestHelpers.csproj" />
     </ItemGroup>
 
-    <ItemGroup>
-      <PackageReference Update="Microsoft.NET.Test.Sdk" Version="17.4.0" />
-    </ItemGroup>
-
 </Project>
