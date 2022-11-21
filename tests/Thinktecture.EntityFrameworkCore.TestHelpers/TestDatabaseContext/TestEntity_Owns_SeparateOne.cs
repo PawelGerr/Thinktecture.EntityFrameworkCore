@@ -8,7 +8,7 @@ public class TestEntity_Owns_SeparateOne
 {
    public Guid Id { get; set; }
 
-   public OwnedEntity SeparateEntity { get; set; }
+   public OwnedEntity? SeparateEntity { get; set; }
 
    public static void Configure(ModelBuilder modelBuilder)
    {

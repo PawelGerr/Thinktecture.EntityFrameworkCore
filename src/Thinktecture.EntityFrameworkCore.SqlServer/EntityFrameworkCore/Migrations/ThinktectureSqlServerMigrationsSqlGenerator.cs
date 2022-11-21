@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Migrations.Operations;
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.EntityFrameworkCore.Update;
 
 namespace Thinktecture.EntityFrameworkCore.Migrations;
 
@@ -16,11 +17,11 @@ public class ThinktectureSqlServerMigrationsSqlGenerator : SqlServerMigrationsSq
    /// Initializes <see cref="ThinktectureSqlServerMigrationsSqlGenerator"/>.
    /// </summary>
    /// <param name="dependencies">Dependencies.</param>
-   /// <param name="migrationsAnnotations">Migration annotations.</param>
+   /// <param name="commandBatchPreparer">The command batch preparer.</param>
    public ThinktectureSqlServerMigrationsSqlGenerator(
       MigrationsSqlGeneratorDependencies dependencies,
-      IRelationalAnnotationProvider migrationsAnnotations)
-      : base(dependencies, migrationsAnnotations)
+      ICommandBatchPreparer commandBatchPreparer)
+      : base(dependencies, commandBatchPreparer)
    {
    }
 

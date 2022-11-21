@@ -250,7 +250,7 @@ public class BulkDelete : IntegrationTestsBase
       await ArrangeDbContext.SaveChangesAsync();
 
       var affectedRows = await ActDbContext.TestEntities_Own_SeparateOne
-                                           .Where(e => e.SeparateEntity.IntColumn == 1)
+                                           .Where(e => e.SeparateEntity!.IntColumn == 1)
                                            .Select(e => e.Id)
                                            .BulkDeleteAsync();
 
@@ -268,7 +268,7 @@ public class BulkDelete : IntegrationTestsBase
       await ArrangeDbContext.SaveChangesAsync();
 
       var affectedRows = await ActDbContext.TestEntities_Own_SeparateOne
-                                           .Where(e => e.SeparateEntity.IntColumn == 1)
+                                           .Where(e => e.SeparateEntity!.IntColumn == 1)
                                            .Select(e => e.SeparateEntity)
                                            .BulkDeleteAsync();
 

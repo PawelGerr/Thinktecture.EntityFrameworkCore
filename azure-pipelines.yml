@@ -27,7 +27,6 @@ steps:
   inputs:
     packageType: sdk
     version: 7.0.x
-    includePreviewVersions: true
     installationPath: $(Agent.ToolsDirectory)/dotnet
       
 - script: |

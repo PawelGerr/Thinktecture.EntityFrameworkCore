@@ -341,7 +341,6 @@ public abstract class DefaultSqlExpressionVisitor : SqlExpressionVisitor
    /// <inheritdoc />
    protected override Expression VisitJsonScalar(JsonScalarExpression jsonScalarExpression)
    {
-      return jsonScalarExpression.Update((ColumnExpression)Visit(jsonScalarExpression.JsonColumn),
-                                         (SqlExpression)Visit(jsonScalarExpression.Path));
+      return jsonScalarExpression.Update((ColumnExpression)Visit(jsonScalarExpression.JsonColumn));
    }
 }
