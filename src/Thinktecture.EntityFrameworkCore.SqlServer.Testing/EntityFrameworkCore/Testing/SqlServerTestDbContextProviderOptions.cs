@@ -11,11 +11,28 @@ namespace Thinktecture.EntityFrameworkCore.Testing;
 public class SqlServerTestDbContextProviderOptions<T> : TestDbContextProviderOptions<T>
    where T : DbContext
 {
+
    /// <summary>
    /// Indication whether the current <see cref="SqlServerTestDbContextProvider{T}"/> is using its own tables with a new schema
    /// or shares the tables with others.
    /// </summary>
-   public bool IsUsingSharedTables { get; set; }
+   [Obsolete($"Use '{nameof(IsolationOptions)}' instead.")]
+   public bool IsUsingSharedTables
+   {
+      get => IsolationOptions == ITestIsolationOptions.SharedTablesAmbientTransaction;
+      set => IsolationOptions = value ? ITestIsolationOptions.SharedTablesAmbientTransaction : ITestIsolationOptions.RollbackMigrationsAndCleanup;
+   }
+
+   private ITestIsolationOptions? _isolationOptions;
+
+   /// <summary>
+   /// Test isolation behavior.
+   /// </summary>
+   public ITestIsolationOptions IsolationOptions
+   {
+      get => _isolationOptions ?? ITestIsolationOptions.SharedTablesAmbientTransaction;
+      set => _isolationOptions = value;
+   }
 
    /// <summary>
    /// Database schema to use.

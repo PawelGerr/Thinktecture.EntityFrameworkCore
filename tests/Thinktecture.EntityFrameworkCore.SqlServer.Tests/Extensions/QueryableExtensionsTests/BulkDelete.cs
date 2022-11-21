@@ -1,3 +1,4 @@
+using Thinktecture.EntityFrameworkCore.Testing;
 using Thinktecture.TestDatabaseContext;
 
 namespace Thinktecture.Extensions.QueryableExtensionsTests;
@@ -6,7 +7,7 @@ namespace Thinktecture.Extensions.QueryableExtensionsTests;
 public class BulkDelete : IntegrationTestsBase
 {
    public BulkDelete(ITestOutputHelper testOutputHelper)
-      : base(testOutputHelper, true)
+      : base(testOutputHelper, ITestIsolationOptions.SharedTablesAmbientTransaction)
    {
    }
 

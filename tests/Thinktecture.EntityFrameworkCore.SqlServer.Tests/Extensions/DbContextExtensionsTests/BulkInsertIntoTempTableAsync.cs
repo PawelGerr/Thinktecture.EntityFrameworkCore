@@ -1,5 +1,6 @@
 using Microsoft.Data.SqlClient;
 using Thinktecture.EntityFrameworkCore.BulkOperations;
+using Thinktecture.EntityFrameworkCore.Testing;
 using Thinktecture.TestDatabaseContext;
 
 namespace Thinktecture.Extensions.DbContextExtensionsTests;
@@ -8,7 +9,7 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests;
 public class BulkInsertIntoTempTableAsync : IntegrationTestsBase
 {
    public BulkInsertIntoTempTableAsync(ITestOutputHelper testOutputHelper)
-      : base(testOutputHelper, true)
+      : base(testOutputHelper, ITestIsolationOptions.SharedTablesAmbientTransaction)
    {
    }
 

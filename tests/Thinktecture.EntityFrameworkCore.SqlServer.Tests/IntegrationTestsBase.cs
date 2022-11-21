@@ -22,8 +22,8 @@ public class IntegrationTestsBase : SqlServerDbContextIntegrationTests<TestDbCon
    protected bool IsTenantDatabaseSupportEnabled { get; set; }
    protected Mock<ITenantDatabaseProvider> TenantDatabaseProviderMock { get; }
 
-   protected IntegrationTestsBase(ITestOutputHelper testOutputHelper, bool useSharedTables)
-      : base(TestContext.Instance.ConnectionString, useSharedTables, testOutputHelper)
+   protected IntegrationTestsBase(ITestOutputHelper testOutputHelper, ITestIsolationOptions isolationOptions)
+      : base(TestContext.Instance.ConnectionString, isolationOptions, testOutputHelper)
    {
       TenantDatabaseProviderMock = new Mock<ITenantDatabaseProvider>(MockBehavior.Strict);
    }

@@ -1,5 +1,6 @@
 using System.Linq.Expressions;
 using Microsoft.Data.SqlClient;
+using Thinktecture.EntityFrameworkCore.Testing;
 using Thinktecture.TestDatabaseContext;
 
 namespace Thinktecture.Extensions.SqlServerDbFunctionsExtensionsTests;
@@ -8,7 +9,7 @@ namespace Thinktecture.Extensions.SqlServerDbFunctionsExtensionsTests;
 public class RowNumber : IntegrationTestsBase
 {
    public RowNumber(ITestOutputHelper testOutputHelper)
-      : base(testOutputHelper, true)
+      : base(testOutputHelper, ITestIsolationOptions.SharedTablesAmbientTransaction)
    {
    }
 

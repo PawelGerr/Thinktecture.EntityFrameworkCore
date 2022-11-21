@@ -1,4 +1,5 @@
 using System.Reflection;
+using Thinktecture.EntityFrameworkCore.Testing;
 using Thinktecture.TestDatabaseContext;
 
 namespace Thinktecture.Extensions.DbContextExtensionsTests;
@@ -6,7 +7,7 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests;
 public class CreateScalarCollectionParameter : IntegrationTestsBase
 {
    public CreateScalarCollectionParameter(ITestOutputHelper testOutputHelper)
-      : base(testOutputHelper, true)
+      : base(testOutputHelper, ITestIsolationOptions.SharedTablesAmbientTransaction)
    {
    }
 

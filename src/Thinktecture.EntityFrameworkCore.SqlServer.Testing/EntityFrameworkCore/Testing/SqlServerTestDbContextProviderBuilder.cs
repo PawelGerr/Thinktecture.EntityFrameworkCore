@@ -19,7 +19,7 @@ public class SqlServerTestDbContextProviderBuilder<T> : TestDbContextProviderBui
    private const string _HISTORY_TABLE_NAME = "__EFMigrationsHistory";
 
    private readonly string _connectionString;
-   private readonly bool _useSharedTables;
+   private readonly ITestIsolationOptions _isolationOptions;
    private readonly List<Action<DbContextOptionsBuilder<T>, string>> _configuresOptionsCollection;
    private readonly List<Action<SqlServerDbContextOptionsBuilder, string>> _configuresSqlServerOptionsCollection;
    private readonly List<Action<T>> _ctxInitializations;
@@ -35,10 +35,21 @@ public class SqlServerTestDbContextProviderBuilder<T> : TestDbContextProviderBui
    /// </summary>
    /// <param name="connectionString">Connection string to use.</param>
    /// <param name="useSharedTables">Indication whether to create new tables with a new schema or use the existing ones.</param>
+   [Obsolete($"Use the overload with '{nameof(ITestIsolationOptions)}' instead.")]
    public SqlServerTestDbContextProviderBuilder(string connectionString, bool useSharedTables)
+      : this(connectionString, useSharedTables ? ITestIsolationOptions.SharedTablesAmbientTransaction : ITestIsolationOptions.RollbackMigrationsAndCleanup)
+   {
+   }
+
+   /// <summary>
+   /// Initializes new instance of <see cref="SqlServerTestDbContextProviderBuilder{T}"/>.
+   /// </summary>
+   /// <param name="connectionString">Connection string to use.</param>
+   /// <param name="isolationOptions">Test isolation behavior.</param>
+   public SqlServerTestDbContextProviderBuilder(string connectionString, ITestIsolationOptions isolationOptions)
    {
       _connectionString = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
-      _useSharedTables = useSharedTables;
+      _isolationOptions = isolationOptions;
       _configuresOptionsCollection = new List<Action<DbContextOptionsBuilder<T>, string>>();
       _configuresSqlServerOptionsCollection = new List<Action<SqlServerDbContextOptionsBuilder, string>>();
       _ctxInitializations = new List<Action<T>>();
@@ -235,9 +246,20 @@ public class SqlServerTestDbContextProviderBuilder<T> : TestDbContextProviderBui
    /// </summary>
    /// <param name="useSharedTables">Indication whether a new schema should be generated or a shared one.</param>
    /// <returns>A database schema.</returns>
+   [Obsolete($"Use the overload with '{nameof(ITestIsolationOptions)}' instead.")]
    protected virtual string DetermineSchema(bool useSharedTables)
    {
-      return useSharedTables
+      return DetermineSchema(useSharedTables ? ITestIsolationOptions.SharedTablesAmbientTransaction : ITestIsolationOptions.RollbackMigrationsAndCleanup);
+   }
+
+   /// <summary>
+   /// Gets/generates schema to be used.
+   /// </summary>
+   /// <param name="isolationOptions">Test isolation behavior.</param>
+   /// <returns>A database schema.</returns>
+   protected virtual string DetermineSchema(ITestIsolationOptions isolationOptions)
+   {
+      return isolationOptions == ITestIsolationOptions.SharedTablesAmbientTransaction
                 ? _sharedTablesSchema ?? "tests"
                 : Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture);
    }
@@ -314,7 +336,7 @@ public class SqlServerTestDbContextProviderBuilder<T> : TestDbContextProviderBui
    {
       // create all dependencies immediately to decouple the provider from this builder
 
-      var schema = DetermineSchema(_useSharedTables);
+      var schema = DetermineSchema(_isolationOptions);
       var masterConnection = new SqlConnection(_connectionString);
 
       try
@@ -332,7 +354,7 @@ public class SqlServerTestDbContextProviderBuilder<T> : TestDbContextProviderBui
                                                                     _ctxInitializations.ToList(),
                                                                     schema)
                        {
-                          IsUsingSharedTables = _useSharedTables,
+                          IsolationOptions = _isolationOptions,
                           ContextFactory = _contextFactory,
                           ExecutedCommands = state.CommandCapturingInterceptor?.Commands,
                           SharedTablesIsolationLevel = _sharedTablesIsolationLevel

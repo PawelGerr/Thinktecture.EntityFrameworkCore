@@ -1,9 +1,11 @@
+using Thinktecture.EntityFrameworkCore.Testing;
+
 namespace Thinktecture.InteroperabilityTests;
 
 public class TemporalTableTests : IntegrationTestsBase
 {
    public TemporalTableTests(ITestOutputHelper testOutputHelper)
-      : base(testOutputHelper, true)
+      : base(testOutputHelper, ITestIsolationOptions.SharedTablesAmbientTransaction)
    {
    }
 

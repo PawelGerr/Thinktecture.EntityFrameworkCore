@@ -1,3 +1,5 @@
+using Thinktecture.EntityFrameworkCore.Testing;
+
 namespace Thinktecture.EntityFrameworkCore.TenantDatabase;
 
 public class TenantDatabaseTests : IntegrationTestsBase
@@ -5,7 +7,7 @@ public class TenantDatabaseTests : IntegrationTestsBase
    private string? _tenant;
 
    public TenantDatabaseTests(ITestOutputHelper testOutputHelper)
-      : base(testOutputHelper, true)
+      : base(testOutputHelper, ITestIsolationOptions.SharedTablesAmbientTransaction)
    {
       IsTenantDatabaseSupportEnabled = true;
       TenantDatabaseProviderMock.Setup(p => p.Tenant).Returns(() => _tenant);
