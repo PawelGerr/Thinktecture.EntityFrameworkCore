@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore.Metadata;
-using Thinktecture.EntityFrameworkCore.Data;
 
 namespace Thinktecture.EntityFrameworkCore.TempTables;
 
@@ -18,12 +17,12 @@ public readonly struct SqlServerTempTableCreatorCacheKey
    /// <summary>
    /// Properties to create temp table with.
    /// </summary>
-   public IReadOnlyList<PropertyWithNavigations> Properties { get; }
+   public IReadOnlyList<IProperty> Properties { get; }
 
    /// <summary>
    /// Properties the primary key should be created with.
    /// </summary>
-   public IReadOnlyCollection<PropertyWithNavigations> PrimaryKeys { get; }
+   public IReadOnlyCollection<IProperty> PrimaryKeys { get; }
 
    /// <summary>
    /// Initializes new instance of <see cref="SqlServerTempTableCreatorCacheKey"/>.
@@ -36,7 +35,7 @@ public readonly struct SqlServerTempTableCreatorCacheKey
    {
       TruncateTableIfExists = options.TruncateTableIfExists;
       UseDefaultDatabaseCollation = options.UseDefaultDatabaseCollation;
-      Properties = options.PropertiesToInclude.DeterminePropertiesForTempTable(entityType, true);
+      Properties = options.PropertiesToInclude.DeterminePropertiesForTempTable(entityType);
       PrimaryKeys = options.PrimaryKeyCreation.GetPrimaryKeyProperties(entityType, Properties);
    }
 

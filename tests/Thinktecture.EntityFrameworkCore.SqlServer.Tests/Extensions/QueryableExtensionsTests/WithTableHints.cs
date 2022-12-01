@@ -106,7 +106,7 @@ public class WithTableHints : IntegrationTestsBase
    }
 
    [Fact]
-   public async Task Should_add_table_hints_to_table_without_touching_owned_entities()
+   public async Task Should_add_table_hints_to_table_and_owned_entities()
    {
       var query = ActDbContext.TestEntities_Own_SeparateMany_SeparateMany.WithTableHints(SqlServerTableHint.NoLock);
 
@@ -114,8 +114,8 @@ public class WithTableHints : IntegrationTestsBase
                                         $"FROM {EscapedSchema}.[TestEntities_Own_SeparateMany_SeparateMany] AS [t] WITH (NOLOCK)" + Environment.NewLine +
                                         "LEFT JOIN (" + Environment.NewLine +
                                         "    SELECT [s].[TestEntity_Owns_SeparateMany_SeparateManyId], [s].[Id], [s].[IntColumn], [s].[StringColumn], [s0].[OwnedEntity_Owns_SeparateManyTestEntity_Owns_SeparateMany_SeparateManyId], [s0].[OwnedEntity_Owns_SeparateManyId], [s0].[Id] AS [Id0], [s0].[IntColumn] AS [IntColumn0], [s0].[StringColumn] AS [StringColumn0]" + Environment.NewLine +
-                                        $"    FROM {EscapedSchema}.[SeparateEntitiesMany_SeparateEntitiesMany] AS [s]" + Environment.NewLine +
-                                        $"    LEFT JOIN {EscapedSchema}.[SeparateEntitiesMany_SeparateEntitiesMany_Inner] AS [s0] ON [s].[TestEntity_Owns_SeparateMany_SeparateManyId] = [s0].[OwnedEntity_Owns_SeparateManyTestEntity_Owns_SeparateMany_SeparateManyId] AND [s].[Id] = [s0].[OwnedEntity_Owns_SeparateManyId]" + Environment.NewLine +
+                                        $"    FROM {EscapedSchema}.[SeparateEntitiesMany_SeparateEntitiesMany] AS [s] WITH (NOLOCK)" + Environment.NewLine +
+                                        $"    LEFT JOIN {EscapedSchema}.[SeparateEntitiesMany_SeparateEntitiesMany_Inner] AS [s0] WITH (NOLOCK) ON [s].[TestEntity_Owns_SeparateMany_SeparateManyId] = [s0].[OwnedEntity_Owns_SeparateManyTestEntity_Owns_SeparateMany_SeparateManyId] AND [s].[Id] = [s0].[OwnedEntity_Owns_SeparateManyId]" + Environment.NewLine +
                                         ") AS [t0] ON [t].[Id] = [t0].[TestEntity_Owns_SeparateMany_SeparateManyId]" + Environment.NewLine +
                                         "ORDER BY [t].[Id], [t0].[TestEntity_Owns_SeparateMany_SeparateManyId], [t0].[Id], [t0].[OwnedEntity_Owns_SeparateManyTestEntity_Owns_SeparateMany_SeparateManyId], [t0].[OwnedEntity_Owns_SeparateManyId]");
 

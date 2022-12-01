@@ -295,10 +295,6 @@ INSERT BULK {Table} ({Columns})", (long)duration.TotalMilliseconds,
       var type = typeof(TEntity);
       var entityTypeName = EntityNameProvider.GetTempTableName(type);
       var entityType = _ctx.Model.GetEntityType(entityTypeName, type);
-      var selectedProperties = options.PropertiesToInsert.DeterminePropertiesForTempTable(entityType, null);
-
-      if (selectedProperties.Any(p => !p.IsInlined))
-         throw new NotSupportedException($"Bulk insert of separate owned types into temp tables is not supported. Properties of separate owned types: {String.Join(", ", selectedProperties.Where(p => !p.IsInlined))}");
 
       var tempTableCreationOptions = options.GetTempTableCreationOptions();
       var primaryKeyCreation = tempTableCreationOptions.PrimaryKeyCreation; // keep this one in a local variable because we may change it in the next line
@@ -318,7 +314,7 @@ INSERT BULK {Table} ({Columns})", (long)duration.TotalMilliseconds,
          {
             tempTableCreationOptions.PrimaryKeyCreation = primaryKeyCreation;
 
-            var tempTableProperties = tempTableCreationOptions.PropertiesToInclude.DeterminePropertiesForTempTable(entityType, true);
+            var tempTableProperties = tempTableCreationOptions.PropertiesToInclude.DeterminePropertiesForTempTable(entityType);
             var keyProperties = tempTableCreationOptions.PrimaryKeyCreation.GetPrimaryKeyProperties(entityType, tempTableProperties);
             await tempTableCreator.CreatePrimaryKeyAsync(_ctx, keyProperties, tempTableReference.Name, tempTableCreationOptions.TruncateTableIfExists, cancellationToken).ConfigureAwait(false);
          }
@@ -384,7 +380,7 @@ INSERT BULK {Table} ({Columns})", (long)duration.TotalMilliseconds,
       var tempTableOptions = options.GetTempTableBulkInsertOptions();
       await using var tempTable = await BulkInsertIntoTempTableAsync(entities, tempTableOptions, cancellationToken);
 
-      var mergeStatement = CreateMergeCommand(entityType, tempTable.Name, options, null, propertiesForUpdate, options.KeyProperties.DetermineKeyProperties(entityType, true));
+      var mergeStatement = CreateMergeCommand(entityType, tempTable.Name, options, null, propertiesForUpdate, options.KeyProperties.DetermineKeyProperties(entityType));
 
       return await _ctx.Database.ExecuteSqlRawAsync(mergeStatement, cancellationToken);
    }
@@ -418,7 +414,7 @@ INSERT BULK {Table} ({Columns})", (long)duration.TotalMilliseconds,
       var tempTableOptions = options.GetTempTableBulkInsertOptions();
       await using var tempTable = await BulkInsertIntoTempTableAsync(entities, tempTableOptions, cancellationToken);
 
-      var mergeStatement = CreateMergeCommand(entityType, tempTable.Name, options, propertiesForInsert, propertiesForUpdate, options.KeyProperties.DetermineKeyProperties(entityType, true));
+      var mergeStatement = CreateMergeCommand(entityType, tempTable.Name, options, propertiesForInsert, propertiesForUpdate, options.KeyProperties.DetermineKeyProperties(entityType));
 
       return await _ctx.Database.ExecuteSqlRawAsync(mergeStatement, cancellationToken);
    }
@@ -429,7 +425,7 @@ INSERT BULK {Table} ({Columns})", (long)duration.TotalMilliseconds,
       T options,
       IReadOnlyList<PropertyWithNavigations>? propertiesToInsert,
       IReadOnlyList<PropertyWithNavigations> propertiesToUpdate,
-      IReadOnlyList<PropertyWithNavigations> keyProperties)
+      IReadOnlyList<IProperty> keyProperties)
       where T : ISqlServerMergeOperationOptions
    {
       var sb = _stringBuilderPool.Get();
@@ -475,7 +471,7 @@ INSERT BULK {Table} ({Columns})", (long)duration.TotalMilliseconds,
 
             sb.Append("(d.").Append(escapedColumnName).Append(" = s.").Append(escapedColumnName);
 
-            if (property.Property.IsNullable)
+            if (property.IsNullable)
                sb.Append(" OR d.").Append(escapedColumnName).Append(" IS NULL AND s.").Append(escapedColumnName).Append(" IS NULL");
 
             sb.Append(")");
@@ -484,7 +480,7 @@ INSERT BULK {Table} ({Columns})", (long)duration.TotalMilliseconds,
 
          isFirstIteration = true;
 
-         foreach (var property in propertiesToUpdate.Except(keyProperties))
+         foreach (var property in propertiesToUpdate.Select(p => p.Property).Except(keyProperties))
          {
             if (!isFirstIteration)
             {

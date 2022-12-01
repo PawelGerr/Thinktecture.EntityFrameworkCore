@@ -68,7 +68,11 @@ public readonly struct PropertyWithNavigations : IEquatable<PropertyWithNavigati
    /// <inheritdoc />
    public override int GetHashCode()
    {
-      return HashCode.Combine(Property, Navigations);
+      var hashCode = new HashCode();
+      hashCode.Add(Property);
+      Navigations.ComputeHashCode(hashCode);
+
+      return hashCode.ToHashCode();
    }
 
    /// <inheritdoc />

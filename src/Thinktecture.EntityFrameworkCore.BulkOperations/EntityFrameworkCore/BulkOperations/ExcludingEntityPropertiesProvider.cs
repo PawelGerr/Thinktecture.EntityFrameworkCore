@@ -13,9 +13,9 @@ internal sealed class ExcludingEntityPropertiesProvider : IEntityPropertiesProvi
       _members = members ?? throw new ArgumentNullException(nameof(members));
    }
 
-   public IReadOnlyList<PropertyWithNavigations> GetPropertiesForTempTable(IEntityType entityType, bool? inlinedOwnTypes)
+   public IReadOnlyList<IProperty> GetPropertiesForTempTable(IEntityType entityType)
    {
-      return Filter(IEntityPropertiesProvider.Default.GetPropertiesForTempTable(entityType, inlinedOwnTypes));
+      return Filter(IEntityPropertiesProvider.Default.GetPropertiesForTempTable(entityType));
    }
 
    private IReadOnlyList<PropertyWithNavigations> Filter(IReadOnlyList<PropertyWithNavigations> properties)
@@ -24,9 +24,15 @@ internal sealed class ExcludingEntityPropertiesProvider : IEntityPropertiesProvi
                        .ToList();
    }
 
-   public IReadOnlyList<PropertyWithNavigations> GetKeyProperties(IEntityType entityType, bool? inlinedOwnTypes)
+   private IReadOnlyList<IProperty> Filter(IReadOnlyList<IProperty> properties)
    {
-      return Filter(IEntityPropertiesProvider.Default.GetKeyProperties(entityType, inlinedOwnTypes));
+      return properties.Where(p => _members.All(m => m != p.PropertyInfo && m != p.FieldInfo))
+                       .ToList();
+   }
+
+   public IReadOnlyList<IProperty> GetKeyProperties(IEntityType entityType)
+   {
+      return Filter(IEntityPropertiesProvider.Default.GetKeyProperties(entityType));
    }
 
    public IReadOnlyList<PropertyWithNavigations> GetPropertiesForInsert(IEntityType entityType, bool? inlinedOwnTypes)

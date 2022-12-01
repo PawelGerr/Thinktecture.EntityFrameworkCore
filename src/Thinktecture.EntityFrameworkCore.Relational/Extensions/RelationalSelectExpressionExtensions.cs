@@ -1,4 +1,4 @@
-using System.Reflection;
+using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 
@@ -9,44 +9,49 @@ namespace Thinktecture;
 /// </summary>
 public static class RelationalSelectExpressionExtensions
 {
-   private static readonly Lazy<Action<TableExpression, TableWithMetadata>> _setTableWithMetadata = new(() =>
-                                                                                                        {
-                                                                                                           var tableFieldInfo = typeof(TableExpression).GetField("<Table>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic)
-                                                                                                                                ?? throw new Exception("The field 'SelectExpression.<Table>k__BackingField' not found.");
-
-                                                                                                           return (tableExpression, tableWithMetadata) => tableFieldInfo.SetValue(tableExpression, tableWithMetadata);
-                                                                                                        });
-
    /// <summary>
    /// For internal use only.
    /// </summary>
-   public static SelectExpression AddTableMetadata(
+   public static SelectExpression AddAnnotation(
       this SelectExpression selectExpression,
-      string metadataName,
-      Func<object?, object?> addOrUpdateMetadata)
+      IAnnotation annotation)
    {
+      ArgumentNullException.ThrowIfNull(selectExpression);
+      ArgumentNullException.ThrowIfNull(annotation);
+
       var tables = selectExpression.Tables;
 
       if (tables.Count == 0)
-         throw new InvalidOperationException($"No tables found to add metadata '{metadataName}' to.");
+         throw new InvalidOperationException($"No tables found to add annotation '{annotation.Name}' to.");
 
       if (tables.Count > 1)
-         throw new InvalidOperationException($"Multiple tables found to add metadata '{metadataName}' to. Expressions: {String.Join(", ", tables.Select(t => t.Print()))}");
+         throw new InvalidOperationException($"Multiple tables found to add annotation '{annotation.Name}' to. Expressions: {String.Join(", ", tables.Select(t => t.Print()))}");
 
       var tableExpressionBase = selectExpression.Tables[0];
 
       if (tableExpressionBase is not TableExpression tableExpression)
-         throw new NotSupportedException($"Metadata of type '{metadataName}' can be applied to tables only but found '{tableExpressionBase.GetType().Name}'. Expression: {tableExpressionBase.Print()}");
+         throw new NotSupportedException($"Annotation '{annotation.Name}' can be applied to tables only but found '{tableExpressionBase.GetType().Name}'. Expression: {tableExpressionBase.Print()}");
 
-      if (tableExpression.Table is not TableWithMetadata tableWithMetadata)
+      return (SelectExpression)new AnnotationApplyingExpressionVisitor(tableExpression, annotation)
+         .Visit(selectExpression)!;
+   }
+
+   private sealed class AnnotationApplyingExpressionVisitor : ExpressionVisitor
+   {
+      private readonly TableExpression _tableExpression;
+      private readonly IAnnotation _annotation;
+
+      public AnnotationApplyingExpressionVisitor(TableExpression tableExpression, IAnnotation annotation)
       {
-         tableWithMetadata = new TableWithMetadata(tableExpression.Table);
-
-         _setTableWithMetadata.Value(tableExpression, tableWithMetadata);
+         _tableExpression = tableExpression;
+         _annotation = annotation;
       }
 
-      tableWithMetadata.AddOrUpdateMetadata(metadataName, addOrUpdateMetadata);
-
-      return selectExpression;
+      public override Expression? Visit(Expression? expression)
+      {
+         return _tableExpression.Equals(expression)
+                   ? _tableExpression.AddAnnotation(_annotation.Name, _annotation.Value)
+                   : base.Visit(expression);
+      }
    }
 }

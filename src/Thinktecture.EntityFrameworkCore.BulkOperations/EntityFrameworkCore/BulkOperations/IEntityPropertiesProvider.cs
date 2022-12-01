@@ -69,17 +69,15 @@ public interface IEntityPropertiesProvider
    /// Determines properties to include into a temp table into.
    /// </summary>
    /// <param name="entityType">Entity type.</param>
-   /// <param name="inlinedOwnTypes">Indication whether inlined (<c>true</c>), separated (<c>false</c>) or all owned types to return.</param>
    /// <returns>Properties to include into a temp table.</returns>
-   IReadOnlyList<PropertyWithNavigations> GetPropertiesForTempTable(IEntityType entityType, bool? inlinedOwnTypes);
+   IReadOnlyList<IProperty> GetPropertiesForTempTable(IEntityType entityType);
 
    /// <summary>
    /// Determines properties to include into a temp table into.
    /// </summary>
    /// <param name="entityType">Entity type.</param>
-   /// <param name="inlinedOwnTypes">Indication whether inlined (<c>true</c>), separated (<c>false</c>) or all owned types to return.</param>
    /// <returns>Properties to include into a temp table.</returns>
-   IReadOnlyList<PropertyWithNavigations> GetKeyProperties(IEntityType entityType, bool? inlinedOwnTypes);
+   IReadOnlyList<IProperty> GetKeyProperties(IEntityType entityType);
 
    /// <summary>
    /// Determines properties to insert into a (temp) table.
@@ -96,11 +94,6 @@ public interface IEntityPropertiesProvider
    /// <param name="inlinedOwnTypes">Indication whether inlined (<c>true</c>), separated (<c>false</c>) or all owned types to return.</param>
    /// <returns>Properties to use in update of a table.</returns>
    IReadOnlyList<PropertyWithNavigations> GetPropertiesForUpdate(IEntityType entityType, bool? inlinedOwnTypes);
-
-   internal static bool TempTableFilter(IProperty property, IReadOnlyList<INavigation> navigations)
-   {
-      return navigations.Count == 0 || !property.IsKey();
-   }
 
    internal static bool InsertAndUpdateFilter(IProperty property, IReadOnlyList<INavigation> navigations)
    {

@@ -10,7 +10,33 @@ namespace Thinktecture;
 /// </summary>
 public static class BulkOperationsCollectionExtensions
 {
-   internal static IReadOnlyList<PropertyWithNavigations> ConvertToEntityProperties(
+   internal static IReadOnlyList<IProperty> ConvertToEntityProperties(
+      this IReadOnlyList<MemberInfo> members,
+      IEntityType entityType,
+      Func<IProperty, bool> filter)
+   {
+      if (entityType.GetOwnedTypesProperties(null).Any())
+         throw new NotSupportedException($"The entity '{entityType.Name}' must not contain owned entities.");
+
+      var properties = new List<IProperty>();
+
+      foreach (var memberInfo in members)
+      {
+         var property = FindProperty(entityType, memberInfo);
+
+         if (property != null && filter(property))
+         {
+            properties.Add(property);
+            continue;
+         }
+
+         throw new InvalidOperationException($"The member '{memberInfo.Name}' of the entity '{entityType.Name}' cannot be written to database.");
+      }
+
+      return properties;
+   }
+
+   internal static IReadOnlyList<PropertyWithNavigations> ConvertToEntityPropertiesWithNavigations(
       this IReadOnlyList<MemberInfo> members,
       IEntityType entityType,
       bool? inlinedOwnTypes,

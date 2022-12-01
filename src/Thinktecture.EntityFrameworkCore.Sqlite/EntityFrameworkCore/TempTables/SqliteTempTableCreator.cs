@@ -4,7 +4,6 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.ObjectPool;
-using Thinktecture.EntityFrameworkCore.Data;
 
 namespace Thinktecture.EntityFrameworkCore.TempTables;
 
@@ -133,34 +132,34 @@ CREATE TEMPORARY TABLE {sqlGenerationHelper.DelimitIdentifier(name)}
 
             storeObject ??= property.GetStoreObject();
             var columnName = property.GetColumnName(storeObject.Value);
-            var columnType = property.Property.GetColumnType(storeObject.Value);
+            var columnType = property.GetColumnType(storeObject.Value);
 
             sb.Append("\t\t")
               .Append(_sqlGenerationHelper.DelimitIdentifier(columnName)).Append(' ')
               .Append(columnType)
-              .Append(property.Property.IsNullable ? " NULL" : " NOT NULL");
+              .Append(property.IsNullable ? " NULL" : " NOT NULL");
 
-            if (property.Property.IsAutoIncrement())
+            if (property.IsAutoIncrement())
             {
                if (options.PrimaryKeys.Count != 1 || !property.Equals(options.PrimaryKeys.First()))
                {
-                  throw new NotSupportedException(@$"SQLite does not allow the property '{property.Property.Name}' of the entity '{property.Property.DeclaringEntityType.Name}' to be an AUTOINCREMENT column unless this column is the PRIMARY KEY.
-Currently configured primary keys: [{String.Join(", ", options.PrimaryKeys.Select(p => p.Property.Name))}]");
+                  throw new NotSupportedException(@$"SQLite does not allow the property '{property.Name}' of the entity '{property.DeclaringEntityType.Name}' to be an AUTOINCREMENT column unless this column is the PRIMARY KEY.
+Currently configured primary keys: [{String.Join(", ", options.PrimaryKeys.Select(p => p.Name))}]");
                }
 
                sb.Append(" PRIMARY KEY AUTOINCREMENT");
                createPk = false;
             }
 
-            var defaultValueSql = property.Property.GetDefaultValueSql(storeObject.Value);
+            var defaultValueSql = property.GetDefaultValueSql(storeObject.Value);
 
             if (!String.IsNullOrWhiteSpace(defaultValueSql))
             {
                sb.Append(" DEFAULT (").Append(defaultValueSql).Append(')');
             }
-            else if (property.Property.TryGetDefaultValue(storeObject.Value, out var defaultValue) && defaultValue is not null)
+            else if (property.TryGetDefaultValue(storeObject.Value, out var defaultValue) && defaultValue is not null)
             {
-               var converter = property.Property.GetValueConverter();
+               var converter = property.GetValueConverter();
 
                if (converter is not null)
                   defaultValue = converter.ConvertToProvider(defaultValue);
@@ -188,7 +187,7 @@ Currently configured primary keys: [{String.Join(", ", options.PrimaryKeys.Selec
       }
    }
 
-   private void CreatePkClause(IReadOnlyCollection<PropertyWithNavigations> keyProperties, StringBuilder sb)
+   private void CreatePkClause(IReadOnlyCollection<IProperty> keyProperties, StringBuilder sb)
    {
       if (!keyProperties.Any())
          return;

@@ -21,6 +21,18 @@ public static class PropertyWithNavigationsExtensions
    }
 
    /// <summary>
+   /// Gets the <see cref="StoreObjectIdentifier"/> for <paramref name="property"/>.
+   /// </summary>
+   /// <param name="property">Property to get <see cref="StoreObjectIdentifier"/> for.</param>
+   /// <returns>The <see cref="StoreObjectIdentifier"/>.</returns>
+   /// <exception cref="Exception">If no <see cref="StoreObjectIdentifier"/> found.</exception>
+   public static StoreObjectIdentifier GetStoreObject(this IProperty property)
+   {
+      return StoreObjectIdentifier.Create(property.DeclaringEntityType, StoreObjectType.Table)
+             ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.DeclaringEntityType.Name}'.");
+   }
+
+   /// <summary>
    /// Gets the column name for <paramref name="property"/>.
    /// </summary>
    /// <param name="property">Property to get column name for.</param>

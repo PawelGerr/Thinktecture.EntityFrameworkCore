@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 using Microsoft.EntityFrameworkCore.SqlServer.Query.Internal;
 using Microsoft.EntityFrameworkCore.Storage;
-using Thinktecture.EntityFrameworkCore.Query.SqlExpressions;
+using Thinktecture.EntityFrameworkCore.Internal;
 
 namespace Thinktecture.EntityFrameworkCore.Query;
 
@@ -22,49 +22,6 @@ public class ThinktectureSqlServerQuerySqlGenerator : SqlServerQuerySqlGenerator
       : base(dependencies, typeMappingSource)
    {
       _databaseProvider = databaseProvider ?? throw new ArgumentNullException(nameof(databaseProvider));
-   }
-
-   /// <inheritdoc />
-   protected override Expression VisitExtension(Expression expression)
-   {
-      switch (expression)
-      {
-         case TempTableExpression tempTableExpression:
-            VisitTempTable(tempTableExpression);
-            return expression;
-         case TableWithHintsExpression tableWithHints:
-            VisitTableWithHints(tableWithHints);
-            return expression;
-         default:
-            return base.VisitExtension(expression);
-      }
-   }
-
-   private void VisitTableWithHints(TableWithHintsExpression tableWithHints)
-   {
-      Visit(tableWithHints.Table);
-
-      if (tableWithHints.TableHints.Count == 0)
-         return;
-
-      Sql.Append(" ").Append("WITH (");
-
-      for (var i = 0; i < tableWithHints.TableHints.Count; i++)
-      {
-         if (i != 0)
-            Sql.Append(", ");
-
-         Sql.Append(tableWithHints.TableHints[i].ToString()!);
-      }
-
-      Sql.Append(")");
-   }
-
-   private void VisitTempTable(TempTableExpression tempTableExpression)
-   {
-      Sql.Append(Dependencies.SqlGenerationHelper.DelimitIdentifier(tempTableExpression.Name))
-         .Append(AliasSeparator)
-         .Append(Dependencies.SqlGenerationHelper.DelimitIdentifier(tempTableExpression.Alias));
    }
 
    /// <inheritdoc />
@@ -127,16 +84,52 @@ public class ThinktectureSqlServerQuerySqlGenerator : SqlServerQuerySqlGenerator
    {
       ArgumentNullException.ThrowIfNull(tableExpression);
 
-      var databaseName = _databaseProvider.GetDatabaseName(tableExpression.Schema, tableExpression.Name);
+      var tableHints = tableExpression.FindAnnotation(ThinktectureRelationalAnnotationNames.TableHints)?.Value as IReadOnlyList<ITableHint>;
 
-      if (!String.IsNullOrWhiteSpace(databaseName))
+      var visitedExpression = VisitTableOrTempTable(tableExpression);
+
+      if (tableHints?.Count > 0)
       {
-         Sql.Append(Dependencies.SqlGenerationHelper.DelimitIdentifier(databaseName))
-            .Append(String.IsNullOrWhiteSpace(tableExpression.Schema) ? ".." : ".");
+         Sql.Append(" ").Append("WITH (");
+
+         for (var i = 0; i < tableHints.Count; i++)
+         {
+            if (i != 0)
+               Sql.Append(", ");
+
+            Sql.Append(tableHints[i].ToString()!);
+         }
+
+         Sql.Append(")");
       }
 
-      var expression = base.VisitTable(tableExpression);
+      return visitedExpression;
+   }
 
-      return expression;
+   private Expression VisitTableOrTempTable(TableExpression tableExpression)
+   {
+      var tempTable = tableExpression.FindAnnotation(ThinktectureBulkOperationsAnnotationNames.TempTable);
+
+      if (tempTable is not null)
+      {
+         var tempTableName = (string?)tempTable.Value ?? throw new Exception("Temp table name cannot be null.");
+         Sql.Append(Dependencies.SqlGenerationHelper.DelimitIdentifier(tempTableName))
+            .Append(AliasSeparator)
+            .Append(Dependencies.SqlGenerationHelper.DelimitIdentifier(tableExpression.Alias));
+
+         return tableExpression;
+      }
+      else
+      {
+         var databaseName = _databaseProvider.GetDatabaseName(tableExpression.Schema, tableExpression.Name);
+
+         if (!String.IsNullOrWhiteSpace(databaseName))
+         {
+            Sql.Append(Dependencies.SqlGenerationHelper.DelimitIdentifier(databaseName))
+               .Append(String.IsNullOrWhiteSpace(tableExpression.Schema) ? ".." : ".");
+         }
+
+         return base.VisitTable(tableExpression);
+      }
    }
 }

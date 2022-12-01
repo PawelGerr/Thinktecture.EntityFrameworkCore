@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore.Metadata;
-using Thinktecture.EntityFrameworkCore.Data;
 
 namespace Thinktecture.EntityFrameworkCore.TempTables;
 
@@ -32,5 +31,5 @@ public interface ISqlServerTempTableCreator : ITempTableCreator
    /// <param name="tableName">Table name to create the primary key in.</param>
    /// <param name="checkForExistence">If <c>true</c> then the primary key is not going to be created if it exists already.</param>
    /// <param name="cancellationToken">Cancellation token.</param>
-   Task CreatePrimaryKeyAsync(DbContext ctx, IReadOnlyCollection<PropertyWithNavigations> keyProperties, string tableName, bool checkForExistence = false, CancellationToken cancellationToken = default);
+   Task CreatePrimaryKeyAsync(DbContext ctx, IReadOnlyCollection<IProperty> keyProperties, string tableName, bool checkForExistence = false, CancellationToken cancellationToken = default);
 }

@@ -8,16 +8,12 @@ namespace Thinktecture.EntityFrameworkCore.Query;
 /// </summary>
 public class ThinktectureSqliteParameterBasedSqlProcessor : RelationalParameterBasedSqlProcessor
 {
-   private readonly RelationalOptimizingVisitor _relationalOptimizingVisitor;
-
    /// <inheritdoc />
    public ThinktectureSqliteParameterBasedSqlProcessor(
-      RelationalOptimizingVisitor relationalOptimizingVisitor,
       RelationalParameterBasedSqlProcessorDependencies dependencies,
       bool useRelationalNulls)
       : base(dependencies, useRelationalNulls)
    {
-      _relationalOptimizingVisitor = relationalOptimizingVisitor;
    }
 
    /// <inheritdoc />
@@ -27,13 +23,5 @@ public class ThinktectureSqliteParameterBasedSqlProcessor : RelationalParameterB
       ArgumentNullException.ThrowIfNull(parametersValues);
 
       return new ThinktectureSqlNullabilityProcessor(Dependencies, UseRelationalNulls).Process(expression, parametersValues, out canCache);
-   }
-
-   /// <inheritdoc />
-   public override Expression Optimize(Expression expression, IReadOnlyDictionary<string, object?> parametersValues, out bool canCache)
-   {
-      expression = base.Optimize(expression, parametersValues, out canCache);
-
-      return _relationalOptimizingVisitor.Process(expression);
    }
 }

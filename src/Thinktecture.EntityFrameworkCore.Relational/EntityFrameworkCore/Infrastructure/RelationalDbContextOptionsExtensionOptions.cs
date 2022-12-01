@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Thinktecture.EntityFrameworkCore.Conventions;
-using Thinktecture.EntityFrameworkCore.Query;
 using Thinktecture.EntityFrameworkCore.Query.ExpressionTranslators;
 
 namespace Thinktecture.EntityFrameworkCore.Infrastructure;
@@ -22,8 +21,6 @@ public class RelationalDbContextOptionsExtensionOptions : ISingletonOptions
 
    internal IReadOnlyList<ConventionToRemove> ConventionsToRemove { get; private set; } = Array.Empty<ConventionToRemove>();
 
-   internal IReadOnlyList<ITableMetadataProcessor> MetadataProcessors { get; private set; } = Array.Empty<ITableMetadataProcessor>();
-
    /// <inheritdoc />
    public void Initialize(IDbContextOptions options)
    {
@@ -32,7 +29,6 @@ public class RelationalDbContextOptionsExtensionOptions : ISingletonOptions
       RowNumberSupportEnabled = extension.AddRowNumberSupport;
       TenantDatabaseSupportEnabled = extension.AddTenantDatabaseSupport;
       ConventionsToRemove = extension.ConventionsToRemove.ToList();
-      MetadataProcessors = extension.MetadataProcessors.ToList();
    }
 
    /// <inheritdoc />
@@ -48,9 +44,6 @@ public class RelationalDbContextOptionsExtensionOptions : ISingletonOptions
 
       if (!Equal(extension.ConventionsToRemove, ConventionsToRemove))
          throw new InvalidOperationException($"The setting '{nameof(RelationalDbContextOptionsExtension.ConventionsToRemove)}' has been changed.");
-
-      if (!Equal(extension.MetadataProcessors, MetadataProcessors))
-         throw new InvalidOperationException($"The setting '{nameof(RelationalDbContextOptionsExtension.MetadataProcessors)}' has been changed.");
    }
 
    private bool Equal<T>(IReadOnlyList<T> collection, IReadOnlyList<T> otherCollection)

@@ -115,7 +115,6 @@ public sealed class SqlServerDbContextOptionsExtension : DbContextOptionsExtensi
    public SqlServerDbContextOptionsExtension(RelationalDbContextOptionsExtension relationalOptions)
    {
       _relationalOptions = relationalOptions ?? throw new ArgumentNullException(nameof(relationalOptions));
-      _relationalOptions.AddTableMetadataProcessor(TempTableTableMetadataProcessor.Instance);
    }
 
    /// <inheritdoc />

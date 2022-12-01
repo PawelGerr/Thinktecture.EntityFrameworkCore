@@ -6,7 +6,6 @@ using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.SqlServer.Metadata.Internal;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.ObjectPool;
-using Thinktecture.EntityFrameworkCore.Data;
 
 namespace Thinktecture.EntityFrameworkCore.TempTables;
 
@@ -121,7 +120,7 @@ public sealed class SqlServerTempTableCreator : ISqlServerTempTableCreator
    /// <inheritdoc />
    public async Task CreatePrimaryKeyAsync(
       DbContext ctx,
-      IReadOnlyCollection<PropertyWithNavigations> keyProperties,
+      IReadOnlyCollection<IProperty> keyProperties,
       string tableName,
       bool checkForExistence = false,
       CancellationToken cancellationToken = default)
@@ -226,7 +225,7 @@ END
 
             storeObject ??= property.GetStoreObject();
 
-            var columnType = property.Property.GetColumnType(storeObject.Value);
+            var columnType = property.GetColumnType(storeObject.Value);
             var columnName = property.GetColumnName(storeObject.Value);
 
             sb.Append('\t')
@@ -237,9 +236,9 @@ END
             {
                // Collation information is not available from the runtime model, so we need to fetch it from the design time model
                designTimeEntityType ??= _ctx.GetService<IDesignTimeModel>().Model
-                                            .GetEntityType(property.Property.DeclaringEntityType.Name);
+                                            .GetEntityType(property.DeclaringEntityType.Name);
 
-               var collation = designTimeEntityType.GetProperty(property.Property.Name)
+               var collation = designTimeEntityType.GetProperty(property.Name)
                                                    .GetCollation(storeObject.Value);
 
                if (options.UseDefaultDatabaseCollation && String.IsNullOrWhiteSpace(collation))
@@ -249,20 +248,20 @@ END
                   sb.Append(" COLLATE ").Append(collation);
             }
 
-            sb.Append(property.Property.IsNullable ? " NULL" : " NOT NULL");
+            sb.Append(property.IsNullable ? " NULL" : " NOT NULL");
 
             if (IsIdentityColumn(property))
                sb.Append(" IDENTITY");
 
-            var defaultValueSql = property.Property.GetDefaultValueSql(storeObject.Value);
+            var defaultValueSql = property.GetDefaultValueSql(storeObject.Value);
 
             if (!String.IsNullOrWhiteSpace(defaultValueSql))
             {
                sb.Append(" DEFAULT (").Append(defaultValueSql).Append(')');
             }
-            else if (property.Property.TryGetDefaultValue(storeObject.Value, out var defaultValue) && defaultValue is not null)
+            else if (property.TryGetDefaultValue(storeObject.Value, out var defaultValue) && defaultValue is not null)
             {
-               var converter = property.Property.GetValueConverter();
+               var converter = property.GetValueConverter();
 
                if (converter is not null)
                   defaultValue = converter.ConvertToProvider(defaultValue);
@@ -290,7 +289,7 @@ END
    }
 
    private void CreatePkClause(
-      IReadOnlyCollection<PropertyWithNavigations> keyProperties,
+      IReadOnlyCollection<IProperty> keyProperties,
       StringBuilder sb)
    {
       if (keyProperties.Count <= 0)
@@ -319,8 +318,8 @@ END
    }
 
    [SuppressMessage("Usage", "EF1001", MessageId = "Internal EF Core API usage.")]
-   private static bool IsIdentityColumn(PropertyWithNavigations property)
+   private static bool IsIdentityColumn(IProperty property)
    {
-      return SqlServerValueGenerationStrategy.IdentityColumn.Equals(property.Property.FindAnnotation(SqlServerAnnotationNames.ValueGenerationStrategy)?.Value);
+      return SqlServerValueGenerationStrategy.IdentityColumn.Equals(property.FindAnnotation(SqlServerAnnotationNames.ValueGenerationStrategy)?.Value);
    }
 }

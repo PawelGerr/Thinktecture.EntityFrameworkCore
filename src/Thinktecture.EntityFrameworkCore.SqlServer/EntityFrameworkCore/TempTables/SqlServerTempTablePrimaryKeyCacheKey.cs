@@ -1,4 +1,4 @@
-using Thinktecture.EntityFrameworkCore.Data;
+using Microsoft.EntityFrameworkCore.Metadata;
 
 namespace Thinktecture.EntityFrameworkCore.TempTables;
 
@@ -12,7 +12,7 @@ public readonly struct SqlServerTempTablePrimaryKeyCacheKey
    /// <summary>
    /// Properties to create the primary key with.
    /// </summary>
-   public IReadOnlyCollection<PropertyWithNavigations> KeyProperties { get; }
+   public IReadOnlyCollection<IProperty> KeyProperties { get; }
 
    /// <summary>
    /// Indication whether to check for existence of PK.
@@ -25,7 +25,7 @@ public readonly struct SqlServerTempTablePrimaryKeyCacheKey
    /// <param name="keyProperties">Properties to create the primary key with.</param>
    /// <param name="checkForExistence">Indication whether to check for existence of PK.</param>
    public SqlServerTempTablePrimaryKeyCacheKey(
-      IReadOnlyCollection<PropertyWithNavigations> keyProperties,
+      IReadOnlyCollection<IProperty> keyProperties,
       bool checkForExistence)
    {
       KeyProperties = keyProperties;

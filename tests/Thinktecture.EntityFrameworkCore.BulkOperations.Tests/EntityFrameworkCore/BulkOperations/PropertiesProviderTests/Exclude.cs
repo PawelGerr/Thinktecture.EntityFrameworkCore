@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore.Metadata;
-using Thinktecture.EntityFrameworkCore.Data;
 using Thinktecture.TestDatabaseContext;
 
 namespace Thinktecture.EntityFrameworkCore.BulkOperations.PropertiesProviderTests;
@@ -25,7 +24,7 @@ public class Exclude
    {
       var entityType = GetEntityType<TestEntity>();
       var propertiesProvider = IEntityPropertiesProvider.Exclude<TestEntity>(entity => new { });
-      var properties = propertiesProvider.GetPropertiesForTempTable(entityType, null);
+      var properties = propertiesProvider.GetPropertiesForTempTable(entityType);
 
       properties.Should().HaveCount(entityType.GetProperties().Count());
    }
@@ -34,11 +33,11 @@ public class Exclude
    public void Should_extract_all_properties_besides_the_one_specified_by_property_accessor()
    {
       var entityType = GetEntityType<TestEntity>();
-      var idProperty = new PropertyWithNavigations(entityType.FindProperty(nameof(TestEntity.Id))!, Array.Empty<INavigation>());
+      var idProperty = entityType.FindProperty(nameof(TestEntity.Id));
 
       var propertiesProvider = IEntityPropertiesProvider.Exclude<TestEntity>(entity => entity.Id);
 
-      var properties = propertiesProvider.GetPropertiesForTempTable(entityType, null);
+      var properties = propertiesProvider.GetPropertiesForTempTable(entityType);
       properties.Should().HaveCount(entityType.GetProperties().Count() - 1);
       properties.Should().NotContain(idProperty);
    }
@@ -47,12 +46,12 @@ public class Exclude
    public void Should_extract_all_properties_besides_the_ones_specified_by_expression()
    {
       var entityType = GetEntityType<TestEntity>();
-      var idProperty = new PropertyWithNavigations(entityType.FindProperty(nameof(TestEntity.Id))!, Array.Empty<INavigation>());
-      var countProperty = new PropertyWithNavigations(entityType.FindProperty(nameof(TestEntity.Count))!, Array.Empty<INavigation>());
+      var idProperty = entityType.FindProperty(nameof(TestEntity.Id));
+      var countProperty = entityType.FindProperty(nameof(TestEntity.Count));
 
       var propertiesProvider = IEntityPropertiesProvider.Exclude<TestEntity>(entity => new { entity.Id, entity.Count });
 
-      var properties = propertiesProvider.GetPropertiesForTempTable(entityType, null);
+      var properties = propertiesProvider.GetPropertiesForTempTable(entityType);
       properties.Should().HaveCount(entityType.GetProperties().Count() - 2);
       properties.Should().NotContain(idProperty);
       properties.Should().NotContain(countProperty);

@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
-using Thinktecture.EntityFrameworkCore.Query.SqlExpressions;
+using Thinktecture.EntityFrameworkCore.Internal;
 using Thinktecture.Internal;
 
 // ReSharper disable once CheckNamespace
@@ -61,7 +61,7 @@ public static class RelationalQueryableMethodTranslatingExpressionVisitorExtensi
          return shapedQueryExpression;
 
       var selectExpression = (SelectExpression)shapedQueryExpression.QueryExpression;
-      var newSelectExpression = selectExpression.AddTableMetadata(nameof(TableWithHintsExpression), _ => tableHints);
+      var newSelectExpression = selectExpression.AddAnnotation(new Annotation(ThinktectureRelationalAnnotationNames.TableHints, tableHints));
 
       return shapedQueryExpression.Update(newSelectExpression, shapedQueryExpression.ShaperExpression);
    }

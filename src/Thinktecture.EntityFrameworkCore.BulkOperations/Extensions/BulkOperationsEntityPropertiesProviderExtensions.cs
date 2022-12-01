@@ -15,16 +15,14 @@ public static class BulkOperationsEntityPropertiesProviderExtensions
    /// </summary>
    /// <param name="entityPropertiesProvider">Entity properties provider.</param>
    /// <param name="entityType">Entity type.</param>
-   /// <param name="inlinedOwnTypes">Indication whether inlined (<c>true</c>), separated (<c>false</c>) or all owned types to return.</param>
    /// <returns>Properties to include into a temp table.</returns>
-   public static IReadOnlyList<PropertyWithNavigations> DeterminePropertiesForTempTable(
+   public static IReadOnlyList<IProperty> DeterminePropertiesForTempTable(
       this IEntityPropertiesProvider? entityPropertiesProvider,
-      IEntityType entityType,
-      bool? inlinedOwnTypes)
+      IEntityType entityType)
    {
       ArgumentNullException.ThrowIfNull(entityType);
 
-      return (entityPropertiesProvider ?? IEntityPropertiesProvider.Default).GetPropertiesForTempTable(entityType, inlinedOwnTypes);
+      return (entityPropertiesProvider ?? IEntityPropertiesProvider.Default).GetPropertiesForTempTable(entityType);
    }
 
    /// <summary>
@@ -32,16 +30,14 @@ public static class BulkOperationsEntityPropertiesProviderExtensions
    /// </summary>
    /// <param name="entityPropertiesProvider">Entity properties provider.</param>
    /// <param name="entityType">Entity type.</param>
-   /// <param name="inlinedOwnTypes">Indication whether inlined (<c>true</c>), separated (<c>false</c>) or all owned types to return.</param>
    /// <returns>Key properties.</returns>
-   public static IReadOnlyList<PropertyWithNavigations> DetermineKeyProperties(
+   public static IReadOnlyList<IProperty> DetermineKeyProperties(
       this IEntityPropertiesProvider? entityPropertiesProvider,
-      IEntityType entityType,
-      bool? inlinedOwnTypes)
+      IEntityType entityType)
    {
       ArgumentNullException.ThrowIfNull(entityType);
 
-      var properties = (entityPropertiesProvider ?? IEntityPropertiesProvider.Default).GetKeyProperties(entityType, inlinedOwnTypes);
+      var properties = (entityPropertiesProvider ?? IEntityPropertiesProvider.Default).GetKeyProperties(entityType);
 
       if (properties is null or { Count: 0 })
          throw new ArgumentException("The number of key properties to perform JOIN/match on cannot be 0.");

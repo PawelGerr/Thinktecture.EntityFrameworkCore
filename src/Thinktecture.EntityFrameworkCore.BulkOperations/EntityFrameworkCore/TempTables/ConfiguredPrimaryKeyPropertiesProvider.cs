@@ -1,11 +1,10 @@
 using Microsoft.EntityFrameworkCore.Metadata;
-using Thinktecture.EntityFrameworkCore.Data;
 
 namespace Thinktecture.EntityFrameworkCore.TempTables;
 
 internal sealed class ConfiguredPrimaryKeyPropertiesProvider : IPrimaryKeyPropertiesProvider
 {
-   public IReadOnlyCollection<PropertyWithNavigations> GetPrimaryKeyProperties(IEntityType entityType, IReadOnlyCollection<PropertyWithNavigations> tempTableProperties)
+   public IReadOnlyCollection<IProperty> GetPrimaryKeyProperties(IEntityType entityType, IReadOnlyCollection<IProperty> tempTableProperties)
    {
       ArgumentNullException.ThrowIfNull(entityType);
       ArgumentNullException.ThrowIfNull(tempTableProperties);
@@ -13,18 +12,17 @@ internal sealed class ConfiguredPrimaryKeyPropertiesProvider : IPrimaryKeyProper
       var pk = entityType.FindPrimaryKey()?.Properties;
 
       if (pk is null or { Count: 0 })
-         return Array.Empty<PropertyWithNavigations>();
+         return Array.Empty<IProperty>();
 
-      var keyProperties = pk.Select(p => new PropertyWithNavigations(p, Array.Empty<INavigation>())).ToList();
-      var missingColumns = keyProperties.Except(tempTableProperties);
+      var missingColumns = pk.Except(tempTableProperties);
 
       if (missingColumns.Any())
       {
          throw new ArgumentException(@$"Cannot create PRIMARY KEY because not all key columns are part of the temp table.
 You may use other key properties providers like '{nameof(IPrimaryKeyPropertiesProvider)}.{nameof(IPrimaryKeyPropertiesProvider.AdaptiveEntityTypeConfiguration)}' instead of '{nameof(IPrimaryKeyPropertiesProvider)}.{nameof(IPrimaryKeyPropertiesProvider.EntityTypeConfiguration)}' to get different behaviors.
-Missing columns: {String.Join(", ", missingColumns.Select(p => p.Property.GetColumnName()))}.");
+Missing columns: {String.Join(", ", missingColumns.Select(p => p.GetColumnName()))}.");
       }
 
-      return keyProperties;
+      return pk;
    }
 }

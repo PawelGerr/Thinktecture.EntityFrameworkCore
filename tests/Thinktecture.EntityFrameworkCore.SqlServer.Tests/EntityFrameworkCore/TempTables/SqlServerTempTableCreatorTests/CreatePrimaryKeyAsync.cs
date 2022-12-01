@@ -1,8 +1,6 @@
 using System.Data;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Metadata;
-using Thinktecture.EntityFrameworkCore.Data;
 using Thinktecture.EntityFrameworkCore.Testing;
 using Thinktecture.TestDatabaseContext;
 
@@ -30,7 +28,7 @@ public class CreatePrimaryKeyAsync : IntegrationTestsBase
                                                                                                           });
 
       var entityType = ActDbContext.GetEntityType<KeylessTestEntity>();
-      var allProperties = entityType.GetProperties().Select(p => new PropertyWithNavigations(p, Array.Empty<INavigation>())).ToList();
+      var allProperties = entityType.GetProperties().ToList();
       await SUT.CreatePrimaryKeyAsync(ActDbContext, IPrimaryKeyPropertiesProvider.AdaptiveForced.GetPrimaryKeyProperties(entityType, allProperties), tempTableReference.Name);
 
       var constraints = await AssertDbContext.GetTempTableConstraints<KeylessTestEntity>().ToListAsync();
@@ -52,7 +50,7 @@ public class CreatePrimaryKeyAsync : IntegrationTestsBase
                                                                                                    });
 
       var entityType = ActDbContext.GetEntityType<TestEntity>();
-      var allProperties = entityType.GetProperties().Select(p => new PropertyWithNavigations(p, Array.Empty<INavigation>())).ToList();
+      var allProperties = entityType.GetProperties().ToList();
       await SUT.CreatePrimaryKeyAsync(ActDbContext, IPrimaryKeyPropertiesProvider.AdaptiveForced.GetPrimaryKeyProperties(entityType, allProperties), tempTableReference.Name);
 
       var constraints = await AssertDbContext.GetTempTableConstraints<TestEntity>().ToListAsync();
@@ -73,7 +71,7 @@ public class CreatePrimaryKeyAsync : IntegrationTestsBase
                                                                                                       PrimaryKeyCreation = IPrimaryKeyPropertiesProvider.None
                                                                                                    });
       var entityType = ArrangeDbContext.GetEntityType<TestEntity>();
-      var allProperties = entityType.GetProperties().Select(p => new PropertyWithNavigations(p, Array.Empty<INavigation>())).ToList();
+      var allProperties = entityType.GetProperties().ToList();
       var keyProperties = IPrimaryKeyPropertiesProvider.AdaptiveForced.GetPrimaryKeyProperties(entityType, allProperties);
       await SUT.CreatePrimaryKeyAsync(ArrangeDbContext, keyProperties, tempTableReference.Name, true);
 
@@ -94,7 +92,7 @@ public class CreatePrimaryKeyAsync : IntegrationTestsBase
                                                                                                       PrimaryKeyCreation = IPrimaryKeyPropertiesProvider.None
                                                                                                    });
       var entityType = ArrangeDbContext.GetEntityType<TestEntity>();
-      var allProperties = entityType.GetProperties().Select(p => new PropertyWithNavigations(p, Array.Empty<INavigation>())).ToList();
+      var allProperties = entityType.GetProperties().ToList();
       var keyProperties = IPrimaryKeyPropertiesProvider.AdaptiveForced.GetPrimaryKeyProperties(entityType, allProperties);
       await SUT.CreatePrimaryKeyAsync(ArrangeDbContext, keyProperties, tempTableReference.Name);
 

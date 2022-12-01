@@ -1,6 +1,5 @@
 using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore.Metadata;
-using Thinktecture.EntityFrameworkCore.Data;
 
 namespace Thinktecture.EntityFrameworkCore.TempTables;
 
@@ -62,5 +61,5 @@ public interface IPrimaryKeyPropertiesProvider
    /// <param name="entityType">Entity type to get the primary key properties for.</param>
    /// <param name="tempTableProperties">Actual properties of the temp table.</param>
    /// <returns>Properties to use for creation of the primary key.</returns>
-   IReadOnlyCollection<PropertyWithNavigations> GetPrimaryKeyProperties(IEntityType entityType, IReadOnlyCollection<PropertyWithNavigations> tempTableProperties);
+   IReadOnlyCollection<IProperty> GetPrimaryKeyProperties(IEntityType entityType, IReadOnlyCollection<IProperty> tempTableProperties);
 }

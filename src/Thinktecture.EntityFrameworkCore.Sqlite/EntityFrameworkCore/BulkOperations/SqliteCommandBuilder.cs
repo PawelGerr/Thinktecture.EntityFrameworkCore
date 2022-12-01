@@ -13,12 +13,12 @@ internal abstract class SqliteCommandBuilder
       return new SqliteInsertBuilder(propertiesToInsert);
    }
 
-   public static SqliteCommandBuilder Update(IReadOnlyList<PropertyWithNavigations> propertiesToUpdate, IReadOnlyList<PropertyWithNavigations> keyProperties)
+   public static SqliteCommandBuilder Update(IReadOnlyList<PropertyWithNavigations> propertiesToUpdate, IReadOnlyList<IProperty> keyProperties)
    {
       return new SqliteUpdateBuilder(propertiesToUpdate, keyProperties);
    }
 
-   public static SqliteCommandBuilder InsertOrUpdate(IReadOnlyList<PropertyWithNavigations> propertiesToInsert, IReadOnlyList<PropertyWithNavigations> propertiesToUpdate, IReadOnlyList<PropertyWithNavigations> keyProperties)
+   public static SqliteCommandBuilder InsertOrUpdate(IReadOnlyList<PropertyWithNavigations> propertiesToInsert, IReadOnlyList<PropertyWithNavigations> propertiesToUpdate, IReadOnlyList<IProperty> keyProperties)
    {
       return new SqliteInsertOrUpdateBuilder(propertiesToInsert, propertiesToUpdate, keyProperties);
    }
@@ -103,11 +103,11 @@ internal abstract class SqliteCommandBuilder
    private class SqliteUpdateBuilder : SqliteCommandBuilder
    {
       private readonly IReadOnlyList<PropertyWithNavigations> _propertiesToUpdate;
-      private readonly IReadOnlyList<PropertyWithNavigations> _keyProperties;
+      private readonly IReadOnlyList<IProperty> _keyProperties;
 
       public SqliteUpdateBuilder(
          IReadOnlyList<PropertyWithNavigations> propertiesToUpdate,
-         IReadOnlyList<PropertyWithNavigations> keyProperties)
+         IReadOnlyList<IProperty> keyProperties)
       {
          _propertiesToUpdate = propertiesToUpdate;
          _keyProperties = keyProperties;
@@ -142,12 +142,12 @@ internal abstract class SqliteCommandBuilder
          ISqlGenerationHelper sqlGenerationHelper,
          IEntityDataReader reader,
          IReadOnlyList<PropertyWithNavigations> propertiesToUpdate,
-         IReadOnlyList<PropertyWithNavigations> keyProperties)
+         IReadOnlyList<IProperty> keyProperties)
       {
          StoreObjectIdentifier? storeObject = null;
          var isFirst = true;
 
-         foreach (var property in propertiesToUpdate.Except(keyProperties))
+         foreach (var property in propertiesToUpdate.Where(p => p.Navigations.Count > 0 || !keyProperties.Contains(p.Property)))
          {
             if (!isFirst)
             {
@@ -186,7 +186,7 @@ internal abstract class SqliteCommandBuilder
 
             sb.Append("(").Append(escapedColumnName).Append(" = $p").Append(index);
 
-            if (property.Property.IsNullable)
+            if (property.IsNullable)
                sb.Append(" OR ").Append(escapedColumnName).Append(" IS NULL AND $p").Append(index).Append(" IS NULL");
 
             sb.Append(")");
@@ -200,12 +200,12 @@ internal abstract class SqliteCommandBuilder
    {
       private readonly IReadOnlyList<PropertyWithNavigations> _propertiesToInsert;
       private readonly IReadOnlyList<PropertyWithNavigations> _propertiesToUpdate;
-      private readonly IReadOnlyList<PropertyWithNavigations> _keyProperties;
+      private readonly IReadOnlyList<IProperty> _keyProperties;
 
       public SqliteInsertOrUpdateBuilder(
          IReadOnlyList<PropertyWithNavigations> propertiesToInsert,
          IReadOnlyList<PropertyWithNavigations> propertiesToUpdate,
-         IReadOnlyList<PropertyWithNavigations> keyProperties)
+         IReadOnlyList<IProperty> keyProperties)
       {
          _propertiesToInsert = propertiesToInsert;
          _propertiesToUpdate = propertiesToUpdate;

@@ -15,12 +15,12 @@ public readonly struct SqliteTempTableCreatorCacheKey
    /// <summary>
    /// Properties to create temp table with.
    /// </summary>
-   public IReadOnlyList<PropertyWithNavigations> Properties { get; }
+   public IReadOnlyList<IProperty> Properties { get; }
 
    /// <summary>
    /// Properties the primary key should be created with.
    /// </summary>
-   public IReadOnlyCollection<PropertyWithNavigations> PrimaryKeys { get; }
+   public IReadOnlyCollection<IProperty> PrimaryKeys { get; }
 
    /// <summary>
    /// Initializes new instance of <see cref="SqliteTempTableCreatorCacheKey"/>.
@@ -32,7 +32,7 @@ public readonly struct SqliteTempTableCreatorCacheKey
       IEntityType entityType)
    {
       TruncateTableIfExists = options.TruncateTableIfExists;
-      Properties = options.PropertiesToInclude.DeterminePropertiesForTempTable(entityType, true);
+      Properties = options.PropertiesToInclude.DeterminePropertiesForTempTable(entityType);
       PrimaryKeys = options.PrimaryKeyCreation.GetPrimaryKeyProperties(entityType, Properties);
    }
 
@@ -82,7 +82,7 @@ public readonly struct SqliteTempTableCreatorCacheKey
 
    private static void ComputeHashCode(
       HashCode hashCode,
-      IEnumerable<PropertyWithNavigations> properties)
+      IEnumerable<IProperty> properties)
    {
       foreach (var property in properties)
       {

@@ -272,7 +272,7 @@ public class BulkInsertAsync : IntegrationTestsBase
    }
 
    [Fact]
-   public async Task Should_throw_if_required_inlined_owned_type_is_null()
+   public async Task Should_throw_entity_contains_inlined_owned_type()
    {
       var testEntity = new TestEntity_Owns_Inline
                        {
@@ -281,7 +281,7 @@ public class BulkInsertAsync : IntegrationTestsBase
                        };
 
       await ActDbContext.Awaiting(ctx => ctx.BulkInsertIntoTempTableAsync(new[] { testEntity }))
-                        .Should().ThrowAsync<InvalidOperationException>().WithMessage("Column 'InlineEntity_IntColumn' does not allow DBNull.Value.");
+                        .Should().ThrowAsync<NotSupportedException>().WithMessage("Temp tables don't support owned entities.");
    }
 
    [Fact]

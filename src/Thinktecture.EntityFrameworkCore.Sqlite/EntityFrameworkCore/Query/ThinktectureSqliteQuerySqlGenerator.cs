@@ -3,7 +3,7 @@ using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 using Microsoft.EntityFrameworkCore.Sqlite.Query.Internal;
-using Thinktecture.EntityFrameworkCore.Query.SqlExpressions;
+using Thinktecture.EntityFrameworkCore.Internal;
 
 namespace Thinktecture.EntityFrameworkCore.Query;
 
@@ -18,23 +18,23 @@ public class ThinktectureSqliteQuerySqlGenerator : SqliteQuerySqlGenerator
    }
 
    /// <inheritdoc />
-   protected override Expression VisitExtension(Expression expression)
+   protected override Expression VisitTable(TableExpression tableExpression)
    {
-      switch (expression)
-      {
-         case TempTableExpression tempTableExpression:
-            VisitTempTable(tempTableExpression);
-            return expression;
-         default:
-            return base.VisitExtension(expression);
-      }
-   }
+      ArgumentNullException.ThrowIfNull(tableExpression);
 
-   private void VisitTempTable(TempTableExpression tempTableExpression)
-   {
-      Sql.Append(Dependencies.SqlGenerationHelper.DelimitIdentifier(tempTableExpression.Name))
-         .Append(AliasSeparator)
-         .Append(Dependencies.SqlGenerationHelper.DelimitIdentifier(tempTableExpression.Alias));
+      var tempTable = tableExpression.FindAnnotation(ThinktectureBulkOperationsAnnotationNames.TempTable);
+
+      if (tempTable is not null)
+      {
+         var tempTableName = (string?)tempTable.Value ?? throw new Exception("Temp table name cannot be null.");
+         Sql.Append(Dependencies.SqlGenerationHelper.DelimitIdentifier(tempTableName))
+            .Append(AliasSeparator)
+            .Append(Dependencies.SqlGenerationHelper.DelimitIdentifier(tableExpression.Alias));
+
+         return tableExpression;
+      }
+
+      return base.VisitTable(tableExpression);
    }
 
    /// <inheritdoc />

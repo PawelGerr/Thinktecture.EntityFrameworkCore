@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore.Metadata;
-using Thinktecture.EntityFrameworkCore.Data;
 using Thinktecture.TestDatabaseContext;
 
 namespace Thinktecture.EntityFrameworkCore.BulkOperations.PropertiesProviderTests;
@@ -25,7 +24,7 @@ public class Include
    {
       var entityType = GetEntityType<TestEntity>();
       var propertiesProvider = IEntityPropertiesProvider.Include<TestEntity>(entity => new { });
-      var properties = propertiesProvider.GetPropertiesForTempTable(entityType, null);
+      var properties = propertiesProvider.GetPropertiesForTempTable(entityType);
 
       properties.Should().BeEmpty();
    }
@@ -34,10 +33,10 @@ public class Include
    public void Should_extract_property_accessor()
    {
       var entityType = GetEntityType<TestEntity>();
-      var idProperty = new PropertyWithNavigations(entityType.FindProperty(nameof(TestEntity.Id))!, Array.Empty<INavigation>());
+      var idProperty = entityType.FindProperty(nameof(TestEntity.Id));
       var propertiesProvider = IEntityPropertiesProvider.Include<TestEntity>(entity => entity.Id);
 
-      var properties = propertiesProvider.GetPropertiesForTempTable(entityType, null);
+      var properties = propertiesProvider.GetPropertiesForTempTable(entityType);
       properties.Should().HaveCount(1);
       properties.Should().Contain(idProperty);
    }
@@ -46,11 +45,11 @@ public class Include
    public void Should_extract_properties()
    {
       var entityType = GetEntityType<TestEntity>();
-      var idProperty = new PropertyWithNavigations(entityType.FindProperty(nameof(TestEntity.Id))!, Array.Empty<INavigation>());
-      var countProperty = new PropertyWithNavigations(entityType.FindProperty(nameof(TestEntity.Count))!, Array.Empty<INavigation>());
+      var idProperty = entityType.FindProperty(nameof(TestEntity.Id));
+      var countProperty = entityType.FindProperty(nameof(TestEntity.Count));
       var propertiesProvider = IEntityPropertiesProvider.Include<TestEntity>(entity => new { entity.Id, entity.Count });
 
-      var properties = propertiesProvider.GetPropertiesForTempTable(entityType, null);
+      var properties = propertiesProvider.GetPropertiesForTempTable(entityType);
       properties.Should().HaveCount(2);
       properties.Should().Contain(idProperty);
       properties.Should().Contain(countProperty);

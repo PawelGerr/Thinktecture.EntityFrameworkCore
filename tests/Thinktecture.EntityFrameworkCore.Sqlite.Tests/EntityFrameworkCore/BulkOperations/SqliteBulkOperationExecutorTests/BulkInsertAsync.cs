@@ -244,7 +244,7 @@ public class BulkInsertAsync : IntegrationTestsBase
       var testEntities = new[] { testEntity };
 
       await ActDbContext.Awaiting(ctx => ctx.BulkInsertIntoTempTableAsync(testEntities))
-                        .Should().ThrowAsync<SqliteException>().WithMessage("SQLite Error 19: 'NOT NULL constraint failed: TestEntities_Own_Inline_1.InlineEntity_IntColumn'.");
+                        .Should().ThrowAsync<NotSupportedException>().WithMessage("Temp tables don't support owned entities.");
    }
 
    [Fact]

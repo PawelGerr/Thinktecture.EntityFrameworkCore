@@ -1,6 +1,5 @@
 using System.Reflection;
 using Microsoft.EntityFrameworkCore.Metadata;
-using Thinktecture.EntityFrameworkCore.Data;
 
 namespace Thinktecture.EntityFrameworkCore.TempTables;
 
@@ -13,22 +12,17 @@ internal class KeyPropertiesProvider : IPrimaryKeyPropertiesProvider
       _members = members;
    }
 
-   public IReadOnlyCollection<PropertyWithNavigations> GetPrimaryKeyProperties(IEntityType entityType, IReadOnlyCollection<PropertyWithNavigations> tempTableProperties)
+   public IReadOnlyCollection<IProperty> GetPrimaryKeyProperties(IEntityType entityType, IReadOnlyCollection<IProperty> tempTableProperties)
    {
-      var keyProperties = _members.ConvertToEntityProperties(entityType, true, NoFilter);
+      var keyProperties = _members.ConvertToEntityProperties(entityType, static _ => true);
       var missingColumns = keyProperties.Except(tempTableProperties);
 
       if (missingColumns.Any())
       {
          throw new ArgumentException(@$"Not all key columns are part of the table.
-Missing columns: {String.Join(", ", missingColumns.Select(p => p.Property.GetColumnName()))}.");
+Missing columns: {String.Join(", ", missingColumns.Select(p => p.GetColumnName()))}.");
       }
 
       return keyProperties;
-   }
-
-   private static bool NoFilter(IProperty property, IReadOnlyList<INavigation> navigations)
-   {
-      return true;
    }
 }

@@ -1,12 +1,15 @@
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Thinktecture.EntityFrameworkCore.Data;
 
 namespace Thinktecture.EntityFrameworkCore.BulkOperations;
 
+[SuppressMessage("Usage", "EF1001:Internal EF Core API usage.")]
 internal class BulkInsertOrUpdateContext : ISqliteBulkOperationContext
 {
-   private readonly IReadOnlyList<PropertyWithNavigations> _keyProperties;
+   private readonly IReadOnlyList<IProperty> _keyProperties;
    private readonly IReadOnlyList<PropertyWithNavigations> _propertiesToInsert;
    private readonly IReadOnlyList<PropertyWithNavigations> _propertiesToUpdate;
    private readonly IReadOnlyList<PropertyWithNavigations> _externalPropertiesToInsert;
@@ -30,7 +33,7 @@ internal class BulkInsertOrUpdateContext : ISqliteBulkOperationContext
       DbContext ctx,
       IEntityDataReaderFactory factory,
       SqliteConnection connection,
-      IReadOnlyList<PropertyWithNavigations> keyProperties,
+      IReadOnlyList<IProperty> keyProperties,
       IReadOnlyList<PropertyWithNavigations> propertiesToInsert,
       IReadOnlyList<PropertyWithNavigations> propertiesForUpdate)
    {
@@ -47,7 +50,7 @@ internal class BulkInsertOrUpdateContext : ISqliteBulkOperationContext
       _propertiesToUpdate = ownPropertiesToUpdate;
       _externalPropertiesToUpdate = externalPropertiesToUpdate;
 
-      Properties = ownPropertiesToInsert.Union(ownPropertiesToUpdate).Union(keyProperties).ToList();
+      Properties = ownPropertiesToInsert.Union(ownPropertiesToUpdate).Union(keyProperties.Select(p => new PropertyWithNavigations(p, Array.Empty<Navigation>()))).ToList();
    }
 
    /// <inheritdoc />
@@ -107,14 +110,14 @@ internal class BulkInsertOrUpdateContext : ISqliteBulkOperationContext
          Entities = entities;
       }
 
-      private static IReadOnlyList<PropertyWithNavigations> GetKeyProperties(IEntityType entityType)
+      private static IReadOnlyList<IProperty> GetKeyProperties(IEntityType entityType)
       {
          var properties = entityType.FindPrimaryKey()?.Properties;
 
          if (properties is null || properties.Count == 0)
             throw new Exception($"The entity type '{entityType.Name}' needs a primary key to be able to perform bulk-insert-or-update.");
 
-         return properties.Select(p => new PropertyWithNavigations(p, Array.Empty<INavigation>())).ToList();
+         return properties;
       }
    }
 }

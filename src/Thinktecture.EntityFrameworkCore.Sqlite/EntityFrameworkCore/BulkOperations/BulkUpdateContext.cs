@@ -1,12 +1,15 @@
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Thinktecture.EntityFrameworkCore.Data;
 
 namespace Thinktecture.EntityFrameworkCore.BulkOperations;
 
+[SuppressMessage("Usage", "EF1001:Internal EF Core API usage.")]
 internal class BulkUpdateContext : ISqliteBulkOperationContext
 {
-   private readonly IReadOnlyList<PropertyWithNavigations> _keyProperties;
+   private readonly IReadOnlyList<IProperty> _keyProperties;
    private readonly IReadOnlyList<PropertyWithNavigations> _propertiesToUpdate;
    private readonly IReadOnlyList<PropertyWithNavigations> _externalProperties;
    private readonly DbContext _ctx;
@@ -29,7 +32,7 @@ internal class BulkUpdateContext : ISqliteBulkOperationContext
       DbContext ctx,
       IEntityDataReaderFactory factory,
       SqliteConnection connection,
-      IReadOnlyList<PropertyWithNavigations> keyProperties,
+      IReadOnlyList<IProperty> keyProperties,
       IReadOnlyList<PropertyWithNavigations> propertiesForUpdate)
    {
       _ctx = ctx;
@@ -39,7 +42,7 @@ internal class BulkUpdateContext : ISqliteBulkOperationContext
       var (ownProperties, externalProperties) = propertiesForUpdate.SeparateProperties();
       _propertiesToUpdate = ownProperties;
       _externalProperties = externalProperties;
-      Properties = ownProperties.Union(keyProperties).ToList();
+      Properties = ownProperties.Union(keyProperties.Select(p => new PropertyWithNavigations(p, Array.Empty<Navigation>()))).ToList();
    }
 
    /// <inheritdoc />
@@ -83,14 +86,14 @@ internal class BulkUpdateContext : ISqliteBulkOperationContext
          Entities = entities;
       }
 
-      private static IReadOnlyList<PropertyWithNavigations> GetKeyProperties(IEntityType entityType)
+      private static IReadOnlyList<IProperty> GetKeyProperties(IEntityType entityType)
       {
          var properties = entityType.FindPrimaryKey()?.Properties;
 
          if (properties is null || properties.Count == 0)
             throw new Exception($"The entity type '{entityType.Name}' needs a primary key to be able to perform bulk-update.");
 
-         return properties.Select(p => new PropertyWithNavigations(p, Array.Empty<INavigation>())).ToList();
+         return properties;
       }
    }
 }

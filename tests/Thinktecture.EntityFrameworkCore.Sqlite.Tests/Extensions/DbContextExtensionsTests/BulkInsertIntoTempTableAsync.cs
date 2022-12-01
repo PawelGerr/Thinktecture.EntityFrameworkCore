@@ -88,47 +88,12 @@ public class BulkInsertIntoTempTableAsync : IntegrationTestsBase
    }
 
    [Fact]
-   public async Task Should_work_with_inlined_owned_type()
-   {
-      var testEntity = new TestEntity_Owns_Inline
-                       {
-                          Id = new Guid("3A1B2FFF-8E11-44E5-80E5-8C7FEEDACEB3"),
-                          InlineEntity = new OwnedEntity
-                                         {
-                                            IntColumn = 42,
-                                            StringColumn = "value"
-                                         }
-                       };
-
-      await using var tempTable = await ActDbContext.BulkInsertIntoTempTableAsync(new[] { testEntity });
-
-      var entities = await tempTable.Query.ToListAsync();
-
-      entities.Should().BeEquivalentTo(new[]
-                                       {
-                                          new TestEntity_Owns_Inline
-                                          {
-                                             Id = new Guid("3A1B2FFF-8E11-44E5-80E5-8C7FEEDACEB3"),
-                                             InlineEntity = new OwnedEntity
-                                                            {
-                                                               IntColumn = 42,
-                                                               StringColumn = "value"
-                                                            }
-                                          }
-                                       });
-   }
-
-   [Fact]
    public async Task Should_return_detached_entities_for_entities_with_a_primary_key()
    {
-      var testEntity = new TestEntity_Owns_Inline
+      var testEntity = new TestEntity
                        {
                           Id = new Guid("3A1B2FFF-8E11-44E5-80E5-8C7FEEDACEB3"),
-                          InlineEntity = new OwnedEntity
-                                         {
-                                            IntColumn = 42,
-                                            StringColumn = "value"
-                                         }
+                          RequiredName = "Name1"
                        };
 
       await using var tempTable = await ActDbContext.BulkInsertIntoTempTableAsync(new[] { testEntity });
@@ -139,63 +104,17 @@ public class BulkInsertIntoTempTableAsync : IntegrationTestsBase
    }
 
    [Fact]
-   public async Task Should_properly_join_2_temp_table_having_inlined_owned_type()
-   {
-      var testEntity1 = new TestEntity_Owns_Inline
-                        {
-                           Id = new Guid("3A1B2FFF-8E11-44E5-80E5-8C7FEEDACEB3"),
-                           InlineEntity = new OwnedEntity
-                                          {
-                                             IntColumn = 42,
-                                             StringColumn = "value"
-                                          }
-                        };
-      var testEntity2 = new TestEntity_Owns_Inline
-                        {
-                           Id = new Guid("3A1B2FFF-8E11-44E5-80E5-8C7FEEDACEB3"),
-                           InlineEntity = new OwnedEntity
-                                          {
-                                             IntColumn = 43,
-                                             StringColumn = "other"
-                                          }
-                        };
-
-      await using var tempTable1 = await ActDbContext.BulkInsertIntoTempTableAsync(new[] { testEntity1 });
-      await using var tempTable2 = await ActDbContext.BulkInsertIntoTempTableAsync(new[] { testEntity2 });
-
-      var entities = await tempTable1.Query
-                                     .Join(tempTable2.Query, e => e.Id, e => e.Id, (temp1, temp2) => new { temp1, temp2 })
-                                     .ToListAsync();
-
-      entities.Should().BeEquivalentTo(new[] { new { temp1 = testEntity1, temp2 = testEntity2 } });
-
-      entities = await tempTable1.Query
-                                 .Join(tempTable2.Query, e => e.Id, e => e.Id, (temp1, temp2) => new { temp1, temp2 })
-                                 .ToListAsync();
-
-      entities.Should().BeEquivalentTo(new[] { new { temp1 = testEntity1, temp2 = testEntity2 } });
-   }
-
-   [Fact]
    public async Task Should_not_mess_up_temp_tables_with_alternating_requests_without_disposing_previous_one()
    {
-      var testEntity1 = new TestEntity_Owns_Inline
+      var testEntity1 = new TestEntity
                         {
                            Id = new Guid("3A1B2FFF-8E11-44E5-80E5-8C7FEEDACEB3"),
-                           InlineEntity = new OwnedEntity
-                                          {
-                                             IntColumn = 42,
-                                             StringColumn = "value"
-                                          }
+                           RequiredName = "Name1"
                         };
-      var testEntity2 = new TestEntity_Owns_Inline
+      var testEntity2 = new TestEntity
                         {
                            Id = new Guid("3A1B2FFF-8E11-44E5-80E5-8C7FEEDACEB3"),
-                           InlineEntity = new OwnedEntity
-                                          {
-                                             IntColumn = 43,
-                                             StringColumn = "other"
-                                          }
+                           RequiredName = "Name2"
                         };
 
       await using var tempTable1_1 = await ActDbContext.BulkInsertIntoTempTableAsync(new[] { testEntity1 });
@@ -212,24 +131,8 @@ public class BulkInsertIntoTempTableAsync : IntegrationTestsBase
    [Fact]
    public async Task Should_not_mess_up_temp_tables_with_alternating_requests_with_disposing_previous_one()
    {
-      var testEntity1 = new TestEntity_Owns_Inline
-                        {
-                           Id = new Guid("3A1B2FFF-8E11-44E5-80E5-8C7FEEDACEB3"),
-                           InlineEntity = new OwnedEntity
-                                          {
-                                             IntColumn = 42,
-                                             StringColumn = "value"
-                                          }
-                        };
-      var testEntity2 = new TestEntity_Owns_Inline
-                        {
-                           Id = new Guid("3A1B2FFF-8E11-44E5-80E5-8C7FEEDACEB3"),
-                           InlineEntity = new OwnedEntity
-                                          {
-                                             IntColumn = 43,
-                                             StringColumn = "other"
-                                          }
-                        };
+      var testEntity1 = new TestEntity { Id = new Guid("3A1B2FFF-8E11-44E5-80E5-8C7FEEDACEB3"), RequiredName = "Name1" };
+      var testEntity2 = new TestEntity { Id = new Guid("3A1B2FFF-8E11-44E5-80E5-8C7FEEDACEB3"), RequiredName = "Name1" };
 
       await using (var tempTable1 = await ActDbContext.BulkInsertIntoTempTableAsync(new[] { testEntity1 }))
       await using (var tempTable2 = await ActDbContext.BulkInsertIntoTempTableAsync(new[] { testEntity2 }))
@@ -247,102 +150,34 @@ public class BulkInsertIntoTempTableAsync : IntegrationTestsBase
    }
 
    [Fact]
-   public async Task Should_properly_join_real_table_with_temp_table_having_inlined_owned_type()
+   public async Task Should_properly_join_real_table_with_temp_table()
    {
-      var realEntity = new TestEntity_Owns_Inline
+      var realEntity = new TestEntity
                        {
                           Id = new Guid("C0A98E8F-2715-4764-A02E-033FF5278B9B"),
-                          InlineEntity = new OwnedEntity
-                                         {
-                                            IntColumn = 42,
-                                            StringColumn = "real"
-                                         }
+                          RequiredName = "Name1"
                        };
       ArrangeDbContext.Add(realEntity);
       await ArrangeDbContext.SaveChangesAsync();
 
-      var tempEntity = new TestEntity_Owns_Inline
+      var tempEntity = new TestEntity
                        {
                           Id = new Guid("C0A98E8F-2715-4764-A02E-033FF5278B9B"),
-                          InlineEntity = new OwnedEntity
-                                         {
-                                            IntColumn = 100,
-                                            StringColumn = "other"
-                                         }
+                          RequiredName = "Name2"
                        };
 
       await using var tempTable = await ActDbContext.BulkInsertIntoTempTableAsync(new[] { tempEntity });
 
       var entities = await tempTable.Query
-                                    .Join(ActDbContext.TestEntities_Own_Inline, e => e.Id, e => e.Id, (temp, real) => new { temp, real })
+                                    .Join(ActDbContext.TestEntities, e => e.Id, e => e.Id, (temp, real) => new { temp, real })
                                     .ToListAsync();
 
       entities.Should().BeEquivalentTo(new[] { new { temp = tempEntity, real = realEntity } });
 
       entities = await tempTable.Query
-                                .Join(ActDbContext.TestEntities_Own_Inline, e => e.Id, e => e.Id, (temp, real) => new { temp, real })
+                                .Join(ActDbContext.TestEntities, e => e.Id, e => e.Id, (temp, real) => new { temp, real })
                                 .ToListAsync();
 
       entities.Should().BeEquivalentTo(new[] { new { temp = tempEntity, real = realEntity } });
-   }
-
-   [Fact]
-   public async Task Should_throw_if_required_inlined_owned_type_is_null()
-   {
-      var testEntity = new TestEntity_Owns_Inline
-                       {
-                          Id = new Guid("3A1B2FFF-8E11-44E5-80E5-8C7FEEDACEB3"),
-                          InlineEntity = null!
-                       };
-      var testEntities = new[] { testEntity };
-
-      await ActDbContext.Awaiting(ctx => ctx.BulkInsertIntoTempTableAsync(testEntities))
-                        .Should().ThrowAsync<SqliteException>()
-                        .WithMessage("SQLite Error 19: 'NOT NULL constraint failed: TestEntities_Own_Inline_1.InlineEntity_IntColumn'.");
-   }
-
-   [Fact]
-   public async Task Should_throw_for_entities_with_separated_owned_type()
-   {
-      var testEntity = new TestEntity_Owns_SeparateOne
-                       {
-                          Id = new Guid("3A1B2FFF-8E11-44E5-80E5-8C7FEEDACEB3"),
-                          SeparateEntity = new OwnedEntity
-                                           {
-                                              IntColumn = 42,
-                                              StringColumn = "value"
-                                           }
-                       };
-
-      await ActDbContext.Awaiting(sut => sut.BulkInsertIntoTempTableAsync(new[] { testEntity }))
-                        .Should().ThrowAsync<NotSupportedException>()
-                        .WithMessage("Bulk insert of separate owned types into temp tables is not supported. Properties of separate owned types: SeparateEntity.IntColumn, SeparateEntity.StringColumn");
-   }
-
-   [Fact]
-   public async Task Should_work_for_entities_if_separated_owned_type_is_excluded()
-   {
-      var testEntity = new TestEntity_Owns_SeparateOne
-                       {
-                          Id = new Guid("3A1B2FFF-8E11-44E5-80E5-8C7FEEDACEB3"),
-                          SeparateEntity = new OwnedEntity
-                                           {
-                                              IntColumn = 42,
-                                              StringColumn = "value"
-                                           }
-                       };
-
-      await using var tempTable = await ActDbContext.BulkInsertIntoTempTableAsync(new[] { testEntity }, e => e.Id);
-
-      var entities = await tempTable.Query.ToListAsync();
-
-      entities.Should().BeEquivalentTo(new[]
-                                       {
-                                          new TestEntity_Owns_SeparateOne
-                                          {
-                                             Id = new Guid("3A1B2FFF-8E11-44E5-80E5-8C7FEEDACEB3"),
-                                             SeparateEntity = null!
-                                          }
-                                       });
    }
 }

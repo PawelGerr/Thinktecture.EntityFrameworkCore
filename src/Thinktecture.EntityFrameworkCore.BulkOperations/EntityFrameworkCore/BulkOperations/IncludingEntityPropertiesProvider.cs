@@ -13,14 +13,14 @@ internal sealed class IncludingEntityPropertiesProvider : IEntityPropertiesProvi
       _members = members ?? throw new ArgumentNullException(nameof(members));
    }
 
-   public IReadOnlyList<PropertyWithNavigations> GetPropertiesForTempTable(IEntityType entityType, bool? inlinedOwnTypes)
+   public IReadOnlyList<IProperty> GetPropertiesForTempTable(IEntityType entityType)
    {
-      return GetProperties(entityType, inlinedOwnTypes, IEntityPropertiesProvider.TempTableFilter);
+      return _members.ConvertToEntityProperties(entityType, static _ => true);
    }
 
-   public IReadOnlyList<PropertyWithNavigations> GetKeyProperties(IEntityType entityType, bool? inlinedOwnTypes)
+   public IReadOnlyList<IProperty> GetKeyProperties(IEntityType entityType)
    {
-      return GetProperties(entityType, inlinedOwnTypes, static (_, _) => true);
+      return _members.ConvertToEntityProperties(entityType, static _ => true);
    }
 
    public IReadOnlyList<PropertyWithNavigations> GetPropertiesForInsert(IEntityType entityType, bool? inlinedOwnTypes)
@@ -38,6 +38,6 @@ internal sealed class IncludingEntityPropertiesProvider : IEntityPropertiesProvi
       bool? inlinedOwnTypes,
       Func<IProperty, IReadOnlyList<INavigation>, bool> filter)
    {
-      return _members.ConvertToEntityProperties(entityType, inlinedOwnTypes, filter);
+      return _members.ConvertToEntityPropertiesWithNavigations(entityType, inlinedOwnTypes, filter);
    }
 }

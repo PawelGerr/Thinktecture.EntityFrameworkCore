@@ -1,9 +1,7 @@
 using System.Collections.Concurrent;
 using System.Data;
 using System.Data.Common;
-using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage;
 using Thinktecture.Logging;
 

@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 using Microsoft.EntityFrameworkCore.Storage;
-using Thinktecture.EntityFrameworkCore.Query.SqlExpressions;
+using Thinktecture.EntityFrameworkCore.Internal;
 using Thinktecture.Internal;
 
 // ReSharper disable once CheckNamespace
@@ -66,7 +66,7 @@ public static class BulkOperationsRelationalQueryableMethodTranslatingExpression
       var tempTableName = tempTableInfo.Name ?? throw new Exception("No temp table name provided.");
 
       var selectExpression = (SelectExpression)shapedQueryExpression.QueryExpression;
-      var newSelectExpression = selectExpression.AddTableMetadata(nameof(TempTableExpression), _ => tempTableName);
+      var newSelectExpression = selectExpression.AddAnnotation(new Annotation(ThinktectureBulkOperationsAnnotationNames.TempTable, tempTableName));
 
       return shapedQueryExpression.Update(newSelectExpression, shapedQueryExpression.ShaperExpression);
    }

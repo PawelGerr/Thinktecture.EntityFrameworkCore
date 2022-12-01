@@ -146,7 +146,7 @@ public sealed class SqliteBulkOperationExecutor
       var ctx = new BulkUpdateContext(_ctx,
                                       _ctx.GetService<IEntityDataReaderFactory>(),
                                       (SqliteConnection)_ctx.Database.GetDbConnection(),
-                                      options.KeyProperties.DetermineKeyProperties(entityType, true),
+                                      options.KeyProperties.DetermineKeyProperties(entityType),
                                       options.PropertiesToUpdate.DeterminePropertiesForUpdate(entityType, null));
       var tableName = entityType.GetTableName()
                       ?? throw new Exception($"The entity '{entityType.Name}' has no table name.");
@@ -171,7 +171,7 @@ public sealed class SqliteBulkOperationExecutor
       var ctx = new BulkInsertOrUpdateContext(_ctx,
                                               _ctx.GetService<IEntityDataReaderFactory>(),
                                               (SqliteConnection)_ctx.Database.GetDbConnection(),
-                                              sqliteOptions.KeyProperties.DetermineKeyProperties(entityType, true),
+                                              sqliteOptions.KeyProperties.DetermineKeyProperties(entityType),
                                               sqliteOptions.PropertiesToInsert.DeterminePropertiesForInsert(entityType, null),
                                               sqliteOptions.PropertiesToUpdate.DeterminePropertiesForUpdate(entityType, true));
       var tableName = entityType.GetTableName()
@@ -360,10 +360,6 @@ public sealed class SqliteBulkOperationExecutor
       var type = typeof(TEntity);
       var entityTypeName = EntityNameProvider.GetTempTableName(type);
       var entityType = _ctx.Model.GetEntityType(entityTypeName, type);
-      var selectedProperties = options.PropertiesToInsert.DeterminePropertiesForTempTable(entityType, null);
-
-      if (selectedProperties.Any(p => !p.IsInlined))
-         throw new NotSupportedException($"Bulk insert of separate owned types into temp tables is not supported. Properties of separate owned types: {String.Join(", ", selectedProperties.Where(p => !p.IsInlined))}");
 
       var tempTableCreator = _ctx.GetService<ITempTableCreator>();
       var tempTableCreationOptions = options.GetTempTableCreationOptions();

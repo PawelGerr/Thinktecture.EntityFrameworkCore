@@ -88,7 +88,6 @@ public sealed class SqliteDbContextOptionsExtension : DbContextOptionsExtensionB
    public SqliteDbContextOptionsExtension(RelationalDbContextOptionsExtension relationalOptions)
    {
       _relationalOptions = relationalOptions ?? throw new ArgumentNullException(nameof(relationalOptions));
-      _relationalOptions.AddTableMetadataProcessor(TempTableTableMetadataProcessor.Instance);
    }
 
    /// <inheritdoc />
