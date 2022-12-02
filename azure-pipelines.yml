@@ -11,7 +11,7 @@ variables:
   SourceBranchName: '$(Build.SourceBranchName)'
 
 pool:
-  vmImage: 'windows-latest'
+  vmImage: 'ubuntu-latest'
 
 steps:
 

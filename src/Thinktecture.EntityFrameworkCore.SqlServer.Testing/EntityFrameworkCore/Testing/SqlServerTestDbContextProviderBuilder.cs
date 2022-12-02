@@ -259,7 +259,7 @@ public class SqlServerTestDbContextProviderBuilder<T> : TestDbContextProviderBui
    /// <returns>A database schema.</returns>
    protected virtual string DetermineSchema(ITestIsolationOptions isolationOptions)
    {
-      return isolationOptions == ITestIsolationOptions.SharedTablesAmbientTransaction
+      return !isolationOptions.NeedsUniqueSchema
                 ? _sharedTablesSchema ?? "tests"
                 : Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture);
    }

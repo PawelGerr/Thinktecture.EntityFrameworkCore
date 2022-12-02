@@ -11,41 +11,56 @@ namespace Thinktecture.EntityFrameworkCore.Testing;
 public interface ITestIsolationOptions
 {
    /// <summary>
-   /// No test isolation, no cleanup.
+   /// No test isolation, i.e. no ambient transaction, no unique schema, no cleanup.
    /// </summary>
-   public static readonly ITestIsolationOptions None = new NoCleanup();
+   public static readonly ITestIsolationOptions None = new NoIsolation();
 
    /// <summary>
    /// Test isolation via ambient transaction.
+   /// No unique schema, no cleanup.
    /// </summary>
    public static readonly ITestIsolationOptions SharedTablesAmbientTransaction = new ShareTablesIsolation();
 
    /// <summary>
    /// Rollbacks migrations and then deletes database objects (like tables) with a schema used by the tests.
+   /// No ambient transaction; uses unique schema.
    /// </summary>
    public static readonly ITestIsolationOptions RollbackMigrationsAndCleanup = new RollbackMigrationsAndCleanupDatabase();
 
    /// <summary>
    /// Deletes database objects (like tables) with a schema used by the tests.
+   /// No ambient transaction; uses unique schema.
    /// </summary>
    public static readonly ITestIsolationOptions CleanupOnly = new CleanupDatabase();
 
    /// <summary>
    /// Deletes all records from the tables.
+   /// No ambient transaction; no unique schema.
    /// </summary>
    public static readonly ITestIsolationOptions TruncateTables = new TruncateAllTables();
 
    /// <summary>
    /// Performs custom cleanup.
    /// </summary>
+   /// <param name="needsUniqueSchema">Indicator whether the tables require an unique database schema.</param>
    /// <param name="cleanup">Callback that performs the actual cleanup.</param>
    /// <typeparam name="T">Type of the <see cref="DbContext"/></typeparam>
    /// <returns></returns>
-   public static ITestIsolationOptions Custom<T>(Func<T, string, CancellationToken, Task> cleanup)
+   public static ITestIsolationOptions Custom<T>(bool needsUniqueSchema, Func<T, string, CancellationToken, Task> cleanup)
       where T : DbContext
    {
-      return new CustomCleanup<T>(cleanup);
+      return new CustomCleanup<T>(needsUniqueSchema, cleanup);
    }
+
+   /// <summary>
+   /// Indicator, whether the database needs cleanup.
+   /// </summary>
+   bool NeedsAmbientTransaction { get; }
+
+   /// <summary>
+   /// Indicator, whether the database needs cleanup.
+   /// </summary>
+   bool NeedsUniqueSchema { get; }
 
    /// <summary>
    /// Indicator, whether the database needs cleanup.
@@ -57,8 +72,10 @@ public interface ITestIsolationOptions
    /// </summary>
    ValueTask CleanupAsync(DbContext dbContext, string schema, CancellationToken cancellationToken);
 
-   private class NoCleanup : ITestIsolationOptions
+   private class NoIsolation : ITestIsolationOptions
    {
+      public bool NeedsAmbientTransaction => false;
+      public bool NeedsUniqueSchema => false;
       public bool NeedsCleanup => false;
 
       public ValueTask CleanupAsync(DbContext dbContext, string schema, CancellationToken cancellationToken)
@@ -69,6 +86,8 @@ public interface ITestIsolationOptions
 
    private class ShareTablesIsolation : ITestIsolationOptions
    {
+      public bool NeedsAmbientTransaction => true;
+      public bool NeedsUniqueSchema => false;
       public bool NeedsCleanup => false;
 
       public ValueTask CleanupAsync(DbContext dbContext, string schema, CancellationToken cancellationToken)
@@ -79,6 +98,8 @@ public interface ITestIsolationOptions
 
    private class RollbackMigrationsAndCleanupDatabase : ITestIsolationOptions
    {
+      public bool NeedsAmbientTransaction => false;
+      public bool NeedsUniqueSchema => true;
       public bool NeedsCleanup => true;
 
       public async ValueTask CleanupAsync(DbContext dbContext, string schema, CancellationToken cancellationToken)
@@ -90,6 +111,8 @@ public interface ITestIsolationOptions
 
    private class CleanupDatabase : ITestIsolationOptions
    {
+      public bool NeedsAmbientTransaction => false;
+      public bool NeedsUniqueSchema => true;
       public bool NeedsCleanup => true;
 
       public async ValueTask CleanupAsync(DbContext dbContext, string schema, CancellationToken cancellationToken)
@@ -103,10 +126,13 @@ public interface ITestIsolationOptions
    {
       private readonly Func<T, string, CancellationToken, Task> _cleanup;
 
+      public bool NeedsAmbientTransaction => false;
+      public bool NeedsUniqueSchema { get; }
       public bool NeedsCleanup => true;
 
-      public CustomCleanup(Func<T, string, CancellationToken, Task> cleanup)
+      public CustomCleanup(bool needsUniqueSchema, Func<T, string, CancellationToken, Task> cleanup)
       {
+         NeedsUniqueSchema = needsUniqueSchema;
          _cleanup = cleanup;
       }
 
@@ -118,6 +144,8 @@ public interface ITestIsolationOptions
 
    private class TruncateAllTables : ITestIsolationOptions
    {
+      public bool NeedsAmbientTransaction => false;
+      public bool NeedsUniqueSchema => false;
       public bool NeedsCleanup => true;
 
       public async ValueTask CleanupAsync(DbContext dbContext, string schema, CancellationToken cancellationToken)

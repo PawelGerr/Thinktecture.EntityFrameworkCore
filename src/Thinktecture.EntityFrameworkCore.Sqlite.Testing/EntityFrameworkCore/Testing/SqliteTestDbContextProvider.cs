@@ -1,7 +1,6 @@
 using System.Data.Common;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Thinktecture.Logging;
-using Xunit;
 
 namespace Thinktecture.EntityFrameworkCore.Testing;
 

@@ -23,7 +23,12 @@ public class IntegrationTestsBase : SqlServerDbContextIntegrationTests<TestDbCon
    protected Mock<ITenantDatabaseProvider> TenantDatabaseProviderMock { get; }
 
    protected IntegrationTestsBase(ITestOutputHelper testOutputHelper, ITestIsolationOptions isolationOptions)
-      : base(TestContext.Instance.ConnectionString, isolationOptions, testOutputHelper)
+      : this(TestContext.Instance.ConnectionString, testOutputHelper, isolationOptions)
+   {
+   }
+
+   protected IntegrationTestsBase(string connectionString, ITestOutputHelper testOutputHelper, ITestIsolationOptions isolationOptions)
+      : base(connectionString, isolationOptions, testOutputHelper)
    {
       TenantDatabaseProviderMock = new Mock<ITenantDatabaseProvider>(MockBehavior.Strict);
    }

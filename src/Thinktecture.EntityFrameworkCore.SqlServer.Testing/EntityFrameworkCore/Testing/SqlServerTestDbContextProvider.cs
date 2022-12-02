@@ -1,6 +1,8 @@
 using System.Collections.Concurrent;
 using System.Data;
 using System.Data.Common;
+using System.Linq.Expressions;
+using System.Reflection;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
 using Thinktecture.Logging;
@@ -26,6 +28,7 @@ public class SqlServerTestDbContextProvider<T> : ITestDbContextProvider<T>
    private readonly Func<DbContextOptions<T>, IDbDefaultSchema, T?>? _contextFactory;
    private readonly TestingLoggingOptions _testingLoggingOptions;
 
+   private Func<DbContextOptions<T>, IDbDefaultSchema, T>? _defaultContextFactory;
    private T? _arrangeDbContext;
    private T? _actDbContext;
    private T? _assertDbContext;
@@ -109,7 +112,7 @@ public class SqlServerTestDbContextProvider<T> : ITestDbContextProvider<T>
    /// <returns>A new instance of <typeparamref name="T"/>.</returns>
    public T CreateDbContext(bool useMasterConnection)
    {
-      if (!useMasterConnection && _isolationOptions == ITestIsolationOptions.SharedTablesAmbientTransaction)
+      if (!useMasterConnection && _isolationOptions.NeedsAmbientTransaction)
          throw new NotSupportedException($"A database transaction cannot be shared among different connections, so the isolation of tests couldn't be guaranteed. Set 'useMasterConnection' to 'true' or 'useSharedTables' to 'false' or use '{nameof(ArrangeDbContext)}/{nameof(ActDbContext)}/{nameof(AssertDbContext)}' which use the same database connection.");
 
       bool isFirstCtx;
@@ -132,7 +135,7 @@ public class SqlServerTestDbContextProvider<T> : ITestDbContextProvider<T>
       {
          RunMigrations(ctx);
 
-         if (_isolationOptions == ITestIsolationOptions.SharedTablesAmbientTransaction)
+         if (_isolationOptions.NeedsAmbientTransaction)
             _tx = BeginTransaction(ctx);
       }
       else if (_tx != null)
@@ -151,27 +154,42 @@ public class SqlServerTestDbContextProvider<T> : ITestDbContextProvider<T>
    /// <returns>A new instance of the database context.</returns>
    protected virtual T CreateDbContext(DbContextOptions<T> options, IDbDefaultSchema schema)
    {
-      var ctx = _contextFactory?.Invoke(options, schema);
-
-      if (ctx is not null)
-         return ctx;
-
-      ctx = (T?)Activator.CreateInstance(typeof(T), options, schema);
-
-      if (ctx is null)
-      {
-         if (_isolationOptions != ITestIsolationOptions.SharedTablesAmbientTransaction)
-         {
-            throw new Exception(@$"Could not create an instance of type of '{typeof(T).ShortDisplayName()}' using constructor parameters ({typeof(DbContextOptions<T>).ShortDisplayName()} options, {nameof(IDbDefaultSchema)} schema).
-Please provide the corresponding constructor or a custom factory via '{typeof(SqlServerTestDbContextProviderBuilder<T>).ShortDisplayName()}.{nameof(SqlServerTestDbContextProviderBuilder<T>.UseContextFactory)}'.");
-         }
-
-         ctx = (T)(Activator.CreateInstance(typeof(T), options)
-                   ?? throw new Exception(@$"Could not create an instance of type of '{typeof(T).ShortDisplayName()}' neither using constructor parameters ({typeof(DbContextOptions<T>).ShortDisplayName()} options, {nameof(IDbDefaultSchema)} schema) nor using construct ({typeof(DbContextOptions<T>).ShortDisplayName()} options).
-Please provide the corresponding constructor or a custom factory via '{typeof(SqlServerTestDbContextProviderBuilder<T>).ShortDisplayName()}.{nameof(SqlServerTestDbContextProviderBuilder<T>.UseContextFactory)}'."));
-      }
+      var ctx = _contextFactory?.Invoke(options, schema)
+                ?? (_defaultContextFactory ??= CreateDefaultContextFactory())(options, schema);
 
       return ctx;
+   }
+
+   private static Func<DbContextOptions<T>, IDbDefaultSchema, T> CreateDefaultContextFactory()
+   {
+      var optionsType = typeof(DbContextOptions<T>);
+      var schemaType = typeof(IDbDefaultSchema);
+      var optionsParam = Expression.Parameter(optionsType);
+      var schemaParam = Expression.Parameter(schemaType);
+      Expression[]? ctorArgs = null;
+
+      var ctor = typeof(T).GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, new[] { optionsType, schemaType });
+
+      if (ctor is not null)
+      {
+         ctorArgs = new Expression[] { optionsParam, schemaParam };
+      }
+      else
+      {
+         ctor = typeof(T).GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, new[] { optionsType });
+
+         if (ctor is not null)
+            ctorArgs = new Expression[] { optionsParam };
+      }
+
+      if (ctor is null || ctorArgs is null)
+      {
+         throw new Exception(@$"Could not create an instance of type of '{typeof(T).ShortDisplayName()}' neither using constructor parameters ({typeof(DbContextOptions<T>).ShortDisplayName()} options, {nameof(IDbDefaultSchema)} schema) nor using construct ({typeof(DbContextOptions<T>).ShortDisplayName()} options).
+Please provide the corresponding constructor or a custom factory via '{typeof(SqlServerTestDbContextProviderBuilder<T>).ShortDisplayName()}.{nameof(SqlServerTestDbContextProviderBuilder<T>.UseContextFactory)}'.");
+      }
+
+      return Expression.Lambda<Func<DbContextOptions<T>, IDbDefaultSchema, T>>(Expression.New(ctor, ctorArgs), optionsParam, schemaParam)
+                       .Compile();
    }
 
    /// <summary>
