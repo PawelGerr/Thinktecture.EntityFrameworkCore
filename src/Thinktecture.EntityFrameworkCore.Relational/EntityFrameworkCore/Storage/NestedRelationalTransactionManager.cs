@@ -1,24 +1,29 @@
-using System.Data;
 using System.Data.Common;
+using System.Transactions;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
+using IsolationLevel = System.Data.IsolationLevel;
 
 namespace Thinktecture.EntityFrameworkCore.Storage;
 
 /// <summary>
 /// Transaction manager with nested transaction support.
 /// </summary>
-public class NestedRelationalTransactionManager : IRelationalTransactionManager
+public class NestedRelationalTransactionManager : IRelationalTransactionManager, ITransactionEnlistmentManager
 {
    private readonly IDiagnosticsLogger<RelationalDbLoggerCategory.NestedTransaction> _logger;
-   private readonly IRelationalTransactionManager _innerManager;
+   private readonly IRelationalConnection _innerManager;
+   private readonly ITransactionEnlistmentManager? _enlistmentManager;
    private readonly Stack<NestedDbContextTransaction> _transactions;
 
    /// <inheritdoc />
    public IDbContextTransaction? CurrentTransaction => CurrentNestedTransaction;
 
    private NestedDbContextTransaction? CurrentNestedTransaction => _transactions.FirstOrDefault();
+
+   /// <inheritdoc />
+   public Transaction? EnlistedTransaction => (_enlistmentManager ?? throw new NotSupportedException("The current provider doesn't support System.Transaction.")).EnlistedTransaction;
 
    /// <summary>
    /// Initializes new instance of <see cref="NestedRelationalTransactionManager"/>.
@@ -31,7 +36,15 @@ public class NestedRelationalTransactionManager : IRelationalTransactionManager
    {
       _logger = logger ?? throw new ArgumentNullException(nameof(logger));
       _innerManager = connection ?? throw new ArgumentNullException(nameof(connection));
+      _enlistmentManager = connection as ITransactionEnlistmentManager;
       _transactions = new Stack<NestedDbContextTransaction>();
+   }
+
+   /// <inheritdoc />
+   public void EnlistTransaction(Transaction? transaction)
+   {
+      (_enlistmentManager ?? throw new NotSupportedException("The current provider doesn't support System.Transaction."))
+         .EnlistTransaction(transaction);
    }
 
    /// <inheritdoc />
