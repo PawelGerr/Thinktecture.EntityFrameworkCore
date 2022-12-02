@@ -309,6 +309,21 @@ public static class BulkOperationsDbContextExtensions
    }
 
    /// <summary>
+   /// Truncates the table of the entity of type <paramref name="type"/>.
+   /// </summary>
+   /// <param name="ctx">Database context.</param>
+   /// <param name="type">Type of the entity to truncate.</param>
+   /// <param name="cancellationToken">Cancellation token.</param>
+   public static Task TruncateTableAsync(
+      this DbContext ctx,
+      Type type,
+      CancellationToken cancellationToken = default)
+   {
+      return ctx.GetService<ITruncateTableExecutor>()
+                .TruncateTableAsync(type, cancellationToken);
+   }
+
+   /// <summary>
    /// Converts the provided <paramref name="values"/> to a "parameter" to be used in queries.
    /// </summary>
    /// <param name="ctx">An instance of <see cref="DbContext"/> to use the <paramref name="values"/> with.</param>

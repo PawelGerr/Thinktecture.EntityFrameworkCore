@@ -343,7 +343,13 @@ INSERT BULK {Table} ({Columns})", (long)duration.TotalMilliseconds,
    public async Task TruncateTableAsync<T>(CancellationToken cancellationToken = default)
       where T : class
    {
-      var entityType = _ctx.Model.GetEntityType(typeof(T));
+      await TruncateTableAsync(typeof(T), cancellationToken);
+   }
+
+   /// <inheritdoc />
+   public async Task TruncateTableAsync(Type type, CancellationToken cancellationToken = default)
+   {
+      var entityType = _ctx.Model.GetEntityType(type);
       var tableName = entityType.GetTableName() ?? throw new InvalidOperationException($"The entity '{entityType.Name}' has no table name.");
 
       var tableIdentifier = _sqlGenerationHelper.DelimitIdentifier(tableName, entityType.GetSchema());
