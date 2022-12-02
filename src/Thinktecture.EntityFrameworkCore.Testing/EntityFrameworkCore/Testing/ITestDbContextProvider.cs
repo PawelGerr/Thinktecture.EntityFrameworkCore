@@ -4,7 +4,7 @@ namespace Thinktecture.EntityFrameworkCore.Testing;
 /// Provides instances of <see cref="DbContext"/> for testing purposes.
 /// </summary>
 /// <typeparam name="T">Type of the database context.</typeparam>
-public interface ITestDbContextProvider<T> : IDbContextFactory<T>, IDisposable
+public interface ITestDbContextProvider<T> : IDbContextFactory<T>, IAsyncDisposable, IDisposable
    where T : DbContext
 {
    /// <summary>

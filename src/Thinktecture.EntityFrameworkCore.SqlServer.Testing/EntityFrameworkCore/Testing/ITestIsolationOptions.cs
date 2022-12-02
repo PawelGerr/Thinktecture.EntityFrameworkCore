@@ -11,19 +11,41 @@ namespace Thinktecture.EntityFrameworkCore.Testing;
 public interface ITestIsolationOptions
 {
    /// <summary>
+   /// No test isolation, no cleanup.
+   /// </summary>
+   public static readonly ITestIsolationOptions None = new NoCleanup();
+
+   /// <summary>
    /// Test isolation via ambient transaction.
    /// </summary>
    public static readonly ITestIsolationOptions SharedTablesAmbientTransaction = new ShareTablesIsolation();
 
    /// <summary>
-   /// Rollbacks migrations and then deletes database objects (like tables).
+   /// Rollbacks migrations and then deletes database objects (like tables) with a schema used by the tests.
    /// </summary>
    public static readonly ITestIsolationOptions RollbackMigrationsAndCleanup = new RollbackMigrationsAndCleanupDatabase();
 
    /// <summary>
-   /// Deletes database objects (like tables).
+   /// Deletes database objects (like tables) with a schema used by the tests.
    /// </summary>
    public static readonly ITestIsolationOptions CleanupOnly = new CleanupDatabase();
+
+   /// <summary>
+   /// Deletes all records from the tables.
+   /// </summary>
+   public static readonly ITestIsolationOptions TruncateTables = new TruncateAllTables();
+
+   /// <summary>
+   /// Performs custom cleanup.
+   /// </summary>
+   /// <param name="cleanup">Callback that performs the actual cleanup.</param>
+   /// <typeparam name="T">Type of the <see cref="DbContext"/></typeparam>
+   /// <returns></returns>
+   public static ITestIsolationOptions Custom<T>(Func<T, string, CancellationToken, Task> cleanup)
+      where T : DbContext
+   {
+      return new CustomCleanup<T>(cleanup);
+   }
 
    /// <summary>
    /// Indicator, whether the database needs cleanup.
@@ -33,14 +55,25 @@ public interface ITestIsolationOptions
    /// <summary>
    /// Cleanup of the database.
    /// </summary>
-   void Cleanup(DbContext dbContext, string schema);
+   ValueTask CleanupAsync(DbContext dbContext, string schema, CancellationToken cancellationToken);
+
+   private class NoCleanup : ITestIsolationOptions
+   {
+      public bool NeedsCleanup => false;
+
+      public ValueTask CleanupAsync(DbContext dbContext, string schema, CancellationToken cancellationToken)
+      {
+         return ValueTask.CompletedTask;
+      }
+   }
 
    private class ShareTablesIsolation : ITestIsolationOptions
    {
       public bool NeedsCleanup => false;
 
-      public void Cleanup(DbContext dbContext, string schema)
+      public ValueTask CleanupAsync(DbContext dbContext, string schema, CancellationToken cancellationToken)
       {
+         return ValueTask.CompletedTask;
       }
    }
 
@@ -48,10 +81,10 @@ public interface ITestIsolationOptions
    {
       public bool NeedsCleanup => true;
 
-      public void Cleanup(DbContext dbContext, string schema)
+      public async ValueTask CleanupAsync(DbContext dbContext, string schema, CancellationToken cancellationToken)
       {
-         RollbackMigrations(dbContext);
-         DeleteDatabaseObjects(dbContext, schema);
+         await RollbackMigrationsAsync(dbContext, cancellationToken);
+         await DeleteDatabaseObjectsAsync(dbContext, schema, cancellationToken);
       }
    }
 
@@ -59,34 +92,66 @@ public interface ITestIsolationOptions
    {
       public bool NeedsCleanup => true;
 
-      public void Cleanup(DbContext dbContext, string schema)
+      public async ValueTask CleanupAsync(DbContext dbContext, string schema, CancellationToken cancellationToken)
       {
-         DeleteDatabaseObjects(dbContext, schema);
+         await DeleteDatabaseObjectsAsync(dbContext, schema, cancellationToken);
+      }
+   }
+
+   private class CustomCleanup<T> : ITestIsolationOptions
+      where T : DbContext
+   {
+      private readonly Func<T, string, CancellationToken, Task> _cleanup;
+
+      public bool NeedsCleanup => true;
+
+      public CustomCleanup(Func<T, string, CancellationToken, Task> cleanup)
+      {
+         _cleanup = cleanup;
+      }
+
+      public async ValueTask CleanupAsync(DbContext dbContext, string schema, CancellationToken cancellationToken)
+      {
+         await _cleanup((T)dbContext, schema, cancellationToken);
+      }
+   }
+
+   private class TruncateAllTables : ITestIsolationOptions
+   {
+      public bool NeedsCleanup => true;
+
+      public async ValueTask CleanupAsync(DbContext dbContext, string schema, CancellationToken cancellationToken)
+      {
+         foreach (var entityType in dbContext.Model.GetEntityTypes())
+         {
+            if (entityType.GetTableName() is not null)
+               await dbContext.TruncateTableAsync(entityType.ClrType, cancellationToken);
+         }
       }
    }
 
    /// <summary>
    /// Rollbacks all migrations.
    /// </summary>
-   protected static void RollbackMigrations(DbContext dbContext)
+   protected static async Task RollbackMigrationsAsync(DbContext dbContext, CancellationToken cancellationToken)
    {
       ArgumentNullException.ThrowIfNull(dbContext);
 
-      dbContext.GetService<IMigrator>().Migrate("0");
+      await dbContext.GetService<IMigrator>().MigrateAsync("0", cancellationToken);
    }
 
    /// <summary>
    /// Deletes database objects (like tables) with provided <paramref name="schema"/>.
    /// </summary>
-   protected static void DeleteDatabaseObjects(DbContext ctx, string schema)
+   protected static async Task DeleteDatabaseObjectsAsync(DbContext ctx, string schema, CancellationToken cancellationToken)
    {
       ArgumentNullException.ThrowIfNull(ctx);
       ArgumentNullException.ThrowIfNull(schema);
 
       var sqlHelper = ctx.GetService<ISqlGenerationHelper>();
 
-      ctx.Database.ExecuteSqlRaw(GetSqlForCleanup(), new SqlParameter("@schema", schema));
-      ctx.Database.ExecuteSqlRaw(GetDropSchemaSql(sqlHelper, schema));
+      await ctx.Database.ExecuteSqlRawAsync(GetSqlForCleanup(), new object[] { new SqlParameter("@schema", schema) }, cancellationToken);
+      await ctx.Database.ExecuteSqlRawAsync(GetDropSchemaSql(sqlHelper, schema), cancellationToken);
    }
 
    private static string GetSqlForCleanup()

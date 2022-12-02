@@ -1,6 +1,7 @@
 using System.Data.Common;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Thinktecture.Logging;
+using Xunit;
 
 namespace Thinktecture.EntityFrameworkCore.Testing;
 
@@ -26,6 +27,7 @@ public class SqliteTestDbContextProvider<T> : ITestDbContextProvider<T>
    private T? _assertDbContext;
    private bool _isAtLeastOneContextCreated;
    private readonly TestingLoggingOptions _testingLoggingOptions;
+   private bool _isDisposed;
 
    /// <inheritdoc />
    public T ArrangeDbContext => _arrangeDbContext ??= CreateDbContext(true);
@@ -156,7 +158,24 @@ Please provide the corresponding constructor or a custom factory via '{typeof(Sq
    /// </summary>
    public void Dispose()
    {
+      if (_isDisposed)
+         return;
+
+      _isDisposed = true;
+
       Dispose(true);
+      GC.SuppressFinalize(this);
+   }
+
+   /// <inheritdoc />
+   public async ValueTask DisposeAsync()
+   {
+      if (_isDisposed)
+         return;
+
+      _isDisposed = true;
+
+      await DisposeAsync(true);
       GC.SuppressFinalize(this);
    }
 
@@ -166,24 +185,33 @@ Please provide the corresponding constructor or a custom factory via '{typeof(Sq
    /// <param name="disposing">Indication whether this method is being called by the method <see cref="SqliteDbContextIntegrationTests{T}.Dispose()"/>.</param>
    protected virtual void Dispose(bool disposing)
    {
+      DisposeAsync(disposing).AsTask().ConfigureAwait(false).GetAwaiter().GetResult();
+   }
+
+   /// <summary>
+   /// Disposes of inner resources.
+   /// </summary>
+   /// <param name="disposing">Indication whether this method is being called by the method <see cref="SqliteDbContextIntegrationTests{T}.Dispose()"/>.</param>
+   protected virtual async ValueTask DisposeAsync(bool disposing)
+   {
       if (!disposing)
          return;
 
       if (_isAtLeastOneContextCreated)
       {
-         DisposeContexts();
+         await DisposeContextsAsync();
          _isAtLeastOneContextCreated = false;
       }
 
-      _masterConnection.Dispose();
+      await _masterConnection.DisposeAsync();
       _testingLoggingOptions.Dispose();
    }
 
-   private void DisposeContexts()
+   private async ValueTask DisposeContextsAsync()
    {
-      _arrangeDbContext?.Dispose();
-      _actDbContext?.Dispose();
-      _assertDbContext?.Dispose();
+      await (_arrangeDbContext?.DisposeAsync() ?? ValueTask.CompletedTask);
+      await (_actDbContext?.DisposeAsync() ?? ValueTask.CompletedTask);
+      await (_assertDbContext?.DisposeAsync() ?? ValueTask.CompletedTask);
 
       _arrangeDbContext = null;
       _actDbContext = null;

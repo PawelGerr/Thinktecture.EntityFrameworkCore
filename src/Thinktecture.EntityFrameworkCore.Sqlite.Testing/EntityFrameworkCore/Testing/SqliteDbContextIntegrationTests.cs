@@ -1,3 +1,4 @@
+using Xunit;
 using Xunit.Abstractions;
 
 namespace Thinktecture.EntityFrameworkCore.Testing;
@@ -7,7 +8,7 @@ namespace Thinktecture.EntityFrameworkCore.Testing;
 /// </summary>
 /// <typeparam name="T">Type of the database context.</typeparam>
 // ReSharper disable once UnusedMember.Global
-public abstract class SqliteDbContextIntegrationTests<T> : ITestDbContextProvider<T>
+public abstract class SqliteDbContextIntegrationTests<T> : ITestDbContextProvider<T>, IAsyncLifetime
    where T : DbContext
 {
    private SqliteTestDbContextProvider<T>? _testCtxProvider;
@@ -19,6 +20,7 @@ public abstract class SqliteDbContextIntegrationTests<T> : ITestDbContextProvide
 
    private bool _isProviderConfigured;
    private readonly SqliteTestDbContextProviderBuilder<T> _testCtxProviderBuilder;
+   private bool _isDisposed;
 
    /// <summary>
    /// Gets the <see cref="SqliteTestDbContextProviderBuilder{T}"/> which is created on the first access.
@@ -76,13 +78,42 @@ public abstract class SqliteDbContextIntegrationTests<T> : ITestDbContextProvide
       return TestCtxProvider.CreateDbContext(useMasterConnection);
    }
 
+   /// <inheritdoc />
+   public virtual Task InitializeAsync()
+   {
+      return Task.CompletedTask;
+   }
+
    /// <summary>
    /// Rollbacks transaction if shared tables are used
    /// otherwise the migrations are rolled back and all tables, functions, views and the newly generated schema are deleted.
    /// </summary>
    public void Dispose()
    {
+      if (_isDisposed)
+         return;
+
+      _isDisposed = true;
+
       Dispose(true);
+      GC.SuppressFinalize(this);
+   }
+
+   /// <inheritdoc />
+   async Task IAsyncLifetime.DisposeAsync()
+   {
+      await DisposeAsync();
+   }
+
+   /// <inheritdoc />
+   public async ValueTask DisposeAsync()
+   {
+      if (_isDisposed)
+         return;
+
+      _isDisposed = true;
+
+      await DisposeAsync(true);
       GC.SuppressFinalize(this);
    }
 
@@ -92,10 +123,19 @@ public abstract class SqliteDbContextIntegrationTests<T> : ITestDbContextProvide
    /// <param name="disposing">Indication whether this method is being called by the method <see cref="SqliteDbContextIntegrationTests{T}.Dispose()"/>.</param>
    protected virtual void Dispose(bool disposing)
    {
+      DisposeAsync(disposing).AsTask().GetAwaiter().GetResult();
+   }
+
+   /// <summary>
+   /// Disposes of inner resources.
+   /// </summary>
+   /// <param name="disposing">Indication whether this method is being called by the method <see cref="SqliteDbContextIntegrationTests{T}.Dispose()"/>.</param>
+   protected virtual async ValueTask DisposeAsync(bool disposing)
+   {
       if (!disposing)
          return;
 
-      _testCtxProvider?.Dispose();
+      await (_testCtxProvider?.DisposeAsync() ?? ValueTask.CompletedTask);
       _testCtxProvider = null;
    }
 }

@@ -32,6 +32,7 @@ public class SqlServerTestDbContextProvider<T> : ITestDbContextProvider<T>
    private IDbContextTransaction? _tx;
    private bool _isAtLeastOneContextCreated;
    private readonly IsolationLevel _sharedTablesIsolationLevel;
+   private bool _isDisposed;
 
    /// <inheritdoc />
    public T ArrangeDbContext => _arrangeDbContext ??= CreateDbContext(true);
@@ -214,11 +215,31 @@ Please provide the corresponding constructor or a custom factory via '{typeof(Sq
 
    /// <summary>
    /// Rollbacks transaction if shared tables are used
-   /// otherwise the migrations are rolled back and all tables, functions, views and the newly generated schema are deleted.
+   /// otherwise performs cleanup according to provided <see cref="ITestIsolationOptions"/>.
    /// </summary>
    public void Dispose()
    {
+      if (_isDisposed)
+         return;
+
+      _isDisposed = true;
+
       Dispose(true);
+      GC.SuppressFinalize(this);
+   }
+
+   /// <summary>
+   /// Rollbacks transaction if shared tables are used
+   /// otherwise performs cleanup according to provided <see cref="ITestIsolationOptions"/>.
+   /// </summary>
+   public async ValueTask DisposeAsync()
+   {
+      if (_isDisposed)
+         return;
+
+      _isDisposed = true;
+
+      await DisposeAsync(true);
       GC.SuppressFinalize(this);
    }
 
@@ -228,12 +249,21 @@ Please provide the corresponding constructor or a custom factory via '{typeof(Sq
    /// <param name="disposing">Indication whether this method is being called by the method <see cref="SqlServerTestDbContextProvider{T}.Dispose()"/>.</param>
    protected virtual void Dispose(bool disposing)
    {
+      DisposeAsync(disposing).AsTask().ConfigureAwait(false).GetAwaiter().GetResult();
+   }
+
+   /// <summary>
+   /// Disposes of inner resources.
+   /// </summary>
+   /// <param name="disposing">Indication whether this method is being called by the method <see cref="SqlServerTestDbContextProvider{T}.Dispose()"/>.</param>
+   protected virtual async ValueTask DisposeAsync(bool disposing)
+   {
       if (!disposing)
          return;
 
       if (_isAtLeastOneContextCreated)
       {
-         DisposeContextsAndRollbackMigrations();
+         await DisposeContextsAndRollbackMigrationsAsync(default);
          _isAtLeastOneContextCreated = false;
       }
 
@@ -241,28 +271,28 @@ Please provide the corresponding constructor or a custom factory via '{typeof(Sq
       _testingLoggingOptions.Dispose();
    }
 
-   private void DisposeContextsAndRollbackMigrations()
+   private async Task DisposeContextsAndRollbackMigrationsAsync(CancellationToken cancellationToken)
    {
-      _tx?.Rollback();
-      _tx?.Dispose();
+      if (_tx is not null)
+      {
+         await _tx.RollbackAsync(cancellationToken);
+         await _tx.DisposeAsync();
+      }
 
       if (_isolationOptions.NeedsCleanup)
       {
          // Create a new ctx as a last resort to rollback migrations and clean up the database
-         using var ctx = _actDbContext ?? _arrangeDbContext ?? _assertDbContext ?? CreateDbContext(_masterDbContextOptions, new DbDefaultSchema(Schema));
+         await using var ctx = _actDbContext ?? _arrangeDbContext ?? _assertDbContext ?? CreateDbContext(_masterDbContextOptions, new DbDefaultSchema(Schema));
 
-         _isolationOptions.Cleanup(ctx, Schema);
+         await _isolationOptions.CleanupAsync(ctx, Schema, cancellationToken);
       }
 
-      _arrangeDbContext?.Dispose();
-      _actDbContext?.Dispose();
-      _assertDbContext?.Dispose();
+      await (_arrangeDbContext?.DisposeAsync() ?? ValueTask.CompletedTask);
+      await (_actDbContext?.DisposeAsync() ?? ValueTask.CompletedTask);
+      await (_assertDbContext?.DisposeAsync() ?? ValueTask.CompletedTask);
 
       _arrangeDbContext = null;
       _actDbContext = null;
       _assertDbContext = null;
    }
-
-
-
 }

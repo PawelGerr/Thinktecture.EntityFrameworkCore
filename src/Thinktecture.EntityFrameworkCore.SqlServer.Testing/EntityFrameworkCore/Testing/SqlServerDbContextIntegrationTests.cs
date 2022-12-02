@@ -1,3 +1,4 @@
+using Xunit;
 using Xunit.Abstractions;
 
 namespace Thinktecture.EntityFrameworkCore.Testing;
@@ -6,7 +7,7 @@ namespace Thinktecture.EntityFrameworkCore.Testing;
 /// A base class for integration tests using EF Core along with SQL Server.
 /// </summary>
 /// <typeparam name="T">Type of the database context.</typeparam>
-public abstract class SqlServerDbContextIntegrationTests<T> : ITestDbContextProvider<T>
+public abstract class SqlServerDbContextIntegrationTests<T> : ITestDbContextProvider<T>, IAsyncLifetime
    where T : DbContext
 {
    private SqlServerTestDbContextProvider<T>? _testCtxProvider;
@@ -16,8 +17,9 @@ public abstract class SqlServerDbContextIntegrationTests<T> : ITestDbContextProv
    /// </summary>
    protected SqlServerTestDbContextProvider<T> TestCtxProvider => _testCtxProvider ??= TestCtxProviderBuilder.Build();
 
-   private bool _isProviderConfigured;
    private readonly SqlServerTestDbContextProviderBuilder<T> _testCtxProviderBuilder;
+   private bool _isDisposed;
+   private bool _isProviderConfigured;
 
    /// <summary>
    /// Gets the <see cref="SqlServerTestDbContextProviderBuilder{T}"/> which is created on the first access.
@@ -98,9 +100,38 @@ public abstract class SqlServerDbContextIntegrationTests<T> : ITestDbContextProv
    }
 
    /// <inheritdoc />
+   public virtual Task InitializeAsync()
+   {
+      return Task.CompletedTask;
+   }
+
+   /// <inheritdoc />
    public void Dispose()
    {
+      if (_isDisposed)
+         return;
+
+      _isDisposed = true;
+
       Dispose(true);
+      GC.SuppressFinalize(this);
+   }
+
+   /// <inheritdoc />
+   async Task IAsyncLifetime.DisposeAsync()
+   {
+      await DisposeAsync();
+   }
+
+   /// <inheritdoc />
+   public async ValueTask DisposeAsync()
+   {
+      if (_isDisposed)
+         return;
+
+      _isDisposed = true;
+
+      await DisposeAsync(true);
       GC.SuppressFinalize(this);
    }
 
@@ -110,10 +141,19 @@ public abstract class SqlServerDbContextIntegrationTests<T> : ITestDbContextProv
    /// <param name="disposing">Indication that the method is being called by <see cref="Dispose()"/>.</param>
    protected virtual void Dispose(bool disposing)
    {
+      DisposeAsync(disposing).AsTask().ConfigureAwait(false).GetAwaiter().GetResult();
+   }
+
+   /// <summary>
+   /// Disposes of managed resources like the <see cref="SqlServerTestDbContextProvider{T}"/>.
+   /// </summary>
+   /// <param name="disposing">Indication that the method is being called by <see cref="Dispose()"/>.</param>
+   protected virtual async ValueTask DisposeAsync(bool disposing)
+   {
       if (!disposing)
          return;
 
-      _testCtxProvider?.Dispose();
+      await (_testCtxProvider?.DisposeAsync() ?? ValueTask.CompletedTask);
       _testCtxProvider = null;
    }
 }
