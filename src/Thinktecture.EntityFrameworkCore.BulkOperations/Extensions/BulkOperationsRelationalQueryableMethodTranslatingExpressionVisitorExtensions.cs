@@ -66,7 +66,7 @@ public static class BulkOperationsRelationalQueryableMethodTranslatingExpression
       var tempTableName = tempTableInfo.Name ?? throw new Exception("No temp table name provided.");
 
       var selectExpression = (SelectExpression)shapedQueryExpression.QueryExpression;
-      var newSelectExpression = selectExpression.AddAnnotation(new Annotation(ThinktectureBulkOperationsAnnotationNames.TempTable, tempTableName));
+      var newSelectExpression = selectExpression.AddAnnotation(new Annotation(ThinktectureBulkOperationsAnnotationNames.TEMP_TABLE, tempTableName));
 
       return shapedQueryExpression.Update(newSelectExpression, shapedQueryExpression.ShaperExpression);
    }

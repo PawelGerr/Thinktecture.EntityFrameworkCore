@@ -1,7 +1,14 @@
 namespace Thinktecture.EntityFrameworkCore.Internal;
 
+/// <summary>
+/// Annotation names.
+/// </summary>
 public static class ThinktectureRelationalAnnotationNames
 {
-   public const string Prefix = "Thinktecture:Relational:";
-   public const string TableHints = Prefix + "TableHints";
+   private const string _PREFIX = "Thinktecture:Relational:";
+
+   /// <summary>
+   /// Annotation name for table hints.
+   /// </summary>
+   public const string TABLE_HINTS = _PREFIX + "TableHints";
 }

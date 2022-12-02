@@ -61,7 +61,7 @@ public static class RelationalQueryableMethodTranslatingExpressionVisitorExtensi
          return shapedQueryExpression;
 
       var selectExpression = (SelectExpression)shapedQueryExpression.QueryExpression;
-      var newSelectExpression = selectExpression.AddAnnotation(new Annotation(ThinktectureRelationalAnnotationNames.TableHints, tableHints));
+      var newSelectExpression = selectExpression.AddAnnotation(new Annotation(ThinktectureRelationalAnnotationNames.TABLE_HINTS, tableHints));
 
       return shapedQueryExpression.Update(newSelectExpression, shapedQueryExpression.ShaperExpression);
    }

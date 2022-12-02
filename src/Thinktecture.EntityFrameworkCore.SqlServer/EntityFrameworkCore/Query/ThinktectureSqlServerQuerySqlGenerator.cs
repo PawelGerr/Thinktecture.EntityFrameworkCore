@@ -84,7 +84,7 @@ public class ThinktectureSqlServerQuerySqlGenerator : SqlServerQuerySqlGenerator
    {
       ArgumentNullException.ThrowIfNull(tableExpression);
 
-      var tableHints = tableExpression.FindAnnotation(ThinktectureRelationalAnnotationNames.TableHints)?.Value as IReadOnlyList<ITableHint>;
+      var tableHints = tableExpression.FindAnnotation(ThinktectureRelationalAnnotationNames.TABLE_HINTS)?.Value as IReadOnlyList<ITableHint>;
 
       var visitedExpression = VisitTableOrTempTable(tableExpression);
 
@@ -108,7 +108,7 @@ public class ThinktectureSqlServerQuerySqlGenerator : SqlServerQuerySqlGenerator
 
    private Expression VisitTableOrTempTable(TableExpression tableExpression)
    {
-      var tempTable = tableExpression.FindAnnotation(ThinktectureBulkOperationsAnnotationNames.TempTable);
+      var tempTable = tableExpression.FindAnnotation(ThinktectureBulkOperationsAnnotationNames.TEMP_TABLE);
 
       if (tempTable is not null)
       {

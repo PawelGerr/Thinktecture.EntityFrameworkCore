@@ -226,7 +226,8 @@ END
             storeObject ??= property.GetStoreObject();
 
             var columnType = property.GetColumnType(storeObject.Value);
-            var columnName = property.GetColumnName(storeObject.Value);
+            var columnName = property.GetColumnName(storeObject.Value)
+                             ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.DeclaringEntityType.Name}'.");
 
             sb.Append('\t')
               .Append(_sqlGenerationHelper.DelimitIdentifier(columnName)).Append(' ')
@@ -298,7 +299,8 @@ END
       var columnNames = keyProperties.Select(p =>
                                              {
                                                 var storeObject = p.GetStoreObject();
-                                                return p.GetColumnName(storeObject);
+                                                return p.GetColumnName(storeObject)
+                                                       ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{p.DeclaringEntityType.Name}'.");
                                              });
 
       sb.AppendLine(",");

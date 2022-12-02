@@ -33,7 +33,7 @@ public class Exclude
    public void Should_extract_all_properties_besides_the_one_specified_by_property_accessor()
    {
       var entityType = GetEntityType<TestEntity>();
-      var idProperty = entityType.FindProperty(nameof(TestEntity.Id));
+      var idProperty = entityType.FindProperty(nameof(TestEntity.Id)) ?? throw new Exception("Property must no be null");
 
       var propertiesProvider = IEntityPropertiesProvider.Exclude<TestEntity>(entity => entity.Id);
 
@@ -46,8 +46,8 @@ public class Exclude
    public void Should_extract_all_properties_besides_the_ones_specified_by_expression()
    {
       var entityType = GetEntityType<TestEntity>();
-      var idProperty = entityType.FindProperty(nameof(TestEntity.Id));
-      var countProperty = entityType.FindProperty(nameof(TestEntity.Count));
+      var idProperty = entityType.FindProperty(nameof(TestEntity.Id)) ?? throw new Exception("Property must no be null");
+      var countProperty = entityType.FindProperty(nameof(TestEntity.Count)) ?? throw new Exception("Property must no be null");
 
       var propertiesProvider = IEntityPropertiesProvider.Exclude<TestEntity>(entity => new { entity.Id, entity.Count });
 

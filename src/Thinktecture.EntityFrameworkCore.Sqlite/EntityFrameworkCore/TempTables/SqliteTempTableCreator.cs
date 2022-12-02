@@ -131,7 +131,8 @@ CREATE TEMPORARY TABLE {sqlGenerationHelper.DelimitIdentifier(name)}
                sb.AppendLine(",");
 
             storeObject ??= property.GetStoreObject();
-            var columnName = property.GetColumnName(storeObject.Value);
+            var columnName = property.GetColumnName(storeObject.Value)
+                             ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.DeclaringEntityType.Name}'.");
             var columnType = property.GetColumnType(storeObject.Value);
 
             sb.Append("\t\t")
@@ -195,7 +196,8 @@ Currently configured primary keys: [{String.Join(", ", options.PrimaryKeys.Selec
       var columnNames = keyProperties.Select(p =>
                                              {
                                                 var storeObject = p.GetStoreObject();
-                                                return p.GetColumnName(storeObject);
+                                                return p.GetColumnName(storeObject)
+                                                       ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{p.DeclaringEntityType.Name}'.");
                                              });
 
       sb.AppendLine(",");

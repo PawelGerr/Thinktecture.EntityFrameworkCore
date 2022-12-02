@@ -22,7 +22,7 @@ public class ThinktectureSqliteQuerySqlGenerator : SqliteQuerySqlGenerator
    {
       ArgumentNullException.ThrowIfNull(tableExpression);
 
-      var tempTable = tableExpression.FindAnnotation(ThinktectureBulkOperationsAnnotationNames.TempTable);
+      var tempTable = tableExpression.FindAnnotation(ThinktectureBulkOperationsAnnotationNames.TEMP_TABLE);
 
       if (tempTable is not null)
       {

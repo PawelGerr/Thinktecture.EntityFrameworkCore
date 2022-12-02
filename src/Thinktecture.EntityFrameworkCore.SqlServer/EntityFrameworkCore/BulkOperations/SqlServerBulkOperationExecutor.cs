@@ -472,7 +472,8 @@ INSERT BULK {Table} ({Columns})", (long)duration.TotalMilliseconds,
             if (!isFirstIteration)
                sb.AppendLine(" AND ");
 
-            var columnName = property.GetColumnName(storeObject);
+            var columnName = property.GetColumnName(storeObject)
+                             ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.DeclaringEntityType.Name}'.");
             var escapedColumnName = _sqlGenerationHelper.DelimitIdentifier(columnName);
 
             sb.Append("(d.").Append(escapedColumnName).Append(" = s.").Append(escapedColumnName);
@@ -499,7 +500,8 @@ INSERT BULK {Table} ({Columns})", (long)duration.TotalMilliseconds,
                  .Append("\tUPDATE SET ");
             }
 
-            var columnName = property.GetColumnName(storeObject);
+            var columnName = property.GetColumnName(storeObject)
+                             ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.DeclaringEntityType.Name}'.");
             var escapedColumnName = _sqlGenerationHelper.DelimitIdentifier(columnName);
 
             sb.Append("d.").Append(escapedColumnName).Append(" = s.").Append(escapedColumnName);
