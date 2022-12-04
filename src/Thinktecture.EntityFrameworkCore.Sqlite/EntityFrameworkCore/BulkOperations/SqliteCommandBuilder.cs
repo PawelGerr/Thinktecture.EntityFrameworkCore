@@ -222,7 +222,7 @@ internal abstract class SqliteCommandBuilder
 
          try
          {
-            GenerateInsertStatement(sb, sqlGenerationHelper, reader, tableIdentifier, _propertiesToInsert);
+            GenerateInsertStatement(sb, sqlGenerationHelper, reader, tableIdentifier, _propertiesToInsert.Union(_keyProperties).ToList());
 
             sb.AppendLine()
               .Append("\tON CONFLICT(");

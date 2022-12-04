@@ -23,17 +23,16 @@ public class SqliteBulkInsertOrUpdateOptions : ISqliteBulkInsertOrUpdateOptions
    /// <param name="optionsToInitializeFrom">Options to initialize from.</param>
    public SqliteBulkInsertOrUpdateOptions(IBulkInsertOrUpdateOptions? optionsToInitializeFrom = null)
    {
-      if (optionsToInitializeFrom is null)
+      AutoIncrementBehavior = SqliteAutoIncrementBehavior.SetZeroToNull;
+
+      if (optionsToInitializeFrom is not null)
       {
-         AutoIncrementBehavior = SqliteAutoIncrementBehavior.KeepValueAsIs;
-         return;
+         PropertiesToInsert = optionsToInitializeFrom.PropertiesToInsert;
+         PropertiesToUpdate = optionsToInitializeFrom.PropertiesToUpdate;
+         KeyProperties = optionsToInitializeFrom.KeyProperties;
+
+         if (optionsToInitializeFrom is ISqliteBulkInsertOrUpdateOptions sqliteOptions)
+            AutoIncrementBehavior = sqliteOptions.AutoIncrementBehavior;
       }
-
-      PropertiesToInsert = optionsToInitializeFrom.PropertiesToInsert;
-      PropertiesToUpdate = optionsToInitializeFrom.PropertiesToUpdate;
-      KeyProperties = optionsToInitializeFrom.KeyProperties;
-
-      if (optionsToInitializeFrom is ISqliteBulkInsertOrUpdateOptions sqliteOptions)
-         AutoIncrementBehavior = sqliteOptions.AutoIncrementBehavior;
    }
 }

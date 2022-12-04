@@ -141,19 +141,36 @@ public class BulkInsertOrUpdateAsync : IntegrationTestsBase
    }
 
    [Fact]
-   public async Task Should_insert_entity_with_auto_increment_column()
+   public async Task Should_insert_and_update_entities_with_auto_increment_column_having_property_selector()
    {
-      var testEntity = new TestEntityWithAutoIncrement { Name = "Name" };
-      var testEntities = new[] { testEntity };
+      var existingEntity = new TestEntityWithAutoIncrement { Name = "original value" };
+      ArrangeDbContext.Add(existingEntity);
+      await ArrangeDbContext.SaveChangesAsync();
 
-      await SUT.BulkInsertOrUpdateAsync(testEntities, new SqliteBulkInsertOrUpdateOptions
-                                                      {
-                                                         PropertiesToInsert = IEntityPropertiesProvider.Include<TestEntityWithAutoIncrement>(entity => entity.Name)
-                                                      });
+      existingEntity.Name = "Name";
 
-      var loadedEntity = await AssertDbContext.TestEntitiesWithAutoIncrement.FirstOrDefaultAsync();
-      loadedEntity.Should().NotBeNull();
-      loadedEntity!.Id.Should().NotBe(0);
+      var newEntity = new TestEntityWithAutoIncrement { Name = "New Entity" };
+      var testEntities = new[] { existingEntity, newEntity };
+
+      var affectedRows = await SUT.BulkInsertOrUpdateAsync(testEntities, new SqliteBulkInsertOrUpdateOptions
+                                                                         {
+                                                                            PropertiesToInsert = IEntityPropertiesProvider.Include<TestEntityWithAutoIncrement>(entity => entity.Name)
+                                                                         });
+
+      affectedRows.Should().Be(2);
+
+      var loadedEntities = await AssertDbContext.TestEntitiesWithAutoIncrement.ToListAsync();
+      loadedEntities.Should().HaveCount(2);
+      loadedEntities.Should().AllSatisfy(e => e.Id.Should().NotBe(0));
+      loadedEntities.Should().BeEquivalentTo(new[]
+                                             {
+                                                existingEntity,
+                                                new TestEntityWithAutoIncrement
+                                                {
+                                                   Id = loadedEntities.Single(e => e.Id != existingEntity.Id).Id,
+                                                   Name = "New Entity"
+                                                }
+                                             });
    }
 
    [Fact]

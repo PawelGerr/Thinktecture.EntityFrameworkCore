@@ -1,3 +1,5 @@
+using Microsoft.Data.SqlClient;
+
 namespace Thinktecture.EntityFrameworkCore.BulkOperations;
 
 /// <summary>
@@ -36,7 +38,10 @@ public sealed class SqlServerBulkUpdateOptions : ISqlServerMergeOperationOptions
       }
       else
       {
-         TempTableOptions = new SqlServerBulkOperationTempTableOptions();
+         TempTableOptions = new SqlServerBulkOperationTempTableOptions
+                            {
+                               SqlBulkCopyOptions = SqlBulkCopyOptions.KeepIdentity
+                            };
          MergeTableHints = new List<SqlServerTableHintLimited> { SqlServerTableHintLimited.HoldLock };
       }
    }

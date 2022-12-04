@@ -12,15 +12,26 @@ public class SqliteBulkUpdateOptions : IBulkUpdateOptions
    public IEntityPropertiesProvider? KeyProperties { get; set; }
 
    /// <summary>
+   /// Behavior for auto-increment columns.
+   /// Default is <see cref="SqliteAutoIncrementBehavior.SetZeroToNull"/>
+   /// </summary>
+   public SqliteAutoIncrementBehavior AutoIncrementBehavior { get; set; }
+
+   /// <summary>
    /// Initializes new instance of <see cref="SqliteBulkUpdateOptions"/>.
    /// </summary>
    /// <param name="optionsToInitializeFrom">Options to initialize from.</param>
    public SqliteBulkUpdateOptions(IBulkUpdateOptions? optionsToInitializeFrom = null)
    {
-      if (optionsToInitializeFrom is null)
-         return;
+      AutoIncrementBehavior = SqliteAutoIncrementBehavior.SetZeroToNull;
 
-      PropertiesToUpdate = optionsToInitializeFrom.PropertiesToUpdate;
-      KeyProperties = optionsToInitializeFrom.KeyProperties;
+      if (optionsToInitializeFrom is not null)
+      {
+         PropertiesToUpdate = optionsToInitializeFrom.PropertiesToUpdate;
+         KeyProperties = optionsToInitializeFrom.KeyProperties;
+
+         if (optionsToInitializeFrom is SqliteBulkUpdateOptions sqliteOptions)
+            AutoIncrementBehavior = sqliteOptions.AutoIncrementBehavior;
+      }
    }
 }

@@ -276,4 +276,62 @@ public class BulkUpdateAsync : IntegrationTestsBase
                                               RequiredName = "RequiredName"
                                            });
    }
+
+   [Fact]
+   public async Task Should_update_entity_with_auto_increment()
+   {
+      var entity = new TestEntityWithAutoIncrement { Name = "original value" };
+      ArrangeDbContext.Add(entity);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      entity.Name = "Name";
+
+      var affectedRows = await SUT.BulkUpdateAsync(new[] { entity },
+                                                   new SqliteBulkUpdateOptions());
+
+      affectedRows.Should().Be(1);
+
+      var loadedEntities = await AssertDbContext.TestEntitiesWithAutoIncrement.ToListAsync();
+      loadedEntities.Should().HaveCount(1);
+      var loadedEntity = loadedEntities[0];
+      loadedEntity.Id.Should().NotBe(0);
+      loadedEntity.Should().BeEquivalentTo(new TestEntityWithAutoIncrement
+                                           {
+                                              Id = loadedEntity.Id,
+                                              Name = "Name"
+                                           });
+   }
+
+   [Fact]
+   public async Task Should_update_entity_with_auto_increment_having_custom_property_selector()
+   {
+      var entity = new TestEntityWithAutoIncrement { Name = "original value" };
+      ArrangeDbContext.Add(entity);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      entity.Name = "Name";
+
+      var affectedRows = await SUT.BulkUpdateAsync(new[] { entity },
+                                                   new SqliteBulkUpdateOptions
+                                                   {
+                                                      KeyProperties = IEntityPropertiesProvider.Include<TestEntityWithAutoIncrement>(e => e.Id),
+                                                      PropertiesToUpdate = IEntityPropertiesProvider.Include<TestEntityWithAutoIncrement>(e => new
+                                                                                                                                               {
+                                                                                                                                                  e.Id,
+                                                                                                                                                  e.Name
+                                                                                                                                               })
+                                                   });
+
+      affectedRows.Should().Be(1);
+
+      var loadedEntities = await AssertDbContext.TestEntitiesWithAutoIncrement.ToListAsync();
+      loadedEntities.Should().HaveCount(1);
+      var loadedEntity = loadedEntities[0];
+      loadedEntity.Id.Should().NotBe(0);
+      loadedEntity.Should().BeEquivalentTo(new TestEntityWithAutoIncrement
+                                           {
+                                              Id = entity.Id,
+                                              Name = "Name"
+                                           });
+   }
 }

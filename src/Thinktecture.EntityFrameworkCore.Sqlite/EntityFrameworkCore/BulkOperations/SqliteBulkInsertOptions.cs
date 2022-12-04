@@ -20,11 +20,9 @@ public sealed class SqliteBulkInsertOptions : IBulkInsertOptions
    /// <param name="optionsToInitializeFrom">Options to initialize from.</param>
    public SqliteBulkInsertOptions(IBulkInsertOptions? optionsToInitializeFrom = null)
    {
-      if (optionsToInitializeFrom is null)
-      {
-         AutoIncrementBehavior = SqliteAutoIncrementBehavior.SetZeroToNull;
-      }
-      else
+      AutoIncrementBehavior = SqliteAutoIncrementBehavior.SetZeroToNull;
+
+      if (optionsToInitializeFrom is not null)
       {
          PropertiesToInsert = optionsToInitializeFrom.PropertiesToInsert;
 
