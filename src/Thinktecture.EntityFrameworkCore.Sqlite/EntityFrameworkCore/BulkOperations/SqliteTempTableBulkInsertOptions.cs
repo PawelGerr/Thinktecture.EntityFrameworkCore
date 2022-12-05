@@ -29,6 +29,9 @@ public sealed class SqliteTempTableBulkInsertOptions : ITempTableBulkInsertOptio
    /// <inheritdoc />
    public IEntityPropertiesProvider? PropertiesToInsert { get; set; }
 
+   /// <inheritdoc />
+   public bool DoNotUseDefaultValues { get; set; }
+
    /// <summary>
    /// Advanced settings.
    /// </summary>

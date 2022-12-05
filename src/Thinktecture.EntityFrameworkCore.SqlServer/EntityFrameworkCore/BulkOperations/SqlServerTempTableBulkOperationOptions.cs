@@ -51,6 +51,9 @@ public abstract class SqlServerTempTableBulkOperationOptions : ITempTableBulkIns
    /// <inheritdoc />
    public IEntityPropertiesProvider? PropertiesToInsert { get; set; }
 
+   /// <inheritdoc />
+   public bool DoNotUseDefaultValues { get; set; }
+
    /// <summary>
    /// Adds "COLLATE database_default" to columns so the collation matches with the one of the user database instead of the master db.
    /// </summary>
@@ -74,6 +77,7 @@ public abstract class SqlServerTempTableBulkOperationOptions : ITempTableBulkIns
          DropTableOnDispose = true;
          MomentOfPrimaryKeyCreation = MomentOfSqlServerPrimaryKeyCreation.AfterBulkInsert;
          EnableStreaming = true;
+         DoNotUseDefaultValues = true;
       }
       else
       {
@@ -82,6 +86,7 @@ public abstract class SqlServerTempTableBulkOperationOptions : ITempTableBulkIns
          TableNameProvider = optionsToInitializeFrom.TableNameProvider;
          PrimaryKeyCreation = optionsToInitializeFrom.PrimaryKeyCreation;
          PropertiesToInsert = optionsToInitializeFrom.PropertiesToInsert;
+         DoNotUseDefaultValues = optionsToInitializeFrom.DoNotUseDefaultValues;
 
          if (optionsToInitializeFrom is SqlServerTempTableBulkOperationOptions sqlServerOptions)
          {
@@ -92,6 +97,7 @@ public abstract class SqlServerTempTableBulkOperationOptions : ITempTableBulkIns
             BulkCopyTimeout = sqlServerOptions.BulkCopyTimeout;
             SqlBulkCopyOptions = sqlServerOptions.SqlBulkCopyOptions;
             MomentOfPrimaryKeyCreation = sqlServerOptions.MomentOfPrimaryKeyCreation;
+            DoNotUseDefaultValues = sqlServerOptions.DoNotUseDefaultValues;
 
             Advanced.UsePropertiesToInsertForTempTableCreation = sqlServerOptions.Advanced.UsePropertiesToInsertForTempTableCreation;
          }

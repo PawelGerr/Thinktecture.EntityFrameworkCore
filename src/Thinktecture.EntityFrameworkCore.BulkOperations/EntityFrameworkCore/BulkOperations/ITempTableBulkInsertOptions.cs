@@ -39,4 +39,9 @@ public interface ITempTableBulkInsertOptions
    /// Gets properties to insert.
    /// </summary>
    IEntityPropertiesProvider? PropertiesToInsert { get; }
+
+   /// <summary>
+   /// For temptable creation we should not use defaults
+   /// </summary>
+   bool DoNotUseDefaultValues { get; }
 }
