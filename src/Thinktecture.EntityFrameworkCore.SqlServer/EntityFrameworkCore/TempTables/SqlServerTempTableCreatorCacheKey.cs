@@ -23,6 +23,10 @@ public readonly struct SqlServerTempTableCreatorCacheKey
    /// Properties the primary key should be created with.
    /// </summary>
    public IReadOnlyCollection<IProperty> PrimaryKeys { get; }
+   /// <summary>
+   /// When we do bulk update we dont want to use default definition
+   /// </summary>
+   public bool DoNotUseDefaultValues { get; }
 
    /// <summary>
    /// Initializes new instance of <see cref="SqlServerTempTableCreatorCacheKey"/>.
@@ -37,6 +41,7 @@ public readonly struct SqlServerTempTableCreatorCacheKey
       UseDefaultDatabaseCollation = options.UseDefaultDatabaseCollation;
       Properties = options.PropertiesToInclude.DeterminePropertiesForTempTable(entityType);
       PrimaryKeys = options.PrimaryKeyCreation.GetPrimaryKeyProperties(entityType, Properties);
+      DoNotUseDefaultValues = options.DoNotUseDefaultValues;
    }
 
    /// <inheritdoc />

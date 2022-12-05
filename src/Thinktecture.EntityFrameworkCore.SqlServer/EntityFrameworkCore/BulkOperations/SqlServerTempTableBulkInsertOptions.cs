@@ -13,4 +13,5 @@ public sealed class SqlServerTempTableBulkInsertOptions : SqlServerTempTableBulk
       : base(optionsToInitializeFrom)
    {
    }
+
 }

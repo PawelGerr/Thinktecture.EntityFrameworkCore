@@ -17,6 +17,9 @@ public class SqlServerTempTableCreationOptions : TempTableCreationOptions
       : base(optionsToInitializeFrom)
    {
       if (optionsToInitializeFrom is SqlServerTempTableCreationOptions sqlServerOptions)
+      {
          UseDefaultDatabaseCollation = sqlServerOptions.UseDefaultDatabaseCollation;
+         DoNotUseDefaultValues = sqlServerOptions.DoNotUseDefaultValues;
+      }
    }
 }

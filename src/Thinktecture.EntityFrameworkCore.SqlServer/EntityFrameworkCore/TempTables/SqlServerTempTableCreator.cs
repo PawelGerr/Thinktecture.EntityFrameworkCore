@@ -251,6 +251,13 @@ END
 
             sb.Append(property.IsNullable ? " NULL" : " NOT NULL");
 
+            if (options.UseDefaultDatabaseCollation || options.DoNotUseDefaultValues)
+            {
+               isFirst = false;
+               continue;
+            }
+
+
             if (IsIdentityColumn(property))
                sb.Append(" IDENTITY");
 
