@@ -17,6 +17,7 @@ public class SqlServerBulkOperationTempTableOptions
          MomentOfPrimaryKeyCreation = MomentOfSqlServerPrimaryKeyCreation.AfterBulkInsert;
          DropTableOnDispose = true;
          EnableStreaming = true;
+         DoNotUseDefaultValues = true;
       }
       else
       {
@@ -31,6 +32,7 @@ public class SqlServerBulkOperationTempTableOptions
          BatchSize = options.BatchSize;
          EnableStreaming = options.EnableStreaming;
          UseDefaultDatabaseCollation = options.UseDefaultDatabaseCollation;
+         DoNotUseDefaultValues = options.DoNotUseDefaultValues;
       }
    }
 
@@ -94,6 +96,11 @@ public class SqlServerBulkOperationTempTableOptions
    /// </summary>
    public bool UseDefaultDatabaseCollation { get; set; }
 
+   /// <summary>
+   /// Do not use default values
+   /// </summary>
+   public bool DoNotUseDefaultValues { get; set; }
+
    internal void Populate(SqlServerTempTableBulkInsertOptions options)
    {
       options.BatchSize = BatchSize;
@@ -106,5 +113,6 @@ public class SqlServerBulkOperationTempTableOptions
       options.SqlBulkCopyOptions = SqlBulkCopyOptions;
       options.UseDefaultDatabaseCollation = UseDefaultDatabaseCollation;
       options.MomentOfPrimaryKeyCreation = MomentOfPrimaryKeyCreation;
+      options.DoNotUseDefaultValues = DoNotUseDefaultValues;
    }
 }

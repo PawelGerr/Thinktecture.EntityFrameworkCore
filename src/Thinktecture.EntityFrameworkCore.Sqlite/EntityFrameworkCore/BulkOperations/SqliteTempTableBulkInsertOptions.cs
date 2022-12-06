@@ -34,6 +34,9 @@ public sealed class SqliteTempTableBulkInsertOptions : ITempTableBulkInsertOptio
    /// </summary>
    public AdvancedSqliteTempTableBulkInsertOptions Advanced { get; }
 
+   /// <inheritdoc />
+   public bool DoNotUseDefaultValues { get; set; }
+
    /// <summary>
    /// Initializes new instance of <see cref="SqliteTempTableBulkInsertOptions"/>.
    /// </summary>

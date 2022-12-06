@@ -251,6 +251,12 @@ END
 
             sb.Append(property.Property.IsNullable ? " NULL" : " NOT NULL");
 
+            if (options.DoNotUseDefaultValues)
+            {
+               isFirst = false;
+               continue;
+            }
+
             if (IsIdentityColumn(property))
                sb.Append(" IDENTITY");
 
