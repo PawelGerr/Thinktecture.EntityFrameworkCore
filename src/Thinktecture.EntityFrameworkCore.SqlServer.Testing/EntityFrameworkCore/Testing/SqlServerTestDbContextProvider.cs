@@ -1,9 +1,6 @@
-using System.Collections.Concurrent;
 using System.Data;
 using System.Data.Common;
-using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage;
 using Thinktecture.Logging;
 
@@ -12,13 +9,29 @@ namespace Thinktecture.EntityFrameworkCore.Testing;
 /// <summary>
 /// Provides instances of <see cref="DbContext"/> for testing purposes.
 /// </summary>
+public abstract class SqlServerTestDbContextProvider
+{
+   private static readonly object _sharedLock = new();
+
+   /// <summary>
+   /// Provides a lock object for database-wide operations like creation of tables.
+   /// </summary>
+   /// <param name="ctx">Current database context.</param>
+   /// <returns>A lock object.</returns>
+   protected virtual object GetSharedLock(DbContext ctx)
+   {
+      return _sharedLock;
+   }
+}
+
+/// <summary>
+/// Provides instances of <see cref="DbContext"/> for testing purposes.
+/// </summary>
 /// <typeparam name="T">Type of the database context.</typeparam>
-public class SqlServerTestDbContextProvider<T> : ITestDbContextProvider<T>
+public class SqlServerTestDbContextProvider<T> : SqlServerTestDbContextProvider, ITestDbContextProvider<T>
    where T : DbContext
 {
-   // ReSharper disable once StaticMemberInGenericType because the locks are all for the same database context but for different schemas.
-   private static readonly ConcurrentDictionary<string, object> _locks = new(StringComparer.OrdinalIgnoreCase);
-
+   private readonly object _instanceWideLock;
    private readonly ITestIsolationOptions _isolationOptions;
    private readonly DbContextOptions<T> _masterDbContextOptions;
    private readonly DbContextOptions<T> _dbContextOptions;
@@ -68,6 +81,7 @@ public class SqlServerTestDbContextProvider<T> : ITestDbContextProvider<T>
    {
       ArgumentNullException.ThrowIfNull(options);
 
+      _instanceWideLock = new object();
       Schema = options.Schema ?? throw new ArgumentException($"The '{nameof(options.Schema)}' cannot be null.", nameof(options));
       _sharedTablesIsolationLevel = ValidateIsolationLevel(options.SharedTablesIsolationLevel);
       _isolationOptions = options.IsolationOptions;
@@ -115,7 +129,7 @@ public class SqlServerTestDbContextProvider<T> : ITestDbContextProvider<T>
 
       bool isFirstCtx;
 
-      lock (_locks.GetOrAdd(Schema, _ => new object()))
+      lock (_instanceWideLock)
       {
          isFirstCtx = !_isAtLeastOneContextCreated;
          _isAtLeastOneContextCreated = true;
@@ -197,7 +211,7 @@ Please provide the corresponding constructor or a custom factory via '{typeof(Sq
       ArgumentNullException.ThrowIfNull(ctx);
 
       // concurrent execution is not supported by EF migrations
-      lock (_locks.GetOrAdd(Schema, _ => new object()))
+      lock (GetSharedLock(ctx))
       {
          var logLevel = LogLevelSwitch.MinimumLogLevel;
 
@@ -233,11 +247,19 @@ Please provide the corresponding constructor or a custom factory via '{typeof(Sq
       if (!disposing)
          return;
 
-      if (_isAtLeastOneContextCreated)
+      var isAtLeastOneContextCreated = false;
+
+      lock (_instanceWideLock)
       {
-         DisposeContextsAndRollbackMigrations();
-         _isAtLeastOneContextCreated = false;
+         if (_isAtLeastOneContextCreated)
+         {
+            isAtLeastOneContextCreated = true;
+            _isAtLeastOneContextCreated = false;
+         }
       }
+
+      if (isAtLeastOneContextCreated)
+         DisposeContextsAndRollbackMigrations();
 
       _masterConnection.Dispose();
       _testingLoggingOptions.Dispose();
@@ -253,7 +275,10 @@ Please provide the corresponding constructor or a custom factory via '{typeof(Sq
          // Create a new ctx as a last resort to rollback migrations and clean up the database
          using var ctx = _actDbContext ?? _arrangeDbContext ?? _assertDbContext ?? CreateDbContext(_masterDbContextOptions, new DbDefaultSchema(Schema));
 
-         _isolationOptions.Cleanup(ctx, Schema);
+         lock (GetSharedLock(ctx))
+         {
+            _isolationOptions.Cleanup(ctx, Schema);
+         }
       }
 
       _arrangeDbContext?.Dispose();
@@ -264,7 +289,4 @@ Please provide the corresponding constructor or a custom factory via '{typeof(Sq
       _actDbContext = null;
       _assertDbContext = null;
    }
-
-
-
 }
