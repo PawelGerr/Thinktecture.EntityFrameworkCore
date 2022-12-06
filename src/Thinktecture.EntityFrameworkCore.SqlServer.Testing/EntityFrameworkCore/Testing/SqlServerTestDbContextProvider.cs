@@ -47,6 +47,7 @@ public class SqlServerTestDbContextProvider<T> : SqlServerTestDbContextProvider,
    private IDbContextTransaction? _tx;
    private bool _isAtLeastOneContextCreated;
    private readonly IsolationLevel _sharedTablesIsolationLevel;
+   private readonly IsolationLevel _migrationAndCleanupIsolationLevel;
 
    /// <inheritdoc />
    public T ArrangeDbContext => _arrangeDbContext ??= CreateDbContext(true);
@@ -84,6 +85,7 @@ public class SqlServerTestDbContextProvider<T> : SqlServerTestDbContextProvider,
       _instanceWideLock = new object();
       Schema = options.Schema ?? throw new ArgumentException($"The '{nameof(options.Schema)}' cannot be null.", nameof(options));
       _sharedTablesIsolationLevel = ValidateIsolationLevel(options.SharedTablesIsolationLevel);
+      _migrationAndCleanupIsolationLevel = options.MigrationAndCleanupIsolationLevel ?? IsolationLevel.Serializable;
       _isolationOptions = options.IsolationOptions;
       _masterConnection = options.MasterConnection ?? throw new ArgumentException($"The '{nameof(options.MasterConnection)}' cannot be null.", nameof(options));
       _masterDbContextOptions = options.MasterDbContextOptions ?? throw new ArgumentException($"The '{nameof(options.MasterDbContextOptions)}' cannot be null.", nameof(options));
@@ -219,7 +221,19 @@ Please provide the corresponding constructor or a custom factory via '{typeof(Sq
          {
             LogLevelSwitch.MinimumLogLevel = _testingLoggingOptions.MigrationLogLevel;
 
-            _migrationExecutionStrategy.Migrate(ctx);
+            IDbContextTransaction? migrationTx = null;
+
+            if (ctx.Database.CurrentTransaction is null)
+               migrationTx = ctx.Database.BeginTransaction(_migrationAndCleanupIsolationLevel);
+
+            try
+            {
+               _migrationExecutionStrategy.Migrate(ctx);
+            }
+            finally
+            {
+               migrationTx?.Commit();
+            }
          }
          finally
          {
@@ -277,7 +291,19 @@ Please provide the corresponding constructor or a custom factory via '{typeof(Sq
 
          lock (GetSharedLock(ctx))
          {
-            _isolationOptions.Cleanup(ctx, Schema);
+            IDbContextTransaction? migrationTx = null;
+
+            if (ctx.Database.CurrentTransaction is null)
+               migrationTx = ctx.Database.BeginTransaction(_migrationAndCleanupIsolationLevel);
+
+            try
+            {
+               _isolationOptions.Cleanup(ctx, Schema);
+            }
+            finally
+            {
+               migrationTx?.Commit();
+            }
          }
       }
 
