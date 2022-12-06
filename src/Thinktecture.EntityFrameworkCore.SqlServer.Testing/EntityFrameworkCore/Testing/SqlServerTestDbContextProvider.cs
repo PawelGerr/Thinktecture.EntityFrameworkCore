@@ -204,6 +204,18 @@ Please provide the corresponding constructor or a custom factory via '{typeof(Sq
    }
 
    /// <summary>
+   /// Starts a new transaction for migration and cleanup.
+   /// </summary>
+   /// <param name="ctx">Database context.</param>
+   /// <returns>An instance of <see cref="IDbContextTransaction"/>.</returns>
+   protected virtual IDbContextTransaction? BeginMigrationAndCleanupTransaction(T ctx)
+   {
+      ArgumentNullException.ThrowIfNull(ctx);
+
+      return ctx.Database.BeginTransaction(_migrationAndCleanupIsolationLevel);
+   }
+
+   /// <summary>
    /// Runs migrations for provided <paramref name="ctx" />.
    /// </summary>
    /// <param name="ctx">Database context to run migrations for.</param>
@@ -224,15 +236,16 @@ Please provide the corresponding constructor or a custom factory via '{typeof(Sq
             IDbContextTransaction? migrationTx = null;
 
             if (ctx.Database.CurrentTransaction is null)
-               migrationTx = ctx.Database.BeginTransaction(_migrationAndCleanupIsolationLevel);
+               migrationTx = BeginMigrationAndCleanupTransaction(ctx);
 
             try
             {
                _migrationExecutionStrategy.Migrate(ctx);
+               migrationTx?.Commit();
             }
             finally
             {
-               migrationTx?.Commit();
+               migrationTx?.Dispose();
             }
          }
          finally
@@ -294,15 +307,16 @@ Please provide the corresponding constructor or a custom factory via '{typeof(Sq
             IDbContextTransaction? migrationTx = null;
 
             if (ctx.Database.CurrentTransaction is null)
-               migrationTx = ctx.Database.BeginTransaction(_migrationAndCleanupIsolationLevel);
+               migrationTx = BeginMigrationAndCleanupTransaction(ctx);
 
             try
             {
                _isolationOptions.Cleanup(ctx, Schema);
+               migrationTx?.Commit();
             }
             finally
             {
-               migrationTx?.Commit();
+               migrationTx?.Dispose();
             }
          }
       }
