@@ -9,6 +9,7 @@ public class TestDbContext : DbContext
 {
 #nullable disable
    public DbSet<TestEntity> TestEntities { get; set; }
+   public DbSet<TestEntityWithBaseClass> TestEntitiesWithBaseClass { get; set; }
    public DbSet<KeylessTestEntity> KeylessEntities { get; set; }
    public DbSet<TestEntityWithAutoIncrement> TestEntitiesWithAutoIncrement { get; set; }
    public DbSet<TestEntityWithShadowProperties> TestEntitiesWithShadowProperties { get; set; }
@@ -40,6 +41,7 @@ public class TestDbContext : DbContext
       base.OnModelCreating(modelBuilder);
 
       TestEntity.Configure(modelBuilder);
+      TestEntityWithBaseClass.Configure(modelBuilder);
       KeylessTestEntity.Configure(modelBuilder);
 
       modelBuilder.Entity<TestEntityWithAutoIncrement>().Property(e => e.Id).ValueGeneratedOnAdd();

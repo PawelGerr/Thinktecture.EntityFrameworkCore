@@ -46,7 +46,8 @@ public static class BulkOperationsCollectionExtensions
 
    private static IProperty? FindProperty(IEntityType entityType, MemberInfo memberInfo)
    {
-      return entityType.GetProperties().FirstOrDefault(property => property.PropertyInfo == memberInfo || property.FieldInfo == memberInfo);
+      return entityType.GetProperties().FirstOrDefault(property => property.PropertyInfo?.MetadataToken == memberInfo.MetadataToken
+                                                                   || property.FieldInfo?.MetadataToken == memberInfo.MetadataToken);
    }
 
    private static INavigation? FindOwnedProperty(

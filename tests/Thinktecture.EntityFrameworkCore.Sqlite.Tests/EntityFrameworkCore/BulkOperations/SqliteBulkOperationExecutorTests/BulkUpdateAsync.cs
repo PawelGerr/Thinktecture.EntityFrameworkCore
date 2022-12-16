@@ -334,4 +334,25 @@ public class BulkUpdateAsync : IntegrationTestsBase
                                               Name = "Name"
                                            });
    }
+
+   [Fact]
+   public async Task Should_update_property_of_base_class()
+   {
+      var entity = new TestEntityWithBaseClass { Id = new Guid("3D3AECE7-3B5A-48C6-9C8C-CAB7FFE2120D"), Name = "Initial" };
+      ArrangeDbContext.Add(entity);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      entity.Name = "changed";
+
+      var affectedRows = await SUT.BulkUpdateAsync(new[] { entity }, new SqliteBulkUpdateOptions
+                                                                     {
+                                                                        PropertiesToUpdate = IEntityPropertiesProvider.Include<TestEntityWithBaseClass>(e => e.Name)
+                                                                     });
+
+      affectedRows.Should().Be(1);
+
+      var loadedEntity = await AssertDbContext.TestEntitiesWithBaseClass.FirstOrDefaultAsync();
+      loadedEntity.Should().NotBeNull();
+      loadedEntity!.Name.Should().Be("changed");
+   }
 }
