@@ -28,6 +28,10 @@ public class Program
          await DoBulkInsertAsync(ctx);
          ctx.ChangeTracker.Clear();
 
+         // Bulk insert TPH into "real" tables (workaround)
+         await DoBulkInsertTphAsync(ctx);
+         ctx.ChangeTracker.Clear();
+
          await DoBulkInsertSpecificColumnsAsync(ctx);
          ctx.ChangeTracker.Clear();
 
@@ -208,6 +212,23 @@ public class Program
       var insertedCustomer = await ctx.Customers.FirstAsync(c => c.Id == customersToInsert.Id);
 
       Console.WriteLine($"Inserted customers: {insertedCustomer.Id}");
+   }
+
+   private static async Task DoBulkInsertTphAsync(DemoDbContext ctx)
+   {
+      var parent = new ParentTph { Id = Guid.NewGuid(), ParentProp = 1 };
+      var child = new ChildTph { Id = Guid.NewGuid(), ParentProp = 2, ChildProp = 3 };
+      var grandchild = new GrandchildTph { Id = Guid.NewGuid(), ParentProp = 2, ChildProp = 3, GrandChildProp = 4 };
+
+      await ctx.ParentsTph.BulkDeleteAsync();
+
+      await using var tx = await ctx.Database.BeginTransactionAsync();
+
+      await ctx.BulkInsertHierarchyAsync(new[] { parent, child, grandchild }, default);
+
+      await tx.CommitAsync();
+
+      var entities = await ctx.ParentsTph.ToListAsync();
    }
 
    private static async Task DoBulkInsertSpecificColumnsAsync(DemoDbContext ctx)

@@ -13,6 +13,10 @@ public class DemoDbContext : DbContext, IDbDefaultSchema
    public DbSet<Product> Products { get; set; }
    public DbSet<Order> Orders { get; set; }
    public DbSet<OrderItem> OrderItems { get; set; }
+
+   public DbSet<ParentTph> ParentsTph { get; set; }
+   public DbSet<ChildTph> ChildrenTph { get; set; }
+   public DbSet<GrandchildTph> GrandchildrenTph { get; set; }
 #nullable enable
 
    public DemoDbContext(DbContextOptions<DemoDbContext> options, IDbDefaultSchema? schema = null)
@@ -50,5 +54,17 @@ public class DemoDbContext : DbContext, IDbDefaultSchema
                                     });
 
       modelBuilder.Entity<OrderItem>().HasKey(i => new { i.OrderId, i.ProductId });
+
+      modelBuilder.Entity<ParentTph>(builder =>
+                                     {
+                                        builder.ToTable("TPH");
+
+                                        builder.Property(p => p.Discriminator).HasMaxLength(20);
+
+                                        builder.HasDiscriminator(p => p.Discriminator)
+                                               .HasValue<ParentTph>(ParentTph.DISCRIMINATOR)
+                                               .HasValue<ChildTph>(ChildTph.DISCRIMINATOR)
+                                               .HasValue<GrandchildTph>(GrandchildTph.DISCRIMINATOR);
+                                     });
    }
 }
