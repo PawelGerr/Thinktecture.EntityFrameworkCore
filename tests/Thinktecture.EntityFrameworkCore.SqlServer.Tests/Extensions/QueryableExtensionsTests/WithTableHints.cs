@@ -1,5 +1,4 @@
 using Thinktecture.EntityFrameworkCore;
-using Thinktecture.EntityFrameworkCore.Testing;
 using Thinktecture.TestDatabaseContext;
 
 namespace Thinktecture.Extensions.QueryableExtensionsTests;
@@ -9,8 +8,8 @@ public class WithTableHints : IntegrationTestsBase
    private string? _escapedSchema;
    private string EscapedSchema => _escapedSchema ??= $"[{ActDbContext.Schema}]";
 
-   public WithTableHints(ITestOutputHelper testOutputHelper)
-      : base(testOutputHelper, ITestIsolationOptions.SharedTablesAmbientTransaction)
+   public WithTableHints(ITestOutputHelper testOutputHelper, SqlServerContainerFixture sqlServerContainerFixture)
+      : base(testOutputHelper, sqlServerContainerFixture)
    {
    }
 

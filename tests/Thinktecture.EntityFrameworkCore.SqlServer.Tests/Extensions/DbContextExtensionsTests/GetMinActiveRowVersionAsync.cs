@@ -1,12 +1,10 @@
-using Thinktecture.EntityFrameworkCore.Testing;
-
 namespace Thinktecture.Extensions.DbContextExtensionsTests;
 
 // ReSharper disable once InconsistentNaming
 public class GetMinActiveRowVersionAsync : IntegrationTestsBase
 {
-   public GetMinActiveRowVersionAsync(ITestOutputHelper testOutputHelper)
-      : base(testOutputHelper, ITestIsolationOptions.SharedTablesAmbientTransaction)
+   public GetMinActiveRowVersionAsync(ITestOutputHelper testOutputHelper, SqlServerContainerFixture sqlServerContainerFixture)
+      : base(testOutputHelper, sqlServerContainerFixture)
    {
    }
 

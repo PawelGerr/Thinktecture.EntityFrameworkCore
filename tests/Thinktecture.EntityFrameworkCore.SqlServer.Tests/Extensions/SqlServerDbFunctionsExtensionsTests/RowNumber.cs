@@ -1,6 +1,5 @@
 using System.Linq.Expressions;
 using Microsoft.Data.SqlClient;
-using Thinktecture.EntityFrameworkCore.Testing;
 using Thinktecture.TestDatabaseContext;
 
 namespace Thinktecture.Extensions.SqlServerDbFunctionsExtensionsTests;
@@ -8,8 +7,8 @@ namespace Thinktecture.Extensions.SqlServerDbFunctionsExtensionsTests;
 // ReSharper disable once InconsistentNaming
 public class RowNumber : IntegrationTestsBase
 {
-   public RowNumber(ITestOutputHelper testOutputHelper)
-      : base(testOutputHelper, ITestIsolationOptions.SharedTablesAmbientTransaction)
+   public RowNumber(ITestOutputHelper testOutputHelper, SqlServerContainerFixture sqlServerContainerFixture)
+      : base(testOutputHelper, sqlServerContainerFixture)
    {
    }
 

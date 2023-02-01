@@ -1,5 +1,4 @@
 using Thinktecture.EntityFrameworkCore.BulkOperations;
-using Thinktecture.EntityFrameworkCore.Testing;
 using Thinktecture.TestDatabaseContext;
 
 namespace Thinktecture.Extensions.DbContextExtensionsTests;
@@ -8,8 +7,8 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests;
 public class BulkInsertOrUpdateAsync : IntegrationTestsBase
 {
    /// <inheritdoc />
-   public BulkInsertOrUpdateAsync(ITestOutputHelper testOutputHelper)
-      : base(testOutputHelper, ITestIsolationOptions.SharedTablesAmbientTransaction)
+   public BulkInsertOrUpdateAsync(ITestOutputHelper testOutputHelper, SqlServerContainerFixture sqlServerContainerFixture)
+      : base(testOutputHelper, sqlServerContainerFixture)
    {
    }
 
