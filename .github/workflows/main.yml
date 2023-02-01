@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: install .NET Core 6/7 SDK
+        uses: actions/setup-dotnet@v2
+        with:
+          dotnet-version: |
+            6.0.x
+            7.0.x
+
+      - name: checkout repository
+        uses: actions/checkout@v2
+
+      - name: dotnet restore
+        run: dotnet restore
+
+      - name: build
+        run: dotnet build --configuration Release --no-restore
+
+      - name: test
+        run: dotnet test --configuration Release --no-build
+
+      - name: test results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        id: test-results
+        if: always()
+        with:
+          check_name: tests results
+          trx_files: "**/test-results/**/*.trx"
