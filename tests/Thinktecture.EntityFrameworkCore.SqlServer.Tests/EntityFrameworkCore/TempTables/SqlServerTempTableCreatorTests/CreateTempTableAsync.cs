@@ -12,6 +12,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorT
 public class CreateTempTableAsync : IntegrationTestsBase
 {
    private readonly SqlServerTempTableCreationOptions _optionsWithNonUniqueName;
+   private readonly string _connectionString;
 
    private SqlServerTempTableCreator? _sut;
    private SqlServerTempTableCreator SUT => _sut ??= (SqlServerTempTableCreator)ActDbContext.GetService<ITempTableCreator>();
@@ -19,6 +20,7 @@ public class CreateTempTableAsync : IntegrationTestsBase
    public CreateTempTableAsync(ITestOutputHelper testOutputHelper, SqlServerContainerFixture sqlServerContainerFixture)
       : base(testOutputHelper, sqlServerContainerFixture)
    {
+      _connectionString = sqlServerContainerFixture.ConnectionString;
       _optionsWithNonUniqueName = new SqlServerTempTableCreationOptions { TableNameProvider = DefaultTempTableNameProvider.Instance, PrimaryKeyCreation = IPrimaryKeyPropertiesProvider.None };
    }
 
@@ -689,9 +691,9 @@ Missing columns: Column2.");
       ValidateColumn(columns[2], nameof(TestEntityWithCollation.ColumnWithoutCollation), "nvarchar", false, collation: databaseCollation);
    }
 
-   private static DbConnection CreateConnection()
+   private DbConnection CreateConnection()
    {
-      return new SqlConnection(TestContext.Instance.ConnectionString);
+      return new SqlConnection(_connectionString);
    }
 
    private DbContextOptions<TestDbContext> CreateOptions(DbConnection connection)

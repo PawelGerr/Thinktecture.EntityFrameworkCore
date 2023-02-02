@@ -18,7 +18,10 @@ public class SqlServerContainerFixture : IDisposable, IAsyncDisposable, IAsyncLi
 
    private static MsSqlTestcontainer BuildContainer()
    {
+      // https: //github.com/testcontainers/testcontainers-dotnet/issues/750#issuecomment-1412257694
+#pragma warning disable 618
       return new TestcontainersBuilder<MsSqlTestcontainer>()
+#pragma warning restore 618
              .WithDatabase(new MsSqlTestcontainerConfiguration("mcr.microsoft.com/mssql/server:2022-latest")
                            {
                               Password = $"P@sswo0d01_{Guid.NewGuid()}"
