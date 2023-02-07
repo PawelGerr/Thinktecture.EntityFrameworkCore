@@ -43,6 +43,14 @@ public class SqlServerTestDbContextProvider<T> : SqlServerTestDbContextProvider,
    private readonly Func<DbContextOptions<T>, IDbDefaultSchema, T?>? _contextFactory;
    private readonly TestingLoggingOptions _testingLoggingOptions;
 
+   private readonly bool _lockTableEnabled;
+   private readonly string _lockTableName;
+   private readonly string? _lockTableSchema;
+   private readonly int _maxNumberOfLockRetries;
+   private readonly TimeSpan _minRetryDelay;
+   private readonly TimeSpan _maxRetryDelay;
+   private readonly Random _random;
+
    private Func<DbContextOptions<T>, IDbDefaultSchema, T>? _defaultContextFactory;
    private T? _arrangeDbContext;
    private T? _actDbContext;
@@ -50,7 +58,6 @@ public class SqlServerTestDbContextProvider<T> : SqlServerTestDbContextProvider,
    private IDbContextTransaction? _tx;
    private bool _isAtLeastOneContextCreated;
    private readonly IsolationLevel _sharedTablesIsolationLevel;
-   private readonly IsolationLevel _migrationAndCleanupIsolationLevel;
    private bool _isDisposed;
 
    /// <inheritdoc />
@@ -89,7 +96,6 @@ public class SqlServerTestDbContextProvider<T> : SqlServerTestDbContextProvider,
       _instanceWideLock = new object();
       Schema = options.Schema ?? throw new ArgumentException($"The '{nameof(options.Schema)}' cannot be null.", nameof(options));
       _sharedTablesIsolationLevel = ValidateIsolationLevel(options.SharedTablesIsolationLevel);
-      _migrationAndCleanupIsolationLevel = options.MigrationAndCleanupIsolationLevel ?? IsolationLevel.Serializable;
       _isolationOptions = options.IsolationOptions;
       _masterConnection = options.MasterConnection ?? throw new ArgumentException($"The '{nameof(options.MasterConnection)}' cannot be null.", nameof(options));
       _masterDbContextOptions = options.MasterDbContextOptions ?? throw new ArgumentException($"The '{nameof(options.MasterDbContextOptions)}' cannot be null.", nameof(options));
@@ -99,6 +105,15 @@ public class SqlServerTestDbContextProvider<T> : SqlServerTestDbContextProvider,
       _contextInitializations = options.ContextInitializations ?? throw new ArgumentException($"The '{nameof(options.ContextInitializations)}' cannot be null.", nameof(options));
       ExecutedCommands = options.ExecutedCommands;
       _contextFactory = options.ContextFactory;
+
+      _random = new Random();
+
+      _lockTableEnabled = options.LockTable.IsEnabled;
+      _lockTableName = options.LockTable.Name;
+      _lockTableSchema = options.LockTable.Schema;
+      _maxNumberOfLockRetries = options.LockTable.MaxNumberOfLockRetries;
+      _minRetryDelay = options.LockTable.MinRetryDelay;
+      _maxRetryDelay = options.LockTable.MaxRetryDelay;
    }
 
    private static IsolationLevel ValidateIsolationLevel(IsolationLevel? isolationLevel)
@@ -231,7 +246,57 @@ Please provide the corresponding constructor or a custom factory via '{typeof(Sq
    {
       ArgumentNullException.ThrowIfNull(ctx);
 
-      return ctx.Database.BeginTransaction(_migrationAndCleanupIsolationLevel);
+      if (!_lockTableEnabled)
+         return ctx.Database.BeginTransaction(IsolationLevel.Serializable);
+
+      var sqlGenerationHelper = ctx.GetService<ISqlGenerationHelper>();
+      var lockTableName = sqlGenerationHelper.DelimitIdentifier(_lockTableName, _lockTableSchema);
+
+      CreateTestIsolationTable(ctx, lockTableName);
+
+      var tx = ctx.Database.BeginTransaction(IsolationLevel.Serializable);
+
+      try
+      {
+         LockDatabase(ctx, lockTableName);
+      }
+      catch (Exception)
+      {
+         tx.Dispose();
+         throw;
+      }
+
+      return tx;
+   }
+
+   private void CreateTestIsolationTable(T ctx, string lockTableName)
+   {
+      var createTableSql = $@"
+IF(OBJECT_ID('{lockTableName}') IS NULL)
+	CREATE TABLE {lockTableName}(Id INT NOT NULL)";
+
+      for (var i = 0;; i++)
+      {
+         try
+         {
+            ctx.Database.ExecuteSqlRaw(createTableSql);
+            return;
+         }
+         catch (Exception)
+         {
+            if (i > _maxNumberOfLockRetries)
+               throw;
+
+            var delay = new TimeSpan(_random.NextInt64(_minRetryDelay.Ticks, _maxRetryDelay.Ticks));
+            Task.Delay(delay).GetAwaiter().GetResult();
+         }
+      }
+   }
+
+   private static void LockDatabase(T ctx, string lockTableName)
+   {
+      var selectSql = $"SELECT * FROM {lockTableName} WITH (HOLDLOCK, UPDLOCK)";
+      ctx.Database.ExecuteSqlRaw(selectSql);
    }
 
    /// <summary>
@@ -353,7 +418,21 @@ Please provide the corresponding constructor or a custom factory via '{typeof(Sq
          // Create a new ctx as a last resort to rollback migrations and clean up the database
          await using var ctx = _actDbContext ?? _arrangeDbContext ?? _assertDbContext ?? CreateDbContext(_masterDbContextOptions, new DbDefaultSchema(Schema));
 
-         await _isolationOptions.CleanupAsync(ctx, Schema, cancellationToken);
+         IDbContextTransaction? migrationTx = null;
+
+         if (ctx.Database.CurrentTransaction is null)
+            migrationTx = BeginMigrationAndCleanupTransaction(ctx);
+
+         try
+         {
+            await _isolationOptions.CleanupAsync(ctx, Schema, cancellationToken);
+
+            await (migrationTx?.CommitAsync(cancellationToken) ?? Task.CompletedTask);
+         }
+         finally
+         {
+            await (migrationTx?.DisposeAsync() ?? ValueTask.CompletedTask);
+         }
       }
 
       await (_arrangeDbContext?.DisposeAsync() ?? ValueTask.CompletedTask);

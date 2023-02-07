@@ -1,5 +1,6 @@
 using System.Data;
 using System.Data.Common;
+using System.Diagnostics.CodeAnalysis;
 using Thinktecture.Logging;
 
 namespace Thinktecture.EntityFrameworkCore.Testing;
@@ -49,11 +50,17 @@ public class SqlServerTestDbContextProviderOptions<T> : TestDbContextProviderOpt
    /// </summary>
    public IsolationLevel? SharedTablesIsolationLevel { get; set; }
 
+   private SqlServerLockTableOptions? _lockTable;
+
    /// <summary>
-   /// Isolation level to use when migrating and cleaning up the database.
-   /// Default is <see cref="IsolationLevel.Serializable"/>.
+   /// Options used for locking the database during migrations and tear down.
    /// </summary>
-   public IsolationLevel? MigrationAndCleanupIsolationLevel { get; set; }
+   [AllowNull]
+   public SqlServerLockTableOptions LockTable
+   {
+      get => _lockTable ??= new SqlServerLockTableOptions(true);
+      set => _lockTable = value;
+   }
 
    /// <summary>
    /// Initializes new instance of <see cref="SqlServerTestDbContextProviderOptions{T}"/>.

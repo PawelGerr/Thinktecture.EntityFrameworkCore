@@ -27,7 +27,7 @@ public class SqlServerTestDbContextProviderBuilder<T> : TestDbContextProviderBui
    private bool _useThinktectureSqlServerMigrationsSqlGenerator = true;
    private string? _sharedTablesSchema;
    private IsolationLevel? _sharedTablesIsolationLevel;
-   private IsolationLevel? _migrationAndCleanupIsolationLevel;
+   private SqlServerLockTableOptions? _lockTable;
    private Func<DbContextOptions<T>, IDbDefaultSchema, T?>? _contextFactory;
    private Func<SqlServerTestDbContextProviderOptions<T>, SqlServerTestDbContextProvider<T>?>? _providerFactory;
 
@@ -57,6 +57,50 @@ public class SqlServerTestDbContextProviderBuilder<T> : TestDbContextProviderBui
    }
 
    /// <summary>
+   /// Disables locking of the database during migrations and tear down.
+   /// </summary>
+   /// <returns>Current builder for chaining</returns>
+   public SqlServerTestDbContextProviderBuilder<T> DisableLockingDuringDDL()
+   {
+      _lockTable = new SqlServerLockTableOptions(false);
+
+      return this;
+   }
+
+   /// <summary>
+   /// Enables locking of the database during migrations and tear down.
+   /// This feature is enabled by default.
+   /// </summary>
+   /// <param name="tableName">The name of the lock table.</param>
+   /// <param name="schema">The schema of the lock table.</param>
+   /// <param name="maxNumberOfLockRetries">Number of retries for creation of the lock table.</param>
+   /// <param name="minRetryDelay">Minimum delay between retries.</param>
+   /// <param name="maxRetryDelay">Maximum delay between retries.</param>
+   /// <returns>Current builder for chaining</returns>
+   public SqlServerTestDbContextProviderBuilder<T> UseLockingDuringDDL(
+      string tableName,
+      string? schema,
+      int maxNumberOfLockRetries = 10,
+      TimeSpan? minRetryDelay = null,
+      TimeSpan? maxRetryDelay = null)
+   {
+      _lockTable = new SqlServerLockTableOptions(true)
+                   {
+                      Name = tableName,
+                      Schema = schema,
+                      MaxNumberOfLockRetries = maxNumberOfLockRetries
+                   };
+
+      if (minRetryDelay.HasValue)
+         _lockTable.MinRetryDelay = minRetryDelay.Value;
+
+      if (maxRetryDelay.HasValue)
+         _lockTable.MaxRetryDelay = maxRetryDelay.Value;
+
+      return this;
+   }
+
+   /// <summary>
    /// Specifies the isolation level to use with shared tables.
    /// Default is <see cref="IsolationLevel.ReadCommitted"/>.
    /// </summary>
@@ -65,19 +109,6 @@ public class SqlServerTestDbContextProviderBuilder<T> : TestDbContextProviderBui
    public SqlServerTestDbContextProviderBuilder<T> UseSharedTablesIsolationLevel(IsolationLevel sharedTablesIsolationLevel)
    {
       _sharedTablesIsolationLevel = sharedTablesIsolationLevel;
-
-      return this;
-   }
-
-   /// <summary>
-   /// Specifies the isolation level to use when migrating and cleaning up the database.
-   /// Default is <see cref="IsolationLevel.Serializable"/>.
-   /// </summary>
-   /// <param name="migrationAndCleanupIsolationLevel">Isolation level to use.</param>
-   /// <returns>Current builder for chaining</returns>
-   public SqlServerTestDbContextProviderBuilder<T> UseMigrationAndCleanupIsolationLevel(IsolationLevel migrationAndCleanupIsolationLevel)
-   {
-      _migrationAndCleanupIsolationLevel = migrationAndCleanupIsolationLevel;
 
       return this;
    }
@@ -372,7 +403,7 @@ public class SqlServerTestDbContextProviderBuilder<T> : TestDbContextProviderBui
                           ContextFactory = _contextFactory,
                           ExecutedCommands = state.CommandCapturingInterceptor?.Commands,
                           SharedTablesIsolationLevel = _sharedTablesIsolationLevel,
-                          MigrationAndCleanupIsolationLevel = _migrationAndCleanupIsolationLevel
+                          LockTable = _lockTable
                        };
 
          return _providerFactory?.Invoke(options) ?? new SqlServerTestDbContextProvider<T>(options);
