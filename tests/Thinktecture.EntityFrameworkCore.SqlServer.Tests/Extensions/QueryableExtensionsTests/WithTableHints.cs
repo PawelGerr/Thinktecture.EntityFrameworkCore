@@ -27,6 +27,18 @@ public class WithTableHints : IntegrationTestsBase
    }
 
    [Fact]
+   public async Task Should_escape_index_name()
+   {
+      var query = ActDbContext.TestEntities.WithTableHints(SqlServerTableHint.Index("IX_TestEntities_Id"));
+
+      query.ToQueryString().Should().Be("SELECT [t].[Id], [t].[ConvertibleClass], [t].[Count], [t].[Name], [t].[ParentId], [t].[PropertyWithBackingField], [t].[RequiredName], [t].[_privateField]" + Environment.NewLine +
+                                        $"FROM {EscapedSchema}.[TestEntities] AS [t] WITH (INDEX([IX_TestEntities_Id]))");
+
+      var result = await query.ToListAsync();
+      result.Should().BeEmpty();
+   }
+
+   [Fact]
    public void Should_not_mess_up_table_hints()
    {
       var query = ActDbContext.TestEntities.WithTableHints(SqlServerTableHint.NoLock);

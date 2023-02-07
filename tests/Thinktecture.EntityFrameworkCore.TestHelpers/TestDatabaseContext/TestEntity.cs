@@ -53,6 +53,9 @@ public class TestEntity
                                       {
                                          builder.Property("_privateField");
                                          builder.Property(e => e.ConvertibleClass).HasConversion(c => c!.Key, k => new ConvertibleClass(k));
+
+                                         builder.HasIndex(e => e.Id)
+                                                .HasDatabaseName("IX_TestEntities_Id");
                                       });
    }
 }

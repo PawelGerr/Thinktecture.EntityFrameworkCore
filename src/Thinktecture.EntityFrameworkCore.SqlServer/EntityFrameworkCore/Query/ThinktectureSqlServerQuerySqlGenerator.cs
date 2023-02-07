@@ -52,7 +52,7 @@ public class ThinktectureSqlServerQuerySqlGenerator : SqlServerQuerySqlGenerator
          if (i != 0)
             Sql.Append(", ");
 
-         Sql.Append(tableWithHints.TableHints[i].ToString()!);
+         Sql.Append(tableWithHints.TableHints[i].ToString(Dependencies.SqlGenerationHelper));
       }
 
       Sql.Append(")");
