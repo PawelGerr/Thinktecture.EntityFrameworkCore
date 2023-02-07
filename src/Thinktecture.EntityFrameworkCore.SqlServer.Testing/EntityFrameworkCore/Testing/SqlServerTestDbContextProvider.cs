@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using System.Data;
 using System.Data.Common;
 using System.Linq.Expressions;
@@ -12,13 +11,29 @@ namespace Thinktecture.EntityFrameworkCore.Testing;
 /// <summary>
 /// Provides instances of <see cref="DbContext"/> for testing purposes.
 /// </summary>
+public abstract class SqlServerTestDbContextProvider
+{
+   private static readonly object _sharedLock = new();
+
+   /// <summary>
+   /// Provides a lock object for database-wide operations like creation of tables.
+   /// </summary>
+   /// <param name="ctx">Current database context.</param>
+   /// <returns>A lock object.</returns>
+   protected virtual object GetSharedLock(DbContext ctx)
+   {
+      return _sharedLock;
+   }
+}
+
+/// <summary>
+/// Provides instances of <see cref="DbContext"/> for testing purposes.
+/// </summary>
 /// <typeparam name="T">Type of the database context.</typeparam>
-public class SqlServerTestDbContextProvider<T> : ITestDbContextProvider<T>
+public class SqlServerTestDbContextProvider<T> : SqlServerTestDbContextProvider, ITestDbContextProvider<T>
    where T : DbContext
 {
-   // ReSharper disable once StaticMemberInGenericType because the locks are all for the same database context but for different schemas.
-   private static readonly ConcurrentDictionary<string, object> _locks = new(StringComparer.OrdinalIgnoreCase);
-
+   private readonly object _instanceWideLock;
    private readonly ITestIsolationOptions _isolationOptions;
    private readonly DbContextOptions<T> _masterDbContextOptions;
    private readonly DbContextOptions<T> _dbContextOptions;
@@ -35,6 +50,7 @@ public class SqlServerTestDbContextProvider<T> : ITestDbContextProvider<T>
    private IDbContextTransaction? _tx;
    private bool _isAtLeastOneContextCreated;
    private readonly IsolationLevel _sharedTablesIsolationLevel;
+   private readonly IsolationLevel _migrationAndCleanupIsolationLevel;
    private bool _isDisposed;
 
    /// <inheritdoc />
@@ -70,8 +86,10 @@ public class SqlServerTestDbContextProvider<T> : ITestDbContextProvider<T>
    {
       ArgumentNullException.ThrowIfNull(options);
 
+      _instanceWideLock = new object();
       Schema = options.Schema ?? throw new ArgumentException($"The '{nameof(options.Schema)}' cannot be null.", nameof(options));
       _sharedTablesIsolationLevel = ValidateIsolationLevel(options.SharedTablesIsolationLevel);
+      _migrationAndCleanupIsolationLevel = options.MigrationAndCleanupIsolationLevel ?? IsolationLevel.Serializable;
       _isolationOptions = options.IsolationOptions;
       _masterConnection = options.MasterConnection ?? throw new ArgumentException($"The '{nameof(options.MasterConnection)}' cannot be null.", nameof(options));
       _masterDbContextOptions = options.MasterDbContextOptions ?? throw new ArgumentException($"The '{nameof(options.MasterDbContextOptions)}' cannot be null.", nameof(options));
@@ -117,7 +135,7 @@ public class SqlServerTestDbContextProvider<T> : ITestDbContextProvider<T>
 
       bool isFirstCtx;
 
-      lock (_locks.GetOrAdd(Schema, _ => new object()))
+      lock (_instanceWideLock)
       {
          isFirstCtx = !_isAtLeastOneContextCreated;
          _isAtLeastOneContextCreated = true;
@@ -205,6 +223,18 @@ Please provide the corresponding constructor or a custom factory via '{typeof(Sq
    }
 
    /// <summary>
+   /// Starts a new transaction for migration and cleanup.
+   /// </summary>
+   /// <param name="ctx">Database context.</param>
+   /// <returns>An instance of <see cref="IDbContextTransaction"/>.</returns>
+   protected virtual IDbContextTransaction? BeginMigrationAndCleanupTransaction(T ctx)
+   {
+      ArgumentNullException.ThrowIfNull(ctx);
+
+      return ctx.Database.BeginTransaction(_migrationAndCleanupIsolationLevel);
+   }
+
+   /// <summary>
    /// Runs migrations for provided <paramref name="ctx" />.
    /// </summary>
    /// <param name="ctx">Database context to run migrations for.</param>
@@ -214,7 +244,7 @@ Please provide the corresponding constructor or a custom factory via '{typeof(Sq
       ArgumentNullException.ThrowIfNull(ctx);
 
       // concurrent execution is not supported by EF migrations
-      lock (_locks.GetOrAdd(Schema, _ => new object()))
+      lock (GetSharedLock(ctx))
       {
          var logLevel = LogLevelSwitch.MinimumLogLevel;
 
@@ -222,7 +252,20 @@ Please provide the corresponding constructor or a custom factory via '{typeof(Sq
          {
             LogLevelSwitch.MinimumLogLevel = _testingLoggingOptions.MigrationLogLevel;
 
-            _migrationExecutionStrategy.Migrate(ctx);
+            IDbContextTransaction? migrationTx = null;
+
+            if (ctx.Database.CurrentTransaction is null)
+               migrationTx = BeginMigrationAndCleanupTransaction(ctx);
+
+            try
+            {
+               _migrationExecutionStrategy.Migrate(ctx);
+               migrationTx?.Commit();
+            }
+            finally
+            {
+               migrationTx?.Dispose();
+            }
          }
          finally
          {
@@ -279,11 +322,19 @@ Please provide the corresponding constructor or a custom factory via '{typeof(Sq
       if (!disposing)
          return;
 
-      if (_isAtLeastOneContextCreated)
+      var isAtLeastOneContextCreated = false;
+
+      lock (_instanceWideLock)
       {
-         await DisposeContextsAndRollbackMigrationsAsync(default);
-         _isAtLeastOneContextCreated = false;
+         if (_isAtLeastOneContextCreated)
+         {
+            isAtLeastOneContextCreated = true;
+            _isAtLeastOneContextCreated = false;
+         }
       }
+
+      if (isAtLeastOneContextCreated)
+         await DisposeContextsAndRollbackMigrationsAsync(default);
 
       _masterConnection.Dispose();
       _testingLoggingOptions.Dispose();

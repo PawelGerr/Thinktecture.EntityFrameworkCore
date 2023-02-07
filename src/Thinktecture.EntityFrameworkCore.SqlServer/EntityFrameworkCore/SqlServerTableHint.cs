@@ -1,3 +1,5 @@
+using Microsoft.EntityFrameworkCore.Storage;
+
 namespace Thinktecture.EntityFrameworkCore;
 
 /// <summary>
@@ -108,6 +110,14 @@ public class SqlServerTableHint : ITableHint, IEquatable<SqlServerTableHint>
       return new($"SPATIAL_WINDOW_MAX_CELLS = {value}");
    }
 
+   /// <summary>
+   /// INDEX(name)
+   /// </summary>
+   public static SqlServerTableHint Index(string name)
+   {
+      return new IndexTableHint(name);
+   }
+
    private readonly string _value;
 
    private SqlServerTableHint(string value)
@@ -118,13 +128,7 @@ public class SqlServerTableHint : ITableHint, IEquatable<SqlServerTableHint>
    /// <inheritdoc />
    public override bool Equals(object? obj)
    {
-      if (ReferenceEquals(null, obj))
-         return false;
-      if (ReferenceEquals(this, obj))
-         return true;
-      if (obj.GetType() != GetType())
-         return false;
-      return Equals((SqlServerTableHint)obj);
+      return ReferenceEquals(this, obj) || (obj is SqlServerTableHint other && Equals(other));
    }
 
    /// <inheritdoc />
@@ -148,5 +152,46 @@ public class SqlServerTableHint : ITableHint, IEquatable<SqlServerTableHint>
    public override string ToString()
    {
       return _value;
+   }
+
+   /// <inheritdoc />
+   public virtual string ToString(ISqlGenerationHelper sqlGenerationHelper)
+   {
+      return _value;
+   }
+
+   private sealed class IndexTableHint : SqlServerTableHint, IEquatable<IndexTableHint>
+   {
+      private readonly string _name;
+
+      public IndexTableHint(string name)
+         : base($"INDEX({name})")
+      {
+         _name = name;
+      }
+
+      public override bool Equals(object? obj)
+      {
+         return ReferenceEquals(this, obj) || (obj is IndexTableHint other && Equals(other));
+      }
+
+      public bool Equals(IndexTableHint? other)
+      {
+         if (ReferenceEquals(null, other))
+            return false;
+         if (ReferenceEquals(this, other))
+            return true;
+         return base.Equals(other) && _name == other._name;
+      }
+
+      public override int GetHashCode()
+      {
+         return HashCode.Combine(base.GetHashCode(), _name);
+      }
+
+      public override string ToString(ISqlGenerationHelper sqlGenerationHelper)
+      {
+         return $"INDEX({sqlGenerationHelper.DelimitIdentifier(_name)})";
+      }
    }
 }

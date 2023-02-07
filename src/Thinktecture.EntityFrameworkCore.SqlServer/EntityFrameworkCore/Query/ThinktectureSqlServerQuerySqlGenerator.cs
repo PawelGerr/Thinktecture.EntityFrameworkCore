@@ -97,7 +97,7 @@ public class ThinktectureSqlServerQuerySqlGenerator : SqlServerQuerySqlGenerator
             if (i != 0)
                Sql.Append(", ");
 
-            Sql.Append(tableHints[i].ToString()!);
+            Sql.Append(tableHints[i].ToString(Dependencies.SqlGenerationHelper));
          }
 
          Sql.Append(")");

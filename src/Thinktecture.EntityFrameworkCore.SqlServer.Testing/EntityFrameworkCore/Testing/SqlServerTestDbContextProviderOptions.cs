@@ -11,7 +11,6 @@ namespace Thinktecture.EntityFrameworkCore.Testing;
 public class SqlServerTestDbContextProviderOptions<T> : TestDbContextProviderOptions<T>
    where T : DbContext
 {
-
    /// <summary>
    /// Indication whether the current <see cref="SqlServerTestDbContextProvider{T}"/> is using its own tables with a new schema
    /// or shares the tables with others.
@@ -46,8 +45,15 @@ public class SqlServerTestDbContextProviderOptions<T> : TestDbContextProviderOpt
 
    /// <summary>
    /// Isolation level to be used with shared tables.
+   /// Default is <see cref="IsolationLevel.ReadCommitted"/>.
    /// </summary>
    public IsolationLevel? SharedTablesIsolationLevel { get; set; }
+
+   /// <summary>
+   /// Isolation level to use when migrating and cleaning up the database.
+   /// Default is <see cref="IsolationLevel.Serializable"/>.
+   /// </summary>
+   public IsolationLevel? MigrationAndCleanupIsolationLevel { get; set; }
 
    /// <summary>
    /// Initializes new instance of <see cref="SqlServerTestDbContextProviderOptions{T}"/>.

@@ -14,6 +14,7 @@ public class TestDbContext : DbContext, IDbDefaultSchema
 #nullable disable
    // ReSharper disable UnusedAutoPropertyAccessor.Global
    public DbSet<TestEntity> TestEntities { get; set; }
+   public DbSet<TestEntityWithBaseClass> TestEntitiesWithBaseClass { get; set; }
    public DbSet<KeylessTestEntity> KeylessEntities { get; set; }
    public DbSet<TestTemporalTableEntity> TestTemporalTableEntity { get; set; }
    public DbSet<TestEntityWithAutoIncrement> TestEntitiesWithAutoIncrement { get; set; }
@@ -69,6 +70,7 @@ public class TestDbContext : DbContext, IDbDefaultSchema
                                                                     });
 
       TestEntity.Configure(modelBuilder);
+      TestEntityWithBaseClass.Configure(modelBuilder);
       KeylessTestEntity.Configure(modelBuilder);
 
       modelBuilder.Entity<TestTemporalTableEntity>(builder => builder.ToTable("TestTemporalTableEntity", tableBuilder => tableBuilder.IsTemporal()));

@@ -1,5 +1,6 @@
 using System.Text;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.ObjectPool;
 using Thinktecture.EntityFrameworkCore.Data;
@@ -223,7 +224,7 @@ internal abstract class SqliteCommandBuilder
 
          try
          {
-            GenerateInsertStatement(sb, sqlGenerationHelper, reader, tableIdentifier, _propertiesToInsert);
+            GenerateInsertStatement(sb, sqlGenerationHelper, reader, tableIdentifier, _propertiesToInsert.Union(_keyProperties.Select(p => new PropertyWithNavigations(p, Array.Empty<INavigation>()))).ToList());
 
             sb.AppendLine()
               .Append("\tON CONFLICT(");

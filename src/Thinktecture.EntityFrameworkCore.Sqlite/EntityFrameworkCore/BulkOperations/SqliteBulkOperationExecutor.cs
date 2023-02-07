@@ -143,11 +143,15 @@ public sealed class SqliteBulkOperationExecutor
 
       var entityType = _ctx.Model.GetEntityType(typeof(T));
 
+      if (options is not SqliteBulkUpdateOptions sqliteOptions)
+         sqliteOptions = new SqliteBulkUpdateOptions(options);
+
       var ctx = new BulkUpdateContext(_ctx,
                                       _ctx.GetService<IEntityDataReaderFactory>(),
                                       (SqliteConnection)_ctx.Database.GetDbConnection(),
                                       options.KeyProperties.DetermineKeyProperties(entityType),
-                                      options.PropertiesToUpdate.DeterminePropertiesForUpdate(entityType, null));
+                                      options.PropertiesToUpdate.DeterminePropertiesForUpdate(entityType, null),
+                                      sqliteOptions.AutoIncrementBehavior);
       var tableName = entityType.GetTableName()
                       ?? throw new Exception($"The entity '{entityType.Name}' has no table name.");
 
@@ -173,7 +177,8 @@ public sealed class SqliteBulkOperationExecutor
                                               (SqliteConnection)_ctx.Database.GetDbConnection(),
                                               sqliteOptions.KeyProperties.DetermineKeyProperties(entityType),
                                               sqliteOptions.PropertiesToInsert.DeterminePropertiesForInsert(entityType, null),
-                                              sqliteOptions.PropertiesToUpdate.DeterminePropertiesForUpdate(entityType, true));
+                                              sqliteOptions.PropertiesToUpdate.DeterminePropertiesForUpdate(entityType, true),
+                                              sqliteOptions.AutoIncrementBehavior);
       var tableName = entityType.GetTableName()
                       ?? throw new Exception($"The entity '{entityType.Name}' has no table name.");
 

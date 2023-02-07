@@ -26,14 +26,15 @@ internal class BulkUpdateContext : ISqliteBulkOperationContext
       return _readerFactory.Create(_ctx, entities, Properties, HasExternalProperties);
    }
 
-   public SqliteAutoIncrementBehavior AutoIncrementBehavior => SqliteAutoIncrementBehavior.KeepValueAsIs;
+   public SqliteAutoIncrementBehavior AutoIncrementBehavior { get; }
 
    public BulkUpdateContext(
       DbContext ctx,
       IEntityDataReaderFactory factory,
       SqliteConnection connection,
       IReadOnlyList<IProperty> keyProperties,
-      IReadOnlyList<PropertyWithNavigations> propertiesForUpdate)
+      IReadOnlyList<PropertyWithNavigations> propertiesForUpdate,
+      SqliteAutoIncrementBehavior autoIncrementBehavior)
    {
       _ctx = ctx;
       _readerFactory = factory;
@@ -43,6 +44,7 @@ internal class BulkUpdateContext : ISqliteBulkOperationContext
       _propertiesToUpdate = ownProperties;
       _externalProperties = externalProperties;
       Properties = ownProperties.Union(keyProperties.Select(p => new PropertyWithNavigations(p, Array.Empty<Navigation>()))).ToList();
+      AutoIncrementBehavior = autoIncrementBehavior;
    }
 
    /// <inheritdoc />
@@ -61,7 +63,7 @@ internal class BulkUpdateContext : ISqliteBulkOperationContext
 
       foreach (var (navigation, ownedEntities, properties) in _externalProperties.GroupExternalProperties(entities))
       {
-         var ownedTypeCtx = new OwnedTypeBulkUpdateContext(_ctx, _readerFactory, Connection, properties, navigation.TargetEntityType, ownedEntities);
+         var ownedTypeCtx = new OwnedTypeBulkUpdateContext(_ctx, _readerFactory, Connection, properties, navigation.TargetEntityType, ownedEntities, AutoIncrementBehavior);
          childCtx.Add(ownedTypeCtx);
       }
 
@@ -79,8 +81,9 @@ internal class BulkUpdateContext : ISqliteBulkOperationContext
          SqliteConnection sqlCon,
          IReadOnlyList<PropertyWithNavigations> properties,
          IEntityType entityType,
-         IEnumerable<object> entities)
-         : base(ctx, factory, sqlCon, GetKeyProperties(entityType), properties)
+         IEnumerable<object> entities,
+         SqliteAutoIncrementBehavior autoIncrementBehavior)
+         : base(ctx, factory, sqlCon, GetKeyProperties(entityType), properties, autoIncrementBehavior)
       {
          EntityType = entityType;
          Entities = entities;

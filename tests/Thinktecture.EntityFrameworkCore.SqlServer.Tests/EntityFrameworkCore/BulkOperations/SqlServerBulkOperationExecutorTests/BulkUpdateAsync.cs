@@ -267,4 +267,83 @@ public class BulkUpdateAsync : IntegrationTestsBase
                                            });
       loadedEntity.GetPrivateField().Should().Be(3);
    }
+
+   [Fact]
+   public async Task Should_update_entity_with_auto_increment()
+   {
+      var entity = new TestEntityWithAutoIncrement { Name = "original value" };
+      ArrangeDbContext.Add(entity);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      entity.Name = "Name";
+
+      var affectedRows = await SUT.BulkUpdateAsync(new[] { entity },
+                                                   new SqlServerBulkUpdateOptions());
+
+      affectedRows.Should().Be(1);
+
+      var loadedEntities = await AssertDbContext.TestEntitiesWithAutoIncrement.ToListAsync();
+      loadedEntities.Should().HaveCount(1);
+      var loadedEntity = loadedEntities[0];
+      loadedEntity.Id.Should().NotBe(0);
+      loadedEntity.Should().BeEquivalentTo(new TestEntityWithAutoIncrement
+                                           {
+                                              Id = loadedEntity.Id,
+                                              Name = "Name"
+                                           });
+   }
+
+   [Fact]
+   public async Task Should_update_entity_with_auto_increment_having_custom_property_selector()
+   {
+      var entity = new TestEntityWithAutoIncrement { Name = "original value" };
+      ArrangeDbContext.Add(entity);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      entity.Name = "Name";
+
+      var affectedRows = await SUT.BulkUpdateAsync(new[] { entity },
+                                                   new SqlServerBulkUpdateOptions
+                                                   {
+                                                      KeyProperties = IEntityPropertiesProvider.Include<TestEntityWithAutoIncrement>(e => e.Id),
+                                                      PropertiesToUpdate = IEntityPropertiesProvider.Include<TestEntityWithAutoIncrement>(e => new
+                                                                                                                                               {
+                                                                                                                                                  e.Id,
+                                                                                                                                                  e.Name
+                                                                                                                                               })
+                                                   });
+
+      affectedRows.Should().Be(1);
+
+      var loadedEntities = await AssertDbContext.TestEntitiesWithAutoIncrement.ToListAsync();
+      loadedEntities.Should().HaveCount(1);
+      var loadedEntity = loadedEntities[0];
+      loadedEntity.Id.Should().NotBe(0);
+      loadedEntity.Should().BeEquivalentTo(new TestEntityWithAutoIncrement
+                                           {
+                                              Id = entity.Id,
+                                              Name = "Name"
+                                           });
+   }
+
+   [Fact]
+   public async Task Should_update_property_of_base_class()
+   {
+      var entity = new TestEntityWithBaseClass { Id = new Guid("3D3AECE7-3B5A-48C6-9C8C-CAB7FFE2120D"), Name = "Initial" };
+      ArrangeDbContext.Add(entity);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      entity.Name = "changed";
+
+      var affectedRows = await SUT.BulkUpdateAsync(new[] { entity }, new SqlServerBulkUpdateOptions
+                                                                     {
+                                                                        PropertiesToUpdate = IEntityPropertiesProvider.Include<TestEntityWithBaseClass>(e => e.Name)
+                                                                     });
+
+      affectedRows.Should().Be(1);
+
+      var loadedEntity = await AssertDbContext.TestEntitiesWithBaseClass.FirstOrDefaultAsync();
+      loadedEntity.Should().NotBeNull();
+      loadedEntity!.Name.Should().Be("changed");
+   }
 }
