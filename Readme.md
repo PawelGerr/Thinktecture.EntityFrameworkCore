@@ -41,6 +41,5 @@ Use the [repo on GitHub](https://github.com/PawelGerr/Thinktecture.EntityFramewo
 * [Isolation of tests](https://dev.azure.com/pawelgerr/Thinktecture.EntityFrameworkCore/_wiki/wikis/Thinktecture.EntityFrameworkCore.wiki/12/Isolation-of-tests) (SQL Server, SQLite)
 
 ## Extensibility
-* [Removing Conventions](https://dev.azure.com/pawelgerr/Thinktecture.EntityFrameworkCore/_wiki/wikis/Thinktecture.EntityFrameworkCore.wiki/111/Removing-Conventions)
 * [Adding custom IRelationalTypeMappingSourcePlugin](https://dev.azure.com/pawelgerr/Thinktecture.EntityFrameworkCore/_wiki/wikis/Thinktecture.EntityFrameworkCore.wiki/26/Adding-custom-IRelationalTypeMappingSourcePlugin)
 * [Adding custom IEvaluatableExpressionFilter](https://dev.azure.com/pawelgerr/Thinktecture.EntityFrameworkCore/_wiki/wikis/Thinktecture.EntityFrameworkCore.wiki/31/Adding-custom-IEvaluatableExpressionFilter)

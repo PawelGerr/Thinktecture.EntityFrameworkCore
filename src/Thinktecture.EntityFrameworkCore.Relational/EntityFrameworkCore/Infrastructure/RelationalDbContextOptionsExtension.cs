@@ -1,14 +1,12 @@
 using System.Globalization;
 using System.Text;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Metadata.Conventions.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.ObjectPool;
-using Thinktecture.EntityFrameworkCore.Conventions;
 using Thinktecture.EntityFrameworkCore.Migrations;
 using Thinktecture.EntityFrameworkCore.Query;
 using Thinktecture.EntityFrameworkCore.Query.ExpressionTranslators;
@@ -78,8 +76,6 @@ public sealed class RelationalDbContextOptionsExtension : DbContextOptionsExtens
       set => _useCustomRelationalQueryContextFactory = value;
    }
 
-   internal List<ConventionToRemove> ConventionsToRemove { get; }
-
    /// <summary>
    /// Initializes new instance of <see cref="RelationalDbContextOptionsExtension"/>.
    /// </summary>
@@ -87,7 +83,6 @@ public sealed class RelationalDbContextOptionsExtension : DbContextOptionsExtens
    {
       _serviceDescriptors = new List<ServiceDescriptor>();
       _evaluatableExpressionFilterPlugins = new List<Type>();
-      ConventionsToRemove = new List<ConventionToRemove>();
       _stringBuilderPolicy = new StringBuilderPooledObjectPolicy
                              {
                                 InitialCapacity = _DEFAULT_INITIAL_CAPACITY,
@@ -102,8 +97,6 @@ public sealed class RelationalDbContextOptionsExtension : DbContextOptionsExtens
 
       services.TryAddSingleton<RelationalDbContextOptionsExtensionOptions>();
       services.AddSingleton<ISingletonOptions>(provider => provider.GetRequiredService<RelationalDbContextOptionsExtensionOptions>());
-
-      services.Add<IConventionSetPlugin, RelationalConventionSetPlugin>(GetLifetime<IConventionSetPlugin>());
 
       services.TryAddSingleton<ITenantDatabaseProviderFactory>(DummyTenantDatabaseProviderFactory.Instance);
 
@@ -155,36 +148,6 @@ public sealed class RelationalDbContextOptionsExtension : DbContextOptionsExtens
    {
       if (AddTenantDatabaseSupport && _serviceDescriptors.All(d => d.ServiceType != typeof(ITenantDatabaseProviderFactory)))
          throw new InvalidOperationException($"TenantDatabaseSupport is enabled but there is no registration of an implementation of '{nameof(ITenantDatabaseProviderFactory)}'.");
-   }
-
-   /// <summary>
-   /// Removes convention of type <paramref name="implementationTypeToRemove"/> from the current convention set.
-   /// </summary>
-   /// <param name="conventionType">Convention type.</param>
-   /// <param name="implementationTypeToRemove">Implementation type of the convention to remove.</param>
-   /// <param name="throwIfNotFound">Indication whether to throw an exception if the <paramref name="implementationTypeToRemove"/> wasn't found in the convention set.</param>
-   public RelationalDbContextOptionsExtension RemoveConvention(ConventionType conventionType, Type implementationTypeToRemove, bool throwIfNotFound = true)
-   {
-      ArgumentNullException.ThrowIfNull(conventionType);
-      ArgumentNullException.ThrowIfNull(implementationTypeToRemove);
-
-      if (!conventionType.InterfaceType.IsAssignableFrom(implementationTypeToRemove))
-         throw new ArgumentException($"The provided type '{implementationTypeToRemove.ShortDisplayName()}' is not a '{conventionType.InterfaceType.ShortDisplayName()}'", nameof(implementationTypeToRemove));
-
-      var indexOfExistingEntry = ConventionsToRemove.FindIndex(c => c.ConventionType == conventionType && c.ImplementationTypeToRemove == implementationTypeToRemove);
-
-      var conventionToRemove = new ConventionToRemove(conventionType, implementationTypeToRemove, throwIfNotFound);
-
-      if (indexOfExistingEntry >= 0)
-      {
-         ConventionsToRemove[indexOfExistingEntry] = conventionToRemove;
-      }
-      else
-      {
-         ConventionsToRemove.Add(conventionToRemove);
-      }
-
-      return this;
    }
 
    /// <summary>
@@ -299,36 +262,6 @@ public sealed class RelationalDbContextOptionsExtension : DbContextOptionsExtens
          if (_extension._stringBuilderPolicy.InitialCapacity != _DEFAULT_INITIAL_CAPACITY || _extension._stringBuilderPolicy.MaximumRetainedCapacity != _DEFAULT_MAXIMUM_RETAINED_CAPACITY)
             sb.Append("StringBuilderPool(InitialCapacity=").Append(_extension._stringBuilderPolicy.InitialCapacity).Append(", MaximumRetainedCapacity=").Append(_extension._stringBuilderPolicy.MaximumRetainedCapacity).Append(") ");
 
-         if (_extension.ConventionsToRemove.Count > 0)
-         {
-            sb.Append("ConventionsToRemove(");
-
-            var i = 0;
-
-            foreach (var group in _extension.ConventionsToRemove.GroupBy(c => c.ConventionType))
-            {
-               if (i > 0)
-                  sb.Append(',');
-
-               sb.Append(group.Key.CollectionName).Append("=[");
-
-               var j = 0;
-
-               foreach (var convention in group)
-               {
-                  sb.Append(convention.ImplementationTypeToRemove.Name);
-
-                  j++;
-               }
-
-               sb.Append("]");
-
-               i++;
-            }
-
-            sb.Append(") ");
-         }
-
          return sb.ToString();
       }
 
@@ -352,7 +285,6 @@ public sealed class RelationalDbContextOptionsExtension : DbContextOptionsExtens
 
          _extension._evaluatableExpressionFilterPlugins.ForEach(type => hashCode.Add(type));
          _extension._serviceDescriptors.ForEach(descriptor => hashCode.Add(GetHashCode(descriptor)));
-         _extension.ConventionsToRemove.ForEach(conventionToRemove => hashCode.Add(conventionToRemove));
 
          // Following switches doesn't add any new components:
          //   AddCustomRelationalParameterBasedSqlProcessorFactory
@@ -388,12 +320,6 @@ public sealed class RelationalDbContextOptionsExtension : DbContextOptionsExtens
             return false;
 
          if (!_extension._serviceDescriptors.All(d => otherRelationalInfo._extension._serviceDescriptors.Any(o => AreEqual(d, o))))
-            return false;
-
-         if (_extension.ConventionsToRemove.Count != otherRelationalInfo._extension.ConventionsToRemove.Count)
-            return false;
-
-         if (_extension.ConventionsToRemove.Except(otherRelationalInfo._extension.ConventionsToRemove).Any())
             return false;
 
          return true;
@@ -442,9 +368,6 @@ public sealed class RelationalDbContextOptionsExtension : DbContextOptionsExtens
          debugInfo["Thinktecture:TenantDatabaseSupport"] = _extension.AddTenantDatabaseSupport.ToString(CultureInfo.InvariantCulture);
          debugInfo["Thinktecture:EvaluatableExpressionFilterPlugins"] = String.Join(", ", _extension._evaluatableExpressionFilterPlugins.Select(t => t.ShortDisplayName()));
          debugInfo["Thinktecture:ServiceDescriptors"] = String.Join(", ", _extension._serviceDescriptors);
-         debugInfo["Thinktecture:ConventionsToRemove"] = String.Join(", ", _extension.ConventionsToRemove
-                                                                                     .GroupBy(c => c.ConventionType)
-                                                                                     .Select(g => $"{g.Key.CollectionName}=[{String.Join(",", g.Select(c => c.ImplementationTypeToRemove.ShortDisplayName()))}]"));
          debugInfo["Thinktecture:StringBuilderPool:InitialCapacity"] = String.Join(", ", _extension._stringBuilderPolicy.InitialCapacity);
          debugInfo["Thinktecture:StringBuilderPool:MaximumRetainedCapacity"] = String.Join(", ", _extension._stringBuilderPolicy.MaximumRetainedCapacity);
       }

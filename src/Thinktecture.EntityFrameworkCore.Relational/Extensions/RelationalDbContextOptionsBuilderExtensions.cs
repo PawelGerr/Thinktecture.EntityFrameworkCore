@@ -2,7 +2,6 @@ using System.Text;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Storage;
-using Thinktecture.EntityFrameworkCore.Conventions;
 using Thinktecture.EntityFrameworkCore.Infrastructure;
 
 // ReSharper disable once CheckNamespace
@@ -139,43 +138,6 @@ public static class RelationalDbContextOptionsBuilderExtensions
                                                                            extension.AddNestedTransactionsSupport = addNestedTransactionsSupport;
                                                                            return extension;
                                                                         });
-      return builder;
-   }
-
-   /// <summary>
-   /// Removes convention of type <paramref name="implementationTypeToRemove"/> from the current convention set.
-   /// </summary>
-   /// <param name="builder">Options builder.</param>
-   /// <param name="conventionType">Convention type.</param>
-   /// <param name="implementationTypeToRemove">Implementation type of the convention to remove.</param>
-   /// <param name="throwIfNotFound">Indication whether to throw an exception if the <paramref name="implementationTypeToRemove"/> wasn't found in the convention set.</param>
-   /// <returns>The provided <paramref name="builder"/>.</returns>
-   public static DbContextOptionsBuilder<T> RemoveConvention<T>(
-      this DbContextOptionsBuilder<T> builder,
-      ConventionType conventionType,
-      Type implementationTypeToRemove,
-      bool throwIfNotFound = true)
-      where T : DbContext
-   {
-      ((DbContextOptionsBuilder)builder).RemoveConvention(conventionType, implementationTypeToRemove, throwIfNotFound);
-      return builder;
-   }
-
-   /// <summary>
-   /// Removes convention of type <paramref name="implementationTypeToRemove"/> from the current convention set.
-   /// </summary>
-   /// <param name="builder">Options builder.</param>
-   /// <param name="conventionType">Convention type.</param>
-   /// <param name="implementationTypeToRemove">Implementation type of the convention to remove.</param>
-   /// <param name="throwIfNotFound">Indication whether to throw an exception if the <paramref name="implementationTypeToRemove"/> wasn't found in the convention set.</param>
-   /// <returns>The provided <paramref name="builder"/>.</returns>
-   public static DbContextOptionsBuilder RemoveConvention(
-      this DbContextOptionsBuilder builder,
-      ConventionType conventionType,
-      Type implementationTypeToRemove,
-      bool throwIfNotFound = true)
-   {
-      builder.AddOrUpdateExtension<RelationalDbContextOptionsExtension>(extension => extension.RemoveConvention(conventionType, implementationTypeToRemove, throwIfNotFound));
       return builder;
    }
 

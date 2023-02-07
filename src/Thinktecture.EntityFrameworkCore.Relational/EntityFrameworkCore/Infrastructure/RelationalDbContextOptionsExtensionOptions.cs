@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Thinktecture.EntityFrameworkCore.Conventions;
 using Thinktecture.EntityFrameworkCore.Query.ExpressionTranslators;
 
 namespace Thinktecture.EntityFrameworkCore.Infrastructure;
@@ -19,8 +18,6 @@ public class RelationalDbContextOptionsExtensionOptions : ISingletonOptions
    /// </summary>
    public bool TenantDatabaseSupportEnabled { get; private set; }
 
-   internal IReadOnlyList<ConventionToRemove> ConventionsToRemove { get; private set; } = Array.Empty<ConventionToRemove>();
-
    /// <inheritdoc />
    public void Initialize(IDbContextOptions options)
    {
@@ -28,7 +25,6 @@ public class RelationalDbContextOptionsExtensionOptions : ISingletonOptions
 
       RowNumberSupportEnabled = extension.AddRowNumberSupport;
       TenantDatabaseSupportEnabled = extension.AddTenantDatabaseSupport;
-      ConventionsToRemove = extension.ConventionsToRemove.ToList();
    }
 
    /// <inheritdoc />
@@ -41,34 +37,6 @@ public class RelationalDbContextOptionsExtensionOptions : ISingletonOptions
 
       if (extension.AddTenantDatabaseSupport != TenantDatabaseSupportEnabled)
          throw new InvalidOperationException($"The setting '{nameof(RelationalDbContextOptionsExtension.AddTenantDatabaseSupport)}' has been changed.");
-
-      if (!Equal(extension.ConventionsToRemove, ConventionsToRemove))
-         throw new InvalidOperationException($"The setting '{nameof(RelationalDbContextOptionsExtension.ConventionsToRemove)}' has been changed.");
-   }
-
-   private bool Equal<T>(IReadOnlyList<T> collection, IReadOnlyList<T> otherCollection)
-   {
-      if (collection.Count != otherCollection.Count)
-         return false;
-
-      for (var i = 0; i < ConventionsToRemove.Count; i++)
-      {
-         var item = collection[i];
-         var other = otherCollection[i];
-
-         if (item is null)
-         {
-            if (other is null)
-               continue;
-
-            return false;
-         }
-
-         if (!item.Equals(other))
-            return false;
-      }
-
-      return true;
    }
 
    private static RelationalDbContextOptionsExtension GetExtension(IDbContextOptions options)
