@@ -301,7 +301,7 @@ Missing columns: Column2.");
 
       var options = CreateOptions(con);
 
-      await using var ctx = new TestDbContext(options, new DbDefaultSchema(Schema));
+      await using var ctx = new TestDbContext(options, CreateDefaultSchema());
 
       ctx.Database.GetDbConnection().State.Should().Be(ConnectionState.Closed);
 
@@ -319,7 +319,7 @@ Missing columns: Column2.");
 
       var options = CreateOptions(con);
 
-      await using var ctx = new TestDbContext(options, new DbDefaultSchema(Schema));
+      await using var ctx = new TestDbContext(options, CreateDefaultSchema());
 
       ctx.Database.GetDbConnection().State.Should().Be(ConnectionState.Closed);
 
@@ -338,7 +338,7 @@ Missing columns: Column2.");
 
       var options = CreateOptions(con);
 
-      await using var ctx = new TestDbContext(options, new DbDefaultSchema(Schema));
+      await using var ctx = new TestDbContext(options, CreateDefaultSchema());
 
       ctx.Database.GetDbConnection().State.Should().Be(ConnectionState.Closed);
 
@@ -359,7 +359,7 @@ Missing columns: Column2.");
 
       ITempTableReference tempTableReference;
 
-      await using (var ctx = new TestDbContext(options, new DbDefaultSchema(Schema)))
+      await using (var ctx = new TestDbContext(options, CreateDefaultSchema()))
       {
          ctx.Database.GetDbConnection().State.Should().Be(ConnectionState.Closed);
 
@@ -380,7 +380,7 @@ Missing columns: Column2.");
 
       var options = CreateOptions(con);
 
-      await using var ctx = new TestDbContext(options, new DbDefaultSchema(Schema));
+      await using var ctx = new TestDbContext(options, CreateDefaultSchema());
 
       ctx.Database.GetDbConnection().State.Should().Be(ConnectionState.Closed);
 
@@ -401,7 +401,7 @@ Missing columns: Column2.");
 
       var options = CreateOptions(con);
 
-      await using var ctx = new TestDbContext(options, new DbDefaultSchema(Schema));
+      await using var ctx = new TestDbContext(options, CreateDefaultSchema());
 
       ctx.Database.GetDbConnection().State.Should().Be(ConnectionState.Closed);
 
@@ -729,5 +729,10 @@ Missing columns: Column2.");
 
       if (charMaxLength.HasValue)
          column.CHARACTER_MAXIMUM_LENGTH.Should().Be(charMaxLength.Value);
+   }
+
+   private DbDefaultSchema? CreateDefaultSchema()
+   {
+      return Schema is null ? null : new DbDefaultSchema(Schema);
    }
 }

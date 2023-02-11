@@ -20,15 +20,15 @@ public class SqlServerTestDbContextProviderBuilder<T> : TestDbContextProviderBui
 
    private readonly string _connectionString;
    private readonly ITestIsolationOptions _isolationOptions;
-   private readonly List<Action<DbContextOptionsBuilder<T>, string>> _configuresOptionsCollection;
-   private readonly List<Action<SqlServerDbContextOptionsBuilder, string>> _configuresSqlServerOptionsCollection;
+   private readonly List<Action<DbContextOptionsBuilder<T>, string?>> _configuresOptionsCollection;
+   private readonly List<Action<SqlServerDbContextOptionsBuilder, string?>> _configuresSqlServerOptionsCollection;
    private readonly List<Action<T>> _ctxInitializations;
 
    private bool _useThinktectureSqlServerMigrationsSqlGenerator = true;
    private string? _sharedTablesSchema;
    private IsolationLevel? _sharedTablesIsolationLevel;
    private SqlServerLockTableOptions? _lockTable;
-   private Func<DbContextOptions<T>, IDbDefaultSchema, T?>? _contextFactory;
+   private Func<DbContextOptions<T>, IDbDefaultSchema?, T?>? _contextFactory;
    private Func<SqlServerTestDbContextProviderOptions<T>, SqlServerTestDbContextProvider<T>?>? _providerFactory;
 
    /// <summary>
@@ -51,8 +51,8 @@ public class SqlServerTestDbContextProviderBuilder<T> : TestDbContextProviderBui
    {
       _connectionString = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
       _isolationOptions = isolationOptions;
-      _configuresOptionsCollection = new List<Action<DbContextOptionsBuilder<T>, string>>();
-      _configuresSqlServerOptionsCollection = new List<Action<SqlServerDbContextOptionsBuilder, string>>();
+      _configuresOptionsCollection = new List<Action<DbContextOptionsBuilder<T>, string?>>();
+      _configuresSqlServerOptionsCollection = new List<Action<SqlServerDbContextOptionsBuilder, string?>>();
       _ctxInitializations = new List<Action<T>>();
    }
 
@@ -175,7 +175,7 @@ public class SqlServerTestDbContextProviderBuilder<T> : TestDbContextProviderBui
    /// </summary>
    /// <param name="configure">Callback is called with the current <see cref="DbContextOptionsBuilder{TContext}"/> and the database schema.</param>
    /// <returns>Current builder for chaining.</returns>
-   public SqlServerTestDbContextProviderBuilder<T> ConfigureOptions(Action<DbContextOptionsBuilder<T>, string> configure)
+   public SqlServerTestDbContextProviderBuilder<T> ConfigureOptions(Action<DbContextOptionsBuilder<T>, string?> configure)
    {
       ArgumentNullException.ThrowIfNull(configure);
 
@@ -189,7 +189,7 @@ public class SqlServerTestDbContextProviderBuilder<T> : TestDbContextProviderBui
    /// </summary>
    /// <param name="configure">Callback is called with the current <see cref="DbContextOptionsBuilder{TContext}"/> and the database schema.</param>
    /// <returns>Current builder for chaining.</returns>
-   public SqlServerTestDbContextProviderBuilder<T> ConfigureSqlServerOptions(Action<SqlServerDbContextOptionsBuilder, string> configure)
+   public SqlServerTestDbContextProviderBuilder<T> ConfigureSqlServerOptions(Action<SqlServerDbContextOptionsBuilder, string?> configure)
    {
       ArgumentNullException.ThrowIfNull(configure);
 
@@ -267,7 +267,7 @@ public class SqlServerTestDbContextProviderBuilder<T> : TestDbContextProviderBui
    /// </summary>
    /// <param name="contextFactory">Factory to create the context of type <typeparamref name="T"/>.</param>
    /// <returns>Current builder for chaining.</returns>
-   public SqlServerTestDbContextProviderBuilder<T> UseContextFactory(Func<DbContextOptions<T>, IDbDefaultSchema, T?>? contextFactory)
+   public SqlServerTestDbContextProviderBuilder<T> UseContextFactory(Func<DbContextOptions<T>, IDbDefaultSchema?, T?>? contextFactory)
    {
       _contextFactory = contextFactory;
 
@@ -292,7 +292,7 @@ public class SqlServerTestDbContextProviderBuilder<T> : TestDbContextProviderBui
    /// <param name="useSharedTables">Indication whether a new schema should be generated or a shared one.</param>
    /// <returns>A database schema.</returns>
    [Obsolete($"Use the overload with '{nameof(ITestIsolationOptions)}' instead.")]
-   protected virtual string DetermineSchema(bool useSharedTables)
+   protected virtual string? DetermineSchema(bool useSharedTables)
    {
       return DetermineSchema(useSharedTables ? ITestIsolationOptions.SharedTablesAmbientTransaction : ITestIsolationOptions.RollbackMigrationsAndCleanup);
    }
@@ -302,10 +302,10 @@ public class SqlServerTestDbContextProviderBuilder<T> : TestDbContextProviderBui
    /// </summary>
    /// <param name="isolationOptions">Test isolation behavior.</param>
    /// <returns>A database schema.</returns>
-   protected virtual string DetermineSchema(ITestIsolationOptions isolationOptions)
+   protected virtual string? DetermineSchema(ITestIsolationOptions isolationOptions)
    {
       return !isolationOptions.NeedsUniqueSchema
-                ? _sharedTablesSchema ?? "tests"
+                ? _sharedTablesSchema
                 : Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture);
    }
 
@@ -313,11 +313,11 @@ public class SqlServerTestDbContextProviderBuilder<T> : TestDbContextProviderBui
    /// Creates and configures the <see cref="DbContextOptionsBuilder{TContext}"/>
    /// </summary>
    /// <param name="connection">Database connection to use.</param>
-   /// <param name="schema">Database schema to use.</param>
+   /// <param name="schema">Default database schema to use.</param>
    /// <returns>An instance of <see cref="DbContextOptionsBuilder{TContext}"/></returns>
    public virtual DbContextOptionsBuilder<T> CreateOptionsBuilder(
       DbConnection? connection,
-      string schema)
+      string? schema)
    {
       var loggingOptions = CreateLoggingOptions();
       var state = new TestDbContextProviderBuilderState(loggingOptions);
@@ -330,12 +330,12 @@ public class SqlServerTestDbContextProviderBuilder<T> : TestDbContextProviderBui
    /// </summary>
    /// <param name="state">Current building state.</param>
    /// <param name="connection">Database connection to use.</param>
-   /// <param name="schema">Database schema to use.</param>
+   /// <param name="schema">Default database schema to use.</param>
    /// <returns>An instance of <see cref="DbContextOptionsBuilder{TContext}"/></returns>
    protected virtual DbContextOptionsBuilder<T> CreateOptionsBuilder(
       TestDbContextProviderBuilderState state,
       DbConnection? connection,
-      string schema)
+      string? schema)
    {
       var builder = new DbContextOptionsBuilder<T>();
 
@@ -348,7 +348,8 @@ public class SqlServerTestDbContextProviderBuilder<T> : TestDbContextProviderBui
          builder.UseSqlServer(connection, optionsBuilder => ConfigureSqlServer(optionsBuilder, schema));
       }
 
-      builder.AddSchemaRespectingComponents();
+      if (schema is not null)
+         builder.AddSchemaRespectingComponents();
 
       ApplyDefaultConfiguration(state, builder);
 
@@ -363,7 +364,7 @@ public class SqlServerTestDbContextProviderBuilder<T> : TestDbContextProviderBui
    /// <param name="builder">A builder for configuration of the options.</param>
    /// <param name="schema">Schema to use</param>
    /// <exception cref="ArgumentNullException">The <paramref name="builder"/> is null.</exception>
-   protected virtual void ConfigureSqlServer(SqlServerDbContextOptionsBuilder builder, string schema)
+   protected virtual void ConfigureSqlServer(SqlServerDbContextOptionsBuilder builder, string? schema)
    {
       ArgumentNullException.ThrowIfNull(builder);
 

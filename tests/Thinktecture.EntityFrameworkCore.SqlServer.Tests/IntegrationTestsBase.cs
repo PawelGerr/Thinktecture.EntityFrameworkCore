@@ -17,7 +17,7 @@ public class IntegrationTestsBase : SqlServerDbContextIntegrationTests<TestDbCon
 
    protected Action<ModelBuilder>? ConfigureModel { get; set; }
    protected IReadOnlyCollection<string> ExecutedCommands => TestCtxProvider.ExecutedCommands ?? throw new InvalidOperationException("Capturing executed commands wasn't enabled.");
-   protected string Schema => TestCtxProvider.Schema;
+   protected string? Schema => TestCtxProvider.Schema;
 
    protected bool IsTenantDatabaseSupportEnabled { get; set; }
    protected Mock<ITenantDatabaseProvider> TenantDatabaseProviderMock { get; }

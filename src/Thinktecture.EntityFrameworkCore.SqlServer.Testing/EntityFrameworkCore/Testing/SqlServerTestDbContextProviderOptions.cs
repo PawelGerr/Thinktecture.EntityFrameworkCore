@@ -35,14 +35,14 @@ public class SqlServerTestDbContextProviderOptions<T> : TestDbContextProviderOpt
    }
 
    /// <summary>
-   /// Database schema to use.
+   /// Default database schema to use.
    /// </summary>
-   public string Schema { get; set; }
+   public string? Schema { get; }
 
    /// <summary>
    /// A factory method for creation of contexts of type <typeparamref name="T"/>.
    /// </summary>
-   public Func<DbContextOptions<T>, IDbDefaultSchema, T?>? ContextFactory { get; set; }
+   public Func<DbContextOptions<T>, IDbDefaultSchema?, T?>? ContextFactory { get; set; }
 
    /// <summary>
    /// Isolation level to be used with shared tables.
@@ -72,7 +72,7 @@ public class SqlServerTestDbContextProviderOptions<T> : TestDbContextProviderOpt
       DbContextOptions<T> dbContextOptions,
       TestingLoggingOptions testingLoggingOptions,
       IReadOnlyList<Action<T>> contextInitializations,
-      string schema)
+      string? schema)
       : base(masterConnection, migrationExecutionStrategy, masterDbContextOptions, dbContextOptions, testingLoggingOptions, contextInitializations)
    {
       Schema = schema;

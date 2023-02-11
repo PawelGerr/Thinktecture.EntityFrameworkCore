@@ -40,7 +40,7 @@ public class SqlServerTestDbContextProvider<T> : SqlServerTestDbContextProvider,
    private readonly IMigrationExecutionStrategy _migrationExecutionStrategy;
    private readonly DbConnection _masterConnection;
    private readonly IReadOnlyList<Action<T>> _contextInitializations;
-   private readonly Func<DbContextOptions<T>, IDbDefaultSchema, T?>? _contextFactory;
+   private readonly Func<DbContextOptions<T>, IDbDefaultSchema?, T?>? _contextFactory;
    private readonly TestingLoggingOptions _testingLoggingOptions;
 
    private readonly bool _lockTableEnabled;
@@ -51,7 +51,7 @@ public class SqlServerTestDbContextProvider<T> : SqlServerTestDbContextProvider,
    private readonly TimeSpan _maxRetryDelay;
    private readonly Random _random;
 
-   private Func<DbContextOptions<T>, IDbDefaultSchema, T>? _defaultContextFactory;
+   private Func<DbContextOptions<T>, IDbDefaultSchema?, T>? _defaultContextFactory;
    private T? _arrangeDbContext;
    private T? _actDbContext;
    private T? _assertDbContext;
@@ -70,10 +70,10 @@ public class SqlServerTestDbContextProvider<T> : SqlServerTestDbContextProvider,
    public T AssertDbContext => _assertDbContext ??= CreateDbContext(true);
 
    /// <summary>
-   /// Database schema to use.
+   /// Default database schema to use.
    /// </summary>
    // ReSharper disable once MemberCanBePrivate.Global
-   public string Schema { get; }
+   public string? Schema { get; }
 
    /// <summary>
    /// Contains executed commands if this feature was activated.
@@ -94,7 +94,7 @@ public class SqlServerTestDbContextProvider<T> : SqlServerTestDbContextProvider,
       ArgumentNullException.ThrowIfNull(options);
 
       _instanceWideLock = new object();
-      Schema = options.Schema ?? throw new ArgumentException($"The '{nameof(options.Schema)}' cannot be null.", nameof(options));
+      Schema = options.Schema;
       _sharedTablesIsolationLevel = ValidateIsolationLevel(options.SharedTablesIsolationLevel);
       _isolationOptions = options.IsolationOptions;
       _masterConnection = options.MasterConnection ?? throw new ArgumentException($"The '{nameof(options.MasterConnection)}' cannot be null.", nameof(options));
@@ -157,7 +157,7 @@ public class SqlServerTestDbContextProvider<T> : SqlServerTestDbContextProvider,
       }
 
       var options = useMasterConnection ? _masterDbContextOptions : _dbContextOptions;
-      var ctx = CreateDbContext(options, new DbDefaultSchema(Schema));
+      var ctx = CreateDbContext(options, Schema is null ? null : new DbDefaultSchema(Schema));
 
       foreach (var ctxInit in _contextInitializations)
       {
@@ -185,7 +185,7 @@ public class SqlServerTestDbContextProvider<T> : SqlServerTestDbContextProvider,
    /// <param name="options">Options to use for creation.</param>
    /// <param name="schema">Database schema to use.</param>
    /// <returns>A new instance of the database context.</returns>
-   protected virtual T CreateDbContext(DbContextOptions<T> options, IDbDefaultSchema schema)
+   protected virtual T CreateDbContext(DbContextOptions<T> options, IDbDefaultSchema? schema)
    {
       var ctx = _contextFactory?.Invoke(options, schema)
                 ?? (_defaultContextFactory ??= CreateDefaultContextFactory())(options, schema);
@@ -193,7 +193,7 @@ public class SqlServerTestDbContextProvider<T> : SqlServerTestDbContextProvider,
       return ctx;
    }
 
-   private static Func<DbContextOptions<T>, IDbDefaultSchema, T> CreateDefaultContextFactory()
+   private static Func<DbContextOptions<T>, IDbDefaultSchema?, T> CreateDefaultContextFactory()
    {
       var optionsType = typeof(DbContextOptions<T>);
       var schemaType = typeof(IDbDefaultSchema);
@@ -221,7 +221,7 @@ public class SqlServerTestDbContextProvider<T> : SqlServerTestDbContextProvider,
 Please provide the corresponding constructor or a custom factory via '{typeof(SqlServerTestDbContextProviderBuilder<T>).ShortDisplayName()}.{nameof(SqlServerTestDbContextProviderBuilder<T>.UseContextFactory)}'.");
       }
 
-      return Expression.Lambda<Func<DbContextOptions<T>, IDbDefaultSchema, T>>(Expression.New(ctor, ctorArgs), optionsParam, schemaParam)
+      return Expression.Lambda<Func<DbContextOptions<T>, IDbDefaultSchema?, T>>(Expression.New(ctor, ctorArgs), optionsParam, schemaParam)
                        .Compile();
    }
 
@@ -416,7 +416,7 @@ IF(OBJECT_ID('{lockTableName}') IS NULL)
       if (_isolationOptions.NeedsCleanup)
       {
          // Create a new ctx as a last resort to rollback migrations and clean up the database
-         await using var ctx = _actDbContext ?? _arrangeDbContext ?? _assertDbContext ?? CreateDbContext(_masterDbContextOptions, new DbDefaultSchema(Schema));
+         await using var ctx = _actDbContext ?? _arrangeDbContext ?? _assertDbContext ?? CreateDbContext(_masterDbContextOptions, Schema is null ? null : new DbDefaultSchema(Schema));
 
          IDbContextTransaction? migrationTx = null;
 

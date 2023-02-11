@@ -1,5 +1,7 @@
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage;
 
@@ -46,7 +48,7 @@ public interface ITestIsolationOptions
    /// <param name="cleanup">Callback that performs the actual cleanup.</param>
    /// <typeparam name="T">Type of the <see cref="DbContext"/></typeparam>
    /// <returns></returns>
-   public static ITestIsolationOptions Custom<T>(bool needsUniqueSchema, Func<T, string, CancellationToken, Task> cleanup)
+   public static ITestIsolationOptions Custom<T>(bool needsUniqueSchema, Func<T, string?, CancellationToken, Task> cleanup)
       where T : DbContext
    {
       return new CustomCleanup<T>(needsUniqueSchema, cleanup);
@@ -70,7 +72,7 @@ public interface ITestIsolationOptions
    /// <summary>
    /// Cleanup of the database.
    /// </summary>
-   ValueTask CleanupAsync(DbContext dbContext, string schema, CancellationToken cancellationToken);
+   ValueTask CleanupAsync(DbContext dbContext, string? schema, CancellationToken cancellationToken);
 
    private class NoIsolation : ITestIsolationOptions
    {
@@ -78,7 +80,7 @@ public interface ITestIsolationOptions
       public bool NeedsUniqueSchema => false;
       public bool NeedsCleanup => false;
 
-      public ValueTask CleanupAsync(DbContext dbContext, string schema, CancellationToken cancellationToken)
+      public ValueTask CleanupAsync(DbContext dbContext, string? schema, CancellationToken cancellationToken)
       {
          return ValueTask.CompletedTask;
       }
@@ -90,7 +92,7 @@ public interface ITestIsolationOptions
       public bool NeedsUniqueSchema => false;
       public bool NeedsCleanup => false;
 
-      public ValueTask CleanupAsync(DbContext dbContext, string schema, CancellationToken cancellationToken)
+      public ValueTask CleanupAsync(DbContext dbContext, string? schema, CancellationToken cancellationToken)
       {
          return ValueTask.CompletedTask;
       }
@@ -102,7 +104,7 @@ public interface ITestIsolationOptions
       public bool NeedsUniqueSchema => true;
       public bool NeedsCleanup => true;
 
-      public async ValueTask CleanupAsync(DbContext dbContext, string schema, CancellationToken cancellationToken)
+      public async ValueTask CleanupAsync(DbContext dbContext, string? schema, CancellationToken cancellationToken)
       {
          await RollbackMigrationsAsync(dbContext, cancellationToken);
          await DeleteDatabaseObjectsAsync(dbContext, schema, cancellationToken);
@@ -115,7 +117,7 @@ public interface ITestIsolationOptions
       public bool NeedsUniqueSchema => true;
       public bool NeedsCleanup => true;
 
-      public async ValueTask CleanupAsync(DbContext dbContext, string schema, CancellationToken cancellationToken)
+      public async ValueTask CleanupAsync(DbContext dbContext, string? schema, CancellationToken cancellationToken)
       {
          await DeleteDatabaseObjectsAsync(dbContext, schema, cancellationToken);
       }
@@ -124,33 +126,34 @@ public interface ITestIsolationOptions
    private class CustomCleanup<T> : ITestIsolationOptions
       where T : DbContext
    {
-      private readonly Func<T, string, CancellationToken, Task> _cleanup;
+      private readonly Func<T, string?, CancellationToken, Task> _cleanup;
 
       public bool NeedsAmbientTransaction => false;
       public bool NeedsUniqueSchema { get; }
       public bool NeedsCleanup => true;
 
-      public CustomCleanup(bool needsUniqueSchema, Func<T, string, CancellationToken, Task> cleanup)
+      public CustomCleanup(bool needsUniqueSchema, Func<T, string?, CancellationToken, Task> cleanup)
       {
          NeedsUniqueSchema = needsUniqueSchema;
          _cleanup = cleanup;
       }
 
-      public async ValueTask CleanupAsync(DbContext dbContext, string schema, CancellationToken cancellationToken)
+      public async ValueTask CleanupAsync(DbContext dbContext, string? schema, CancellationToken cancellationToken)
       {
          await _cleanup((T)dbContext, schema, cancellationToken);
       }
    }
 
+   [SuppressMessage("Usage", "EF1001:Internal EF Core API usage.")]
    private class TruncateAllTables : ITestIsolationOptions
    {
       public bool NeedsAmbientTransaction => false;
       public bool NeedsUniqueSchema => false;
       public bool NeedsCleanup => true;
 
-      public async ValueTask CleanupAsync(DbContext dbContext, string schema, CancellationToken cancellationToken)
+      public async ValueTask CleanupAsync(DbContext dbContext, string? schema, CancellationToken cancellationToken)
       {
-         foreach (var entityType in dbContext.Model.GetEntityTypes())
+         foreach (var entityType in dbContext.Model.GetEntityTypesInHierarchicalOrder().Reverse())
          {
             if (entityType.GetTableName() is not null)
                await dbContext.TruncateTableAsync(entityType.ClrType, cancellationToken);
@@ -171,15 +174,17 @@ public interface ITestIsolationOptions
    /// <summary>
    /// Deletes database objects (like tables) with provided <paramref name="schema"/>.
    /// </summary>
-   protected static async Task DeleteDatabaseObjectsAsync(DbContext ctx, string schema, CancellationToken cancellationToken)
+   protected static async Task DeleteDatabaseObjectsAsync(DbContext ctx, string? schema, CancellationToken cancellationToken)
    {
       ArgumentNullException.ThrowIfNull(ctx);
-      ArgumentNullException.ThrowIfNull(schema);
 
-      var sqlHelper = ctx.GetService<ISqlGenerationHelper>();
+      if (schema is not null)
+      {
+         var sqlHelper = ctx.GetService<ISqlGenerationHelper>();
 
-      await ctx.Database.ExecuteSqlRawAsync(GetSqlForCleanup(), new object[] { new SqlParameter("@schema", schema) }, cancellationToken);
-      await ctx.Database.ExecuteSqlRawAsync(GetDropSchemaSql(sqlHelper, schema), cancellationToken);
+         await ctx.Database.ExecuteSqlRawAsync(GetSqlForCleanup(), new object[] { new SqlParameter("@schema", schema) }, cancellationToken);
+         await ctx.Database.ExecuteSqlRawAsync(GetDropSchemaSql(sqlHelper, schema), cancellationToken);
+      }
    }
 
    private static string GetSqlForCleanup()
