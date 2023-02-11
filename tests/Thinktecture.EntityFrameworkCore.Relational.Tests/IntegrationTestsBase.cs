@@ -29,8 +29,10 @@ public class IntegrationTestsBase : SqliteDbContextIntegrationTests<DbContextWit
              .UseMigrationLogLevel(LogLevel.Warning)
              .ConfigureOptions(optionsBuilder => ConfigureOptionsBuilder?.Invoke(optionsBuilder))
              .InitializeContext(ctx => ctx.ConfigureModel = ConfigureModel)
-             .UseContextFactory(options => new DbContextWithSchema(options, Schema))
-             .DisableModelCache();
+             .UseContextFactory(options => new DbContextWithSchema(options, Schema));
+
+      if (ConfigureModel is not null || Schema is not null)
+         builder.DisableModelCache();
    }
 
    protected DbContextWithSchema CreateContextWithSchema(string schema)
