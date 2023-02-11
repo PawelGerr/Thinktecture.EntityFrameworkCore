@@ -12,8 +12,8 @@ public class BulkUpdateAsync : IntegrationTestsBase
 
    private SqliteBulkOperationExecutor SUT => _sut ??= ActDbContext.GetService<SqliteBulkOperationExecutor>();
 
-   public BulkUpdateAsync(ITestOutputHelper testOutputHelper)
-      : base(testOutputHelper)
+   public BulkUpdateAsync(ITestOutputHelper testOutputHelper, DbContextProviderFactoryFixture providerFactoryFixture)
+      : base(testOutputHelper, providerFactoryFixture)
    {
    }
 

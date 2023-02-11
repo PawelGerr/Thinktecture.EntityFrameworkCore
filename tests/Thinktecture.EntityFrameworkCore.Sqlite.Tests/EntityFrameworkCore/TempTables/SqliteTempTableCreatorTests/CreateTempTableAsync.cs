@@ -11,7 +11,7 @@ using Thinktecture.TestDatabaseContext;
 namespace Thinktecture.EntityFrameworkCore.TempTables.SqliteTempTableCreatorTests;
 
 // ReSharper disable once InconsistentNaming
-public class CreateTempTableAsync : IntegrationTestsBase
+public class CreateTempTableAsync : SchemaChangingIntegrationTestsBase
 {
    private readonly Mock<ISqlGenerationHelper> _sqlGenerationHelperMock;
    private readonly TempTableCreationOptions _optionsWithNonUniqueNameAndNoPrimaryKey;

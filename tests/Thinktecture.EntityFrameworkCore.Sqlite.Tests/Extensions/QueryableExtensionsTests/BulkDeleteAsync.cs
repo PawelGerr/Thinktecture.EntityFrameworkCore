@@ -5,8 +5,8 @@ namespace Thinktecture.Extensions.QueryableExtensionsTests;
 // ReSharper disable InconsistentNaming
 public class BulkDeleteAsync : IntegrationTestsBase
 {
-   public BulkDeleteAsync(ITestOutputHelper testOutputHelper)
-      : base(testOutputHelper)
+   public BulkDeleteAsync(ITestOutputHelper testOutputHelper, DbContextProviderFactoryFixture providerFactoryFixture)
+      : base(testOutputHelper, providerFactoryFixture)
    {
    }
 

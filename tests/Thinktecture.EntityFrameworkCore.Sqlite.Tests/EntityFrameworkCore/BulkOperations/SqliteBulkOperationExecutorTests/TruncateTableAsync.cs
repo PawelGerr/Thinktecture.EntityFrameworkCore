@@ -9,8 +9,8 @@ public class TruncateTableAsync : IntegrationTestsBase
    private SqliteBulkOperationExecutor? _sut;
    private SqliteBulkOperationExecutor SUT => _sut ??= ActDbContext.GetService<SqliteBulkOperationExecutor>();
 
-   public TruncateTableAsync(ITestOutputHelper testOutputHelper)
-      : base(testOutputHelper)
+   public TruncateTableAsync(ITestOutputHelper testOutputHelper, DbContextProviderFactoryFixture providerFactoryFixture)
+      : base(testOutputHelper, providerFactoryFixture)
    {
    }
 

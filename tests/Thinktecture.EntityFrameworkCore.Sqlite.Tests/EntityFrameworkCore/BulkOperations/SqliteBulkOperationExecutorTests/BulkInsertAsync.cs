@@ -5,7 +5,7 @@ using Thinktecture.TestDatabaseContext;
 namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqliteBulkOperationExecutorTests;
 
 // ReSharper disable once InconsistentNaming
-public class BulkInsertAsync : IntegrationTestsBase
+public class BulkInsertAsync : SchemaChangingIntegrationTestsBase
 {
    private SqliteBulkOperationExecutor? _sut;
    private SqliteBulkOperationExecutor SUT => _sut ??= ActDbContext.GetService<SqliteBulkOperationExecutor>();

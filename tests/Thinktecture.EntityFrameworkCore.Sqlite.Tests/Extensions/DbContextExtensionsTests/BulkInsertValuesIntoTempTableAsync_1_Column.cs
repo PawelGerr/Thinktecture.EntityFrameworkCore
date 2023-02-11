@@ -6,7 +6,7 @@ using Thinktecture.TestDatabaseContext;
 namespace Thinktecture.Extensions.DbContextExtensionsTests;
 
 // ReSharper disable once InconsistentNaming
-public class BulkInsertValuesIntoTempTableAsync_1_Column : IntegrationTestsBase
+public class BulkInsertValuesIntoTempTableAsync_1_Column : SchemaChangingIntegrationTestsBase
 {
    public BulkInsertValuesIntoTempTableAsync_1_Column(ITestOutputHelper testOutputHelper)
       : base(testOutputHelper)

@@ -7,8 +7,8 @@ namespace Thinktecture.Extensions.SqliteDbFunctionsExtensionsTests;
 // ReSharper disable once InconsistentNaming
 public class RowNumber : IntegrationTestsBase
 {
-   public RowNumber(ITestOutputHelper testOutputHelper)
-      : base(testOutputHelper)
+   public RowNumber(ITestOutputHelper testOutputHelper, DbContextProviderFactoryFixture providerFactoryFixture)
+      : base(testOutputHelper, providerFactoryFixture)
    {
    }
 

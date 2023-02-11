@@ -8,8 +8,9 @@
         <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="7.0.2" PrivateAssets="all" />
         <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="7.0.0" />
         <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="7.0.0" />
+        <PackageReference Include="Xunit.Extensions.AssemblyFixture" Version="2.4.1" />
     </ItemGroup>
-
+   
     <ItemGroup>
         <None Update="appsettings.json">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
