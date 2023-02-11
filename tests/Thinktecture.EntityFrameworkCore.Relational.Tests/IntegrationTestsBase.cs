@@ -11,7 +11,6 @@ public class IntegrationTestsBase : SqliteDbContextIntegrationTests<DbContextWit
 
    protected Action<DbContextOptionsBuilder<DbContextWithSchema>>? ConfigureOptionsBuilder { get; set; }
    protected Action<ModelBuilder>? ConfigureModel { get; set; }
-   protected string? Schema { get; set; }
    protected ILoggerFactory LoggerFactory { get; }
 
    protected IntegrationTestsBase(
@@ -29,9 +28,9 @@ public class IntegrationTestsBase : SqliteDbContextIntegrationTests<DbContextWit
              .UseMigrationLogLevel(LogLevel.Warning)
              .ConfigureOptions(optionsBuilder => ConfigureOptionsBuilder?.Invoke(optionsBuilder))
              .InitializeContext(ctx => ctx.ConfigureModel = ConfigureModel)
-             .UseContextFactory(options => new DbContextWithSchema(options, Schema));
+             .UseContextFactory(options => new DbContextWithSchema(options, null));
 
-      if (ConfigureModel is not null || Schema is not null)
+      if (ConfigureModel is not null)
          builder.DisableModelCache();
    }
 

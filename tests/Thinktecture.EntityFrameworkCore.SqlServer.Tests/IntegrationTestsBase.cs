@@ -64,7 +64,6 @@ public class IntegrationTestsBase : SqlServerDbContextIntegrationTests<TestDbCon
                                               optionsBuilder.AddTenantDatabaseSupport<TestTenantDatabaseProviderFactory>();
                                         })
              .UseSharedTableSchema(schema)
-             .InitializeContext(ctx => ctx.ConfigureModel = ConfigureModel)
-             .DisableModelCache();
+             .InitializeContext(ctx => ctx.ConfigureModel = ConfigureModel);
    }
 }

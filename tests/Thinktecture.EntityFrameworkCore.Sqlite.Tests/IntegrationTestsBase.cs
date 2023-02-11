@@ -29,7 +29,9 @@ public class IntegrationTestsBase : SqliteDbContextIntegrationTests<TestDbContex
              .ConfigureOptions(optionsBuilder => ConfigureOptionsBuilder?.Invoke(optionsBuilder))
              .ConfigureSqliteOptions(optionsBuilder => optionsBuilder.AddBulkOperationSupport()
                                                                      .AddRowNumberSupport())
-             .InitializeContext(ctx => ctx.ConfigureModel = ConfigureModel)
-             .DisableModelCache();
+             .InitializeContext(ctx => ctx.ConfigureModel = ConfigureModel);
+
+      if (ConfigureModel is not null)
+         builder.DisableModelCache();
    }
 }
