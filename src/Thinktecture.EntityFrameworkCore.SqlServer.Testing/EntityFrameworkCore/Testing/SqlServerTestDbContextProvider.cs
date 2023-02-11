@@ -98,8 +98,8 @@ public class SqlServerTestDbContextProvider<T> : SqlServerTestDbContextProvider,
       _sharedTablesIsolationLevel = ValidateIsolationLevel(options.SharedTablesIsolationLevel);
       _isolationOptions = options.IsolationOptions;
       _masterConnection = options.MasterConnection ?? throw new ArgumentException($"The '{nameof(options.MasterConnection)}' cannot be null.", nameof(options));
-      _masterDbContextOptions = options.MasterDbContextOptions ?? throw new ArgumentException($"The '{nameof(options.MasterDbContextOptions)}' cannot be null.", nameof(options));
-      _dbContextOptions = options.DbContextOptions ?? throw new ArgumentException($"The '{nameof(options.DbContextOptions)}' cannot be null.", nameof(options));
+      _masterDbContextOptions = options.MasterDbContextOptionsBuilder.Options ?? throw new ArgumentException($"The '{nameof(options.MasterDbContextOptionsBuilder)}' cannot be null.", nameof(options));
+      _dbContextOptions = options.DbContextOptionsBuilder.Options ?? throw new ArgumentException($"The '{nameof(options.DbContextOptionsBuilder)}' cannot be null.", nameof(options));
       _migrationExecutionStrategy = options.MigrationExecutionStrategy ?? throw new ArgumentException($"The '{nameof(options.MigrationExecutionStrategy)}' cannot be null.", nameof(options));
       _testingLoggingOptions = options.TestingLoggingOptions ?? throw new ArgumentException($"The '{nameof(options.TestingLoggingOptions)}' cannot be null.", nameof(options));
       _contextInitializations = options.ContextInitializations ?? throw new ArgumentException($"The '{nameof(options.ContextInitializations)}' cannot be null.", nameof(options));

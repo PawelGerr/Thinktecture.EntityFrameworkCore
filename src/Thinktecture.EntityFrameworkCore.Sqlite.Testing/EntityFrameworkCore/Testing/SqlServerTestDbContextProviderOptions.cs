@@ -1,4 +1,4 @@
-using System.Data.Common;
+using Microsoft.Data.Sqlite;
 using Thinktecture.Logging;
 
 namespace Thinktecture.EntityFrameworkCore.Testing;
@@ -11,28 +11,33 @@ public class SqliteTestDbContextProviderOptions<T> : TestDbContextProviderOption
    where T : DbContext
 {
    /// <summary>
-   /// A factory method for creation of contexts of type <typeparamref name="T"/>.
+   /// Master database connection.
    /// </summary>
-   public Func<DbContextOptions<T>, T?>? ContextFactory { get; set; }
+   public new SqliteConnection MasterConnection => (SqliteConnection)base.MasterConnection;
 
    /// <summary>
-   /// The connection string.
+   /// Indication whether the master connection is externally owned.
    /// </summary>
-   public string ConnectionString { get; set; }
+   public bool IsExternallyOwnedMasterConnection { get; }
+
+   /// <summary>
+   /// A factory method for creation of contexts of type <typeparamref name="T"/>.
+   /// </summary>
+   public Func<DbContextOptions<T>, T?>? ContextFactory { get; init; }
 
    /// <summary>
    /// Initializes new instance of <see cref="SqliteTestDbContextProviderOptions{T}"/>
    /// </summary>
    public SqliteTestDbContextProviderOptions(
-      DbConnection masterConnection,
+      SqliteConnection masterConnection,
+      bool isExternallyOwnedMasterConnection,
       IMigrationExecutionStrategy migrationExecutionStrategy,
-      DbContextOptions<T> masterDbContextOptions,
-      DbContextOptions<T> dbContextOptions,
+      DbContextOptionsBuilder<T> masterDbContextOptionsBuilder,
+      DbContextOptionsBuilder<T> dbContextOptionsBuilder,
       TestingLoggingOptions testingLoggingOptions,
-      IReadOnlyList<Action<T>> contextInitializations,
-      string connectionString)
-      : base(masterConnection, migrationExecutionStrategy, masterDbContextOptions, dbContextOptions, testingLoggingOptions, contextInitializations)
+      IReadOnlyList<Action<T>> contextInitializations)
+      : base(masterConnection, migrationExecutionStrategy, masterDbContextOptionsBuilder, dbContextOptionsBuilder, testingLoggingOptions, contextInitializations)
    {
-      ConnectionString = connectionString;
+      IsExternallyOwnedMasterConnection = isExternallyOwnedMasterConnection;
    }
 }

@@ -1,4 +1,5 @@
-using System.Data.Common;
+using System.Data;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Thinktecture.Logging;
 
@@ -11,13 +12,12 @@ namespace Thinktecture.EntityFrameworkCore.Testing;
 public class SqliteTestDbContextProvider<T> : ITestDbContextProvider<T>
    where T : DbContext
 {
-   // ReSharper disable once StaticMemberInGenericType because the lock are all for the same database context.
-   private static readonly object _lock = new();
+   private readonly object _lock = new();
 
    private readonly DbContextOptions<T> _masterDbContextOptions;
    private readonly DbContextOptions<T> _dbContextOptions;
    private readonly IMigrationExecutionStrategy _migrationExecutionStrategy;
-   private readonly DbConnection _masterConnection;
+   private readonly bool _isExternallyOwnedMasterConnection;
    private readonly IReadOnlyList<Action<T>> _contextInitializations;
    private readonly Func<DbContextOptions<T>, T?>? _contextFactory;
 
@@ -27,6 +27,11 @@ public class SqliteTestDbContextProvider<T> : ITestDbContextProvider<T>
    private bool _isAtLeastOneContextCreated;
    private readonly TestingLoggingOptions _testingLoggingOptions;
    private bool _isDisposed;
+
+   /// <summary>
+   /// A database connection which kept open during the test, so the in-memory database is not deleted.
+   /// </summary>
+   public SqliteConnection MasterConnection { get; }
 
    /// <inheritdoc />
    public T ArrangeDbContext => _arrangeDbContext ??= CreateDbContext(true);
@@ -50,7 +55,7 @@ public class SqliteTestDbContextProvider<T> : ITestDbContextProvider<T>
    /// <summary>
    /// The connection string.
    /// </summary>
-   public string ConnectionString { get; }
+   public string ConnectionString => MasterConnection.ConnectionString;
 
    /// <summary>
    /// Initializes a new instance of <see cref="SqliteTestDbContextProvider{T}"/>
@@ -60,10 +65,10 @@ public class SqliteTestDbContextProvider<T> : ITestDbContextProvider<T>
    {
       ArgumentNullException.ThrowIfNull(options);
 
-      ConnectionString = options.ConnectionString ?? throw new ArgumentException($"The '{nameof(options.ConnectionString)}' cannot be null.", nameof(options));
-      _masterConnection = options.MasterConnection ?? throw new ArgumentException($"The '{nameof(options.MasterConnection)}' cannot be null.", nameof(options));
-      _masterDbContextOptions = options.MasterDbContextOptions ?? throw new ArgumentException($"The '{nameof(options.MasterDbContextOptions)}' cannot be null.", nameof(options));
-      _dbContextOptions = options.DbContextOptions ?? throw new ArgumentException($"The '{nameof(options.DbContextOptions)}' cannot be null.", nameof(options));
+      MasterConnection = options.MasterConnection ?? throw new ArgumentException($"The '{nameof(options.MasterConnection)}' cannot be null.", nameof(options));
+      _isExternallyOwnedMasterConnection = options.IsExternallyOwnedMasterConnection;
+      _masterDbContextOptions = options.MasterDbContextOptionsBuilder.Options ?? throw new ArgumentException($"The '{nameof(options.MasterDbContextOptionsBuilder)}' cannot be null.", nameof(options));
+      _dbContextOptions = options.DbContextOptionsBuilder.Options ?? throw new ArgumentException($"The '{nameof(options.DbContextOptionsBuilder)}' cannot be null.", nameof(options));
       _migrationExecutionStrategy = options.MigrationExecutionStrategy ?? throw new ArgumentException($"The '{nameof(options.MigrationExecutionStrategy)}' cannot be null.", nameof(options));
       _testingLoggingOptions = options.TestingLoggingOptions ?? throw new ArgumentException($"The '{nameof(options.TestingLoggingOptions)}' cannot be null.", nameof(options));
       _contextInitializations = options.ContextInitializations ?? throw new ArgumentException($"The '{nameof(options.ContextInitializations)}' cannot be null.", nameof(options));
@@ -98,7 +103,14 @@ public class SqliteTestDbContextProvider<T> : ITestDbContextProvider<T>
 
       if (isFirstCtx)
       {
-         _masterConnection.Open();
+         if (MasterConnection.State != ConnectionState.Open)
+         {
+            if (_isExternallyOwnedMasterConnection)
+               throw new InvalidOperationException("Externally owned connections must be opened by the owner.");
+
+            MasterConnection.Open();
+         }
+
          RunMigrations(ctx);
       }
 
@@ -202,7 +214,9 @@ Please provide the corresponding constructor or a custom factory via '{typeof(Sq
          _isAtLeastOneContextCreated = false;
       }
 
-      await _masterConnection.DisposeAsync();
+      if (!_isExternallyOwnedMasterConnection)
+         await MasterConnection.DisposeAsync();
+
       _testingLoggingOptions.Dispose();
    }
 

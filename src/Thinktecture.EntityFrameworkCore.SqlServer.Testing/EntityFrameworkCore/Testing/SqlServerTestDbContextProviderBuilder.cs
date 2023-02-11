@@ -391,13 +391,13 @@ public class SqlServerTestDbContextProviderBuilder<T> : TestDbContextProviderBui
       {
          var loggingOptions = CreateLoggingOptions();
          var state = new TestDbContextProviderBuilderState(loggingOptions);
-         var masterDbContextOptions = CreateOptionsBuilder(state, masterConnection, schema).Options;
-         var dbContextOptions = CreateOptionsBuilder(state, null, schema).Options;
+         var masterDbContextOptionsBuilder = CreateOptionsBuilder(state, masterConnection, schema);
+         var dbContextOptionsBuilder = CreateOptionsBuilder(state, null, schema);
 
          var options = new SqlServerTestDbContextProviderOptions<T>(masterConnection,
                                                                     state.MigrationExecutionStrategy ?? IMigrationExecutionStrategy.Migrations,
-                                                                    masterDbContextOptions,
-                                                                    dbContextOptions,
+                                                                    masterDbContextOptionsBuilder,
+                                                                    dbContextOptionsBuilder,
                                                                     loggingOptions,
                                                                     _ctxInitializations.ToList(),
                                                                     schema)

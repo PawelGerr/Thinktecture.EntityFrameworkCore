@@ -13,37 +13,37 @@ public abstract class TestDbContextProviderOptions<T>
    /// <summary>
    /// Master database connection.
    /// </summary>
-   public DbConnection MasterConnection { get; set; }
+   public DbConnection MasterConnection { get; }
 
    /// <summary>
    /// Determines whether and how to migrate the database.
    /// </summary>
-   public IMigrationExecutionStrategy MigrationExecutionStrategy { get; set; }
+   public IMigrationExecutionStrategy MigrationExecutionStrategy { get; }
 
    /// <summary>
    /// Options that use the <see cref="MasterConnection"/>.
    /// </summary>
-   public DbContextOptions<T> MasterDbContextOptions { get; set; }
+   public DbContextOptionsBuilder<T> MasterDbContextOptionsBuilder { get; }
 
    /// <summary>
    /// Options that create a new connection.
    /// </summary>
-   public DbContextOptions<T> DbContextOptions { get; set; }
+   public DbContextOptionsBuilder<T> DbContextOptionsBuilder { get; }
 
    /// <summary>
    /// Contains executed commands if this feature was activated.
    /// </summary>
-   public TestingLoggingOptions TestingLoggingOptions { get; set; }
+   public TestingLoggingOptions TestingLoggingOptions { get; }
 
    /// <summary>
    /// Callback to execute on every creation of a new <see cref="DbContext"/>.
    /// </summary>
-   public IReadOnlyList<Action<T>> ContextInitializations { get; set; }
+   public IReadOnlyList<Action<T>> ContextInitializations { get; }
 
    /// <summary>
    /// Contains executed commands if this feature was activated.
    /// </summary>
-   public IReadOnlyCollection<string>? ExecutedCommands { get; set; }
+   public IReadOnlyCollection<string>? ExecutedCommands { get; init; }
 
    /// <summary>
    /// Initializes new instance of <see cref="TestDbContextProviderOptions{T}"/>.
@@ -51,15 +51,15 @@ public abstract class TestDbContextProviderOptions<T>
    protected TestDbContextProviderOptions(
       DbConnection masterConnection,
       IMigrationExecutionStrategy migrationExecutionStrategy,
-      DbContextOptions<T> masterDbContextOptions,
-      DbContextOptions<T> dbContextOptions,
+      DbContextOptionsBuilder<T> masterDbContextOptionsBuilder,
+      DbContextOptionsBuilder<T> dbContextOptionsBuilder,
       TestingLoggingOptions testingLoggingOptions,
       IReadOnlyList<Action<T>> contextInitializations)
    {
       MasterConnection = masterConnection;
       MigrationExecutionStrategy = migrationExecutionStrategy;
-      MasterDbContextOptions = masterDbContextOptions;
-      DbContextOptions = dbContextOptions;
+      MasterDbContextOptionsBuilder = masterDbContextOptionsBuilder;
+      DbContextOptionsBuilder = dbContextOptionsBuilder;
       ContextInitializations = contextInitializations;
       TestingLoggingOptions = testingLoggingOptions;
    }

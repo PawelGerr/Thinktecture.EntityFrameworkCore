@@ -1,6 +1,6 @@
 using System.Data;
-using System.Data.Common;
 using System.Diagnostics.CodeAnalysis;
+using Microsoft.Data.SqlClient;
 using Thinktecture.Logging;
 
 namespace Thinktecture.EntityFrameworkCore.Testing;
@@ -13,17 +13,11 @@ public class SqlServerTestDbContextProviderOptions<T> : TestDbContextProviderOpt
    where T : DbContext
 {
    /// <summary>
-   /// Indication whether the current <see cref="SqlServerTestDbContextProvider{T}"/> is using its own tables with a new schema
-   /// or shares the tables with others.
+   /// Master database connection.
    /// </summary>
-   [Obsolete($"Use '{nameof(IsolationOptions)}' instead.")]
-   public bool IsUsingSharedTables
-   {
-      get => IsolationOptions == ITestIsolationOptions.SharedTablesAmbientTransaction;
-      set => IsolationOptions = value ? ITestIsolationOptions.SharedTablesAmbientTransaction : ITestIsolationOptions.RollbackMigrationsAndCleanup;
-   }
+   public new SqlConnection MasterConnection => (SqlConnection)base.MasterConnection;
 
-   private ITestIsolationOptions? _isolationOptions;
+   private readonly ITestIsolationOptions? _isolationOptions;
 
    /// <summary>
    /// Test isolation behavior.
@@ -31,7 +25,7 @@ public class SqlServerTestDbContextProviderOptions<T> : TestDbContextProviderOpt
    public ITestIsolationOptions IsolationOptions
    {
       get => _isolationOptions ?? ITestIsolationOptions.SharedTablesAmbientTransaction;
-      set => _isolationOptions = value;
+      init => _isolationOptions = value;
    }
 
    /// <summary>
@@ -42,13 +36,13 @@ public class SqlServerTestDbContextProviderOptions<T> : TestDbContextProviderOpt
    /// <summary>
    /// A factory method for creation of contexts of type <typeparamref name="T"/>.
    /// </summary>
-   public Func<DbContextOptions<T>, IDbDefaultSchema?, T?>? ContextFactory { get; set; }
+   public Func<DbContextOptions<T>, IDbDefaultSchema?, T?>? ContextFactory { get; init; }
 
    /// <summary>
    /// Isolation level to be used with shared tables.
    /// Default is <see cref="IsolationLevel.ReadCommitted"/>.
    /// </summary>
-   public IsolationLevel? SharedTablesIsolationLevel { get; set; }
+   public IsolationLevel? SharedTablesIsolationLevel { get; init; }
 
    private SqlServerLockTableOptions? _lockTable;
 
@@ -59,21 +53,21 @@ public class SqlServerTestDbContextProviderOptions<T> : TestDbContextProviderOpt
    public SqlServerLockTableOptions LockTable
    {
       get => _lockTable ??= new SqlServerLockTableOptions(true);
-      set => _lockTable = value;
+      init => _lockTable = value;
    }
 
    /// <summary>
    /// Initializes new instance of <see cref="SqlServerTestDbContextProviderOptions{T}"/>.
    /// </summary>
    public SqlServerTestDbContextProviderOptions(
-      DbConnection masterConnection,
+      SqlConnection masterConnection,
       IMigrationExecutionStrategy migrationExecutionStrategy,
-      DbContextOptions<T> masterDbContextOptions,
-      DbContextOptions<T> dbContextOptions,
+      DbContextOptionsBuilder<T> masterDbContextOptionsBuilder,
+      DbContextOptionsBuilder<T> dbContextOptionsBuilder,
       TestingLoggingOptions testingLoggingOptions,
       IReadOnlyList<Action<T>> contextInitializations,
       string? schema)
-      : base(masterConnection, migrationExecutionStrategy, masterDbContextOptions, dbContextOptions, testingLoggingOptions, contextInitializations)
+      : base(masterConnection, migrationExecutionStrategy, masterDbContextOptionsBuilder, dbContextOptionsBuilder, testingLoggingOptions, contextInitializations)
    {
       Schema = schema;
    }

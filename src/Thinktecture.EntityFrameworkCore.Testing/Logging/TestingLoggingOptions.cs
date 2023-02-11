@@ -11,6 +11,11 @@ namespace Thinktecture.Logging;
 public class TestingLoggingOptions : IDisposable
 {
    /// <summary>
+   /// Options without concrete logger.
+   /// </summary>
+   public static readonly TestingLoggingOptions Empty = Create(null, null, false, LogLevel.Information);
+
+   /// <summary>
    /// Logger factory.
    /// </summary>
    public ILoggerFactory LoggerFactory { get; }

@@ -2,6 +2,7 @@ using System.Data.Common;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Logging;
+using Thinktecture.Logging;
 using Xunit.Abstractions;
 
 namespace Thinktecture.EntityFrameworkCore.Testing;
@@ -239,25 +240,44 @@ public class SqliteTestDbContextProviderBuilder<T> : TestDbContextProviderBuilde
    /// <returns>A new instance of <see cref="SqliteTestDbContextProvider{T}"/>.</returns>
    public SqliteTestDbContextProvider<T> Build()
    {
-      // create all dependencies immediately to decouple the provider from this builder
+      return BuildInternal();
+   }
 
-      var connectionString = $"Data Source=InMemory{Guid.NewGuid():N};Mode=Memory;Cache=Shared";
-      var masterConnection = new SqliteConnection(connectionString);
+   internal SqliteTestDbContextProvider<T> Build(SqliteConnection masterConnection)
+   {
+      return BuildInternal(masterConnection);
+   }
+
+   internal SqliteTestDbContextProvider<T> Build(
+      TestingLoggingOptions loggingOptions,
+      IMigrationExecutionStrategy migrationStrategy)
+   {
+      return BuildInternal(null, loggingOptions, migrationStrategy);
+   }
+
+   private SqliteTestDbContextProvider<T> BuildInternal(
+      SqliteConnection? masterConnection = null,
+      TestingLoggingOptions? loggingOptions = null,
+      IMigrationExecutionStrategy? migrationStrategy = null)
+   {
+      var isExternallyOwnedConnection = masterConnection is not null;
 
       try
       {
-         var loggingOptions = CreateLoggingOptions();
-         var state = new TestDbContextProviderBuilderState(loggingOptions);
-         var masterDbContextOptions = CreateOptionsBuilder(state, masterConnection, connectionString).Options;
-         var dbContextOptions = CreateOptionsBuilder(state, null, connectionString).Options;
+         masterConnection ??= new SqliteConnection(CreateRandomConnectionString());
+         loggingOptions ??= CreateLoggingOptions();
+
+         var state = new TestDbContextProviderBuilderState(loggingOptions) { MigrationExecutionStrategy = migrationStrategy };
+         var masterDbContextOptionsBuilder = CreateOptionsBuilder(state, masterConnection, masterConnection.ConnectionString);
+         var dbContextOptionsBuilder = CreateOptionsBuilder(state, null, masterConnection.ConnectionString);
 
          var options = new SqliteTestDbContextProviderOptions<T>(masterConnection,
+                                                                 isExternallyOwnedConnection,
                                                                  state.MigrationExecutionStrategy ?? IMigrationExecutionStrategy.Migrations,
-                                                                 masterDbContextOptions,
-                                                                 dbContextOptions,
-                                                                 loggingOptions,
-                                                                 _ctxInitializations.ToList(),
-                                                                 connectionString)
+                                                                 masterDbContextOptionsBuilder,
+                                                                 dbContextOptionsBuilder,
+                                                                 state.LoggingOptions,
+                                                                 _ctxInitializations.ToList())
                        {
                           ContextFactory = _contextFactory,
                           ExecutedCommands = state.CommandCapturingInterceptor?.Commands
@@ -267,8 +287,24 @@ public class SqliteTestDbContextProviderBuilder<T> : TestDbContextProviderBuilde
       }
       catch
       {
-         masterConnection.Dispose();
+         if (!isExternallyOwnedConnection)
+            masterConnection?.Dispose();
+
          throw;
       }
+   }
+
+   /// <summary>
+   /// Builds the <see cref="SqliteTestDbContextProviderFactory{T}"/>.
+   /// </summary>
+   /// <returns>A new instance of <see cref="SqliteTestDbContextProviderFactory{T}"/>.</returns>
+   public SqliteTestDbContextProviderFactory<T> BuildFactory()
+   {
+      return new SqliteTestDbContextProviderFactory<T>(this);
+   }
+
+   internal static string CreateRandomConnectionString()
+   {
+      return $"Data Source=InMemory{Guid.NewGuid():N};Mode=Memory;Cache=Shared";
    }
 }

@@ -133,6 +133,15 @@ public abstract class TestDbContextProviderBuilder
    /// <returns>A new instance of <see cref="TestingLoggingOptions"/>.</returns>
    protected TestingLoggingOptions CreateLoggingOptions()
    {
-      return TestingLoggingOptions.Create(_loggerFactory, _serilogLogger, _enableSensitiveDataLogging, _migrationLogLevel);
+      return CreateLoggingOptions(_loggerFactory, _serilogLogger);
+   }
+
+   /// <summary>
+   /// Creates logging options.
+   /// </summary>
+   /// <returns>A new instance of <see cref="TestingLoggingOptions"/>.</returns>
+   public TestingLoggingOptions CreateLoggingOptions(ILoggerFactory? loggerFactory, Serilog.ILogger? serilogLogger)
+   {
+      return TestingLoggingOptions.Create(loggerFactory, serilogLogger, _enableSensitiveDataLogging, _migrationLogLevel);
    }
 }
