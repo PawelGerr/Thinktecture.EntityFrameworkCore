@@ -348,6 +348,8 @@ public class SqlServerTestDbContextProviderBuilder<T> : TestDbContextProviderBui
          builder.UseSqlServer(connection, optionsBuilder => ConfigureSqlServer(optionsBuilder, schema));
       }
 
+      builder.AddSchemaRespectingComponents();
+
       ApplyDefaultConfiguration(state, builder);
 
       _configuresOptionsCollection.ForEach(configure => configure(builder, schema));

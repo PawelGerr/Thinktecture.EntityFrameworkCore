@@ -112,8 +112,7 @@ public abstract class TestDbContextProviderBuilder
    {
       state.MigrationExecutionStrategy ??= _migrationExecutionStrategy;
 
-      dbContextOptionsBuilder.AddSchemaRespectingComponents()
-                             .UseLoggerFactory(state.LoggingOptions.LoggerFactory)
+      dbContextOptionsBuilder.UseLoggerFactory(state.LoggingOptions.LoggerFactory)
                              .EnableSensitiveDataLogging(state.LoggingOptions.EnableSensitiveDataLogging);
 
       DisableLoggingCacheTime(dbContextOptionsBuilder);
