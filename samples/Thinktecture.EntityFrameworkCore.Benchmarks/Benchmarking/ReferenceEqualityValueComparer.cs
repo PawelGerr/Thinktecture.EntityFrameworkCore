@@ -30,8 +30,8 @@ public class ReferenceEqualityValueComparer : IDisposable
       _sqlServerDbContext.Database.EnsureDeleted();
       _sqlServerDbContext.Database.EnsureCreated();
 
-      _sqlServerDbContext.EntitiesWithByteArray.BulkDelete();
-      _sqlServerDbContext.EntitiesWithByteArrayAndValueComparer.BulkDelete();
+      _sqlServerDbContext.EntitiesWithByteArray.ExecuteDelete();
+      _sqlServerDbContext.EntitiesWithByteArrayAndValueComparer.ExecuteDelete();
 
       var bytes = new byte[_BYTES_LENGTH];
 

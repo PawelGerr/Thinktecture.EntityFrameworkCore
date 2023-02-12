@@ -46,10 +46,6 @@ public class Program
             await DoBulkInsertOrUpdateAsync(ctx, customerId);
             ctx.ChangeTracker.Clear();
 
-            // Bulk delete
-            await DoBulkDeleteAsync(ctx);
-            ctx.ChangeTracker.Clear();
-
             // LEFT JOIN
             await DoLeftJoinAsync(ctx);
             ctx.ChangeTracker.Clear();
@@ -169,17 +165,5 @@ public class Program
       var updatedCustomer = await ctx.Customers.FirstAsync(c => c.Id == customerId);
 
       Console.WriteLine($"Updated customer: {updatedCustomer}");
-   }
-
-   private static async Task DoBulkDeleteAsync(DemoDbContext ctx)
-   {
-      ctx.Add(new Customer(Guid.NewGuid(), "Customer To Delete", "Test"));
-      await ctx.SaveChangesAsync();
-
-      var affectedRows = await ctx.Customers
-                                  .Where(c => c.FirstName == "Customer To Delete")
-                                  .BulkDeleteAsync();
-
-      Console.WriteLine($"Number of deleted customers: {affectedRows}");
    }
 }

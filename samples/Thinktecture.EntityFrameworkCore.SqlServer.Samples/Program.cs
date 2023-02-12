@@ -39,10 +39,6 @@ public class Program
          await DoBulkInsertOrUpdateAsync(ctx, customerId);
          ctx.ChangeTracker.Clear();
 
-         // Bulk delete
-         await DoBulkDeleteAsync(ctx);
-         ctx.ChangeTracker.Clear();
-
          // Bulk insert into temp tables
          await DoBulkInsertIntoTempTableAsync(ctx, new List<Guid> { customerId });
          ctx.ChangeTracker.Clear();
@@ -224,18 +220,6 @@ public class Program
       var insertedCustomer = await ctx.Customers.FirstAsync(c => c.Id == customersToInsert.Id);
 
       Console.WriteLine($"Inserted customers: {insertedCustomer.Id}");
-   }
-
-   private static async Task DoBulkDeleteAsync(DemoDbContext ctx)
-   {
-      ctx.Add(new Customer(Guid.NewGuid(), "Customer To Delete", "Test"));
-      await ctx.SaveChangesAsync();
-
-      var affectedRows = await ctx.Customers
-                                  .Where(c => c.FirstName == "Customer To Delete")
-                                  .BulkDeleteAsync();
-
-      Console.WriteLine($"Number of deleted customers: {affectedRows}");
    }
 
    private static async Task DoBulkInsertOrUpdateAsync(DemoDbContext ctx, Guid customerId)
