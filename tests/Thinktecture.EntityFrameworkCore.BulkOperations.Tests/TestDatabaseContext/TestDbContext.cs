@@ -16,5 +16,7 @@ public class TestDbContext : DbContext
 
       modelBuilder.Entity<TestEntity>().Property(e => e.ConvertibleClass)
                   .HasConversion(c => c!.Key, k => new ConvertibleClass(k));
+
+      TestEntityWithBaseClass.Configure(modelBuilder);
    }
 }

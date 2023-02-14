@@ -55,6 +55,21 @@ public class Include
       properties.Should().Contain(countProperty);
    }
 
+   [Fact]
+   public void Should_handle_properties_from_base_classes()
+   {
+      var entityType = GetEntityType<TestEntityWithBaseClass>();
+      var idProperty = entityType.FindProperty(nameof(TestEntityWithBaseClass.Id)) ?? throw new Exception("Property must no be null");
+      var baseProperty = entityType.FindProperty(nameof(TestEntityWithBaseClass.Base_A)) ?? throw new Exception("Property must no be null");
+
+      var propertiesProvider = IEntityPropertiesProvider.Include<TestEntityWithBaseClass>(entity => new { entity.Id, entity.Base_A });
+
+      var properties = propertiesProvider.GetPropertiesForTempTable(entityType);
+      properties.Should().HaveCount(2);
+      properties.Should().Contain(idProperty);
+      properties.Should().Contain(baseProperty);
+   }
+
    private static IEntityType GetEntityType<T>()
    {
       var options = new DbContextOptionsBuilder<TestDbContext>().UseSqlite("DataSource=:memory:").Options;

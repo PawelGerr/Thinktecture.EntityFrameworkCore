@@ -57,6 +57,21 @@ public class Exclude
       properties.Should().NotContain(countProperty);
    }
 
+   [Fact]
+   public void Should_handle_properties_from_base_classes()
+   {
+      var entityType = GetEntityType<TestEntityWithBaseClass>();
+      var idProperty = entityType.FindProperty(nameof(TestEntityWithBaseClass.Id)) ?? throw new Exception("Property must no be null");
+      var baseProperty = entityType.FindProperty(nameof(TestEntityWithBaseClass.Base_A)) ?? throw new Exception("Property must no be null");
+
+      var propertiesProvider = IEntityPropertiesProvider.Exclude<TestEntityWithBaseClass>(entity => new { entity.Id, entity.Base_A });
+
+      var properties = propertiesProvider.GetPropertiesForTempTable(entityType);
+      properties.Should().HaveCount(entityType.GetProperties().Count() - 2);
+      properties.Should().NotContain(idProperty);
+      properties.Should().NotContain(baseProperty);
+   }
+
    private static IEntityType GetEntityType<T>()
    {
       var options = new DbContextOptionsBuilder<TestDbContext>().UseSqlite("DataSource=:memory:").Options;

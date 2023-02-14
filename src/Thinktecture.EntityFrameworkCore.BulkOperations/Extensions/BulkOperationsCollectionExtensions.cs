@@ -72,8 +72,8 @@ public static class BulkOperationsCollectionExtensions
 
    private static IProperty? FindProperty(IEntityType entityType, MemberInfo memberInfo)
    {
-      return entityType.GetProperties().FirstOrDefault(property => property.PropertyInfo?.MetadataToken == memberInfo.MetadataToken
-                                                                   || property.FieldInfo?.MetadataToken == memberInfo.MetadataToken);
+      return entityType.GetProperties().FirstOrDefault(property => memberInfo.IsEqualTo(property.PropertyInfo)
+                                                                   || memberInfo.IsEqualTo(property.FieldInfo));
    }
 
    private static INavigation? FindOwnedProperty(
@@ -82,7 +82,7 @@ public static class BulkOperationsCollectionExtensions
    {
       foreach (var ownedTypeNavi in entityType.GetOwnedTypesProperties(null)) // search for all owned properties, i.e., don't use "inlinedOwnTypes" from the caller
       {
-         if (ownedTypeNavi.PropertyInfo == memberInfo || ownedTypeNavi.FieldInfo == memberInfo)
+         if (memberInfo.IsEqualTo(ownedTypeNavi.PropertyInfo) || memberInfo.IsEqualTo(ownedTypeNavi.FieldInfo))
          {
             if (ownedTypeNavi.IsInlined())
                return ownedTypeNavi;
