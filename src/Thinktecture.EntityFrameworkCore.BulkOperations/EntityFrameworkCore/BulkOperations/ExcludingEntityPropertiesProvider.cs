@@ -20,7 +20,8 @@ internal sealed class ExcludingEntityPropertiesProvider : IEntityPropertiesProvi
 
    private IReadOnlyList<PropertyWithNavigations> Filter(IReadOnlyList<PropertyWithNavigations> properties)
    {
-      return properties.Where(p => _members.All(m => m != p.Property.PropertyInfo && m != p.Property.FieldInfo))
+      return properties.Where(p => _members.All(m => !m.IsEqualTo(p.Property.PropertyInfo)
+                                                     && !m.IsEqualTo(p.Property.FieldInfo)))
                        .ToList();
    }
 
