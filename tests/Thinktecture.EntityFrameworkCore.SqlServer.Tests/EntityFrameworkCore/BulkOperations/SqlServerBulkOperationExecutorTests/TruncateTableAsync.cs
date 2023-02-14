@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Thinktecture.EntityFrameworkCore.Testing;
 using Thinktecture.TestDatabaseContext;
 
 namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperationExecutorTests;
@@ -10,8 +9,8 @@ public class TruncateTableAsync : IntegrationTestsBase
    private SqlServerBulkOperationExecutor? _sut;
    private SqlServerBulkOperationExecutor SUT => _sut ??= ActDbContext.GetService<SqlServerBulkOperationExecutor>();
 
-   public TruncateTableAsync(ITestOutputHelper testOutputHelper)
-      : base(testOutputHelper, ITestIsolationOptions.SharedTablesAmbientTransaction)
+   public TruncateTableAsync(ITestOutputHelper testOutputHelper, SqlServerContainerFixture sqlServerContainerFixture)
+      : base(testOutputHelper, sqlServerContainerFixture)
    {
    }
 

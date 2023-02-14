@@ -1,5 +1,4 @@
 using Thinktecture.EntityFrameworkCore.BulkOperations;
-using Thinktecture.EntityFrameworkCore.Testing;
 using Thinktecture.TestDatabaseContext;
 
 // ReSharper disable InconsistentNaming
@@ -9,8 +8,8 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests;
 // ReSharper disable once InconsistentNaming
 public class BulkUpdateAsync : IntegrationTestsBase
 {
-   public BulkUpdateAsync(ITestOutputHelper testOutputHelper)
-      : base(testOutputHelper, ITestIsolationOptions.SharedTablesAmbientTransaction)
+   public BulkUpdateAsync(ITestOutputHelper testOutputHelper, SqlServerContainerFixture sqlServerContainerFixture)
+      : base(testOutputHelper, sqlServerContainerFixture)
    {
    }
 

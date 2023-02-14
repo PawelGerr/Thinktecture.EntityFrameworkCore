@@ -5,17 +5,17 @@ using Microsoft.EntityFrameworkCore.Storage;
 namespace Thinktecture.Extensions.SqlServerOperationBuilderExtensionsTests;
 
 [Collection("SqlServerTests")]
-public class ExistTestBase
+public abstract class ExistTestBase
 {
    protected MigrationExtensionsTestDbContext Context { get; }
    protected DelegatingMigration Migration { get; }
    protected Action ExecuteMigration { get; }
 
-   protected ExistTestBase(ITestOutputHelper testOutputHelper)
+   protected ExistTestBase(ITestOutputHelper testOutputHelper, SqlServerContainerFixture sqlServerContainerFixture)
    {
       var loggerFactory = TestContext.Instance.GetLoggerFactory(testOutputHelper);
       var options = new DbContextOptionsBuilder<MigrationExtensionsTestDbContext>()
-                    .UseSqlServer(TestContext.Instance.ConnectionString,
+                    .UseSqlServer(sqlServerContainerFixture.ConnectionString,
                                   sqlServerBuilder => sqlServerBuilder.UseThinktectureSqlServerMigrationsSqlGenerator())
                     .UseLoggerFactory(loggerFactory)
                     .EnableDetailedErrors()

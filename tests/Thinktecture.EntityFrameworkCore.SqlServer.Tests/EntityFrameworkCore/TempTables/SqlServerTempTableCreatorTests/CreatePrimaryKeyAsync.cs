@@ -1,7 +1,6 @@
 using System.Data;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Thinktecture.EntityFrameworkCore.Testing;
 using Thinktecture.TestDatabaseContext;
 
 namespace Thinktecture.EntityFrameworkCore.TempTables.SqlServerTempTableCreatorTests;
@@ -12,8 +11,8 @@ public class CreatePrimaryKeyAsync : IntegrationTestsBase
    private SqlServerTempTableCreator? _sut;
    private SqlServerTempTableCreator SUT => _sut ??= (SqlServerTempTableCreator)ActDbContext.GetService<ITempTableCreator>();
 
-   public CreatePrimaryKeyAsync(ITestOutputHelper testOutputHelper)
-      : base(testOutputHelper, ITestIsolationOptions.SharedTablesAmbientTransaction)
+   public CreatePrimaryKeyAsync(ITestOutputHelper testOutputHelper, SqlServerContainerFixture sqlServerContainerFixture)
+      : base(testOutputHelper, sqlServerContainerFixture)
    {
       TestCtxProviderBuilder.UseSharedTablesIsolationLevel(IsolationLevel.Serializable);
    }

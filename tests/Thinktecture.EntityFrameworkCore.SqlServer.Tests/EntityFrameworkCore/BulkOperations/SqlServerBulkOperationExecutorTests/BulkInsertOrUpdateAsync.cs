@@ -1,6 +1,5 @@
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Thinktecture.EntityFrameworkCore.Testing;
 using Thinktecture.TestDatabaseContext;
 
 namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperationExecutorTests;
@@ -12,8 +11,8 @@ public class BulkInsertOrUpdateAsync : IntegrationTestsBase
 
    private SqlServerBulkOperationExecutor SUT => _sut ??= ActDbContext.GetService<SqlServerBulkOperationExecutor>();
 
-   public BulkInsertOrUpdateAsync(ITestOutputHelper testOutputHelper)
-      : base(testOutputHelper, ITestIsolationOptions.SharedTablesAmbientTransaction)
+   public BulkInsertOrUpdateAsync(ITestOutputHelper testOutputHelper, SqlServerContainerFixture sqlServerContainerFixture)
+      : base(testOutputHelper, sqlServerContainerFixture)
    {
    }
 

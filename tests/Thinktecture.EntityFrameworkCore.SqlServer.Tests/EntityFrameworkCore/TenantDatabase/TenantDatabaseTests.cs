@@ -1,15 +1,14 @@
-using Thinktecture.EntityFrameworkCore.Testing;
-
 namespace Thinktecture.EntityFrameworkCore.TenantDatabase;
 
 public class TenantDatabaseTests : IntegrationTestsBase
 {
    private string? _tenant;
 
-   public TenantDatabaseTests(ITestOutputHelper testOutputHelper)
-      : base(testOutputHelper, ITestIsolationOptions.SharedTablesAmbientTransaction)
+   public TenantDatabaseTests(ITestOutputHelper testOutputHelper, SqlServerContainerFixture sqlServerContainerFixture)
+      : base(testOutputHelper, sqlServerContainerFixture)
    {
       IsTenantDatabaseSupportEnabled = true;
+      TenantDatabaseProviderMock.Setup(p => p.GetDatabaseName(It.IsAny<string>(), It.IsAny<string>())).Returns((string)null!);
       TenantDatabaseProviderMock.Setup(p => p.Tenant).Returns(() => _tenant);
    }
 

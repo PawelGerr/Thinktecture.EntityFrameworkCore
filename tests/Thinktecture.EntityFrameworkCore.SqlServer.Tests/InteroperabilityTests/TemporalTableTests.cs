@@ -1,11 +1,9 @@
-using Thinktecture.EntityFrameworkCore.Testing;
-
 namespace Thinktecture.InteroperabilityTests;
 
 public class TemporalTableTests : IntegrationTestsBase
 {
-   public TemporalTableTests(ITestOutputHelper testOutputHelper)
-      : base(testOutputHelper, ITestIsolationOptions.SharedTablesAmbientTransaction)
+   public TemporalTableTests(ITestOutputHelper testOutputHelper, SqlServerContainerFixture sqlServerContainerFixture)
+      : base(testOutputHelper, sqlServerContainerFixture)
    {
    }
 

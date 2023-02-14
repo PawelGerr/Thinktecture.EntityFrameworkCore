@@ -1,9 +1,11 @@
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.Extensions.Logging;
-using Thinktecture.EntityFrameworkCore;
 using Thinktecture.EntityFrameworkCore.Infrastructure;
+using Thinktecture.EntityFrameworkCore.Parameters;
 using Thinktecture.EntityFrameworkCore.Query;
+using Thinktecture.EntityFrameworkCore.TempTables;
 using Thinktecture.EntityFrameworkCore.Testing;
 using Thinktecture.Json;
 using Thinktecture.TestDatabaseContext;
@@ -22,9 +24,21 @@ public class IntegrationTestsBase : SqlServerDbContextIntegrationTests<TestDbCon
    protected bool IsTenantDatabaseSupportEnabled { get; set; }
    protected Mock<ITenantDatabaseProvider> TenantDatabaseProviderMock { get; }
 
-   protected IntegrationTestsBase(ITestOutputHelper testOutputHelper, ITestIsolationOptions isolationOptions)
-      : this(TestContext.Instance.ConnectionString, testOutputHelper, isolationOptions)
+   protected IntegrationTestsBase(ITestOutputHelper testOutputHelper, SqlServerContainerFixture sqlServerContainerFixture)
+      : this(sqlServerContainerFixture.ConnectionString, testOutputHelper, ITestIsolationOptions.DeleteData(NonExistingTableFilter))
    {
+   }
+
+   private static bool NonExistingTableFilter(IEntityType entityType)
+   {
+      return entityType.ClrType != typeof(TestEntityWithCollation)
+             && entityType.ClrType != typeof(CustomTempTable)
+             && entityType.ClrType != typeof(OwnedEntity)
+             && entityType.ClrType != typeof(OwnedEntity_Owns_Inline)
+             && entityType.ClrType != typeof(OwnedEntity_Owns_SeparateOne)
+             && entityType.ClrType != typeof(OwnedEntity_Owns_SeparateMany)
+             && entityType.ClrType != typeof(MyParameter)
+             && entityType.ClrType != typeof(TestTemporalTableEntity);
    }
 
    protected IntegrationTestsBase(string connectionString, ITestOutputHelper testOutputHelper, ITestIsolationOptions isolationOptions)
@@ -40,7 +54,7 @@ public class IntegrationTestsBase : SqlServerDbContextIntegrationTests<TestDbCon
 
       schema += "_" + Environment.Version.Major; // for multi-targeting
 
-      builder.UseMigrationExecutionStrategy(IMigrationExecutionStrategy.Migrations)
+      builder.UseMigrationExecutionStrategy(new OneTimeMigrationStrategy())
              .UseMigrationLogLevel(LogLevel.Warning)
              .CollectExecutedCommands()
              .ConfigureOptions((optionsBuilder, _) =>

@@ -1,7 +1,6 @@
 using Microsoft.Data.SqlClient;
 using Thinktecture.EntityFrameworkCore.BulkOperations;
 using Thinktecture.EntityFrameworkCore.TempTables;
-using Thinktecture.EntityFrameworkCore.Testing;
 using Thinktecture.TestDatabaseContext;
 
 namespace Thinktecture.Extensions.DbContextExtensionsTests;
@@ -9,8 +8,8 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests;
 // ReSharper disable once InconsistentNaming
 public class BulkInsertValuesIntoTempTableAsync_1_Column : IntegrationTestsBase
 {
-   public BulkInsertValuesIntoTempTableAsync_1_Column(ITestOutputHelper testOutputHelper)
-      : base(testOutputHelper, ITestIsolationOptions.SharedTablesAmbientTransaction)
+   public BulkInsertValuesIntoTempTableAsync_1_Column(ITestOutputHelper testOutputHelper, SqlServerContainerFixture sqlServerContainerFixture)
+      : base(testOutputHelper, sqlServerContainerFixture)
    {
    }
 

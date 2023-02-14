@@ -1,13 +1,12 @@
 using Thinktecture.EntityFrameworkCore.TempTables;
-using Thinktecture.EntityFrameworkCore.Testing;
 
 namespace Thinktecture.Extensions.ModelBuilderExtensionsTests;
 
 // ReSharper disable once InconsistentNaming
 public class ConfigureTempTable_1_Column : IntegrationTestsBase
 {
-   public ConfigureTempTable_1_Column(ITestOutputHelper testOutputHelper)
-      : base(testOutputHelper, ITestIsolationOptions.SharedTablesAmbientTransaction)
+   public ConfigureTempTable_1_Column(ITestOutputHelper testOutputHelper, SqlServerContainerFixture sqlServerContainerFixture)
+      : base(testOutputHelper, sqlServerContainerFixture)
    {
    }
 
