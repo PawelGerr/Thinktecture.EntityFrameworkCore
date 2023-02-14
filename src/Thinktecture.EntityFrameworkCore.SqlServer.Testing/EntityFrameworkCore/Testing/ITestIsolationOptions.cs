@@ -1,9 +1,15 @@
+using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq.Expressions;
+using System.Reflection;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage;
+using Thinktecture.EntityFrameworkCore.Parameters;
+using Thinktecture.EntityFrameworkCore.TempTables;
 
 namespace Thinktecture.EntityFrameworkCore.Testing;
 
@@ -36,10 +42,29 @@ public interface ITestIsolationOptions
    public static readonly ITestIsolationOptions CleanupOnly = new CleanupDatabase();
 
    /// <summary>
-   /// Deletes all records from the tables.
+   /// Deletes all records from the tables using "TRUNCATE".
    /// No ambient transaction; no unique schema.
    /// </summary>
    public static readonly ITestIsolationOptions TruncateTables = new TruncateAllTables();
+
+   /// <summary>
+   /// Deletes all records from the tables using "DELETE".
+   /// No ambient transaction; no unique schema.
+   /// </summary>
+   public static ITestIsolationOptions DeleteData(Predicate<IEntityType>? filter = null)
+   {
+      return new DeleteAllData(filter is null
+                                  ? SkipTempTablesAndCollectionParameters
+                                  : entityType => filter(entityType) && SkipTempTablesAndCollectionParameters(entityType));
+   }
+
+   private static bool SkipTempTablesAndCollectionParameters(IEntityType entityType)
+   {
+      return !entityType.ClrType.IsGenericType
+             || (entityType.ClrType.GetGenericTypeDefinition() != typeof(TempTable<>)
+                 && entityType.ClrType.GetGenericTypeDefinition() != typeof(TempTable<,>)
+                 && entityType.ClrType.GetGenericTypeDefinition() != typeof(ScalarCollectionParameter<>));
+   }
 
    /// <summary>
    /// Performs custom cleanup.
@@ -144,13 +169,13 @@ public interface ITestIsolationOptions
       }
    }
 
-   [SuppressMessage("Usage", "EF1001:Internal EF Core API usage.")]
    private class TruncateAllTables : ITestIsolationOptions
    {
       public bool NeedsAmbientTransaction => false;
       public bool NeedsUniqueSchema => false;
       public bool NeedsCleanup => true;
 
+      [SuppressMessage("Usage", "EF1001:Internal EF Core API usage.")]
       public async ValueTask CleanupAsync(DbContext dbContext, string? schema, CancellationToken cancellationToken)
       {
          foreach (var entityType in dbContext.Model.GetEntityTypesInHierarchicalOrder().Reverse())
@@ -158,6 +183,57 @@ public interface ITestIsolationOptions
             if (entityType.GetTableName() is not null)
                await dbContext.TruncateTableAsync(entityType.ClrType, cancellationToken);
          }
+      }
+   }
+
+   private class DeleteAllData : ITestIsolationOptions
+   {
+      private readonly Predicate<IEntityType> _filter;
+
+      private static readonly MethodInfo _deleteData = typeof(DeleteAllData).GetMethod(nameof(DeleteDataAsync), BindingFlags.Static | BindingFlags.NonPublic)
+                                                       ?? throw new Exception($"Method '{nameof(DeleteDataAsync)}' not found.");
+
+      private readonly ConcurrentDictionary<Type, Func<DbContext, CancellationToken, Task>> _deleteDelegatesLookup;
+
+      public bool NeedsAmbientTransaction => false;
+      public bool NeedsUniqueSchema => false;
+      public bool NeedsCleanup => true;
+
+      public DeleteAllData(Predicate<IEntityType> filter)
+      {
+         _filter = filter;
+         _deleteDelegatesLookup = new ConcurrentDictionary<Type, Func<DbContext, CancellationToken, Task>>();
+      }
+
+      [SuppressMessage("Usage", "EF1001:Internal EF Core API usage.")]
+      public async ValueTask CleanupAsync(DbContext dbContext, string? schema, CancellationToken cancellationToken)
+      {
+         foreach (var entityType in dbContext.Model.GetEntityTypesInHierarchicalOrder().Reverse())
+         {
+            if (entityType.GetTableName() is not null && _filter(entityType))
+            {
+               var delete = _deleteDelegatesLookup.GetOrAdd(entityType.ClrType, CreateDelegate);
+
+               await delete(dbContext, cancellationToken);
+            }
+         }
+      }
+
+      private Func<DbContext, CancellationToken, Task> CreateDelegate(Type type)
+      {
+         var ctxParam = Expression.Parameter(typeof(DbContext));
+         var cancellationTokenParam = Expression.Parameter(typeof(CancellationToken));
+         var method = _deleteData.MakeGenericMethod(type);
+
+         var call = Expression.Call(method, ctxParam, cancellationTokenParam);
+
+         return Expression.Lambda<Func<DbContext, CancellationToken, Task>>(call, ctxParam, cancellationTokenParam).Compile();
+      }
+
+      private static async Task DeleteDataAsync<T>(DbContext dbContext, CancellationToken cancellationToken)
+         where T : class
+      {
+         await dbContext.Set<T>().ExecuteDeleteAsync(cancellationToken);
       }
    }
 
