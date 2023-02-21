@@ -1,5 +1,6 @@
 using System.Data;
 using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Options;
 using Thinktecture.EntityFrameworkCore.TempTables;
 
 namespace Thinktecture.EntityFrameworkCore.BulkOperations;
@@ -61,6 +62,10 @@ public abstract class SqlServerTempTableBulkOperationOptions : ITempTableBulkIns
    /// </summary>
    public AdvancedSqlServerTempTableBulkOperationOptions Advanced { get; }
 
+   /// <inheritdoc />
+   public bool DoNotUseDefaultValues { get; set; }
+
+
    /// <summary>
    /// Initializes new instance of <see cref="SqlServerTempTableBulkOperationOptions"/>.
    /// </summary>
@@ -74,6 +79,7 @@ public abstract class SqlServerTempTableBulkOperationOptions : ITempTableBulkIns
          DropTableOnDispose = true;
          MomentOfPrimaryKeyCreation = MomentOfSqlServerPrimaryKeyCreation.AfterBulkInsert;
          EnableStreaming = true;
+         DoNotUseDefaultValues = true;
       }
       else
       {
@@ -82,6 +88,7 @@ public abstract class SqlServerTempTableBulkOperationOptions : ITempTableBulkIns
          TableNameProvider = optionsToInitializeFrom.TableNameProvider;
          PrimaryKeyCreation = optionsToInitializeFrom.PrimaryKeyCreation;
          PropertiesToInsert = optionsToInitializeFrom.PropertiesToInsert;
+         DoNotUseDefaultValues = optionsToInitializeFrom.DoNotUseDefaultValues;
 
          if (optionsToInitializeFrom is SqlServerTempTableBulkOperationOptions sqlServerOptions)
          {
@@ -94,6 +101,7 @@ public abstract class SqlServerTempTableBulkOperationOptions : ITempTableBulkIns
             MomentOfPrimaryKeyCreation = sqlServerOptions.MomentOfPrimaryKeyCreation;
 
             Advanced.UsePropertiesToInsertForTempTableCreation = sqlServerOptions.Advanced.UsePropertiesToInsertForTempTableCreation;
+            DoNotUseDefaultValues = sqlServerOptions.DoNotUseDefaultValues;
          }
       }
    }

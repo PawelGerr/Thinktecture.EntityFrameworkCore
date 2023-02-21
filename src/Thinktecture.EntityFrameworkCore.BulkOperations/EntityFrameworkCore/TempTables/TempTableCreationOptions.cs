@@ -37,6 +37,9 @@ public class TempTableCreationOptions : ITempTableCreationOptions
    /// <inheritdoc />
    public bool DropTableOnDispose { get; set; }
 
+   /// <inheritdoc />
+   public bool DoNotUseDefaultValues { get; set; }
+
    /// <summary>
    /// Initializes a new instance of <see cref="TempTableCreationOptions"/>.
    /// </summary>
@@ -46,6 +49,7 @@ public class TempTableCreationOptions : ITempTableCreationOptions
       if (options is null)
       {
          DropTableOnDispose = true;
+         DoNotUseDefaultValues = true;
       }
       else
       {
@@ -60,5 +64,6 @@ public class TempTableCreationOptions : ITempTableCreationOptions
       TruncateTableIfExists = options.TruncateTableIfExists;
       PropertiesToInclude = options.PropertiesToInclude;
       DropTableOnDispose = options.DropTableOnDispose;
+      DoNotUseDefaultValues = options.DoNotUseDefaultValues;
    }
 }

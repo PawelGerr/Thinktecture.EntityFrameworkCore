@@ -43,4 +43,9 @@ public interface ITempTableCreationOptions
    /// Set <see cref="TruncateTableIfExists"/> to <c>true</c> on re-use.
    /// </remarks>
    bool DropTableOnDispose { get; }
+
+   /// <summary>
+   /// For temptable creation we should not use defaults
+   /// </summary>
+   bool DoNotUseDefaultValues { get; }
 }
