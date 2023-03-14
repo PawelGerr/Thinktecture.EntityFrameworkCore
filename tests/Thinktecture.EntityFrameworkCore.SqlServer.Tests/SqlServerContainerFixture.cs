@@ -1,31 +1,24 @@
-using DotNet.Testcontainers.Builders;
-using DotNet.Testcontainers.Configurations;
-using DotNet.Testcontainers.Containers;
+using Testcontainers.MsSql;
 
 namespace Thinktecture;
 
 public class SqlServerContainerFixture : IDisposable, IAsyncDisposable, IAsyncLifetime
 {
-   private readonly MsSqlTestcontainer _sqlServerContainer;
+   private readonly MsSqlContainer _sqlServerContainer;
    private bool _isDisposed;
 
-   public string ConnectionString => $"{_sqlServerContainer.ConnectionString};TrustServerCertificate=true;";
+   public string ConnectionString => _sqlServerContainer.GetConnectionString();
 
    public SqlServerContainerFixture()
    {
       _sqlServerContainer = BuildContainer();
    }
 
-   private static MsSqlTestcontainer BuildContainer()
+   private static MsSqlContainer BuildContainer()
    {
-      // https: //github.com/testcontainers/testcontainers-dotnet/issues/750#issuecomment-1412257694
-#pragma warning disable 618
-      return new TestcontainersBuilder<MsSqlTestcontainer>()
-#pragma warning restore 618
-             .WithDatabase(new MsSqlTestcontainerConfiguration("mcr.microsoft.com/mssql/server:2022-latest")
-                           {
-                              Password = $"P@sswo0d01_{Guid.NewGuid()}"
-                           })
+      return new MsSqlBuilder()
+             .WithImage("mcr.microsoft.com/mssql/server:2022-latest")
+             .WithPassword($"P@sswo0d01_{Guid.NewGuid()}")
              .WithCleanUp(true)
              .Build();
    }
