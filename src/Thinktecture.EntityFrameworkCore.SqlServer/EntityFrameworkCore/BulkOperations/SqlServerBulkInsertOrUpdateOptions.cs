@@ -25,8 +25,24 @@ public sealed class SqlServerBulkInsertOrUpdateOptions : ISqlServerMergeOperatio
    /// <summary>
    /// Initializes new instance of <see cref="SqlServerBulkUpdateOptions"/>.
    /// </summary>
+   /// <param name="holdLockDuringMerge">Indication, whether the table hint <see cref="SqlServerTableHintLimited.HoldLock"/> should be used with 'MERGE' or not.</param>
+   public SqlServerBulkInsertOrUpdateOptions(bool holdLockDuringMerge)
+      : this(null, holdLockDuringMerge)
+   {
+   }
+
+   /// <summary>
+   /// Initializes new instance of <see cref="SqlServerBulkUpdateOptions"/>.
+   /// </summary>
    /// <param name="optionsToInitializeFrom">Options to initialize from.</param>
    public SqlServerBulkInsertOrUpdateOptions(IBulkInsertOrUpdateOptions? optionsToInitializeFrom = null)
+      : this(optionsToInitializeFrom, optionsToInitializeFrom is null)
+   {
+   }
+
+   private SqlServerBulkInsertOrUpdateOptions(
+      IBulkInsertOrUpdateOptions? optionsToInitializeFrom,
+      bool holdLockDuringMerge)
    {
       if (optionsToInitializeFrom is not null)
       {
@@ -39,6 +55,9 @@ public sealed class SqlServerBulkInsertOrUpdateOptions : ISqlServerMergeOperatio
       {
          TempTableOptions = new SqlServerBulkOperationTempTableOptions(mergeOptions.TempTableOptions);
          MergeTableHints = mergeOptions.MergeTableHints.ToList();
+
+         if (holdLockDuringMerge && !MergeTableHints.Contains(SqlServerTableHintLimited.HoldLock))
+            MergeTableHints.Add(SqlServerTableHintLimited.HoldLock);
       }
       else
       {
@@ -46,7 +65,10 @@ public sealed class SqlServerBulkInsertOrUpdateOptions : ISqlServerMergeOperatio
                             {
                                SqlBulkCopyOptions = SqlBulkCopyOptions.KeepIdentity
                             };
-         MergeTableHints = new List<SqlServerTableHintLimited> { SqlServerTableHintLimited.HoldLock };
+         MergeTableHints = new List<SqlServerTableHintLimited>();
+
+         if (holdLockDuringMerge)
+            MergeTableHints.Add(SqlServerTableHintLimited.HoldLock);
       }
    }
 
