@@ -254,19 +254,27 @@ Please provide the corresponding constructor or a custom factory via '{typeof(Sq
 
       CreateTestIsolationTable(ctx, lockTableName);
 
-      var tx = ctx.Database.BeginTransaction(IsolationLevel.Serializable);
-
-      try
+      for (var i = 0;; i++)
       {
-         LockDatabase(ctx, lockTableName);
-      }
-      catch (Exception)
-      {
-         tx.Dispose();
-         throw;
-      }
+         var tx = ctx.Database.BeginTransaction(IsolationLevel.Serializable);
 
-      return tx;
+         try
+         {
+            LockDatabase(ctx, lockTableName);
+            return tx;
+         }
+         catch (Exception)
+         {
+            if (i > _maxNumberOfLockRetries)
+            {
+               tx.Dispose();
+               throw;
+            }
+
+            var delay = new TimeSpan(_random.NextInt64(_minRetryDelay.Ticks, _maxRetryDelay.Ticks));
+            Task.Delay(delay).GetAwaiter().GetResult();
+         }
+      }
    }
 
    private void CreateTestIsolationTable(T ctx, string lockTableName)
