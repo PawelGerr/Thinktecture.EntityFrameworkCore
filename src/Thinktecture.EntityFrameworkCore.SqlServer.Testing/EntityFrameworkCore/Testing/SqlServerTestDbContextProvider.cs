@@ -265,11 +265,10 @@ Please provide the corresponding constructor or a custom factory via '{typeof(Sq
          }
          catch (Exception)
          {
+            tx.Dispose();
+
             if (i > _maxNumberOfLockRetries)
-            {
-               tx.Dispose();
                throw;
-            }
 
             var delay = new TimeSpan(_random.NextInt64(_minRetryDelay.Ticks, _maxRetryDelay.Ticks));
             Task.Delay(delay).GetAwaiter().GetResult();
