@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore.Query;
+using Microsoft.EntityFrameworkCore.SqlServer.Infrastructure.Internal;
 using Microsoft.EntityFrameworkCore.SqlServer.Query.Internal;
 using Microsoft.EntityFrameworkCore.Storage;
 
@@ -20,8 +21,9 @@ public class ThinktectureSqlServerQueryableMethodTranslatingExpressionVisitor
       QueryableMethodTranslatingExpressionVisitorDependencies dependencies,
       RelationalQueryableMethodTranslatingExpressionVisitorDependencies relationalDependencies,
       QueryCompilationContext queryCompilationContext,
+      ISqlServerSingletonOptions sqlServerSingletonOptions,
       IRelationalTypeMappingSource typeMappingSource)
-      : base(dependencies, relationalDependencies, queryCompilationContext)
+      : base(dependencies, relationalDependencies, queryCompilationContext, sqlServerSingletonOptions)
    {
       _typeMappingSource = typeMappingSource ?? throw new ArgumentNullException(nameof(typeMappingSource));
    }

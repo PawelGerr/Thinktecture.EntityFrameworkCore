@@ -105,7 +105,7 @@ public sealed class SqliteDbContextOptionsExtension : DbContextOptionsExtensionB
          AddWithCheck<IQuerySqlGeneratorFactory, ThinktectureSqliteQuerySqlGeneratorFactory, SqliteQuerySqlGeneratorFactory>(services);
 
       if (AddCustomRelationalParameterBasedSqlProcessorFactory)
-         AddWithCheck<IRelationalParameterBasedSqlProcessorFactory, ThinktectureSqliteParameterBasedSqlProcessorFactory, RelationalParameterBasedSqlProcessorFactory>(services);
+         AddWithCheck<IRelationalParameterBasedSqlProcessorFactory, ThinktectureSqliteParameterBasedSqlProcessorFactory, SqliteParameterBasedSqlProcessorFactory>(services);
 
       if (AddBulkOperationSupport)
       {

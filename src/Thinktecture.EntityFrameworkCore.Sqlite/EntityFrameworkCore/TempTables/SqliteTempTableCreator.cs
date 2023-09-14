@@ -132,7 +132,7 @@ CREATE TEMPORARY TABLE {sqlGenerationHelper.DelimitIdentifier(name)}
 
             storeObject ??= property.GetStoreObject();
             var columnName = property.GetColumnName(storeObject.Value)
-                             ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.DeclaringEntityType.Name}'.");
+                             ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.DeclaringType.Name}'.");
             var columnType = property.GetColumnType(storeObject.Value);
 
             sb.Append("\t\t")
@@ -144,7 +144,7 @@ CREATE TEMPORARY TABLE {sqlGenerationHelper.DelimitIdentifier(name)}
             {
                if (options.PrimaryKeys.Count != 1 || !property.Equals(options.PrimaryKeys.First()))
                {
-                  throw new NotSupportedException(@$"SQLite does not allow the property '{property.Name}' of the entity '{property.DeclaringEntityType.Name}' to be an AUTOINCREMENT column unless this column is the PRIMARY KEY.
+                  throw new NotSupportedException(@$"SQLite does not allow the property '{property.Name}' of the entity '{property.DeclaringType.Name}' to be an AUTOINCREMENT column unless this column is the PRIMARY KEY.
 Currently configured primary keys: [{String.Join(", ", options.PrimaryKeys.Select(p => p.Name))}]");
                }
 
@@ -197,7 +197,7 @@ Currently configured primary keys: [{String.Join(", ", options.PrimaryKeys.Selec
                                              {
                                                 var storeObject = p.GetStoreObject();
                                                 return p.GetColumnName(storeObject)
-                                                       ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{p.DeclaringEntityType.Name}'.");
+                                                       ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{p.DeclaringType.Name}'.");
                                              });
 
       sb.AppendLine(",");

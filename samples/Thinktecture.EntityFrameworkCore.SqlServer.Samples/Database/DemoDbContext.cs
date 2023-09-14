@@ -25,8 +25,7 @@ public class DemoDbContext : DbContext, IDbDefaultSchema
    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
    {
       configurationBuilder.Properties<decimal>(builder => builder
-                                                          .HavePrecision(18, 5)
-                                                          .HaveColumnType("decimal(18, 5)"));
+                                                          .HavePrecision(18, 5));
    }
 
    /// <inheritdoc />

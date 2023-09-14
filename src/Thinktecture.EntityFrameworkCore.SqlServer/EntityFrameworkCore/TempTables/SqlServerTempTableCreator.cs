@@ -227,7 +227,7 @@ END
 
             var columnType = property.GetColumnType(storeObject.Value);
             var columnName = property.GetColumnName(storeObject.Value)
-                             ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.DeclaringEntityType.Name}'.");
+                             ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.DeclaringType.Name}'.");
 
             sb.Append('\t')
               .Append(_sqlGenerationHelper.DelimitIdentifier(columnName)).Append(' ')
@@ -237,7 +237,7 @@ END
             {
                // Collation information is not available from the runtime model, so we need to fetch it from the design time model
                designTimeEntityType ??= _ctx.GetService<IDesignTimeModel>().Model
-                                            .GetEntityType(property.DeclaringEntityType.Name);
+                                            .GetEntityType(property.DeclaringType.Name);
 
                var collation = designTimeEntityType.GetProperty(property.Name)
                                                    .GetCollation(storeObject.Value);
@@ -300,7 +300,7 @@ END
                                              {
                                                 var storeObject = p.GetStoreObject();
                                                 return p.GetColumnName(storeObject)
-                                                       ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{p.DeclaringEntityType.Name}'.");
+                                                       ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{p.DeclaringType.Name}'.");
                                              });
 
       sb.AppendLine(",");

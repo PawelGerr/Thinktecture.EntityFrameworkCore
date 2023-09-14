@@ -1,12 +1,13 @@
 using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore.Query;
+using Microsoft.EntityFrameworkCore.Sqlite.Query.Internal;
 
 namespace Thinktecture.EntityFrameworkCore.Query;
 
 /// <summary>
 /// Extends <see cref="RelationalParameterBasedSqlProcessor"/>.
 /// </summary>
-public class ThinktectureSqliteParameterBasedSqlProcessor : RelationalParameterBasedSqlProcessor
+public class ThinktectureSqliteParameterBasedSqlProcessor : SqliteParameterBasedSqlProcessor
 {
    /// <inheritdoc />
    public ThinktectureSqliteParameterBasedSqlProcessor(

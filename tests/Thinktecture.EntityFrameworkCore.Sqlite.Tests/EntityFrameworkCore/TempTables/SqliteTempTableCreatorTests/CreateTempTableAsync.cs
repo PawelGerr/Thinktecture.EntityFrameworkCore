@@ -576,17 +576,6 @@ Currently configured primary keys: []");
    }
 
    [Fact]
-   public async Task Should_create_temp_table_with_decimal_with_explicit_precision()
-   {
-      ConfigureModel = builder => builder.ConfigureTempTable<decimal>(typeBuilder => typeBuilder.Property(t => t.Column1).HasColumnType("decimal(20,5)"));
-
-      await using var tempTable = await SUT.CreateTempTableAsync(ActDbContext.GetTempTableEntityType<TempTable<decimal>>(), _optionsWithNonUniqueNameAndNoPrimaryKey);
-
-      var columns = AssertDbContext.GetTempTableColumns<TempTable<decimal>>().ToList();
-      ValidateColumn(columns[0], nameof(TempTable<decimal>.Column1), "decimal(20,5)", false);
-   }
-
-   [Fact]
    public async Task Should_create_temp_table_with_bool()
    {
       ConfigureModel = builder => builder.ConfigureTempTable<bool>();

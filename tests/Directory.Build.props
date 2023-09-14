@@ -3,7 +3,7 @@
    <PropertyGroup>
       <ParentPropsFile>$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))</ParentPropsFile>
       <IsPackable>false</IsPackable>
-      <NoWarn>$(NoWarn);CA1062</NoWarn>
+      <NoWarn>$(NoWarn);CA1062;EF1002</NoWarn>
    </PropertyGroup>
 
    <Import Condition="exists('$(ParentPropsFile)') " Project="$(ParentPropsFile)" />

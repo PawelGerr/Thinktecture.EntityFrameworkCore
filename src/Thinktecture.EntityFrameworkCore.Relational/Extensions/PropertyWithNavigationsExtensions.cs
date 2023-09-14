@@ -16,8 +16,8 @@ public static class PropertyWithNavigationsExtensions
    /// <exception cref="Exception">If no <see cref="StoreObjectIdentifier"/> found.</exception>
    public static StoreObjectIdentifier GetStoreObject(this PropertyWithNavigations property)
    {
-      return StoreObjectIdentifier.Create(property.Property.DeclaringEntityType, StoreObjectType.Table)
-             ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.Property.DeclaringEntityType.Name}'.");
+      return StoreObjectIdentifier.Create(property.Property.DeclaringType, StoreObjectType.Table)
+             ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.Property.DeclaringType.Name}'.");
    }
 
    /// <summary>
@@ -28,8 +28,8 @@ public static class PropertyWithNavigationsExtensions
    /// <exception cref="Exception">If no <see cref="StoreObjectIdentifier"/> found.</exception>
    public static StoreObjectIdentifier GetStoreObject(this IProperty property)
    {
-      return StoreObjectIdentifier.Create(property.DeclaringEntityType, StoreObjectType.Table)
-             ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.DeclaringEntityType.Name}'.");
+      return StoreObjectIdentifier.Create(property.DeclaringType, StoreObjectType.Table)
+             ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.DeclaringType.Name}'.");
    }
 
    /// <summary>

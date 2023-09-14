@@ -182,7 +182,7 @@ internal abstract class SqliteCommandBuilder
             var index = reader.GetPropertyIndex(property);
             storeObject ??= property.GetStoreObject();
             var columnName = property.GetColumnName(storeObject.Value)
-                             ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.DeclaringEntityType.Name}'.");
+                             ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.DeclaringType.Name}'.");
             var escapedColumnName = sqlGenerationHelper.DelimitIdentifier(columnName);
 
             sb.Append("(").Append(escapedColumnName).Append(" = $p").Append(index);
@@ -238,7 +238,7 @@ internal abstract class SqliteCommandBuilder
                var property = _keyProperties[i];
                storeObject ??= property.GetStoreObject();
                var columnName = property.GetColumnName(storeObject.Value)
-                                ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.DeclaringEntityType.Name}'.");
+                                ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.DeclaringType.Name}'.");
 
                var escapedColumnName = sqlGenerationHelper.DelimitIdentifier(columnName);
                sb.Append(escapedColumnName);

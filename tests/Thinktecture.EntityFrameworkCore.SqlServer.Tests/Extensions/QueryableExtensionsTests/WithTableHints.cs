@@ -206,18 +206,18 @@ public class WithTableHints : IntegrationTestsBase
 
       ExecutedCommands.Skip(ExecutedCommands.Count - 2).First().Should().Be(@"SELECT [t].[Id]" + Environment.NewLine +
                                                                             $"FROM [{TestCtxProvider.Schema}].[TestEntities] AS [t] WITH (UPDLOCK, ROWLOCK)" + Environment.NewLine +
-                                                                            "WHERE EXISTS (" + Environment.NewLine +
-                                                                            "    SELECT 1" + Environment.NewLine +
+                                                                            "WHERE [t].[Id] IN (" + Environment.NewLine +
+                                                                            "    SELECT [#].[Column1]" + Environment.NewLine +
                                                                             "    FROM [#TempTable<Guid>_1] AS [#] WITH (UPDLOCK)" + Environment.NewLine +
-                                                                            "    WHERE [t].[Id] = [#].[Column1])" + Environment.NewLine +
+                                                                            ")" + Environment.NewLine +
                                                                             "ORDER BY [t].[Id]");
       ExecutedCommands.Last().Should().Be("SELECT [t0].[Id], [t].[Id]" + Environment.NewLine +
                                           $"FROM [{TestCtxProvider.Schema}].[TestEntities] AS [t] WITH (UPDLOCK, ROWLOCK)" + Environment.NewLine +
                                           $"INNER JOIN [{TestCtxProvider.Schema}].[TestEntities] AS [t0] ON [t].[Id] = [t0].[ParentId]" + Environment.NewLine +
-                                          "WHERE EXISTS (" + Environment.NewLine +
-                                          "    SELECT 1" + Environment.NewLine +
+                                          "WHERE [t].[Id] IN (" + Environment.NewLine +
+                                          "    SELECT [#].[Column1]" + Environment.NewLine +
                                           "    FROM [#TempTable<Guid>_1] AS [#] WITH (UPDLOCK)" + Environment.NewLine +
-                                          "    WHERE [t].[Id] = [#].[Column1])" + Environment.NewLine +
+                                          ")" + Environment.NewLine +
                                           "ORDER BY [t].[Id]");
    }
 }
