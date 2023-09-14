@@ -20,7 +20,7 @@ public class IntegrationTestsBase : SqlServerDbContextIntegrationTests<TestDbCon
    protected string? Schema => TestCtxProvider.Schema;
 
    protected bool IsTenantDatabaseSupportEnabled { get; set; }
-   protected Mock<ITenantDatabaseProvider> TenantDatabaseProviderMock { get; }
+   protected ITenantDatabaseProvider TenantDatabaseProviderMock { get; }
 
    protected IntegrationTestsBase(ITestOutputHelper testOutputHelper, SqlServerContainerFixture sqlServerContainerFixture)
       : this(sqlServerContainerFixture.ConnectionString, testOutputHelper, ITestIsolationOptions.DeleteData(NonExistingTableFilter))
@@ -42,7 +42,7 @@ public class IntegrationTestsBase : SqlServerDbContextIntegrationTests<TestDbCon
    protected IntegrationTestsBase(string connectionString, ITestOutputHelper testOutputHelper, ITestIsolationOptions isolationOptions)
       : base(connectionString, isolationOptions, testOutputHelper)
    {
-      TenantDatabaseProviderMock = new Mock<ITenantDatabaseProvider>(MockBehavior.Strict);
+      TenantDatabaseProviderMock =  Substitute.For<ITenantDatabaseProvider>();
    }
 
    protected override void ConfigureTestDbContextProvider(SqlServerTestDbContextProviderBuilder<TestDbContext> builder)
@@ -62,7 +62,7 @@ public class IntegrationTestsBase : SqlServerDbContextIntegrationTests<TestDbCon
 
                                   optionsBuilder.AddOrUpdateExtension<RelationalDbContextOptionsExtension>(extension =>
                                                                                                            {
-                                                                                                              extension.Register(typeof(Mock<ITenantDatabaseProvider>), TenantDatabaseProviderMock);
+                                                                                                              extension.Register(typeof(ITenantDatabaseProvider), TenantDatabaseProviderMock);
                                                                                                               return extension;
                                                                                                            });
                                })

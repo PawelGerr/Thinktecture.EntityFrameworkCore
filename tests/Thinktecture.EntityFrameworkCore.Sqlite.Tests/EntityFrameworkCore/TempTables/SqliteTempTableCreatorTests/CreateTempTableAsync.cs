@@ -13,14 +13,14 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.SqliteTempTableCreatorTest
 // ReSharper disable once InconsistentNaming
 public class CreateTempTableAsync : SchemaChangingIntegrationTestsBase
 {
-   private readonly Mock<ISqlGenerationHelper> _sqlGenerationHelperMock;
+   private readonly ISqlGenerationHelper _sqlGenerationHelperMock;
    private readonly TempTableCreationOptions _optionsWithNonUniqueNameAndNoPrimaryKey;
 
    private SqliteTempTableCreator? _sut;
 
    private SqliteTempTableCreator SUT => _sut ??= new SqliteTempTableCreator(ActDbContext.GetService<ICurrentDbContext>(),
                                                                              ActDbContext.GetService<IDiagnosticsLogger<DbLoggerCategory.Query>>(),
-                                                                             _sqlGenerationHelperMock.Object,
+                                                                             _sqlGenerationHelperMock,
                                                                              ActDbContext.GetService<IRelationalTypeMappingSource>(),
                                                                              ActDbContext.GetService<ObjectPool<StringBuilder>>(),
                                                                              new TempTableStatementCache<SqliteTempTableCreatorCacheKey>());
@@ -28,11 +28,11 @@ public class CreateTempTableAsync : SchemaChangingIntegrationTestsBase
    public CreateTempTableAsync(ITestOutputHelper testOutputHelper)
       : base(testOutputHelper)
    {
-      _sqlGenerationHelperMock = new Mock<ISqlGenerationHelper>();
-      _sqlGenerationHelperMock.Setup(h => h.DelimitIdentifier(It.IsAny<string>(), It.IsAny<string>()))
-                              .Returns<string, string>((name, schema) => schema == null ? $"\"{name}\"" : $"\"{schema}\".\"{name}\"");
-      _sqlGenerationHelperMock.Setup(h => h.DelimitIdentifier(It.IsAny<string>()))
-                              .Returns<string>(name => $"\"{name}\"");
+      _sqlGenerationHelperMock = Substitute.For<ISqlGenerationHelper>();
+      _sqlGenerationHelperMock.DelimitIdentifier(Arg.Any<string>(), Arg.Any<string>())
+                              .Returns(x => x[1] == null ? $"\"{x[0]}\"" : $"\"{x[1]}\".\"{x[0]}\"");
+      _sqlGenerationHelperMock.DelimitIdentifier(Arg.Any<string>())
+                              .Returns(x => $"\"{x[0]}\"");
 
       _optionsWithNonUniqueNameAndNoPrimaryKey = new TempTableCreationOptions { TableNameProvider = DefaultTempTableNameProvider.Instance, PrimaryKeyCreation = IPrimaryKeyPropertiesProvider.None };
    }

@@ -8,14 +8,14 @@ public class TenantDatabaseTests : IntegrationTestsBase
       : base(testOutputHelper, sqlServerContainerFixture)
    {
       IsTenantDatabaseSupportEnabled = true;
-      TenantDatabaseProviderMock.Setup(p => p.GetDatabaseName(It.IsAny<string>(), It.IsAny<string>())).Returns((string)null!);
-      TenantDatabaseProviderMock.Setup(p => p.Tenant).Returns(() => _tenant);
+      TenantDatabaseProviderMock.GetDatabaseName(Arg.Any<string>(), Arg.Any<string>()).Returns((string)null!);
+      TenantDatabaseProviderMock.Tenant.Returns(_ => _tenant);
    }
 
    [Fact]
    public async Task Should_behave_the_same_if_no_tenant_and_database_provided()
    {
-      TenantDatabaseProviderMock.Setup(p => p.GetDatabaseName(Schema, "TestEntities")).Returns((string)null!);
+      TenantDatabaseProviderMock.GetDatabaseName(Schema, "TestEntities").Returns((string)null!);
       await ActDbContext.TestEntities.ToListAsync();
 
       ExecutedCommands.Last().Should().Contain($"FROM [{Schema}].[TestEntities]");
@@ -26,7 +26,7 @@ public class TenantDatabaseTests : IntegrationTestsBase
    {
       _tenant = "1";
       var database = ArrangeDbContext.Database.GetDbConnection().Database;
-      TenantDatabaseProviderMock.Setup(p => p.GetDatabaseName(Schema, "TestEntities"))
+      TenantDatabaseProviderMock.GetDatabaseName(Schema, "TestEntities")
                                 .Returns(database);
 
       await ActDbContext.TestEntities.ToListAsync();
@@ -39,7 +39,7 @@ public class TenantDatabaseTests : IntegrationTestsBase
    {
       _tenant = "1";
       var database = ArrangeDbContext.Database.GetDbConnection().Database;
-      TenantDatabaseProviderMock.Setup(p => p.GetDatabaseName(Schema, "TestEntities"))
+      TenantDatabaseProviderMock.GetDatabaseName(Schema, "TestEntities")
                                 .Returns(database);
 
       await ActDbContext.TestEntities
@@ -48,8 +48,8 @@ public class TenantDatabaseTests : IntegrationTestsBase
                         .ToListAsync();
 
       ExecutedCommands.Last().Should().Contain($"FROM [{database}].[{Schema}].[TestEntities]")
-                   .And.Contain($"LEFT JOIN [{database}].[{Schema}].[TestEntities] AS [t0]")
-                   .And.Contain($"LEFT JOIN [{database}].[{Schema}].[TestEntities] AS [t1]");
+                      .And.Contain($"LEFT JOIN [{database}].[{Schema}].[TestEntities] AS [t0]")
+                      .And.Contain($"LEFT JOIN [{database}].[{Schema}].[TestEntities] AS [t1]");
    }
 
    [Fact]
@@ -57,7 +57,7 @@ public class TenantDatabaseTests : IntegrationTestsBase
    {
       _tenant = "1";
       var database = ArrangeDbContext.Database.GetDbConnection().Database;
-      TenantDatabaseProviderMock.Setup(p => p.GetDatabaseName(Schema, "TestEntities"))
+      TenantDatabaseProviderMock.GetDatabaseName(Schema, "TestEntities")
                                 .Returns(database);
 
       await ActDbContext.TestEntities
@@ -65,7 +65,7 @@ public class TenantDatabaseTests : IntegrationTestsBase
                         .ToListAsync();
 
       ExecutedCommands.Last().Should().Contain($"FROM [{database}].[{Schema}].[TestEntities]")
-                   .And.Contain($"INNER JOIN [{database}].[{Schema}].[TestEntities]");
+                      .And.Contain($"INNER JOIN [{database}].[{Schema}].[TestEntities]");
    }
 
    [Fact]
@@ -73,7 +73,7 @@ public class TenantDatabaseTests : IntegrationTestsBase
    {
       _tenant = "1";
       var database = ArrangeDbContext.Database.GetDbConnection().Database;
-      TenantDatabaseProviderMock.Setup(p => p.GetDatabaseName(Schema, "TestView"))
+      TenantDatabaseProviderMock.GetDatabaseName(Schema, "TestView")
                                 .Returns(database);
 
       await ActDbContext.TestView.ToListAsync();

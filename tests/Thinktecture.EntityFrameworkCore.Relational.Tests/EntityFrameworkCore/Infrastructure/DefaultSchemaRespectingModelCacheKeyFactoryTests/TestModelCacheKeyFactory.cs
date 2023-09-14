@@ -4,12 +4,12 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure.DefaultSchemaRespectin
 
 public class TestModelCacheKeyFactory : IModelCacheKeyFactory
 {
-   public Mock<IModelCacheKeyFactory> Mock { get; }
+   public IModelCacheKeyFactory Mock { get; }
 
    public TestModelCacheKeyFactory()
    {
-      Mock = new Mock<IModelCacheKeyFactory>();
-      Mock.Setup(f => f.Create(It.IsAny<DbContext>(), It.IsAny<bool>())).Returns<DbContext, bool>((ctx, designTime) => new ModelCacheKey(ctx, designTime));
+      Mock = Substitute.For<IModelCacheKeyFactory>();
+      Mock.Create(Arg.Any<DbContext>(), Arg.Any<bool>()).Returns(x => new ModelCacheKey((DbContext)x[0], (bool)x[1]));
    }
 
    public object Create(DbContext context)
@@ -19,6 +19,6 @@ public class TestModelCacheKeyFactory : IModelCacheKeyFactory
 
    public object Create(DbContext context, bool designTime)
    {
-      return Mock.Object.Create(context, designTime);
+      return Mock.Create(context, designTime);
    }
 }

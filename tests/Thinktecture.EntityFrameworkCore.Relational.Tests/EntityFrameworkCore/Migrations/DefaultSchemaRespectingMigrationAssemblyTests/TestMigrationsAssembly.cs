@@ -6,34 +6,26 @@ namespace Thinktecture.EntityFrameworkCore.Migrations.DefaultSchemaRespectingMig
 
 public class TestMigrationsAssembly : IMigrationsAssembly
 {
-   private readonly IMigrationsAssembly _migrationsAssembly;
-
-   public Mock<IMigrationsAssembly> Mock { get; }
-
-   public TestMigrationsAssembly()
-   {
-      Mock = new Mock<IMigrationsAssembly>();
-      _migrationsAssembly = Mock.Object;
-   }
+   public IMigrationsAssembly Mock { get; } = Substitute.For<IMigrationsAssembly>();
 
    /// <inheritdoc />
    public string? FindMigrationId(string nameOrId)
    {
-      return _migrationsAssembly.FindMigrationId(nameOrId);
+      return Mock.FindMigrationId(nameOrId);
    }
 
    /// <inheritdoc />
    public Migration CreateMigration(TypeInfo migrationClass, string activeProvider)
    {
-      return _migrationsAssembly.CreateMigration(migrationClass, activeProvider);
+      return Mock.CreateMigration(migrationClass, activeProvider);
    }
 
    /// <inheritdoc />
-   public IReadOnlyDictionary<string, TypeInfo> Migrations => _migrationsAssembly.Migrations;
+   public IReadOnlyDictionary<string, TypeInfo> Migrations => Mock.Migrations;
 
    /// <inheritdoc />
-   public ModelSnapshot? ModelSnapshot => _migrationsAssembly.ModelSnapshot;
+   public ModelSnapshot? ModelSnapshot => Mock.ModelSnapshot;
 
    /// <inheritdoc />
-   public Assembly Assembly => _migrationsAssembly.Assembly;
+   public Assembly Assembly => Mock.Assembly;
 }

@@ -15,7 +15,7 @@ public class CreateMigration : DefaultSchemaRespectingMigrationAssemblyTestsBase
    [Fact]
    public void Should_throw_when_schema_type_is_null()
    {
-      CurrentCtxMock.Setup(c => c.Context).Returns(CreateContextWithSchema("Schema1"));
+      CurrentCtxMock.Context.Returns(CreateContextWithSchema("Schema1"));
 
       // ReSharper disable once AssignNullToNotNullAttribute
       SUT.Invoking(sut => sut.CreateMigration(null!, "DummyProvider"))
@@ -25,7 +25,7 @@ public class CreateMigration : DefaultSchemaRespectingMigrationAssemblyTestsBase
    [Fact]
    public void Should_throw_when_active_provider_is_null()
    {
-      CurrentCtxMock.Setup(c => c.Context).Returns(CreateContextWithSchema("Schema1"));
+      CurrentCtxMock.Context.Returns(CreateContextWithSchema("Schema1"));
 
       // ReSharper disable once AssignNullToNotNullAttribute
       SUT.Invoking(sut => sut.CreateMigration(typeof(MigrationWithSchema).GetTypeInfo(), null!))
@@ -35,7 +35,7 @@ public class CreateMigration : DefaultSchemaRespectingMigrationAssemblyTestsBase
    [Fact]
    public void Should_create_schema_aware_migration_having_schema_aware_ctx()
    {
-      CurrentCtxMock.Setup(c => c.Context).Returns(CreateContextWithSchema("Schema1"));
+      CurrentCtxMock.Context.Returns(CreateContextWithSchema("Schema1"));
 
       var migration = SUT.CreateMigration(typeof(MigrationWithSchema).GetTypeInfo(), "DummyProvider");
 
@@ -46,9 +46,9 @@ public class CreateMigration : DefaultSchemaRespectingMigrationAssemblyTestsBase
    [Fact]
    public void Should_set_schema_of_schema_aware_migration_having_schema_aware_ctx()
    {
-      CurrentCtxMock.Setup(c => c.Context).Returns(CreateContextWithSchema("Schema1"));
-      SchemaSetterMock.Setup(s => s.SetSchema(It.IsAny<IReadOnlyList<MigrationOperation>>(), It.IsAny<string>()))
-                      .Callback<IReadOnlyList<MigrationOperation>, string>((ops, schema) => new MigrationOperationSchemaSetter().SetSchema(ops, schema));
+      CurrentCtxMock.Context.Returns(CreateContextWithSchema("Schema1"));
+      SchemaSetterMock.When(s => s.SetSchema(Arg.Any<IReadOnlyList<MigrationOperation>>(), Arg.Any<string>()))
+                      .Do(x => new MigrationOperationSchemaSetter().SetSchema((IReadOnlyList<MigrationOperation>)x[0], (string)x[1]));
 
       var migration = SUT.CreateMigration(typeof(MigrationWithSchema).GetTypeInfo(), "DummyProvider");
 
@@ -58,7 +58,7 @@ public class CreateMigration : DefaultSchemaRespectingMigrationAssemblyTestsBase
    [Fact]
    public void Should_create_migration_having_schema_aware_ctx()
    {
-      CurrentCtxMock.Setup(c => c.Context).Returns(CreateContextWithSchema("Schema1"));
+      CurrentCtxMock.Context.Returns(CreateContextWithSchema("Schema1"));
       var migration = new MigrationWithoutSchema { ActiveProvider = "DummyProvider" };
 
       var createMigration = SUT.CreateMigration(typeof(MigrationWithoutSchema).GetTypeInfo(), "DummyProvider");
@@ -72,9 +72,9 @@ public class CreateMigration : DefaultSchemaRespectingMigrationAssemblyTestsBase
    [Fact]
    public void Should_set_schema_of_migration_having_schema_aware_ctx()
    {
-      CurrentCtxMock.Setup(c => c.Context).Returns(CreateContextWithSchema("Schema1"));
-      SchemaSetterMock.Setup(s => s.SetSchema(It.IsAny<IReadOnlyList<MigrationOperation>>(), It.IsAny<string>()))
-                      .Callback<IReadOnlyList<MigrationOperation>, string>((ops, schema) => new MigrationOperationSchemaSetter().SetSchema(ops, schema));
+      CurrentCtxMock.Context.Returns(CreateContextWithSchema("Schema1"));
+      SchemaSetterMock.When(s => s.SetSchema(Arg.Any<IReadOnlyList<MigrationOperation>>(), Arg.Any<string>()))
+                      .Do(x => new MigrationOperationSchemaSetter().SetSchema((IReadOnlyList<MigrationOperation>)x[0], (string)x[1]));
 
       var migration = SUT.CreateMigration(typeof(MigrationWithoutSchema).GetTypeInfo(), "DummyProvider");
 
@@ -84,7 +84,7 @@ public class CreateMigration : DefaultSchemaRespectingMigrationAssemblyTestsBase
    [Fact]
    public void Should_throw_when_creating_schema_aware_migration_having_schema_unaware_ctx()
    {
-      CurrentCtxMock.Setup(c => c.Context).Returns(CreateContextWithoutSchema());
+      CurrentCtxMock.Context.Returns(CreateContextWithoutSchema());
 
       SUT.Invoking(sut => sut.CreateMigration(typeof(MigrationWithSchema).GetTypeInfo(), "DummyProvider"))
          .Should().Throw<ArgumentException>().WithMessage($@"For instantiation of default schema respecting migration of type '{nameof(MigrationWithSchema)}' the database context of type '{nameof(DbContextWithoutSchema)}' has to implement the interface '{nameof(IDbDefaultSchema)}'. (Parameter 'migrationClass')");
@@ -93,7 +93,7 @@ public class CreateMigration : DefaultSchemaRespectingMigrationAssemblyTestsBase
    [Fact]
    public void Should_create_schema_unaware_migration_having_schema_unaware_ctx()
    {
-      CurrentCtxMock.Setup(c => c.Context).Returns(CreateContextWithoutSchema());
+      CurrentCtxMock.Context.Returns(CreateContextWithoutSchema());
       var migration = new MigrationWithoutSchema { ActiveProvider = "DummyProvider" };
 
       var createMigration = SUT.CreateMigration(typeof(MigrationWithoutSchema).GetTypeInfo(), "DummyProvider");
@@ -104,19 +104,19 @@ public class CreateMigration : DefaultSchemaRespectingMigrationAssemblyTestsBase
    [Fact]
    public void Should_not_set_schema_on_schema_unaware_migration_having_schema_unaware_ctx()
    {
-      CurrentCtxMock.Setup(c => c.Context).Returns(CreateContextWithoutSchema());
+      CurrentCtxMock.Context.Returns(CreateContextWithoutSchema());
 
       var migration = SUT.CreateMigration(typeof(MigrationWithoutSchema).GetTypeInfo(), "DummyProvider");
 
-      SchemaSetterMock.Verify(s => s.SetSchema(It.IsAny<IReadOnlyList<MigrationOperation>>(), It.IsAny<string>()), Times.Never);
+      SchemaSetterMock.DidNotReceive().SetSchema(Arg.Any<IReadOnlyList<MigrationOperation>>(), Arg.Any<string>());
       migration.UpOperations[0].Should().BeOfType<AddColumnOperation>().Subject.Schema.Should().BeNull();
       migration.DownOperations[0].Should().BeOfType<DropColumnOperation>().Subject.Schema.Should().BeNull();
    }
 
    private void VerifySchema(Migration migration, string schema)
    {
-      SchemaSetterMock.Verify(s => s.SetSchema(migration.UpOperations, schema), Times.Once);
-      SchemaSetterMock.Verify(s => s.SetSchema(migration.DownOperations, schema), Times.Once);
+      SchemaSetterMock.Received(1).SetSchema(migration.UpOperations, schema);
+      SchemaSetterMock.Received(1).SetSchema(migration.DownOperations, schema);
 
       migration.UpOperations[0].Should().BeOfType<AddColumnOperation>().Subject.Schema.Should().Be(schema);
       migration.DownOperations[0].Should().BeOfType<DropColumnOperation>().Subject.Schema.Should().Be(schema);

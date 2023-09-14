@@ -6,20 +6,20 @@ namespace Thinktecture.EntityFrameworkCore.Migrations.DefaultSchemaRespectingMig
 public abstract class DefaultSchemaRespectingMigrationAssemblyTestsBase : IntegrationTestsBase
 {
    private TestMigrationsAssembly InnerMigrationsAssembly { get; }
-   protected Mock<ICurrentDbContext> CurrentCtxMock { get; }
-   protected Mock<IMigrationOperationSchemaSetter> SchemaSetterMock { get; }
+   protected ICurrentDbContext CurrentCtxMock { get; }
+   protected IMigrationOperationSchemaSetter SchemaSetterMock { get; }
    protected IServiceCollection Services { get; }
 
    private DefaultSchemaRespectingMigrationAssembly<TestMigrationsAssembly>? _sut;
 
-   protected DefaultSchemaRespectingMigrationAssembly<TestMigrationsAssembly> SUT => _sut ??= new DefaultSchemaRespectingMigrationAssembly<TestMigrationsAssembly>(InnerMigrationsAssembly, SchemaSetterMock.Object, CurrentCtxMock.Object, Services.BuildServiceProvider());
+   protected DefaultSchemaRespectingMigrationAssembly<TestMigrationsAssembly> SUT => _sut ??= new DefaultSchemaRespectingMigrationAssembly<TestMigrationsAssembly>(InnerMigrationsAssembly, SchemaSetterMock, CurrentCtxMock, Services.BuildServiceProvider());
 
    protected DefaultSchemaRespectingMigrationAssemblyTestsBase(ITestOutputHelper testOutputHelper)
       : base(testOutputHelper)
    {
       InnerMigrationsAssembly = new TestMigrationsAssembly();
-      CurrentCtxMock = new Mock<ICurrentDbContext>(MockBehavior.Strict);
-      SchemaSetterMock = new Mock<IMigrationOperationSchemaSetter>();
+      CurrentCtxMock = Substitute.For<ICurrentDbContext>();
+      SchemaSetterMock = Substitute.For<IMigrationOperationSchemaSetter>();
       Services = new ServiceCollection();
    }
 }
