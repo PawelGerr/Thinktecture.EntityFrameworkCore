@@ -17,10 +17,10 @@ public class CreateTempTableAsync : IntegrationTestsBase
    private SqlServerTempTableCreator? _sut;
    private SqlServerTempTableCreator SUT => _sut ??= (SqlServerTempTableCreator)ActDbContext.GetService<ITempTableCreator>();
 
-   public CreateTempTableAsync(ITestOutputHelper testOutputHelper, SqlServerContainerFixture sqlServerContainerFixture)
-      : base(testOutputHelper, sqlServerContainerFixture)
+   public CreateTempTableAsync(ITestOutputHelper testOutputHelper, SqlServerFixture sqlServerFixture)
+      : base(testOutputHelper, sqlServerFixture)
    {
-      _connectionString = sqlServerContainerFixture.ConnectionString;
+      _connectionString = sqlServerFixture.ConnectionString;
       _optionsWithNonUniqueName = new SqlServerTempTableCreationOptions { TableNameProvider = DefaultTempTableNameProvider.Instance, PrimaryKeyCreation = IPrimaryKeyPropertiesProvider.None };
    }
 

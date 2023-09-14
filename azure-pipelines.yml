@@ -35,7 +35,7 @@ steps:
   displayName: 'print infos'
 
 - powershell: |
-    Write-Host '##vso[task.setvariable variable=ConnectionStrings:default]$(ConnectionString)'
+    Write-Host '##vso[task.setvariable variable=UseSqlServerContainer]true'
   displayName: 'set env variables'
 
 - powershell: |

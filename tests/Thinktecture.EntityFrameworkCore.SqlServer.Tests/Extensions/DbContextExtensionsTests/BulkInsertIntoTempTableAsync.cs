@@ -7,8 +7,8 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests;
 // ReSharper disable InconsistentNaming
 public class BulkInsertIntoTempTableAsync : IntegrationTestsBase
 {
-   public BulkInsertIntoTempTableAsync(ITestOutputHelper testOutputHelper, SqlServerContainerFixture sqlServerContainerFixture)
-      : base(testOutputHelper, sqlServerContainerFixture)
+   public BulkInsertIntoTempTableAsync(ITestOutputHelper testOutputHelper, SqlServerFixture sqlServerFixture)
+      : base(testOutputHelper, sqlServerFixture)
    {
    }
 

@@ -22,8 +22,8 @@ public class IntegrationTestsBase : SqlServerDbContextIntegrationTests<TestDbCon
    protected bool IsTenantDatabaseSupportEnabled { get; set; }
    protected ITenantDatabaseProvider TenantDatabaseProviderMock { get; }
 
-   protected IntegrationTestsBase(ITestOutputHelper testOutputHelper, SqlServerContainerFixture sqlServerContainerFixture)
-      : this(sqlServerContainerFixture.ConnectionString, testOutputHelper, ITestIsolationOptions.DeleteData(NonExistingTableFilter))
+   protected IntegrationTestsBase(ITestOutputHelper testOutputHelper, SqlServerFixture sqlServerFixture)
+      : this(sqlServerFixture.ConnectionString, testOutputHelper, ITestIsolationOptions.DeleteData(NonExistingTableFilter))
    {
    }
 

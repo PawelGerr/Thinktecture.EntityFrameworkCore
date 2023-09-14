@@ -4,8 +4,8 @@ public class TenantDatabaseTests : IntegrationTestsBase
 {
    private string? _tenant;
 
-   public TenantDatabaseTests(ITestOutputHelper testOutputHelper, SqlServerContainerFixture sqlServerContainerFixture)
-      : base(testOutputHelper, sqlServerContainerFixture)
+   public TenantDatabaseTests(ITestOutputHelper testOutputHelper, SqlServerFixture sqlServerFixture)
+      : base(testOutputHelper, sqlServerFixture)
    {
       IsTenantDatabaseSupportEnabled = true;
       TenantDatabaseProviderMock.GetDatabaseName(Arg.Any<string>(), Arg.Any<string>()).Returns((string)null!);

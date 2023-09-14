@@ -11,8 +11,8 @@ public class CreatePrimaryKeyAsync : IntegrationTestsBase
    private SqlServerTempTableCreator? _sut;
    private SqlServerTempTableCreator SUT => _sut ??= (SqlServerTempTableCreator)ActDbContext.GetService<ITempTableCreator>();
 
-   public CreatePrimaryKeyAsync(ITestOutputHelper testOutputHelper, SqlServerContainerFixture sqlServerContainerFixture)
-      : base(testOutputHelper, sqlServerContainerFixture)
+   public CreatePrimaryKeyAsync(ITestOutputHelper testOutputHelper, SqlServerFixture sqlServerFixture)
+      : base(testOutputHelper, sqlServerFixture)
    {
       TestCtxProviderBuilder.UseSharedTablesIsolationLevel(IsolationLevel.Serializable);
    }

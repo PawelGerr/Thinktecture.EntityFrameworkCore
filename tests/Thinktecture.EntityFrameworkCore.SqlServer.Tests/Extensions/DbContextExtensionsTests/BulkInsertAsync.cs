@@ -7,8 +7,8 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests;
 public class BulkInsertAsync : IntegrationTestsBase
 {
    /// <inheritdoc />
-   public BulkInsertAsync(ITestOutputHelper testOutputHelper, SqlServerContainerFixture sqlServerContainerFixture)
-      : base(testOutputHelper, sqlServerContainerFixture)
+   public BulkInsertAsync(ITestOutputHelper testOutputHelper, SqlServerFixture sqlServerFixture)
+      : base(testOutputHelper, sqlServerFixture)
    {
    }
 

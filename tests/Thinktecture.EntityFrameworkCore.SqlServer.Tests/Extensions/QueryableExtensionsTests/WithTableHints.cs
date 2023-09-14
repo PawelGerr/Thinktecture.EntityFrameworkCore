@@ -8,8 +8,8 @@ public class WithTableHints : IntegrationTestsBase
    private string? _escapedSchema;
    private string EscapedSchema => _escapedSchema ??= $"[{ActDbContext.Schema}]";
 
-   public WithTableHints(ITestOutputHelper testOutputHelper, SqlServerContainerFixture sqlServerContainerFixture)
-      : base(testOutputHelper, sqlServerContainerFixture)
+   public WithTableHints(ITestOutputHelper testOutputHelper, SqlServerFixture sqlServerFixture)
+      : base(testOutputHelper, sqlServerFixture)
    {
    }
 

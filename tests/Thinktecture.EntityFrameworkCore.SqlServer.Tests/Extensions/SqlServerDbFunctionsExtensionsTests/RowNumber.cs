@@ -7,8 +7,8 @@ namespace Thinktecture.Extensions.SqlServerDbFunctionsExtensionsTests;
 // ReSharper disable once InconsistentNaming
 public class RowNumber : IntegrationTestsBase
 {
-   public RowNumber(ITestOutputHelper testOutputHelper, SqlServerContainerFixture sqlServerContainerFixture)
-      : base(testOutputHelper, sqlServerContainerFixture)
+   public RowNumber(ITestOutputHelper testOutputHelper, SqlServerFixture sqlServerFixture)
+      : base(testOutputHelper, sqlServerFixture)
    {
    }
 

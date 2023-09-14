@@ -5,8 +5,8 @@ namespace Thinktecture.Extensions.ModelBuilderExtensionsTests;
 // ReSharper disable once InconsistentNaming
 public class ConfigureTempTable_2_Columns : IntegrationTestsBase
 {
-   public ConfigureTempTable_2_Columns(ITestOutputHelper testOutputHelper, SqlServerContainerFixture sqlServerContainerFixture)
-      : base(testOutputHelper, sqlServerContainerFixture)
+   public ConfigureTempTable_2_Columns(ITestOutputHelper testOutputHelper, SqlServerFixture sqlServerFixture)
+      : base(testOutputHelper, sqlServerFixture)
    {
    }
 
