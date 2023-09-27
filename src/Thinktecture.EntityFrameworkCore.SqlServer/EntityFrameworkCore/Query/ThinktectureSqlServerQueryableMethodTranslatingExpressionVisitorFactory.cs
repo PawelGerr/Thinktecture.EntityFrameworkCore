@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.SqlServer.Infrastructure.Internal;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -7,6 +8,7 @@ namespace Thinktecture.EntityFrameworkCore.Query;
 /// <summary>
 /// Factory for creation of the <see cref="ThinktectureSqlServerQueryableMethodTranslatingExpressionVisitor"/>.
 /// </summary>
+[SuppressMessage("Usage", "EF1001:Internal EF Core API usage.")]
 public sealed class ThinktectureSqlServerQueryableMethodTranslatingExpressionVisitorFactory
    : IQueryableMethodTranslatingExpressionVisitorFactory
 {

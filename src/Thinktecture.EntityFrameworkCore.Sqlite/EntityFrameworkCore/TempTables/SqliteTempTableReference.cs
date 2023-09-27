@@ -52,7 +52,9 @@ public sealed class SqliteTempTableReference : ITempTableReference
          if (!_dropTableOnDispose || _database.GetDbConnection().State != ConnectionState.Open)
             return;
 
-         _database.ExecuteSqlRaw($"DROP TABLE IF EXISTS {_sqlGenerationHelper.DelimitIdentifier(Name, "temp")}");
+         var sql = $"DROP TABLE IF EXISTS {_sqlGenerationHelper.DelimitIdentifier(Name, "temp")}";
+
+         _database.ExecuteSqlRaw(sql);
          _database.CloseConnection();
       }
       catch (ObjectDisposedException ex)
@@ -73,7 +75,9 @@ public sealed class SqliteTempTableReference : ITempTableReference
          if (!_dropTableOnDispose || _database.GetDbConnection().State != ConnectionState.Open)
             return;
 
-         await _database.ExecuteSqlRawAsync($"DROP TABLE IF EXISTS {_sqlGenerationHelper.DelimitIdentifier(Name, "temp")}").ConfigureAwait(false);
+         var sql = $"DROP TABLE IF EXISTS {_sqlGenerationHelper.DelimitIdentifier(Name, "temp")}";
+
+         await _database.ExecuteSqlRawAsync(sql).ConfigureAwait(false);
          await _database.CloseConnectionAsync().ConfigureAwait(false);
       }
       catch (ObjectDisposedException ex)

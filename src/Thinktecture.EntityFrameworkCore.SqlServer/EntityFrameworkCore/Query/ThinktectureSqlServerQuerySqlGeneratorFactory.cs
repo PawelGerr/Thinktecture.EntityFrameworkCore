@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.SqlServer.Infrastructure.Internal;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -5,6 +6,7 @@ using Microsoft.EntityFrameworkCore.Storage;
 namespace Thinktecture.EntityFrameworkCore.Query;
 
 /// <inheritdoc />
+[SuppressMessage("Usage", "EF1001:Internal EF Core API usage.")]
 public class ThinktectureSqlServerQuerySqlGeneratorFactory : IQuerySqlGeneratorFactory
 {
    private readonly QuerySqlGeneratorDependencies _dependencies;

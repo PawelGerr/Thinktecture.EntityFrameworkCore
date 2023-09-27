@@ -59,10 +59,12 @@ public sealed class SqlServerTempTableReference : ITempTableReference
          if (!_dropTableOnDispose || _database.GetDbConnection().State != ConnectionState.Open)
             return;
 
-         _database.ExecuteSqlRaw($@"
-IF(OBJECT_ID('tempdb..{Name}') IS NOT NULL)
-   DROP TABLE {_sqlGenerationHelper.DelimitIdentifier(Name)};
-");
+         var sql = $"""
+                    IF(OBJECT_ID('tempdb..{Name}') IS NOT NULL)
+                        DROP TABLE {_sqlGenerationHelper.DelimitIdentifier(Name)};
+                    """;
+
+         _database.ExecuteSqlRaw(sql);
          _database.CloseConnection();
       }
       catch (ObjectDisposedException ex)
@@ -88,10 +90,11 @@ IF(OBJECT_ID('tempdb..{Name}') IS NOT NULL)
          if (!_dropTableOnDispose || _database.GetDbConnection().State != ConnectionState.Open)
             return;
 
-         await _database.ExecuteSqlRawAsync($@"
-IF(OBJECT_ID('tempdb..{Name}') IS NOT NULL)
-   DROP TABLE {_sqlGenerationHelper.DelimitIdentifier(Name)};
-").ConfigureAwait(false);
+         var sql = $"""
+                    IF(OBJECT_ID('tempdb..{Name}') IS NOT NULL)
+                        DROP TABLE {_sqlGenerationHelper.DelimitIdentifier(Name)};
+                    """;
+         await _database.ExecuteSqlRawAsync(sql).ConfigureAwait(false);
          await _database.CloseConnectionAsync().ConfigureAwait(false);
       }
       catch (ObjectDisposedException ex)
