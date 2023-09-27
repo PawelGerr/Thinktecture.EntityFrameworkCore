@@ -25,6 +25,10 @@ public class TempTableConvention : IModelInitializedConvention
       AddTempTable<long?>(modelBuilder);
       AddTempTable<DateTime>(modelBuilder);
       AddTempTable<DateTime?>(modelBuilder);
+      AddTempTable<DateOnly>(modelBuilder);
+      AddTempTable<DateOnly?>(modelBuilder);
+      AddTempTable<TimeOnly>(modelBuilder);
+      AddTempTable<TimeOnly?>(modelBuilder);
       AddTempTable<Guid>(modelBuilder);
       AddTempTable<Guid?>(modelBuilder);
       AddTempTable<bool>(modelBuilder);
