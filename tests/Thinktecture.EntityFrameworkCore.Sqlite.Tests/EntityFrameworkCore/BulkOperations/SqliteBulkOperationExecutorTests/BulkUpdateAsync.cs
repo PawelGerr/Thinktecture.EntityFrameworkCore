@@ -355,4 +355,23 @@ public class BulkUpdateAsync : IntegrationTestsBase
       loadedEntity.Should().NotBeNull();
       loadedEntity!.Name.Should().Be("changed");
    }
+
+   [Fact]
+   public async Task Should_insert_and_update_TestEntity_with_ComplexType()
+   {
+      // Arrange
+      var testEntity = new TestEntityWithComplexType(new Guid("54FF93FC-6BE9-4F19-A52E-E517CA9FEAA7"),
+                                                     new BoundaryValueObject(2, 5));
+
+      ArrangeDbContext.Add(testEntity);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      // Act
+      testEntity.Boundary = new BoundaryValueObject(10, 20);
+
+      await SUT.BulkUpdateAsync(new[] { testEntity }, new SqliteBulkUpdateOptions());
+
+      var loadedEntities = await AssertDbContext.TestEntities_with_ComplexType.ToListAsync();
+      loadedEntities.Should().BeEquivalentTo(new[] { testEntity });
+   }
 }

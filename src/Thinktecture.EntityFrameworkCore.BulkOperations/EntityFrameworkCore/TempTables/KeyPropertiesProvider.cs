@@ -14,7 +14,7 @@ internal class KeyPropertiesProvider : IPrimaryKeyPropertiesProvider
 
    public IReadOnlyCollection<IProperty> GetPrimaryKeyProperties(IEntityType entityType, IReadOnlyCollection<IProperty> tempTableProperties)
    {
-      var keyProperties = _members.ConvertToEntityProperties(entityType, static _ => true);
+      var keyProperties = _members.ConvertToEntityProperties(entityType);
       var missingColumns = keyProperties.Except(tempTableProperties);
 
       if (missingColumns.Any())

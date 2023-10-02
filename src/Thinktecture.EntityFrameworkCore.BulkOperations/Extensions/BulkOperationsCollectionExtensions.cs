@@ -12,8 +12,7 @@ public static class BulkOperationsCollectionExtensions
 {
    internal static IReadOnlyList<IProperty> ConvertToEntityProperties(
       this IReadOnlyList<MemberInfo> members,
-      IEntityType entityType,
-      Func<IProperty, bool> filter)
+      IEntityType entityType)
    {
       if (entityType.GetOwnedTypesProperties(null).Any())
          throw new NotSupportedException($"The entity '{entityType.Name}' must not contain owned entities.");
@@ -22,11 +21,19 @@ public static class BulkOperationsCollectionExtensions
 
       foreach (var memberInfo in members)
       {
-         var property = FindProperty(entityType, memberInfo);
+         var property = entityType.FindProperty(memberInfo);
 
-         if (property != null && filter(property))
+         if (property != null)
          {
             properties.Add(property);
+            continue;
+         }
+
+         var complexProperty = entityType.FindComplexProperty(memberInfo);
+
+         if (complexProperty != null)
+         {
+            properties.AddRange(complexProperty.ComplexType.GetFlattenedProperties());
             continue;
          }
 
@@ -47,7 +54,7 @@ public static class BulkOperationsCollectionExtensions
 
       foreach (var memberInfo in members)
       {
-         var property = FindProperty(entityType, memberInfo);
+         var property = entityType.FindProperty(memberInfo);
 
          if (property != null)
          {
@@ -55,25 +62,33 @@ public static class BulkOperationsCollectionExtensions
                throw new InvalidOperationException($"The member '{memberInfo.Name}' of the entity '{entityType.Name}' cannot be written to database.");
 
             properties.Add(new PropertyWithNavigations(property, navigations));
+            continue;
          }
-         else
+
+         var complexProperty = entityType.FindComplexProperty(memberInfo);
+
+         if (complexProperty != null)
          {
-            var ownedNavi = FindOwnedProperty(entityType, memberInfo);
+            foreach (var propertyOfComplexType in complexProperty.ComplexType.GetFlattenedProperties())
+            {
+               if (!filter(propertyOfComplexType, navigations))
+                  throw new InvalidOperationException($"The member '{memberInfo.Name}' of the entity '{entityType.Name}' cannot be written to database.");
 
-            if (ownedNavi == null)
-               throw new Exception($"The member '{memberInfo.Name}' has not been found on entity '{entityType.Name}'.");
+               properties.Add(new PropertyWithNavigations(propertyOfComplexType, navigations));
+            }
 
-            properties.AddPropertiesAndOwnedTypesRecursively(ownedNavi.TargetEntityType, new[] { ownedNavi }, inlinedOwnTypes, filter);
+            continue;
          }
+
+         var ownedNavi = FindOwnedProperty(entityType, memberInfo);
+
+         if (ownedNavi == null)
+            throw new Exception($"The member '{memberInfo.Name}' has not been found on entity '{entityType.Name}'.");
+
+         properties.AddPropertiesAndOwnedTypesRecursively(ownedNavi.TargetEntityType, new[] { ownedNavi }, inlinedOwnTypes, filter);
       }
 
       return properties;
-   }
-
-   private static IProperty? FindProperty(IEntityType entityType, MemberInfo memberInfo)
-   {
-      return entityType.GetProperties().FirstOrDefault(property => memberInfo.IsEqualTo(property.PropertyInfo)
-                                                                   || memberInfo.IsEqualTo(property.FieldInfo));
    }
 
    private static INavigation? FindOwnedProperty(

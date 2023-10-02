@@ -703,6 +703,20 @@ Currently configured primary keys: []");
       ValidateColumn(columns[3], nameof(OwnedEntity.StringColumn), "TEXT", true);
    }
 
+   [Fact]
+   public async Task Should_create_temp_table_for_entity_with_complex_type()
+   {
+      var testEntity = ActDbContext.GetTempTableEntityType<TestEntityWithComplexType>();
+
+      await using var tempTable = await SUT.CreateTempTableAsync(testEntity, _optionsWithNonUniqueNameAndNoPrimaryKey);
+
+      var columns = await AssertDbContext.GetTempTableColumns(testEntity).ToListAsync();
+      columns.Should().HaveCount(3);
+      ValidateColumn(columns[0], nameof(TestEntityWithComplexType.Id), "TEXT", false);
+      ValidateColumn(columns[1], $"{nameof(TestEntityWithComplexType.Boundary)}_{nameof(BoundaryValueObject.Lower)}", "INTEGER", false);
+      ValidateColumn(columns[2], $"{nameof(TestEntityWithComplexType.Boundary)}_{nameof(BoundaryValueObject.Upper)}", "INTEGER", false);
+   }
+
    private SqliteConnection CreateConnection()
    {
       return new SqliteConnection(TestCtxProvider.ConnectionString);

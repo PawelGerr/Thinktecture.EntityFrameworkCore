@@ -15,12 +15,12 @@ internal sealed class IncludingEntityPropertiesProvider : IEntityPropertiesProvi
 
    public IReadOnlyList<IProperty> GetPropertiesForTempTable(IEntityType entityType)
    {
-      return _members.ConvertToEntityProperties(entityType, static _ => true);
+      return _members.ConvertToEntityProperties(entityType);
    }
 
    public IReadOnlyList<IProperty> GetKeyProperties(IEntityType entityType)
    {
-      return _members.ConvertToEntityProperties(entityType, static _ => true);
+      return _members.ConvertToEntityProperties(entityType);
    }
 
    public IReadOnlyList<PropertyWithNavigations> GetPropertiesForInsert(IEntityType entityType, bool? inlinedOwnTypes)

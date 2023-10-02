@@ -65,4 +65,16 @@ public class BulkInsertAsync : IntegrationTestsBase
                                               Count = 42
                                            });
    }
+
+   [Fact]
+   public async Task Should_insert_TestEntity_with_ComplexType()
+   {
+      var testEntity = new TestEntityWithComplexType(new Guid("54FF93FC-6BE9-4F19-A52E-E517CA9FEAA7"),
+                                                     new BoundaryValueObject(2, 5));
+
+      await ActDbContext.BulkInsertAsync(new[] { testEntity }, new SqlServerBulkInsertOptions());
+
+      var loadedEntities = await AssertDbContext.TestEntities_with_ComplexType.ToListAsync();
+      loadedEntities.Should().BeEquivalentTo(new[] { testEntity });
+   }
 }

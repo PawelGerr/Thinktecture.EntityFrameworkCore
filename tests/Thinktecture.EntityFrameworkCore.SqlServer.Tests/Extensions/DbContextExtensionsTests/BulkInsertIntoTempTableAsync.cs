@@ -236,4 +236,16 @@ public class BulkInsertIntoTempTableAsync : IntegrationTestsBase
       await ActDbContext.Awaiting(sut => sut.BulkInsertIntoTempTableAsync(new[] { testEntity }, e => e.Id))
                         .Should().ThrowAsync<NotSupportedException>().WithMessage("Temp tables don't support owned entities.");
    }
+
+   [Fact]
+   public async Task Should_insert_TestEntity_with_ComplexType()
+   {
+      var testEntity = new TestEntityWithComplexType(new Guid("54FF93FC-6BE9-4F19-A52E-E517CA9FEAA7"),
+                                                     new BoundaryValueObject(2, 5));
+
+      await using var tempTable = await ActDbContext.BulkInsertIntoTempTableAsync(new[] { testEntity });
+
+      var loadedEntities = await tempTable.Query.ToListAsync();
+      loadedEntities.Should().BeEquivalentTo(new[] { testEntity });
+   }
 }

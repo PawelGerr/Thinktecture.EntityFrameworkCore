@@ -26,7 +26,7 @@ public class Exclude
       var propertiesProvider = IEntityPropertiesProvider.Exclude<TestEntity>(entity => new { });
       var properties = propertiesProvider.GetPropertiesForTempTable(entityType);
 
-      properties.Should().HaveCount(entityType.GetProperties().Count());
+      properties.Should().HaveCount(entityType.GetFlattenedProperties().Count());
    }
 
    [Fact]
@@ -38,8 +38,22 @@ public class Exclude
       var propertiesProvider = IEntityPropertiesProvider.Exclude<TestEntity>(entity => entity.Id);
 
       var properties = propertiesProvider.GetPropertiesForTempTable(entityType);
-      properties.Should().HaveCount(entityType.GetProperties().Count() - 1);
+      properties.Should().HaveCount(entityType.GetFlattenedProperties().Count() - 1);
       properties.Should().NotContain(idProperty);
+   }
+
+   [Fact]
+   public void Should_be_able_to_extract_complex_property_as_a_whole()
+   {
+      var entityType = GetEntityType<TestEntity>();
+      var complexProperty = entityType.FindComplexProperty(nameof(TestEntity.Boundary)) ?? throw new Exception("Property must no be null");
+      var propertiesOfComplexType = complexProperty.ComplexType.GetFlattenedProperties();
+
+      var propertiesProvider = IEntityPropertiesProvider.Exclude<TestEntity>(entity => entity.Boundary);
+
+      var properties = propertiesProvider.GetPropertiesForTempTable(entityType);
+      properties.Should().HaveCount(entityType.GetFlattenedProperties().Count() - 2);
+      properties.Should().NotContain(propertiesOfComplexType);
    }
 
    [Fact]
@@ -52,7 +66,7 @@ public class Exclude
       var propertiesProvider = IEntityPropertiesProvider.Exclude<TestEntity>(entity => new { entity.Id, entity.Count });
 
       var properties = propertiesProvider.GetPropertiesForTempTable(entityType);
-      properties.Should().HaveCount(entityType.GetProperties().Count() - 2);
+      properties.Should().HaveCount(entityType.GetFlattenedProperties().Count() - 2);
       properties.Should().NotContain(idProperty);
       properties.Should().NotContain(countProperty);
    }
@@ -67,7 +81,7 @@ public class Exclude
       var propertiesProvider = IEntityPropertiesProvider.Exclude<TestEntityWithBaseClass>(entity => new { entity.Id, entity.Base_A });
 
       var properties = propertiesProvider.GetPropertiesForTempTable(entityType);
-      properties.Should().HaveCount(entityType.GetProperties().Count() - 2);
+      properties.Should().HaveCount(entityType.GetFlattenedProperties().Count() - 2);
       properties.Should().NotContain(idProperty);
       properties.Should().NotContain(baseProperty);
    }

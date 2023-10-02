@@ -34,6 +34,7 @@ public class TestDbContext : DbContext, IDbDefaultSchema
    public DbSet<TestEntity_Owns_SeparateMany_Inline> TestEntities_Own_SeparateMany_Inline { get; set; }
    public DbSet<TestEntity_Owns_SeparateMany_SeparateOne> TestEntities_Own_SeparateMany_SeparateOne { get; set; }
    public DbSet<TestEntity_Owns_SeparateMany_SeparateMany> TestEntities_Own_SeparateMany_SeparateMany { get; set; }
+   public DbSet<TestEntityWithComplexType> TestEntities_with_ComplexType { get; set; }
    public IQueryable<TestViewEntity> TestView => Set<TestViewEntity>();
    // ReSharper restore UnusedAutoPropertyAccessor.Global
 #nullable enable
@@ -101,6 +102,7 @@ public class TestDbContext : DbContext, IDbDefaultSchema
       TestEntity_Owns_SeparateMany_Inline.Configure(modelBuilder);
       TestEntity_Owns_SeparateMany_SeparateMany.Configure(modelBuilder);
       TestEntityWithCollation.Configure(modelBuilder);
+      TestEntityWithComplexType.Configure(modelBuilder);
 
       ConfigureModel?.Invoke(modelBuilder);
 

@@ -691,6 +691,20 @@ Missing columns: Column2.");
       ValidateColumn(columns[2], nameof(TestEntityWithCollation.ColumnWithoutCollation), "nvarchar", false, collation: databaseCollation);
    }
 
+   [Fact]
+   public async Task Should_create_temp_table_for_entity_with_complex_type()
+   {
+      var testEntity = ActDbContext.GetTempTableEntityType<TestEntityWithComplexType>();
+
+      await using var tempTable = await SUT.CreateTempTableAsync(testEntity, _optionsWithNonUniqueName);
+
+      var columns = await AssertDbContext.GetTempTableColumns(testEntity).ToListAsync();
+      columns.Should().HaveCount(3);
+      ValidateColumn(columns[0], nameof(TestEntityWithComplexType.Id), "uniqueidentifier", false);
+      ValidateColumn(columns[1], $"{nameof(TestEntityWithComplexType.Boundary)}_{nameof(BoundaryValueObject.Lower)}", "int", false);
+      ValidateColumn(columns[2], $"{nameof(TestEntityWithComplexType.Boundary)}_{nameof(BoundaryValueObject.Upper)}", "int", false);
+   }
+
    private DbConnection CreateConnection()
    {
       return new SqlConnection(_connectionString);

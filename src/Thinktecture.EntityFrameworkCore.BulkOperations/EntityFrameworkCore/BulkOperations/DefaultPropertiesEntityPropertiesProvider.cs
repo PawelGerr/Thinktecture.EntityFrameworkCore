@@ -10,7 +10,7 @@ internal class DefaultPropertiesEntityPropertiesProvider : IEntityPropertiesProv
       if (entityType.GetOwnedTypesProperties(null).Any())
          throw new NotSupportedException("Temp tables don't support owned entities.");
 
-      return entityType.GetProperties().ToList();
+      return entityType.GetFlattenedProperties().ToList();
    }
 
    public IReadOnlyList<IProperty> GetKeyProperties(IEntityType entityType)
@@ -38,7 +38,7 @@ internal class DefaultPropertiesEntityPropertiesProvider : IEntityPropertiesProv
       bool? inlinedOwnTypes,
       Func<IProperty, IReadOnlyList<INavigation>, bool> filter)
    {
-      var properties = entityType.GetProperties()
+      var properties = entityType.GetFlattenedProperties()
                                  .Where(p => filter(p, Array.Empty<INavigation>()))
                                  .Select(p => new PropertyWithNavigations(p, Array.Empty<INavigation>()))
                                  .ToList();
