@@ -87,7 +87,7 @@ public class CreateMigration : DefaultSchemaRespectingMigrationAssemblyTestsBase
       CurrentCtxMock.Context.Returns(CreateContextWithoutSchema());
 
       SUT.Invoking(sut => sut.CreateMigration(typeof(MigrationWithSchema).GetTypeInfo(), "DummyProvider"))
-         .Should().Throw<ArgumentException>().WithMessage($@"For instantiation of default schema respecting migration of type '{nameof(MigrationWithSchema)}' the database context of type '{nameof(DbContextWithoutSchema)}' has to implement the interface '{nameof(IDbDefaultSchema)}'. (Parameter 'migrationClass')");
+         .Should().Throw<ArgumentException>().WithMessage($"For instantiation of default schema respecting migration of type '{nameof(MigrationWithSchema)}' the database context of type '{nameof(DbContextWithoutSchema)}' has to implement the interface '{nameof(IDbDefaultSchema)}'. (Parameter 'migrationClass')");
    }
 
    [Fact]

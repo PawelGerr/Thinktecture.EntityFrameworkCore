@@ -63,13 +63,13 @@ public abstract class DbContextOptionsExtensionBase
       var currentDescriptor = services.LastOrDefault(d => d.ServiceType == serviceType);
 
       if (currentDescriptor is null)
-         throw new InvalidOperationException($@"No registration of the Entity Framework Core service '{serviceType.FullName}' found. Please make sure the database provider is registered first (via 'UseSqlServer' or 'UseSqlite' etc).");
+         throw new InvalidOperationException($"No registration of the Entity Framework Core service '{serviceType.FullName}' found. Please make sure the database provider is registered first (via 'UseSqlServer' or 'UseSqlite' etc).");
 
       var newImplementationType = typeof(TImplementation);
       var expectedImplementationType = typeof(TExpectedImplementation);
 
       if (currentDescriptor.ImplementationType != expectedImplementationType)
-         throw new InvalidOperationException($@"Current registration of the Entity Framework Core service '{serviceType.FullName}' is '{currentDescriptor.ImplementationType?.FullName}' but was expected to be '{expectedImplementationType.FullName}'. Replacing current implementation with '{newImplementationType.FullName}' may lead to unexpected behavior.");
+         throw new InvalidOperationException($"Current registration of the Entity Framework Core service '{serviceType.FullName}' is '{currentDescriptor.ImplementationType?.FullName}' but was expected to be '{expectedImplementationType.FullName}'. Replacing current implementation with '{newImplementationType.FullName}' may lead to unexpected behavior.");
 
       var lifetime = GetLifetime<TService>();
       services.Add<TService, TImplementation>(lifetime);

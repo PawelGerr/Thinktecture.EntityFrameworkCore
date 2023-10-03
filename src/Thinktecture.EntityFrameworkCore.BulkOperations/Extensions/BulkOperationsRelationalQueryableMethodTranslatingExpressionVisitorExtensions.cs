@@ -3,7 +3,6 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
-using Microsoft.EntityFrameworkCore.Storage;
 using Thinktecture.EntityFrameworkCore.Internal;
 using Thinktecture.Internal;
 
@@ -20,17 +19,13 @@ public static class BulkOperationsRelationalQueryableMethodTranslatingExpression
    /// </summary>
    /// <param name="visitor">The visitor.</param>
    /// <param name="methodCallExpression">Method call to translate.</param>
-   /// <param name="typeMappingSource">Type mapping source.</param>
-   /// <param name="sqlExpressionFactory">SQL expression factory.</param>
    /// <returns>Translated method call if a custom method is found; otherwise <c>null</c>.</returns>
    /// <exception cref="ArgumentNullException">
    /// <paramref name="visitor"/> or <paramref name="methodCallExpression"/> is <c>null</c>.
    /// </exception>
    public static Expression? TranslateBulkMethods(
       this RelationalQueryableMethodTranslatingExpressionVisitor visitor,
-      MethodCallExpression methodCallExpression,
-      IRelationalTypeMappingSource typeMappingSource,
-      ISqlExpressionFactory sqlExpressionFactory)
+      MethodCallExpression methodCallExpression)
    {
       ArgumentNullException.ThrowIfNull(visitor);
       ArgumentNullException.ThrowIfNull(methodCallExpression);
