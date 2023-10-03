@@ -19,8 +19,10 @@ internal class KeyPropertiesProvider : IPrimaryKeyPropertiesProvider
 
       if (missingColumns.Any())
       {
-         throw new ArgumentException(@$"Not all key columns are part of the table.
-Missing columns: {String.Join(", ", missingColumns.Select(p => p.GetColumnName()))}.");
+         throw new ArgumentException($"""
+                                      Not all key columns are part of the table.
+                                      Missing columns: {String.Join(", ", missingColumns.Select(p => p.GetColumnName()))}.
+                                      """);
       }
 
       return keyProperties;

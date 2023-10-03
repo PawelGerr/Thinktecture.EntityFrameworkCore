@@ -279,9 +279,11 @@ public class CreateTempTableAsync : SchemaChangingIntegrationTestsBase
 
       // ReSharper disable once RedundantArgumentDefaultValue
       await SUT.Awaiting(sut => sut.CreateTempTableAsync(ActDbContext.GetTempTableEntityType<CustomTempTable>(), _optionsWithNonUniqueNameAndNoPrimaryKey))
-               .Should().ThrowAsync<ArgumentException>().WithMessage(@"Cannot create PRIMARY KEY because not all key columns are part of the temp table.
-You may use other key properties providers like 'IPrimaryKeyPropertiesProvider.AdaptiveEntityTypeConfiguration' instead of 'IPrimaryKeyPropertiesProvider.EntityTypeConfiguration' to get different behaviors.
-Missing columns: Column2.");
+               .Should().ThrowAsync<ArgumentException>().WithMessage("""
+                                                                     Cannot create PRIMARY KEY because not all key columns are part of the temp table.
+                                                                     You may use other key properties providers like 'IPrimaryKeyPropertiesProvider.AdaptiveEntityTypeConfiguration' instead of 'IPrimaryKeyPropertiesProvider.EntityTypeConfiguration' to get different behaviors.
+                                                                     Missing columns: Column2.
+                                                                     """);
    }
 
    [Fact]
@@ -487,8 +489,10 @@ Missing columns: Column2.");
       // ReSharper disable once RedundantArgumentDefaultValue
       await SUT.Awaiting(sut => sut.CreateTempTableAsync(ActDbContext.GetTempTableEntityType<TestEntityWithAutoIncrement>(), _optionsWithNonUniqueNameAndNoPrimaryKey))
                .Should().ThrowAsync<NotSupportedException>()
-               .WithMessage(@"SQLite does not allow the property 'Id' of the entity 'Thinktecture.TestDatabaseContext.TestEntityWithAutoIncrement' to be an AUTOINCREMENT column unless this column is the PRIMARY KEY.
-Currently configured primary keys: []");
+               .WithMessage("""
+                            SQLite does not allow the property 'Id' of the entity 'Thinktecture.TestDatabaseContext.TestEntityWithAutoIncrement' to be an AUTOINCREMENT column unless this column is the PRIMARY KEY.
+                            Currently configured primary keys: []
+                            """);
    }
 
    [Fact]

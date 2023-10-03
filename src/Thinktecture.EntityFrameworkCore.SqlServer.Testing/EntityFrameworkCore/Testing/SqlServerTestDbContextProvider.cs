@@ -217,8 +217,10 @@ public class SqlServerTestDbContextProvider<T> : SqlServerTestDbContextProvider,
 
       if (ctor is null || ctorArgs is null)
       {
-         throw new Exception(@$"Could not create an instance of type of '{typeof(T).ShortDisplayName()}' neither using constructor parameters ({typeof(DbContextOptions<T>).ShortDisplayName()} options, {nameof(IDbDefaultSchema)} schema) nor using construct ({typeof(DbContextOptions<T>).ShortDisplayName()} options).
-Please provide the corresponding constructor or a custom factory via '{typeof(SqlServerTestDbContextProviderBuilder<T>).ShortDisplayName()}.{nameof(SqlServerTestDbContextProviderBuilder<T>.UseContextFactory)}'.");
+         throw new Exception($"""
+                              Could not create an instance of type of '{typeof(T).ShortDisplayName()}' neither using constructor parameters ({typeof(DbContextOptions<T>).ShortDisplayName()} options, {nameof(IDbDefaultSchema)} schema) nor using construct ({typeof(DbContextOptions<T>).ShortDisplayName()} options).
+                              Please provide the corresponding constructor or a custom factory via '{typeof(SqlServerTestDbContextProviderBuilder<T>).ShortDisplayName()}.{nameof(SqlServerTestDbContextProviderBuilder<T>.UseContextFactory)}'.
+                              """);
       }
 
       return Expression.Lambda<Func<DbContextOptions<T>, IDbDefaultSchema?, T>>(Expression.New(ctor, ctorArgs), optionsParam, schemaParam)
@@ -278,9 +280,10 @@ Please provide the corresponding constructor or a custom factory via '{typeof(Sq
 
    private void CreateTestIsolationTable(T ctx, string lockTableName)
    {
-      var createTableSql = $@"
-IF(OBJECT_ID('{lockTableName}') IS NULL)
-	CREATE TABLE {lockTableName}(Id INT NOT NULL)";
+      var createTableSql = $"""
+                            IF(OBJECT_ID('{lockTableName}') IS NULL)
+                            	CREATE TABLE {lockTableName}(Id INT NOT NULL)
+                            """;
 
       for (var i = 0;; i++)
       {

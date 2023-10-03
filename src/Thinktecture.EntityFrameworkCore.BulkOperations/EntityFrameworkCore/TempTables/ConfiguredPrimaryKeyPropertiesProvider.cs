@@ -18,9 +18,11 @@ internal sealed class ConfiguredPrimaryKeyPropertiesProvider : IPrimaryKeyProper
 
       if (missingColumns.Any())
       {
-         throw new ArgumentException(@$"Cannot create PRIMARY KEY because not all key columns are part of the temp table.
-You may use other key properties providers like '{nameof(IPrimaryKeyPropertiesProvider)}.{nameof(IPrimaryKeyPropertiesProvider.AdaptiveEntityTypeConfiguration)}' instead of '{nameof(IPrimaryKeyPropertiesProvider)}.{nameof(IPrimaryKeyPropertiesProvider.EntityTypeConfiguration)}' to get different behaviors.
-Missing columns: {String.Join(", ", missingColumns.Select(p => p.GetColumnName()))}.");
+         throw new ArgumentException($"""
+                                      Cannot create PRIMARY KEY because not all key columns are part of the temp table.
+                                      You may use other key properties providers like '{nameof(IPrimaryKeyPropertiesProvider)}.{nameof(IPrimaryKeyPropertiesProvider.AdaptiveEntityTypeConfiguration)}' instead of '{nameof(IPrimaryKeyPropertiesProvider)}.{nameof(IPrimaryKeyPropertiesProvider.EntityTypeConfiguration)}' to get different behaviors.
+                                      Missing columns: {String.Join(", ", missingColumns.Select(p => p.GetColumnName()))}.
+                                      """);
       }
 
       return pk;

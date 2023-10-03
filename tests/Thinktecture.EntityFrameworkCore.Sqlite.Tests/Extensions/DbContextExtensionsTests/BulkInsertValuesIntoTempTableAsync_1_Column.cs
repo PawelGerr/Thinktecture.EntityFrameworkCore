@@ -196,8 +196,10 @@ public class BulkInsertValuesIntoTempTableAsync_1_Column : SchemaChangingIntegra
 
       var joinQuery = tempTable.Query.LeftJoin(tempTable.Query, e => e, e => e);
 
-      joinQuery.ToQueryString().Should().Be(@"SELECT ""#"".""Column1"" AS ""Left"", ""#0"".""Column1"" AS ""Right""" + Environment.NewLine +
-                                            @"FROM ""#TempTable<Guid>_1"" AS ""#""" + Environment.NewLine +
-                                            @"LEFT JOIN ""#TempTable<Guid>_1"" AS ""#0"" ON ""#"".""Column1"" = ""#0"".""Column1""");
+      joinQuery.ToQueryString().Should().Be("""
+                                            SELECT "#"."Column1" AS "Left", "#0"."Column1" AS "Right"
+                                            FROM "#TempTable<Guid>_1" AS "#"
+                                            LEFT JOIN "#TempTable<Guid>_1" AS "#0" ON "#"."Column1" = "#0"."Column1"
+                                            """.WithEnvironmentLineBreaks());
    }
 }

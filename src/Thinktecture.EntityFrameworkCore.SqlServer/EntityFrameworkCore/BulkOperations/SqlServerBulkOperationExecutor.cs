@@ -232,17 +232,33 @@ public sealed class SqlServerBulkOperationExecutor
 
    private void LogInserting(SqlBulkCopyOptions options, SqlBulkCopy bulkCopy, string columns)
    {
-      _logger.Logger.LogDebug(EventIds.Inserting, @"Executing DbCommand [SqlBulkCopyOptions={SqlBulkCopyOptions}, BulkCopyTimeout={BulkCopyTimeout}, BatchSize={BatchSize}, EnableStreaming={EnableStreaming}]
-INSERT BULK {Table} ({Columns})", options, bulkCopy.BulkCopyTimeout, bulkCopy.BatchSize, bulkCopy.EnableStreaming,
-                              bulkCopy.DestinationTableName, columns);
+      _logger.Logger.LogDebug(EventIds.Inserting,
+                              """
+                              Executing DbCommand [SqlBulkCopyOptions={SqlBulkCopyOptions}, BulkCopyTimeout={BulkCopyTimeout}, BatchSize={BatchSize}, EnableStreaming={EnableStreaming}]
+                              INSERT BULK {Table} ({Columns})
+                              """,
+                              options,
+                              bulkCopy.BulkCopyTimeout,
+                              bulkCopy.BatchSize,
+                              bulkCopy.EnableStreaming,
+                              bulkCopy.DestinationTableName,
+                              columns);
    }
 
    private void LogInserted(SqlBulkCopyOptions options, TimeSpan duration, SqlBulkCopy bulkCopy, string columns)
    {
-      _logger.Logger.LogInformation(EventIds.Inserted, @"Executed DbCommand ({Duration}ms) [SqlBulkCopyOptions={SqlBulkCopyOptions}, BulkCopyTimeout={BulkCopyTimeout}, BatchSize={BatchSize}, EnableStreaming={EnableStreaming}]
-INSERT BULK {Table} ({Columns})", (long)duration.TotalMilliseconds,
-                                    options, bulkCopy.BulkCopyTimeout, bulkCopy.BatchSize, bulkCopy.EnableStreaming,
-                                    bulkCopy.DestinationTableName, columns);
+      _logger.Logger.LogInformation(EventIds.Inserted,
+                                    """
+                                    Executed DbCommand ({Duration}ms) [SqlBulkCopyOptions={SqlBulkCopyOptions}, BulkCopyTimeout={BulkCopyTimeout}, BatchSize={BatchSize}, EnableStreaming={EnableStreaming}]
+                                    INSERT BULK {Table} ({Columns})
+                                    """,
+                                    (long)duration.TotalMilliseconds,
+                                    options,
+                                    bulkCopy.BulkCopyTimeout,
+                                    bulkCopy.BatchSize,
+                                    bulkCopy.EnableStreaming,
+                                    bulkCopy.DestinationTableName,
+                                    columns);
    }
 
    /// <inheritdoc />

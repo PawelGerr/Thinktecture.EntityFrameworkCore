@@ -270,9 +270,11 @@ public class CreateTempTableAsync : IntegrationTestsBase
 
       // ReSharper disable once RedundantArgumentDefaultValue
       await SUT.Awaiting(sut => sut.CreateTempTableAsync(ActDbContext.GetTempTableEntityType<CustomTempTable>(), _optionsWithNonUniqueName))
-               .Should().ThrowAsync<ArgumentException>().WithMessage(@"Cannot create PRIMARY KEY because not all key columns are part of the temp table.
-You may use other key properties providers like 'IPrimaryKeyPropertiesProvider.AdaptiveEntityTypeConfiguration' instead of 'IPrimaryKeyPropertiesProvider.EntityTypeConfiguration' to get different behaviors.
-Missing columns: Column2.");
+               .Should().ThrowAsync<ArgumentException>().WithMessage("""
+                                                                     Cannot create PRIMARY KEY because not all key columns are part of the temp table.
+                                                                     You may use other key properties providers like 'IPrimaryKeyPropertiesProvider.AdaptiveEntityTypeConfiguration' instead of 'IPrimaryKeyPropertiesProvider.EntityTypeConfiguration' to get different behaviors.
+                                                                     Missing columns: Column2.
+                                                                     """);
    }
 
    [Fact]

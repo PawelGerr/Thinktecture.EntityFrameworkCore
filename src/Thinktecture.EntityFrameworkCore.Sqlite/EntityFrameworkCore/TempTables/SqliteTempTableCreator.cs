@@ -98,21 +98,25 @@ public sealed class SqliteTempTableCreator : ITempTableCreator
       if (!cacheKey.TruncateTableIfExists)
       {
          return new CachedTempTableStatement<string>(columnDefinitions,
-                                                     static (sqlGenerationHelper, name, columnDefinitions) => $@"
-      CREATE TEMPORARY TABLE {sqlGenerationHelper.DelimitIdentifier(name)}
-      (
-" + columnDefinitions + @"
-      );");
+                                                     static (sqlGenerationHelper, name, columnDefinitions) =>
+                                                        $"""
+                                                         CREATE TEMPORARY TABLE {sqlGenerationHelper.DelimitIdentifier(name)}
+                                                         (
+                                                         {columnDefinitions}
+                                                         );
+                                                         """);
       }
 
       return new CachedTempTableStatement<string>(columnDefinitions,
-                                                  static (sqlGenerationHelper, name, columnDefinitions) => $@"
-DROP TABLE IF EXISTS {sqlGenerationHelper.DelimitIdentifier(name, "temp")};
+                                                  static (sqlGenerationHelper, name, columnDefinitions) =>
+                                                     $"""
+                                                      DROP TABLE IF EXISTS {sqlGenerationHelper.DelimitIdentifier(name, "temp")};
 
-CREATE TEMPORARY TABLE {sqlGenerationHelper.DelimitIdentifier(name)}
-(
-" + columnDefinitions + @"
-);");
+                                                      CREATE TEMPORARY TABLE {sqlGenerationHelper.DelimitIdentifier(name)}
+                                                      (
+                                                      {columnDefinitions}
+                                                      );
+                                                      """);
    }
 
    private string GetColumnsDefinitions(SqliteTempTableCreatorCacheKey options)
@@ -144,8 +148,10 @@ CREATE TEMPORARY TABLE {sqlGenerationHelper.DelimitIdentifier(name)}
             {
                if (options.PrimaryKeys.Count != 1 || !property.Equals(options.PrimaryKeys.First()))
                {
-                  throw new NotSupportedException(@$"SQLite does not allow the property '{property.Name}' of the entity '{property.DeclaringType.Name}' to be an AUTOINCREMENT column unless this column is the PRIMARY KEY.
-Currently configured primary keys: [{String.Join(", ", options.PrimaryKeys.Select(p => p.Name))}]");
+                  throw new NotSupportedException($"""
+                                                   SQLite does not allow the property '{property.Name}' of the entity '{property.DeclaringType.Name}' to be an AUTOINCREMENT column unless this column is the PRIMARY KEY.
+                                                   Currently configured primary keys: [{String.Join(", ", options.PrimaryKeys.Select(p => p.Name))}]
+                                                   """);
                }
 
                sb.Append(" PRIMARY KEY AUTOINCREMENT");
