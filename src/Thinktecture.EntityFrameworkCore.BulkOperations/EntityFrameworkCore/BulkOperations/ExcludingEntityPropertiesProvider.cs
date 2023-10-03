@@ -4,15 +4,11 @@ using Thinktecture.EntityFrameworkCore.Data;
 
 namespace Thinktecture.EntityFrameworkCore.BulkOperations;
 
-internal sealed class ExcludingEntityPropertiesProvider : IEntityPropertiesProvider
+internal sealed class ExcludingEntityPropertiesProvider(
+      IReadOnlyList<MemberInfo> members)
+   : IEntityPropertiesProvider
 {
-   private readonly IReadOnlyList<MemberInfo> _members;
-   private readonly IReadOnlyList<IPropertyBase>? _properties;
-
-   public ExcludingEntityPropertiesProvider(IReadOnlyList<MemberInfo> members)
-   {
-      _members = members ?? throw new ArgumentNullException(nameof(members));
-   }
+   private (IEntityType Type, IReadOnlyList<IPropertyBase> Properties)? _cache;
 
    public IReadOnlyList<IProperty> GetPropertiesForTempTable(IEntityType entityType)
    {
@@ -35,43 +31,12 @@ internal sealed class ExcludingEntityPropertiesProvider : IEntityPropertiesProvi
 
    private IReadOnlyList<IPropertyBase> GetPropertiesToExclude(IEntityType entityType)
    {
-      if (_properties is not null)
-         return _properties;
+      var cache = _cache;
 
-      var properties = new List<IPropertyBase>();
+      if (cache?.Type != entityType)
+         _cache = cache = (entityType, members.ConvertToEntityProperties(entityType));
 
-      for (var i = 0; i < _members.Count; i++)
-      {
-         var member = _members[i];
-
-         var scalarProperty = entityType.FindProperty(member);
-
-         if (scalarProperty is not null)
-         {
-            properties.Add(scalarProperty);
-            continue;
-         }
-
-         var complexProperty = entityType.FindComplexProperty(member);
-
-         if (complexProperty is not null)
-         {
-            properties.AddRange(complexProperty.ComplexType.GetFlattenedProperties());
-            continue;
-         }
-
-         var navigation = entityType.FindNavigation(member);
-
-         if (navigation is not null)
-         {
-            properties.Add(navigation);
-            continue;
-         }
-
-         throw new NotSupportedException($"The entity '{entityType.ClrType.FullName}' either has no member with the name '{member.Name}' or the member is not supported by the '{nameof(IEntityPropertiesProvider)}'.");
-      }
-
-      return properties;
+      return cache.Value.Properties;
    }
 
    public IReadOnlyList<IProperty> GetKeyProperties(IEntityType entityType)
