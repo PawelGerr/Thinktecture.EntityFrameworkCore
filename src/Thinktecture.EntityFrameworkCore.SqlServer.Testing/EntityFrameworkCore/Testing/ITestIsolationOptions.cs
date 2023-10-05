@@ -51,11 +51,14 @@ public interface ITestIsolationOptions
    /// Deletes all records from the tables using "DELETE".
    /// No ambient transaction; no unique schema.
    /// </summary>
-   public static ITestIsolationOptions DeleteData(Predicate<IEntityType>? filter = null)
+   public static ITestIsolationOptions DeleteData(
+      Predicate<IEntityType>? filter = null,
+      Func<IReadOnlyList<IEntityType>, IReadOnlyList<IEntityType>>? modifyDeletionOrder = null)
    {
       return new DeleteAllData(filter is null
                                   ? SkipTempTablesAndCollectionParameters
-                                  : entityType => filter(entityType) && SkipTempTablesAndCollectionParameters(entityType));
+                                  : entityType => filter(entityType) && SkipTempTablesAndCollectionParameters(entityType),
+                               modifyDeletionOrder);
    }
 
    private static bool SkipTempTablesAndCollectionParameters(IEntityType entityType)
@@ -188,52 +191,65 @@ public interface ITestIsolationOptions
 
    private class DeleteAllData : ITestIsolationOptions
    {
-      private readonly Predicate<IEntityType> _filter;
-
       private static readonly MethodInfo _deleteData = typeof(DeleteAllData).GetMethod(nameof(DeleteDataAsync), BindingFlags.Static | BindingFlags.NonPublic)
                                                        ?? throw new Exception($"Method '{nameof(DeleteDataAsync)}' not found.");
 
-      private readonly ConcurrentDictionary<Type, Func<DbContext, CancellationToken, Task>> _deleteDelegatesLookup;
+      private readonly Predicate<IEntityType> _filter;
+      private readonly Func<IReadOnlyList<IEntityType>, IReadOnlyList<IEntityType>>? _modifyDeletionOrder;
+      private readonly ConcurrentDictionary<IEntityType, Func<DbContext, string, CancellationToken, Task>> _deleteDelegatesLookup;
+
+      private IReadOnlyList<IEntityType>? _orderedEntities;
 
       public bool NeedsAmbientTransaction => false;
       public bool NeedsUniqueSchema => false;
       public bool NeedsCleanup => true;
 
-      public DeleteAllData(Predicate<IEntityType> filter)
+      public DeleteAllData(
+         Predicate<IEntityType> filter,
+         Func<IReadOnlyList<IEntityType>, IReadOnlyList<IEntityType>>? modifyDeletionOrder)
       {
          _filter = filter;
-         _deleteDelegatesLookup = new ConcurrentDictionary<Type, Func<DbContext, CancellationToken, Task>>();
+         _modifyDeletionOrder = modifyDeletionOrder;
+         _deleteDelegatesLookup = new ConcurrentDictionary<IEntityType, Func<DbContext, string, CancellationToken, Task>>();
       }
 
       [SuppressMessage("Usage", "EF1001:Internal EF Core API usage.")]
       public async ValueTask CleanupAsync(DbContext dbContext, string? schema, CancellationToken cancellationToken)
       {
-         foreach (var entityType in dbContext.Model.GetEntityTypesInHierarchicalOrder().Reverse())
+         if (_orderedEntities is null)
          {
-            if (entityType.GetTableName() is not null && _filter(entityType))
-            {
-               var delete = _deleteDelegatesLookup.GetOrAdd(entityType.ClrType, CreateDelegate);
+            var orderedEntities = dbContext.Model.GetEntityTypesInHierarchicalOrder().Reverse().ToList();
 
-               await delete(dbContext, cancellationToken);
-            }
+            _orderedEntities = _modifyDeletionOrder?.Invoke(orderedEntities) ?? orderedEntities;
+         }
+
+         foreach (var entityType in _orderedEntities)
+         {
+            if (entityType.GetTableName() is null || !_filter(entityType))
+               continue;
+
+            var delete = _deleteDelegatesLookup.GetOrAdd(entityType, CreateDelegate);
+
+            await delete(dbContext, entityType.Name, cancellationToken);
          }
       }
 
-      private Func<DbContext, CancellationToken, Task> CreateDelegate(Type type)
+      private static Func<DbContext, string, CancellationToken, Task> CreateDelegate(IEntityType type)
       {
          var ctxParam = Expression.Parameter(typeof(DbContext));
+         var nameParam = Expression.Parameter(typeof(string));
          var cancellationTokenParam = Expression.Parameter(typeof(CancellationToken));
-         var method = _deleteData.MakeGenericMethod(type);
+         var method = _deleteData.MakeGenericMethod(type.ClrType);
 
-         var call = Expression.Call(method, ctxParam, cancellationTokenParam);
+         var call = Expression.Call(method, ctxParam, nameParam, cancellationTokenParam);
 
-         return Expression.Lambda<Func<DbContext, CancellationToken, Task>>(call, ctxParam, cancellationTokenParam).Compile();
+         return Expression.Lambda<Func<DbContext, string, CancellationToken, Task>>(call, ctxParam, nameParam, cancellationTokenParam).Compile();
       }
 
-      private static async Task DeleteDataAsync<T>(DbContext dbContext, CancellationToken cancellationToken)
+      private static async Task DeleteDataAsync<T>(DbContext dbContext, string name, CancellationToken cancellationToken)
          where T : class
       {
-         await dbContext.Set<T>().ExecuteDeleteAsync(cancellationToken);
+         await dbContext.Set<T>(name).ExecuteDeleteAsync(cancellationToken);
       }
    }
 
