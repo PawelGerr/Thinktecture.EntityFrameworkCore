@@ -60,7 +60,7 @@ public class CreateTempTableAsync : SchemaChangingIntegrationTestsBase
       _optionsWithNonUniqueNameAndNoPrimaryKey.DropTableOnDispose = true;
 
       // ReSharper disable once UseAwaitUsing
-      await using (await SUT.CreateTempTableAsync(ActDbContext.GetTempTableEntityType<CustomTempTable>(), _optionsWithNonUniqueNameAndNoPrimaryKey).ConfigureAwait(false))
+      await using (await SUT.CreateTempTableAsync(ActDbContext.GetTempTableEntityType<CustomTempTable>(), _optionsWithNonUniqueNameAndNoPrimaryKey))
       {
       }
 
@@ -75,7 +75,7 @@ public class CreateTempTableAsync : SchemaChangingIntegrationTestsBase
 
       _optionsWithNonUniqueNameAndNoPrimaryKey.DropTableOnDispose = true;
 
-      await using (await SUT.CreateTempTableAsync(ActDbContext.GetTempTableEntityType<CustomTempTable>(), _optionsWithNonUniqueNameAndNoPrimaryKey).ConfigureAwait(false))
+      await using (await SUT.CreateTempTableAsync(ActDbContext.GetTempTableEntityType<CustomTempTable>(), _optionsWithNonUniqueNameAndNoPrimaryKey))
       {
       }
 
@@ -91,7 +91,7 @@ public class CreateTempTableAsync : SchemaChangingIntegrationTestsBase
       _optionsWithNonUniqueNameAndNoPrimaryKey.DropTableOnDispose = false;
 
       // ReSharper disable once UseAwaitUsing
-      await using (await SUT.CreateTempTableAsync(ActDbContext.GetTempTableEntityType<CustomTempTable>(), _optionsWithNonUniqueNameAndNoPrimaryKey).ConfigureAwait(false))
+      await using (await SUT.CreateTempTableAsync(ActDbContext.GetTempTableEntityType<CustomTempTable>(), _optionsWithNonUniqueNameAndNoPrimaryKey))
       {
       }
 
@@ -109,7 +109,7 @@ public class CreateTempTableAsync : SchemaChangingIntegrationTestsBase
 
       _optionsWithNonUniqueNameAndNoPrimaryKey.DropTableOnDispose = false;
 
-      await using (await SUT.CreateTempTableAsync(ActDbContext.GetTempTableEntityType<CustomTempTable>(), _optionsWithNonUniqueNameAndNoPrimaryKey).ConfigureAwait(false))
+      await using (await SUT.CreateTempTableAsync(ActDbContext.GetTempTableEntityType<CustomTempTable>(), _optionsWithNonUniqueNameAndNoPrimaryKey))
       {
       }
 
@@ -128,7 +128,7 @@ public class CreateTempTableAsync : SchemaChangingIntegrationTestsBase
       var options = new TempTableCreationOptions { TableNameProvider = ReusingTempTableNameProvider.Instance };
 
       // ReSharper disable once RedundantArgumentDefaultValue
-      await using var tempTable = await SUT.CreateTempTableAsync(ActDbContext.GetTempTableEntityType<CustomTempTable>(), options).ConfigureAwait(false);
+      await using var tempTable = await SUT.CreateTempTableAsync(ActDbContext.GetTempTableEntityType<CustomTempTable>(), options);
 
       var columns = AssertDbContext.GetTempTableColumns("#CustomTempTable_1").ToList();
       columns.Should().HaveCount(2);
@@ -145,11 +145,11 @@ public class CreateTempTableAsync : SchemaChangingIntegrationTestsBase
       var options = new TempTableCreationOptions { TableNameProvider = ReusingTempTableNameProvider.Instance };
 
       // ReSharper disable once RedundantArgumentDefaultValue
-      await using (await SUT.CreateTempTableAsync(ActDbContext.GetTempTableEntityType<CustomTempTable>(), options).ConfigureAwait(false))
+      await using (await SUT.CreateTempTableAsync(ActDbContext.GetTempTableEntityType<CustomTempTable>(), options))
       {
       }
 
-      await using var tempTable = await SUT.CreateTempTableAsync(ActDbContext.GetTempTableEntityType<CustomTempTable>(), options).ConfigureAwait(false);
+      await using var tempTable = await SUT.CreateTempTableAsync(ActDbContext.GetTempTableEntityType<CustomTempTable>(), options);
 
       var columns = AssertDbContext.GetTempTableColumns("#CustomTempTable_1").ToList();
       columns.Should().HaveCount(2);
@@ -170,12 +170,12 @@ public class CreateTempTableAsync : SchemaChangingIntegrationTestsBase
                     };
 
       // ReSharper disable once RedundantArgumentDefaultValue
-      await using (await SUT.CreateTempTableAsync(ActDbContext.GetTempTableEntityType<CustomTempTable>(), options).ConfigureAwait(false))
+      await using (await SUT.CreateTempTableAsync(ActDbContext.GetTempTableEntityType<CustomTempTable>(), options))
       {
       }
 
       options.TruncateTableIfExists = true;
-      await using var tempTable = await SUT.CreateTempTableAsync(ActDbContext.GetTempTableEntityType<CustomTempTable>(), options).ConfigureAwait(false);
+      await using var tempTable = await SUT.CreateTempTableAsync(ActDbContext.GetTempTableEntityType<CustomTempTable>(), options);
 
       var columns = AssertDbContext.GetTempTableColumns("#CustomTempTable_1").ToList();
       columns.Should().HaveCount(2);
@@ -195,9 +195,9 @@ public class CreateTempTableAsync : SchemaChangingIntegrationTestsBase
       var options = new TempTableCreationOptions { TableNameProvider = ReusingTempTableNameProvider.Instance };
 
       // ReSharper disable once RedundantArgumentDefaultValue
-      await using (await SUT.CreateTempTableAsync(ActDbContext.GetTempTableEntityType<CustomTempTable>(), options).ConfigureAwait(false))
+      await using (await SUT.CreateTempTableAsync(ActDbContext.GetTempTableEntityType<CustomTempTable>(), options))
       {
-         await SUT.CreateTempTableAsync(ActDbContext.GetTempTableEntityType<CustomTempTable>(), options).ConfigureAwait(false);
+         await SUT.CreateTempTableAsync(ActDbContext.GetTempTableEntityType<CustomTempTable>(), options);
       }
 
       var columns = AssertDbContext.GetTempTableColumns("#CustomTempTable_2").ToList();
@@ -215,16 +215,16 @@ public class CreateTempTableAsync : SchemaChangingIntegrationTestsBase
       var options = new TempTableCreationOptions { TableNameProvider = ReusingTempTableNameProvider.Instance };
 
       // #CustomTempTable_1
-      await using (await SUT.CreateTempTableAsync(ActDbContext.GetTempTableEntityType<CustomTempTable>(), options).ConfigureAwait(false))
+      await using (await SUT.CreateTempTableAsync(ActDbContext.GetTempTableEntityType<CustomTempTable>(), options))
       {
          // #CustomTempTable_2
-         await using (await SUT.CreateTempTableAsync(ActDbContext.GetTempTableEntityType<CustomTempTable>(), options).ConfigureAwait(false))
+         await using (await SUT.CreateTempTableAsync(ActDbContext.GetTempTableEntityType<CustomTempTable>(), options))
          {
          }
       }
 
       // #CustomTempTable_1
-      await using var tempTable = await SUT.CreateTempTableAsync(ActDbContext.GetTempTableEntityType<CustomTempTable>(), options).ConfigureAwait(false);
+      await using var tempTable = await SUT.CreateTempTableAsync(ActDbContext.GetTempTableEntityType<CustomTempTable>(), options);
 
       var columns = AssertDbContext.GetTempTableColumns("#CustomTempTable_1").ToList();
       columns.Should().HaveCount(2);

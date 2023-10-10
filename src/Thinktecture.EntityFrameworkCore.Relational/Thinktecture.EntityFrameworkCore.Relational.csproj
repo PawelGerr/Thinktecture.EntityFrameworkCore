@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <ItemGroup>
-      <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="8.0.0-rc.1.23419.6" />
-      <PackageReference Include="Microsoft.Extensions.ObjectPool" Version="8.0.0-rc.1.23421.29" />
+      <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="8.0.0-rc.2.23480.1" />
+      <PackageReference Include="Microsoft.Extensions.ObjectPool" Version="8.0.0-rc.2.23480.2" />
     </ItemGroup>
 
 </Project>

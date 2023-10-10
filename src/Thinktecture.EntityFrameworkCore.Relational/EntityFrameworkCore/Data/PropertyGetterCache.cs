@@ -117,7 +117,7 @@ public class PropertyGetterCache : IPropertyGetterCache
       if (getter == null)
          throw new ArgumentException($"The property '{property.Name}' of entity '{property.DeclaringType.Name}' has no property getter.");
 
-      return (_, entity) => getter.GetClrValue(entity);
+      return (_, entity) => getter.GetClrValueUsingContainingEntity(entity);
    }
 
    private static Func<DbContext, object, object?> UseConverter(Func<DbContext, object, object?> getter, ValueConverter converter)

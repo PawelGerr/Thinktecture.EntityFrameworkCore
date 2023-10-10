@@ -12,8 +12,8 @@
    </ItemGroup>
 
    <ItemGroup>
-      <PackageReference Include="BenchmarkDotNet" Version="0.13.8" />
-      <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.0-rc.1.23419.4" />
+      <PackageReference Include="BenchmarkDotNet" Version="0.13.9" />
+      <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.0-rc.2.23479.6" />
    </ItemGroup>
 
    <ItemGroup>
