@@ -69,7 +69,7 @@ public class IntegrationTestsBase : SqlServerDbContextIntegrationTests<TestDbCon
              .ConfigureSqlServerOptions((optionsBuilder, _) =>
                                         {
                                            optionsBuilder.AddBulkOperationSupport()
-                                                         .AddRowNumberSupport()
+                                                         .AddWindowFunctionsSupport()
                                                          .AddCollectionParameterSupport(_jsonSerializerOptions);
 
                                            if (IsTenantDatabaseSupportEnabled)

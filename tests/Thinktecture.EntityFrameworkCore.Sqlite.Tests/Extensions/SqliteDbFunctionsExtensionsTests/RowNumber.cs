@@ -205,7 +205,7 @@ public class RowNumber : IntegrationTestsBase
                                                                                  EF.Functions.OrderBy(e.Name).ThenBy(e.Count))
                                            });
       query.Invoking(q => q.ToList()).Should().Throw<NotSupportedException>()
-           .WithMessage("The EF function 'RowNumber' contains some expressions not supported by the Entity Framework. One of the reason is the creation of new objects like: 'new { e.MyProperty, e.MyOtherProperty }'.");
+           .WithMessage("The window function contains some expressions not supported by the Entity Framework. One of the reason is the creation of new objects like: 'new { e.MyProperty, e.MyOtherProperty }'.");
    }
 
    [Fact]

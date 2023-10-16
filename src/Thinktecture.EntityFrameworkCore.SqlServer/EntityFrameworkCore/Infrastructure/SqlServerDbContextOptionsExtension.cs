@@ -13,6 +13,7 @@ using Thinktecture.EntityFrameworkCore.BulkOperations;
 using Thinktecture.EntityFrameworkCore.Migrations;
 using Thinktecture.EntityFrameworkCore.Parameters;
 using Thinktecture.EntityFrameworkCore.Query;
+using Thinktecture.EntityFrameworkCore.Query.ExpressionTranslators;
 using Thinktecture.EntityFrameworkCore.TempTables;
 
 namespace Thinktecture.EntityFrameworkCore.Infrastructure;
@@ -32,10 +33,20 @@ public sealed class SqlServerDbContextOptionsExtension : DbContextOptionsExtensi
    /// <summary>
    /// Enables and disables support for "RowNumber".
    /// </summary>
+   [Obsolete($"Use '{nameof(AddWindowFunctionsSupport)}'")]
    public bool AddRowNumberSupport
    {
-      get => _relationalOptions.AddRowNumberSupport;
-      set => _relationalOptions.AddRowNumberSupport = value;
+      get => _relationalOptions.AddWindowFunctionsSupport;
+      set => _relationalOptions.AddWindowFunctionsSupport = value;
+   }
+
+   /// <summary>
+   /// Enables and disables support for window functions like "RowNumber".
+   /// </summary>
+   public bool AddWindowFunctionsSupport
+   {
+      get => _relationalOptions.AddWindowFunctionsSupport;
+      set => _relationalOptions.AddWindowFunctionsSupport = value;
    }
 
    /// <summary>
@@ -55,7 +66,7 @@ public sealed class SqlServerDbContextOptionsExtension : DbContextOptionsExtensi
    /// </summary>
    public bool AddCustomQueryableMethodTranslatingExpressionVisitorFactory
    {
-      get => _addCustomQueryableMethodTranslatingExpressionVisitorFactory || AddBulkOperationSupport || AddRowNumberSupport || AddTableHintSupport;
+      get => _addCustomQueryableMethodTranslatingExpressionVisitorFactory || AddBulkOperationSupport || AddWindowFunctionsSupport || AddTableHintSupport;
       set => _addCustomQueryableMethodTranslatingExpressionVisitorFactory = value;
    }
 
@@ -67,7 +78,7 @@ public sealed class SqlServerDbContextOptionsExtension : DbContextOptionsExtensi
    /// </summary>
    public bool AddCustomRelationalParameterBasedSqlProcessorFactory
    {
-      get => _addCustomRelationalParameterBasedSqlProcessorFactory || AddBulkOperationSupport || AddRowNumberSupport || AddTableHintSupport;
+      get => _addCustomRelationalParameterBasedSqlProcessorFactory || AddBulkOperationSupport || AddWindowFunctionsSupport || AddTableHintSupport;
       set => _addCustomRelationalParameterBasedSqlProcessorFactory = value;
    }
 
@@ -124,6 +135,8 @@ public sealed class SqlServerDbContextOptionsExtension : DbContextOptionsExtensi
       services.TryAddSingleton<SqlServerDbContextOptionsExtensionOptions>();
       services.AddSingleton<IBulkOperationsDbContextOptionsExtensionOptions>(provider => provider.GetRequiredService<SqlServerDbContextOptionsExtensionOptions>());
       services.AddSingleton<ISingletonOptions>(provider => provider.GetRequiredService<SqlServerDbContextOptionsExtensionOptions>());
+
+      services.Add<IMethodCallTranslatorPlugin, SqlServerMethodCallTranslatorPlugin>(GetLifetime<IMethodCallTranslatorPlugin>());
 
       if (AddCustomQueryableMethodTranslatingExpressionVisitorFactory)
          AddWithCheck<IQueryableMethodTranslatingExpressionVisitorFactory, ThinktectureSqlServerQueryableMethodTranslatingExpressionVisitorFactory, SqlServerQueryableMethodTranslatingExpressionVisitorFactory>(services);

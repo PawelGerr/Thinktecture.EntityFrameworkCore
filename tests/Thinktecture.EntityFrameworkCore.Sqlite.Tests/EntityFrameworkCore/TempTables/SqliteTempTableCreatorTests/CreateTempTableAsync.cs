@@ -454,16 +454,17 @@ Missing columns: Column2.");
       await using var tempTable = await SUT.CreateTempTableAsync(ActDbContext.GetTempTableEntityType<TestEntity>(), _optionsWithNonUniqueNameAndNoPrimaryKey);
 
       var columns = AssertDbContext.GetTempTableColumns<TestEntity>().OrderBy(c => c.Name).ToList();
-      columns.Should().HaveCount(8);
+      columns.Should().HaveCount(9);
 
       ValidateColumn(columns[0], nameof(TestEntity.ConvertibleClass), "INTEGER", true);
       ValidateColumn(columns[1], nameof(TestEntity.Count), "INTEGER", false);
       ValidateColumn(columns[2], nameof(TestEntity.Id), "TEXT", false);
       ValidateColumn(columns[3], nameof(TestEntity.Name), "TEXT", true);
-      ValidateColumn(columns[4], nameof(TestEntity.ParentId), "TEXT", true);
-      ValidateColumn(columns[5], nameof(TestEntity.PropertyWithBackingField), "INTEGER", false);
-      ValidateColumn(columns[6], nameof(TestEntity.RequiredName), "TEXT", false);
-      ValidateColumn(columns[7], "_privateField", "INTEGER", false);
+      ValidateColumn(columns[4], nameof(TestEntity.NullableCount), "INTEGER", true);
+      ValidateColumn(columns[5], nameof(TestEntity.ParentId), "TEXT", true);
+      ValidateColumn(columns[6], nameof(TestEntity.PropertyWithBackingField), "INTEGER", false);
+      ValidateColumn(columns[7], nameof(TestEntity.RequiredName), "TEXT", false);
+      ValidateColumn(columns[8], "_privateField", "INTEGER", false);
    }
 
    [Fact]

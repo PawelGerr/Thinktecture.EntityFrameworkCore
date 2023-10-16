@@ -53,13 +53,32 @@ public static class SqliteDbContextOptionsBuilderExtensions
    /// <param name="builder">Options builder.</param>
    /// <param name="addRowNumberSupport">Indication whether to enable or disable the feature.</param>
    /// <returns>Provided <paramref name="builder"/>.</returns>
+   [Obsolete($"Use '{nameof(AddWindowFunctionsSupport)}' instead.")]
    public static SqliteDbContextOptionsBuilder AddRowNumberSupport(
       this SqliteDbContextOptionsBuilder builder,
       bool addRowNumberSupport = true)
    {
       builder.AddOrUpdateExtension(extension =>
                                    {
-                                      extension.AddRowNumberSupport = addRowNumberSupport;
+                                      extension.AddWindowFunctionsSupport = addRowNumberSupport;
+                                      return extension;
+                                   });
+      return builder;
+   }
+
+   /// <summary>
+   /// Adds support for window functions like "RowNumber".
+   /// </summary>
+   /// <param name="builder">Options builder.</param>
+   /// <param name="addWindowFunctionsSupport">Indication whether to enable or disable the feature.</param>
+   /// <returns>Provided <paramref name="builder"/>.</returns>
+   public static SqliteDbContextOptionsBuilder AddWindowFunctionsSupport(
+      this SqliteDbContextOptionsBuilder builder,
+      bool addWindowFunctionsSupport = true)
+   {
+      builder.AddOrUpdateExtension(extension =>
+                                   {
+                                      extension.AddWindowFunctionsSupport = addWindowFunctionsSupport;
                                       return extension;
                                    });
       return builder;
