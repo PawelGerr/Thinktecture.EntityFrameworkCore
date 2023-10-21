@@ -90,7 +90,7 @@ public sealed class SqlServerDbContextOptionsExtension : DbContextOptionsExtensi
    /// </summary>
    public bool AddCustomQuerySqlGeneratorFactory
    {
-      get => _addCustomQuerySqlGeneratorFactory || AddBulkOperationSupport || AddTenantDatabaseSupport || AddTableHintSupport;
+      get => _addCustomQuerySqlGeneratorFactory || AddBulkOperationSupport || AddTenantDatabaseSupport || AddWindowFunctionsSupport || AddTableHintSupport;
       set => _addCustomQuerySqlGeneratorFactory = value;
    }
 
