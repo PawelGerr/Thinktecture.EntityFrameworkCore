@@ -48,7 +48,7 @@ public class SamplesContext
                                                                                     if (schema != null)
                                                                                        sqlOptions.MigrationsHistoryTable("__EFMigrationsHistory", schema);
 
-                                                                                    sqlOptions.AddRowNumberSupport()
+                                                                                    sqlOptions.AddWindowFunctionsSupport()
                                                                                               .AddTenantDatabaseSupport<DemoTenantDatabaseProviderFactory>()
                                                                                               .AddBulkOperationSupport()
                                                                                               .AddCollectionParameterSupport()

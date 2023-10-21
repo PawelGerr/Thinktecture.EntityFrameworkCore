@@ -18,7 +18,7 @@ namespace Thinktecture.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.0-rc.1.23419.6")
+                .HasAnnotation("ProductVersion", "8.0.0-rc.2.23480.1")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -215,6 +215,9 @@ namespace Thinktecture.Migrations
                     b.Property<string>("Name")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int?>("NullableCount")
+                        .HasColumnType("int");
+
                     b.Property<Guid?>("ParentId")
                         .HasColumnType("uniqueidentifier");
 
@@ -298,6 +301,7 @@ namespace Thinktecture.Migrations
                     b.ComplexProperty<Dictionary<string, object>>("Boundary", "Thinktecture.TestDatabaseContext.TestEntityWithComplexType.Boundary#BoundaryValueObject", b1 =>
                         {
                             b1.IsRequired();
+
                             b1.Property<int>("Lower")
                                 .HasColumnType("int");
 

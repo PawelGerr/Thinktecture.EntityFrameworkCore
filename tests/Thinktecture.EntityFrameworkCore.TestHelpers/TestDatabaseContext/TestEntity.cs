@@ -6,8 +6,9 @@ public class TestEntity
 {
    public Guid Id { get; set; }
    public string? Name { get; set; }
-   public string RequiredName { get; set; }
+   public string RequiredName { get; set; } = String.Empty;
    public int Count { get; set; }
+   public int? NullableCount { get; set; }
    public ConvertibleClass? ConvertibleClass { get; set; }
 
    public Guid? ParentId { get; set; }

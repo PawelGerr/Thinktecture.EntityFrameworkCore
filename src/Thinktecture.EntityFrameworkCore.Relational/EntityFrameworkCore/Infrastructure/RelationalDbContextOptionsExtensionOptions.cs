@@ -9,9 +9,9 @@ namespace Thinktecture.EntityFrameworkCore.Infrastructure;
 public class RelationalDbContextOptionsExtensionOptions : ISingletonOptions
 {
    /// <summary>
-   /// Indication whether the support for "RowNumber" is enabled or not.
+   /// Indication whether the support for windows functions is enabled or not.
    /// </summary>
-   public bool RowNumberSupportEnabled { get; private set; }
+   public bool WindowFunctionsSupportEnabled { get; private set; }
 
    /// <summary>
    /// Indication whether the 'tenant database support' is enabled or not.
@@ -23,7 +23,7 @@ public class RelationalDbContextOptionsExtensionOptions : ISingletonOptions
    {
       var extension = GetExtension(options);
 
-      RowNumberSupportEnabled = extension.AddRowNumberSupport;
+      WindowFunctionsSupportEnabled = extension.AddWindowFunctionsSupport;
       TenantDatabaseSupportEnabled = extension.AddTenantDatabaseSupport;
    }
 
@@ -32,8 +32,8 @@ public class RelationalDbContextOptionsExtensionOptions : ISingletonOptions
    {
       var extension = GetExtension(options);
 
-      if (extension.AddRowNumberSupport != RowNumberSupportEnabled)
-         throw new InvalidOperationException($"The setting '{nameof(RelationalDbContextOptionsExtension.AddRowNumberSupport)}' has been changed.");
+      if (extension.AddWindowFunctionsSupport != WindowFunctionsSupportEnabled)
+         throw new InvalidOperationException($"The setting '{nameof(RelationalDbContextOptionsExtension.AddWindowFunctionsSupport)}' has been changed.");
 
       if (extension.AddTenantDatabaseSupport != TenantDatabaseSupportEnabled)
          throw new InvalidOperationException($"The setting '{nameof(RelationalDbContextOptionsExtension.AddTenantDatabaseSupport)}' has been changed.");

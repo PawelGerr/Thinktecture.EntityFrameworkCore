@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore.SqlServer.Infrastructure.Internal;
 using Microsoft.EntityFrameworkCore.SqlServer.Query.Internal;
 using Microsoft.EntityFrameworkCore.Storage;
 using Thinktecture.EntityFrameworkCore.Internal;
+using Thinktecture.EntityFrameworkCore.Query.SqlExpressions;
 
 namespace Thinktecture.EntityFrameworkCore.Query;
 
@@ -24,6 +25,57 @@ public class ThinktectureSqlServerQuerySqlGenerator : SqlServerQuerySqlGenerator
       : base(dependencies, typeMappingSource, sqlServerSingletonOptions)
    {
       _databaseProvider = databaseProvider ?? throw new ArgumentNullException(nameof(databaseProvider));
+   }
+
+   /// <inheritdoc />
+   protected override Expression VisitExtension(Expression extensionExpression)
+   {
+      switch (extensionExpression)
+      {
+         case WindowFunctionExpression windowFunctionExpression:
+            return VisitWindowFunction(windowFunctionExpression);
+         default:
+            return base.VisitExtension(extensionExpression);
+      }
+   }
+
+   private Expression VisitWindowFunction(WindowFunctionExpression windowFunctionExpression)
+   {
+      Visit(windowFunctionExpression.AggregateFunction);
+
+      Sql.Append(" ").Append("OVER (");
+
+      if (windowFunctionExpression.Partitions.Count != 0)
+      {
+         Sql.Append("PARTITION BY ");
+
+         for (var i = 0; i < windowFunctionExpression.Partitions.Count; i++)
+         {
+            if (i != 0)
+               Sql.Append(", ");
+
+            var partition = windowFunctionExpression.Partitions[i];
+            Visit(partition);
+         }
+      }
+
+      if (windowFunctionExpression.Orderings.Count != 0)
+      {
+         Sql.Append(" ORDER BY ");
+
+         for (var i = 0; i < windowFunctionExpression.Orderings.Count; i++)
+         {
+            if (i != 0)
+               Sql.Append(", ");
+
+            var ordering = windowFunctionExpression.Orderings[i];
+            VisitOrdering(ordering);
+         }
+      }
+
+      Sql.Append(")");
+
+      return windowFunctionExpression;
    }
 
    /// <inheritdoc />
