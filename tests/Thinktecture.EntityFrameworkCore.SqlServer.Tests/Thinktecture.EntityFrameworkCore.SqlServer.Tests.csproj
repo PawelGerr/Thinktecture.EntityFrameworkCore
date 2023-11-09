@@ -2,6 +2,7 @@
 
     <PropertyGroup>
         <NoWarn>$(NoWarn);CS1591;CA2000</NoWarn>
+        <TargetFrameworks>net7.0</TargetFrameworks>
     </PropertyGroup>
 
     <ItemGroup>
