@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
@@ -61,8 +62,9 @@ public abstract class DefaultSqlExpressionVisitor : SqlExpressionVisitor
    protected override Expression VisitIn(InExpression inExpression)
    {
       return inExpression.Update((SqlExpression)Visit(inExpression.Item),
-                                 (SqlExpression?)Visit(inExpression.Values),
-                                 (SelectExpression?)Visit(inExpression.Subquery));
+                                 (SelectExpression?)Visit(inExpression.Subquery),
+                                 Visit(new ReadOnlyCollection<SqlExpression>(inExpression.Values?.ToList() ?? new List<SqlExpression>()), (e) => (SqlExpression)Visit(e)),
+                                 inExpression.ValuesParameter);
    }
 
    /// <inheritdoc />
@@ -341,6 +343,6 @@ public abstract class DefaultSqlExpressionVisitor : SqlExpressionVisitor
    /// <inheritdoc />
    protected override Expression VisitJsonScalar(JsonScalarExpression jsonScalarExpression)
    {
-      return jsonScalarExpression.Update((ColumnExpression)Visit(jsonScalarExpression.JsonColumn));
+      return jsonScalarExpression.Update((ColumnExpression)Visit(jsonScalarExpression.Json));
    }
 }

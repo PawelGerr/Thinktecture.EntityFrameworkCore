@@ -124,9 +124,9 @@ public class SqlServerTableHint : ITableHint, IEquatable<SqlServerTableHint>
    {
       _value = value ?? throw new ArgumentNullException(nameof(value));
    }
-
-   /// <inheritdoc />
-   public override bool Equals(object? obj)
+#nullable enable
+    /// <inheritdoc />
+    public override bool Equals(object? obj)
    {
       return ReferenceEquals(this, obj) || (obj is SqlServerTableHint other && Equals(other));
    }
@@ -193,5 +193,6 @@ public class SqlServerTableHint : ITableHint, IEquatable<SqlServerTableHint>
       {
          return $"INDEX({sqlGenerationHelper.DelimitIdentifier(_name)})";
       }
-   }
+#nullable disable
+    }
 }

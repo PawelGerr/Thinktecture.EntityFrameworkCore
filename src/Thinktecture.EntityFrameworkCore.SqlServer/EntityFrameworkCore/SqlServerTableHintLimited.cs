@@ -106,9 +106,9 @@ public class SqlServerTableHintLimited : IEquatable<SqlServerTableHintLimited>
    {
       _value = value ?? throw new ArgumentNullException(nameof(value));
    }
-
-   /// <inheritdoc />
-   public override bool Equals(object? obj)
+#nullable enable
+    /// <inheritdoc />
+    public override bool Equals(object? obj)
    {
       if (ReferenceEquals(null, obj))
          return false;
@@ -129,9 +129,9 @@ public class SqlServerTableHintLimited : IEquatable<SqlServerTableHintLimited>
 
       return _value == other._value;
    }
-
-   /// <inheritdoc />
-   public override int GetHashCode()
+#nullable disable
+    /// <inheritdoc />
+    public override int GetHashCode()
    {
       return _value.GetHashCode();
    }
