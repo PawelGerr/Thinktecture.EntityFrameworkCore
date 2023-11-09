@@ -20,8 +20,8 @@ public sealed class RelationalMethodCallTranslatorPlugin : IMethodCallTranslator
 
       var translators = new List<IMethodCallTranslator>();
 
-      if (options.RowNumberSupportEnabled)
-         translators.Add(new RowNumberTranslator(sqlExpressionFactory));
+      if (options.WindowFunctionsSupportEnabled)
+         translators.Add(new RelationalDbFunctionsTranslator(sqlExpressionFactory));
 
       Translators = translators;
    }

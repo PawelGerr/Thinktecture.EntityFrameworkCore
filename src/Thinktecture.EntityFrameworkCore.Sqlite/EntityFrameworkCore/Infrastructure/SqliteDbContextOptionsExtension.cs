@@ -29,10 +29,20 @@ public sealed class SqliteDbContextOptionsExtension : DbContextOptionsExtensionB
    /// <summary>
    /// Enables and disables support for "RowNumber".
    /// </summary>
+   [Obsolete($"Use '{nameof(AddWindowFunctionsSupport)}' instead.")]
    public bool AddRowNumberSupport
    {
-      get => _relationalOptions.AddRowNumberSupport;
-      set => _relationalOptions.AddRowNumberSupport = value;
+      get => _relationalOptions.AddWindowFunctionsSupport;
+      set => _relationalOptions.AddWindowFunctionsSupport = value;
+   }
+
+   /// <summary>
+   /// Enables and disables support for window functions like "RowNumber".
+   /// </summary>
+   public bool AddWindowFunctionsSupport
+   {
+      get => _relationalOptions.AddWindowFunctionsSupport;
+      set => _relationalOptions.AddWindowFunctionsSupport = value;
    }
 
    private bool _addCustomQueryableMethodTranslatingExpressionVisitorFactory;
@@ -43,7 +53,7 @@ public sealed class SqliteDbContextOptionsExtension : DbContextOptionsExtensionB
    /// </summary>
    public bool AddCustomQueryableMethodTranslatingExpressionVisitorFactory
    {
-      get => _addCustomQueryableMethodTranslatingExpressionVisitorFactory || AddBulkOperationSupport || AddRowNumberSupport;
+      get => _addCustomQueryableMethodTranslatingExpressionVisitorFactory || AddBulkOperationSupport || AddWindowFunctionsSupport;
       set => _addCustomQueryableMethodTranslatingExpressionVisitorFactory = value;
    }
 
@@ -55,7 +65,7 @@ public sealed class SqliteDbContextOptionsExtension : DbContextOptionsExtensionB
    /// </summary>
    public bool AddCustomRelationalParameterBasedSqlProcessorFactory
    {
-      get => _addCustomRelationalParameterBasedSqlProcessorFactory || AddBulkOperationSupport || AddRowNumberSupport;
+      get => _addCustomRelationalParameterBasedSqlProcessorFactory || AddBulkOperationSupport || AddWindowFunctionsSupport;
       set => _addCustomRelationalParameterBasedSqlProcessorFactory = value;
    }
 
@@ -105,7 +115,7 @@ public sealed class SqliteDbContextOptionsExtension : DbContextOptionsExtensionB
          AddWithCheck<IQuerySqlGeneratorFactory, ThinktectureSqliteQuerySqlGeneratorFactory, SqliteQuerySqlGeneratorFactory>(services);
 
       if (AddCustomRelationalParameterBasedSqlProcessorFactory)
-         AddWithCheck<IRelationalParameterBasedSqlProcessorFactory, ThinktectureSqliteParameterBasedSqlProcessorFactory, RelationalParameterBasedSqlProcessorFactory>(services);
+         AddWithCheck<IRelationalParameterBasedSqlProcessorFactory, ThinktectureSqliteParameterBasedSqlProcessorFactory, SqliteParameterBasedSqlProcessorFactory>(services);
 
       if (AddBulkOperationSupport)
       {

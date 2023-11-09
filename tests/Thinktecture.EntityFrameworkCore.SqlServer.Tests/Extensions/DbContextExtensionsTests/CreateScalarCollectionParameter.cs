@@ -5,8 +5,8 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests;
 
 public class CreateScalarCollectionParameter : IntegrationTestsBase
 {
-   public CreateScalarCollectionParameter(ITestOutputHelper testOutputHelper, SqlServerContainerFixture sqlServerContainerFixture)
-      : base(testOutputHelper, sqlServerContainerFixture)
+   public CreateScalarCollectionParameter(ITestOutputHelper testOutputHelper, SqlServerFixture sqlServerFixture)
+      : base(testOutputHelper, sqlServerFixture)
    {
    }
 

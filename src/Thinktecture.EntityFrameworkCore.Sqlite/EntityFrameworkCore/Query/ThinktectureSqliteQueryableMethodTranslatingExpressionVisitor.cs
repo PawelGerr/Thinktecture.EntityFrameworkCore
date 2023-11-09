@@ -2,7 +2,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Sqlite.Query.Internal;
-using Microsoft.EntityFrameworkCore.Storage;
 
 namespace Thinktecture.EntityFrameworkCore.Query;
 
@@ -12,39 +11,33 @@ namespace Thinktecture.EntityFrameworkCore.Query;
 [SuppressMessage("Usage", "EF1001", MessageId = "Internal EF Core API usage.")]
 public class ThinktectureSqliteQueryableMethodTranslatingExpressionVisitor : SqliteQueryableMethodTranslatingExpressionVisitor
 {
-   private readonly IRelationalTypeMappingSource _typeMappingSource;
-
    /// <inheritdoc />
    public ThinktectureSqliteQueryableMethodTranslatingExpressionVisitor(
       QueryableMethodTranslatingExpressionVisitorDependencies dependencies,
       RelationalQueryableMethodTranslatingExpressionVisitorDependencies relationalDependencies,
-      QueryCompilationContext queryCompilationContext,
-      IRelationalTypeMappingSource typeMappingSource)
+      QueryCompilationContext queryCompilationContext)
       : base(dependencies, relationalDependencies, queryCompilationContext)
    {
-      _typeMappingSource = typeMappingSource ?? throw new ArgumentNullException(nameof(typeMappingSource));
    }
 
    /// <inheritdoc />
    protected ThinktectureSqliteQueryableMethodTranslatingExpressionVisitor(
-      ThinktectureSqliteQueryableMethodTranslatingExpressionVisitor parentVisitor,
-      IRelationalTypeMappingSource typeMappingSource)
+      ThinktectureSqliteQueryableMethodTranslatingExpressionVisitor parentVisitor)
       : base(parentVisitor)
    {
-      _typeMappingSource = typeMappingSource ?? throw new ArgumentNullException(nameof(typeMappingSource));
    }
 
    /// <inheritdoc />
    protected override QueryableMethodTranslatingExpressionVisitor CreateSubqueryVisitor()
    {
-      return new ThinktectureSqliteQueryableMethodTranslatingExpressionVisitor(this, _typeMappingSource);
+      return new ThinktectureSqliteQueryableMethodTranslatingExpressionVisitor(this);
    }
 
    /// <inheritdoc />
    protected override Expression VisitMethodCall(MethodCallExpression methodCallExpression)
    {
       return this.TranslateRelationalMethods(methodCallExpression) ??
-             this.TranslateBulkMethods(methodCallExpression, _typeMappingSource, RelationalDependencies.SqlExpressionFactory) ??
+             this.TranslateBulkMethods(methodCallExpression) ??
              base.VisitMethodCall(methodCallExpression);
    }
 }

@@ -150,19 +150,22 @@ public sealed class SqlServerTempTableCreator : ISqlServerTempTableCreator
 
       if (cacheKey.CheckForExistence)
       {
-         return new CachedTempTableStatement<string>(commaSeparatedColumns, static (sqlGenerationHelper, name, commaSeparatedColumns) => $@"
-IF(NOT EXISTS (SELECT * FROM tempdb.INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE CONSTRAINT_TYPE = 'PRIMARY KEY' AND OBJECT_ID(TABLE_CATALOG + '..' + TABLE_NAME) = OBJECT_ID('tempdb..{name}')))
-BEGIN
-   ALTER TABLE {sqlGenerationHelper.DelimitIdentifier(name)}
-   ADD CONSTRAINT {sqlGenerationHelper.DelimitIdentifier($"PK_{name}_{Guid.NewGuid():N}")} PRIMARY KEY CLUSTERED ({commaSeparatedColumns});
-END
-");
+         return new CachedTempTableStatement<string>(commaSeparatedColumns,
+                                                     static (sqlGenerationHelper, name, commaSeparatedColumns) =>
+                                                        $"""
+                                                         IF(NOT EXISTS (SELECT * FROM tempdb.INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE CONSTRAINT_TYPE = 'PRIMARY KEY' AND OBJECT_ID(TABLE_CATALOG + '..' + TABLE_NAME) = OBJECT_ID('tempdb..{name}')))
+                                                         BEGIN
+                                                            ALTER TABLE {sqlGenerationHelper.DelimitIdentifier(name)}
+                                                            ADD CONSTRAINT {sqlGenerationHelper.DelimitIdentifier($"PK_{name}_{Guid.NewGuid():N}")} PRIMARY KEY CLUSTERED ({commaSeparatedColumns});
+                                                         END
+                                                         """);
       }
 
-      return new CachedTempTableStatement<string>(commaSeparatedColumns, static (sqlGenerationHelper, name, commaSeparatedColumns) => $@"
-ALTER TABLE {sqlGenerationHelper.DelimitIdentifier(name)}
-ADD CONSTRAINT {sqlGenerationHelper.DelimitIdentifier($"PK_{name}_{Guid.NewGuid():N}")} PRIMARY KEY CLUSTERED ({commaSeparatedColumns});
-");
+      return new CachedTempTableStatement<string>(commaSeparatedColumns, static (sqlGenerationHelper, name, commaSeparatedColumns) =>
+                                                                            $"""
+                                                                             ALTER TABLE {sqlGenerationHelper.DelimitIdentifier(name)}
+                                                                             ADD CONSTRAINT {sqlGenerationHelper.DelimitIdentifier($"PK_{name}_{Guid.NewGuid():N}")} PRIMARY KEY CLUSTERED ({commaSeparatedColumns});
+                                                                             """);
    }
 
    private string GetTempTableCreationSql(IEntityType entityType, string tableName, SqlServerTempTableCreationOptions options)
@@ -181,11 +184,13 @@ ADD CONSTRAINT {sqlGenerationHelper.DelimitIdentifier($"PK_{name}_{Guid.NewGuid(
       if (!cacheKey.TruncateTableIfExists)
       {
          return new CachedTempTableStatement<string>(columnDefinitions,
-                                                     static (sqlGenerationHelper, name, columnDefinitions) => $@"
-CREATE TABLE {sqlGenerationHelper.DelimitIdentifier(name)}
-(
-{columnDefinitions}
-);");
+                                                     static (sqlGenerationHelper, name, columnDefinitions) =>
+                                                        $"""
+                                                         CREATE TABLE {sqlGenerationHelper.DelimitIdentifier(name)}
+                                                         (
+                                                         {columnDefinitions}
+                                                         );
+                                                         """);
       }
 
       return new CachedTempTableStatement<string>(columnDefinitions,
@@ -193,17 +198,17 @@ CREATE TABLE {sqlGenerationHelper.DelimitIdentifier(name)}
                                                   {
                                                      var escapedTableName = sqlGenerationHelper.DelimitIdentifier(name);
 
-                                                     return $@"
-IF(OBJECT_ID('tempdb..{name}') IS NOT NULL)
-   TRUNCATE TABLE {escapedTableName};
-ELSE
-BEGIN
-CREATE TABLE {escapedTableName}
-(
-{columnDefinitions}
-);
-END
-";
+                                                     return $"""
+                                                             IF(OBJECT_ID('tempdb..{name}') IS NOT NULL)
+                                                                TRUNCATE TABLE {escapedTableName};
+                                                             ELSE
+                                                             BEGIN
+                                                             CREATE TABLE {escapedTableName}
+                                                             (
+                                                             {columnDefinitions}
+                                                             );
+                                                             END
+                                                             """;
                                                   });
    }
 
@@ -227,7 +232,7 @@ END
 
             var columnType = property.GetColumnType(storeObject.Value);
             var columnName = property.GetColumnName(storeObject.Value)
-                             ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.DeclaringEntityType.Name}'.");
+                             ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.DeclaringType.Name}'.");
 
             sb.Append('\t')
               .Append(_sqlGenerationHelper.DelimitIdentifier(columnName)).Append(' ')
@@ -237,7 +242,7 @@ END
             {
                // Collation information is not available from the runtime model, so we need to fetch it from the design time model
                designTimeEntityType ??= _ctx.GetService<IDesignTimeModel>().Model
-                                            .GetEntityType(property.DeclaringEntityType.Name);
+                                            .GetEntityType(property.DeclaringType.Name);
 
                var collation = designTimeEntityType.GetProperty(property.Name)
                                                    .GetCollation(storeObject.Value);
@@ -300,7 +305,7 @@ END
                                              {
                                                 var storeObject = p.GetStoreObject();
                                                 return p.GetColumnName(storeObject)
-                                                       ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{p.DeclaringEntityType.Name}'.");
+                                                       ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{p.DeclaringType.Name}'.");
                                              });
 
       sb.AppendLine(",");

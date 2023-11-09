@@ -130,8 +130,10 @@ public class SqliteTestDbContextProvider<T> : ITestDbContextProvider<T>
          return ctx;
 
       ctx = (T)(Activator.CreateInstance(typeof(T), options)
-                ?? throw new Exception(@$"Could not create an instance of type of '{typeof(T).ShortDisplayName()}' using constructor parameters ({typeof(DbContextOptions<T>).ShortDisplayName()} options).
-Please provide the corresponding constructor or a custom factory via '{typeof(SqliteTestDbContextProviderBuilder<T>).ShortDisplayName()}.{nameof(SqliteTestDbContextProviderBuilder<T>.UseContextFactory)}'."));
+                ?? throw new Exception($"""
+                                        Could not create an instance of type of '{typeof(T).ShortDisplayName()}' using constructor parameters ({typeof(DbContextOptions<T>).ShortDisplayName()} options).
+                                        Please provide the corresponding constructor or a custom factory via '{typeof(SqliteTestDbContextProviderBuilder<T>).ShortDisplayName()}.{nameof(SqliteTestDbContextProviderBuilder<T>.UseContextFactory)}'.
+                                        """));
 
       return ctx;
    }

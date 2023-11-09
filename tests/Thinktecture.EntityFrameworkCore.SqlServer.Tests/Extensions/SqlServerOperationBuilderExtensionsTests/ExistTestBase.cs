@@ -11,11 +11,11 @@ public abstract class ExistTestBase
    protected DelegatingMigration Migration { get; }
    protected Action ExecuteMigration { get; }
 
-   protected ExistTestBase(ITestOutputHelper testOutputHelper, SqlServerContainerFixture sqlServerContainerFixture)
+   protected ExistTestBase(ITestOutputHelper testOutputHelper, SqlServerFixture sqlServerFixture)
    {
       var loggerFactory = TestContext.Instance.GetLoggerFactory(testOutputHelper);
       var options = new DbContextOptionsBuilder<MigrationExtensionsTestDbContext>()
-                    .UseSqlServer(sqlServerContainerFixture.ConnectionString,
+                    .UseSqlServer(sqlServerFixture.ConnectionString,
                                   sqlServerBuilder => sqlServerBuilder.UseThinktectureSqlServerMigrationsSqlGenerator())
                     .UseLoggerFactory(loggerFactory)
                     .EnableDetailedErrors()

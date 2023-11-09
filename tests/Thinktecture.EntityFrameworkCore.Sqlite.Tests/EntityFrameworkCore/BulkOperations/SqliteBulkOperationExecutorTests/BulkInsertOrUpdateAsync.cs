@@ -449,4 +449,25 @@ public class BulkInsertOrUpdateAsync : IntegrationTestsBase
                                                 }
                                              });
    }
+
+   [Fact]
+   public async Task Should_insert_and_update_TestEntity_with_ComplexType()
+   {
+      // Arrange
+      var testEntity_1 = new TestEntityWithComplexType(new Guid("54FF93FC-6BE9-4F19-A52E-E517CA9FEAA7"),
+                                                       new BoundaryValueObject(2, 5));
+
+      ArrangeDbContext.Add(testEntity_1);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      // Act
+      testEntity_1.Boundary = new BoundaryValueObject(10, 20);
+      var testEntity_2 = new TestEntityWithComplexType(new Guid("67A9500B-CF51-4A39-8C89-F2EBF7EDE84D"),
+                                                       new BoundaryValueObject(3, 4));
+
+      await SUT.BulkInsertOrUpdateAsync(new[] { testEntity_1, testEntity_2 }, new SqliteBulkInsertOrUpdateOptions());
+
+      var loadedEntities = await AssertDbContext.TestEntities_with_ComplexType.ToListAsync();
+      loadedEntities.Should().BeEquivalentTo(new[] { testEntity_1, testEntity_2 });
+   }
 }

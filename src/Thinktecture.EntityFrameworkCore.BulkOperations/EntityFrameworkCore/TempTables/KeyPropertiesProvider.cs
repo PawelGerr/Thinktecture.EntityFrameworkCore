@@ -14,13 +14,15 @@ internal class KeyPropertiesProvider : IPrimaryKeyPropertiesProvider
 
    public IReadOnlyCollection<IProperty> GetPrimaryKeyProperties(IEntityType entityType, IReadOnlyCollection<IProperty> tempTableProperties)
    {
-      var keyProperties = _members.ConvertToEntityProperties(entityType, static _ => true);
+      var keyProperties = _members.ConvertToEntityProperties(entityType);
       var missingColumns = keyProperties.Except(tempTableProperties);
 
       if (missingColumns.Any())
       {
-         throw new ArgumentException(@$"Not all key columns are part of the table.
-Missing columns: {String.Join(", ", missingColumns.Select(p => p.GetColumnName()))}.");
+         throw new ArgumentException($"""
+                                      Not all key columns are part of the table.
+                                      Missing columns: {String.Join(", ", missingColumns.Select(p => p.GetColumnName()))}.
+                                      """);
       }
 
       return keyProperties;

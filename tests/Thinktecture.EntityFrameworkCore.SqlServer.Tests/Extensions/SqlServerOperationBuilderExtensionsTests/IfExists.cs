@@ -4,8 +4,8 @@ namespace Thinktecture.Extensions.SqlServerOperationBuilderExtensionsTests;
 
 public class IfExists : ExistTestBase
 {
-   public IfExists(ITestOutputHelper testOutputHelper, SqlServerContainerFixture sqlServerContainerFixture)
-      : base(testOutputHelper, sqlServerContainerFixture)
+   public IfExists(ITestOutputHelper testOutputHelper, SqlServerFixture sqlServerFixture)
+      : base(testOutputHelper, sqlServerFixture)
    {
    }
 

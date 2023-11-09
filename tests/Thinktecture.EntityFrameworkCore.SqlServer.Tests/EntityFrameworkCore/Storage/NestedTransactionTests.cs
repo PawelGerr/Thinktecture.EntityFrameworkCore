@@ -11,8 +11,8 @@ public class NestedTransactionTests : IntegrationTestsBase
 {
    protected NestedRelationalTransactionManager SUT => (NestedRelationalTransactionManager)ActDbContext.GetService<IDbContextTransactionManager>();
 
-   public NestedTransactionTests(ITestOutputHelper testOutputHelper, SqlServerContainerFixture sqlServerContainerFixture)
-      : base(testOutputHelper, sqlServerContainerFixture)
+   public NestedTransactionTests(ITestOutputHelper testOutputHelper, SqlServerFixture sqlServerFixture)
+      : base(testOutputHelper, sqlServerFixture)
    {
       TestCtxProviderBuilder.UseSharedTablesIsolationLevel(IsolationLevel.Serializable);
    }

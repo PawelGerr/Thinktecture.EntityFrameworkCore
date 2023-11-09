@@ -45,7 +45,7 @@ public class SamplesContext
                                                  .UseSqlite(ConnectionString, sqlOptions =>
                                                                               {
                                                                                  sqlOptions.AddBulkOperationSupport()
-                                                                                           .AddRowNumberSupport();
+                                                                                           .AddWindowFunctionsSupport();
                                                                               })
                                                  .EnableSensitiveDataLogging()
                                                  .UseLoggerFactory(_loggerFactory)

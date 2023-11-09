@@ -4,45 +4,53 @@ using Thinktecture.EntityFrameworkCore.Data;
 
 namespace Thinktecture.EntityFrameworkCore.BulkOperations;
 
-internal sealed class ExcludingEntityPropertiesProvider : IEntityPropertiesProvider
+internal sealed class ExcludingEntityPropertiesProvider(
+      IReadOnlyList<MemberInfo> members)
+   : IEntityPropertiesProvider
 {
-   private readonly IReadOnlyList<MemberInfo> _members;
-
-   public ExcludingEntityPropertiesProvider(IReadOnlyList<MemberInfo> members)
-   {
-      _members = members ?? throw new ArgumentNullException(nameof(members));
-   }
+   private (IEntityType Type, IReadOnlyList<IPropertyBase> Properties)? _cache;
 
    public IReadOnlyList<IProperty> GetPropertiesForTempTable(IEntityType entityType)
    {
-      return Filter(IEntityPropertiesProvider.Default.GetPropertiesForTempTable(entityType));
+      return Filter(entityType, IEntityPropertiesProvider.Default.GetPropertiesForTempTable(entityType));
    }
 
-   private IReadOnlyList<PropertyWithNavigations> Filter(IReadOnlyList<PropertyWithNavigations> properties)
+   private IReadOnlyList<PropertyWithNavigations> Filter(IEntityType entityType, IReadOnlyList<PropertyWithNavigations> properties)
    {
-      return properties.Where(p => _members.All(m => !m.IsEqualTo(p.Property.PropertyInfo)
-                                                     && !m.IsEqualTo(p.Property.FieldInfo)))
+      var propertiesToExclude = GetPropertiesToExclude(entityType);
+      return properties.Where(p => !propertiesToExclude.Contains(p.Property))
                        .ToList();
    }
 
-   private IReadOnlyList<IProperty> Filter(IReadOnlyList<IProperty> properties)
+   private IReadOnlyList<IProperty> Filter(IEntityType entityType, IReadOnlyList<IProperty> properties)
    {
-      return properties.Where(p => _members.All(m => !m.IsEqualTo(p.PropertyInfo) && !m.IsEqualTo(p.FieldInfo)))
+      var propertiesToExclude = GetPropertiesToExclude(entityType);
+      return properties.Where(p => !propertiesToExclude.Contains(p))
                        .ToList();
+   }
+
+   private IReadOnlyList<IPropertyBase> GetPropertiesToExclude(IEntityType entityType)
+   {
+      var cache = _cache;
+
+      if (cache?.Type != entityType)
+         _cache = cache = (entityType, members.ConvertToEntityProperties(entityType));
+
+      return cache.Value.Properties;
    }
 
    public IReadOnlyList<IProperty> GetKeyProperties(IEntityType entityType)
    {
-      return Filter(IEntityPropertiesProvider.Default.GetKeyProperties(entityType));
+      return Filter(entityType, IEntityPropertiesProvider.Default.GetKeyProperties(entityType));
    }
 
    public IReadOnlyList<PropertyWithNavigations> GetPropertiesForInsert(IEntityType entityType, bool? inlinedOwnTypes)
    {
-      return Filter(IEntityPropertiesProvider.Default.GetPropertiesForInsert(entityType, inlinedOwnTypes));
+      return Filter(entityType, IEntityPropertiesProvider.Default.GetPropertiesForInsert(entityType, inlinedOwnTypes));
    }
 
    public IReadOnlyList<PropertyWithNavigations> GetPropertiesForUpdate(IEntityType entityType, bool? inlinedOwnTypes)
    {
-      return Filter(IEntityPropertiesProvider.Default.GetPropertiesForUpdate(entityType, inlinedOwnTypes));
+      return Filter(entityType, IEntityPropertiesProvider.Default.GetPropertiesForUpdate(entityType, inlinedOwnTypes));
    }
 }

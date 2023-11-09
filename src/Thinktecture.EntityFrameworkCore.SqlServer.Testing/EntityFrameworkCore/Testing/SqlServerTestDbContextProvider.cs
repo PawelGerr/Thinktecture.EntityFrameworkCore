@@ -217,8 +217,10 @@ public class SqlServerTestDbContextProvider<T> : SqlServerTestDbContextProvider,
 
       if (ctor is null || ctorArgs is null)
       {
-         throw new Exception(@$"Could not create an instance of type of '{typeof(T).ShortDisplayName()}' neither using constructor parameters ({typeof(DbContextOptions<T>).ShortDisplayName()} options, {nameof(IDbDefaultSchema)} schema) nor using construct ({typeof(DbContextOptions<T>).ShortDisplayName()} options).
-Please provide the corresponding constructor or a custom factory via '{typeof(SqlServerTestDbContextProviderBuilder<T>).ShortDisplayName()}.{nameof(SqlServerTestDbContextProviderBuilder<T>.UseContextFactory)}'.");
+         throw new Exception($"""
+                              Could not create an instance of type of '{typeof(T).ShortDisplayName()}' neither using constructor parameters ({typeof(DbContextOptions<T>).ShortDisplayName()} options, {nameof(IDbDefaultSchema)} schema) nor using construct ({typeof(DbContextOptions<T>).ShortDisplayName()} options).
+                              Please provide the corresponding constructor or a custom factory via '{typeof(SqlServerTestDbContextProviderBuilder<T>).ShortDisplayName()}.{nameof(SqlServerTestDbContextProviderBuilder<T>.UseContextFactory)}'.
+                              """);
       }
 
       return Expression.Lambda<Func<DbContextOptions<T>, IDbDefaultSchema?, T>>(Expression.New(ctor, ctorArgs), optionsParam, schemaParam)
@@ -254,26 +256,34 @@ Please provide the corresponding constructor or a custom factory via '{typeof(Sq
 
       CreateTestIsolationTable(ctx, lockTableName);
 
-      var tx = ctx.Database.BeginTransaction(IsolationLevel.Serializable);
-
-      try
+      for (var i = 0;; i++)
       {
-         LockDatabase(ctx, lockTableName);
-      }
-      catch (Exception)
-      {
-         tx.Dispose();
-         throw;
-      }
+         var tx = ctx.Database.BeginTransaction(IsolationLevel.Serializable);
 
-      return tx;
+         try
+         {
+            LockDatabase(ctx, lockTableName);
+            return tx;
+         }
+         catch (Exception)
+         {
+            tx.Dispose();
+
+            if (i > _maxNumberOfLockRetries)
+               throw;
+
+            var delay = new TimeSpan(_random.NextInt64(_minRetryDelay.Ticks, _maxRetryDelay.Ticks));
+            Task.Delay(delay).GetAwaiter().GetResult();
+         }
+      }
    }
 
    private void CreateTestIsolationTable(T ctx, string lockTableName)
    {
-      var createTableSql = $@"
-IF(OBJECT_ID('{lockTableName}') IS NULL)
-	CREATE TABLE {lockTableName}(Id INT NOT NULL)";
+      var createTableSql = $"""
+                            IF(OBJECT_ID('{lockTableName}') IS NULL)
+                            	CREATE TABLE {lockTableName}(Id INT NOT NULL)
+                            """;
 
       for (var i = 0;; i++)
       {

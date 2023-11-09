@@ -4,15 +4,15 @@ namespace Thinktecture;
 
 public class TestTenantDatabaseProviderFactory : ITenantDatabaseProviderFactory
 {
-   private readonly Mock<ITenantDatabaseProvider> _tenantDatabaseProviderMock;
+   private readonly ITenantDatabaseProvider _tenantDatabaseProviderMock;
 
-   public TestTenantDatabaseProviderFactory(Mock<ITenantDatabaseProvider> tenantDatabaseProviderMock)
+   public TestTenantDatabaseProviderFactory(ITenantDatabaseProvider tenantDatabaseProviderMock)
    {
       _tenantDatabaseProviderMock = tenantDatabaseProviderMock ?? throw new ArgumentNullException(nameof(tenantDatabaseProviderMock));
    }
 
    public ITenantDatabaseProvider Create()
    {
-      return _tenantDatabaseProviderMock.Object;
+      return _tenantDatabaseProviderMock;
    }
 }

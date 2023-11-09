@@ -2,8 +2,8 @@ namespace Thinktecture.InteroperabilityTests;
 
 public class TemporalTableTests : IntegrationTestsBase
 {
-   public TemporalTableTests(ITestOutputHelper testOutputHelper, SqlServerContainerFixture sqlServerContainerFixture)
-      : base(testOutputHelper, sqlServerContainerFixture)
+   public TemporalTableTests(ITestOutputHelper testOutputHelper, SqlServerFixture sqlServerFixture)
+      : base(testOutputHelper, sqlServerFixture)
    {
    }
 

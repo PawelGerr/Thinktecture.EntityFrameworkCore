@@ -4,8 +4,8 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests;
 
 public class CreateComplexCollectionParameter : IntegrationTestsBase
 {
-   public CreateComplexCollectionParameter(ITestOutputHelper testOutputHelper, SqlServerContainerFixture sqlServerContainerFixture)
-      : base(testOutputHelper, sqlServerContainerFixture)
+   public CreateComplexCollectionParameter(ITestOutputHelper testOutputHelper, SqlServerFixture sqlServerFixture)
+      : base(testOutputHelper, sqlServerFixture)
    {
    }
 

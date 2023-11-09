@@ -26,7 +26,7 @@ public abstract class SchemaChangingIntegrationTestsBase : SqliteDbContextIntegr
       builder.UseMigrationExecutionStrategy(_migrationExecutionStrategy ?? IMigrationExecutionStrategy.Migrations)
              .UseMigrationLogLevel(LogLevel.Warning)
              .ConfigureSqliteOptions(optionsBuilder => optionsBuilder.AddBulkOperationSupport()
-                                                                     .AddRowNumberSupport())
+                                                                     .AddWindowFunctionsSupport())
              .InitializeContext(ctx => ctx.ConfigureModel = ConfigureModel);
 
       if (ConfigureModel is not null)

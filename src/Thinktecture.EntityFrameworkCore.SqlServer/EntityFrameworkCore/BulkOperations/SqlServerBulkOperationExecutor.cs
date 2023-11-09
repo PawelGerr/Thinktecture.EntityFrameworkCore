@@ -232,17 +232,33 @@ public sealed class SqlServerBulkOperationExecutor
 
    private void LogInserting(SqlBulkCopyOptions options, SqlBulkCopy bulkCopy, string columns)
    {
-      _logger.Logger.LogDebug(EventIds.Inserting, @"Executing DbCommand [SqlBulkCopyOptions={SqlBulkCopyOptions}, BulkCopyTimeout={BulkCopyTimeout}, BatchSize={BatchSize}, EnableStreaming={EnableStreaming}]
-INSERT BULK {Table} ({Columns})", options, bulkCopy.BulkCopyTimeout, bulkCopy.BatchSize, bulkCopy.EnableStreaming,
-                              bulkCopy.DestinationTableName, columns);
+      _logger.Logger.LogDebug(EventIds.Inserting,
+                              """
+                              Executing DbCommand [SqlBulkCopyOptions={SqlBulkCopyOptions}, BulkCopyTimeout={BulkCopyTimeout}, BatchSize={BatchSize}, EnableStreaming={EnableStreaming}]
+                              INSERT BULK {Table} ({Columns})
+                              """,
+                              options,
+                              bulkCopy.BulkCopyTimeout,
+                              bulkCopy.BatchSize,
+                              bulkCopy.EnableStreaming,
+                              bulkCopy.DestinationTableName,
+                              columns);
    }
 
    private void LogInserted(SqlBulkCopyOptions options, TimeSpan duration, SqlBulkCopy bulkCopy, string columns)
    {
-      _logger.Logger.LogInformation(EventIds.Inserted, @"Executed DbCommand ({Duration}ms) [SqlBulkCopyOptions={SqlBulkCopyOptions}, BulkCopyTimeout={BulkCopyTimeout}, BatchSize={BatchSize}, EnableStreaming={EnableStreaming}]
-INSERT BULK {Table} ({Columns})", (long)duration.TotalMilliseconds,
-                                    options, bulkCopy.BulkCopyTimeout, bulkCopy.BatchSize, bulkCopy.EnableStreaming,
-                                    bulkCopy.DestinationTableName, columns);
+      _logger.Logger.LogInformation(EventIds.Inserted,
+                                    """
+                                    Executed DbCommand ({Duration}ms) [SqlBulkCopyOptions={SqlBulkCopyOptions}, BulkCopyTimeout={BulkCopyTimeout}, BatchSize={BatchSize}, EnableStreaming={EnableStreaming}]
+                                    INSERT BULK {Table} ({Columns})
+                                    """,
+                                    (long)duration.TotalMilliseconds,
+                                    options,
+                                    bulkCopy.BulkCopyTimeout,
+                                    bulkCopy.BatchSize,
+                                    bulkCopy.EnableStreaming,
+                                    bulkCopy.DestinationTableName,
+                                    columns);
    }
 
    /// <inheritdoc />
@@ -473,7 +489,7 @@ INSERT BULK {Table} ({Columns})", (long)duration.TotalMilliseconds,
                sb.AppendLine(" AND ");
 
             var columnName = property.GetColumnName(storeObject)
-                             ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.DeclaringEntityType.Name}'.");
+                             ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.DeclaringType.Name}'.");
             var escapedColumnName = _sqlGenerationHelper.DelimitIdentifier(columnName);
 
             sb.Append("(d.").Append(escapedColumnName).Append(" = s.").Append(escapedColumnName);
@@ -501,7 +517,7 @@ INSERT BULK {Table} ({Columns})", (long)duration.TotalMilliseconds,
             }
 
             var columnName = property.GetColumnName(storeObject)
-                             ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.DeclaringEntityType.Name}'.");
+                             ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.DeclaringType.Name}'.");
             var escapedColumnName = _sqlGenerationHelper.DelimitIdentifier(columnName);
 
             sb.Append("d.").Append(escapedColumnName).Append(" = s.").Append(escapedColumnName);

@@ -12,8 +12,8 @@ public class BulkInsertAsync : IntegrationTestsBase
 
    private SqlServerBulkOperationExecutor SUT => _sut ??= ActDbContext.GetService<SqlServerBulkOperationExecutor>();
 
-   public BulkInsertAsync(ITestOutputHelper testOutputHelper, SqlServerContainerFixture sqlServerContainerFixture)
-      : base(testOutputHelper, sqlServerContainerFixture)
+   public BulkInsertAsync(ITestOutputHelper testOutputHelper, SqlServerFixture sqlServerFixture)
+      : base(testOutputHelper, sqlServerFixture)
    {
    }
 
@@ -727,6 +727,18 @@ public class BulkInsertAsync : IntegrationTestsBase
       await SUT.BulkInsertAsync(new[] { testEntity }, new SqlServerBulkInsertOptions());
 
       var loadedEntities = await AssertDbContext.TestEntities_Own_SeparateOne_SeparateOne.ToListAsync();
+      loadedEntities.Should().BeEquivalentTo(new[] { testEntity });
+   }
+
+   [Fact]
+   public async Task Should_insert_TestEntity_with_ComplexType()
+   {
+      var testEntity = new TestEntityWithComplexType(new Guid("54FF93FC-6BE9-4F19-A52E-E517CA9FEAA7"),
+                                                     new BoundaryValueObject(2, 5));
+
+      await SUT.BulkInsertAsync(new[] { testEntity }, new SqlServerBulkInsertOptions());
+
+      var loadedEntities = await AssertDbContext.TestEntities_with_ComplexType.ToListAsync();
       loadedEntities.Should().BeEquivalentTo(new[] { testEntity });
    }
 }

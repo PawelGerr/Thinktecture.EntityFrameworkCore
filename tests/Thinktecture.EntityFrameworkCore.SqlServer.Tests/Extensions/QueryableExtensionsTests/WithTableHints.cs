@@ -8,8 +8,8 @@ public class WithTableHints : IntegrationTestsBase
    private string? _escapedSchema;
    private string EscapedSchema => _escapedSchema ??= $"[{ActDbContext.Schema}]";
 
-   public WithTableHints(ITestOutputHelper testOutputHelper, SqlServerContainerFixture sqlServerContainerFixture)
-      : base(testOutputHelper, sqlServerContainerFixture)
+   public WithTableHints(ITestOutputHelper testOutputHelper, SqlServerFixture sqlServerFixture)
+      : base(testOutputHelper, sqlServerFixture)
    {
    }
 
@@ -18,7 +18,7 @@ public class WithTableHints : IntegrationTestsBase
    {
       var query = ActDbContext.TestEntities.WithTableHints(SqlServerTableHint.NoLock);
 
-      query.ToQueryString().Should().Be("SELECT [t].[Id], [t].[ConvertibleClass], [t].[Count], [t].[Name], [t].[ParentId], [t].[PropertyWithBackingField], [t].[RequiredName], [t].[_privateField]" + Environment.NewLine +
+      query.ToQueryString().Should().Be("SELECT [t].[Id], [t].[ConvertibleClass], [t].[Count], [t].[Name], [t].[NullableCount], [t].[ParentId], [t].[PropertyWithBackingField], [t].[RequiredName], [t].[_privateField]" + Environment.NewLine +
                                         $"FROM {EscapedSchema}.[TestEntities] AS [t] WITH (NOLOCK)");
 
       var result = await query.ToListAsync();
@@ -30,7 +30,7 @@ public class WithTableHints : IntegrationTestsBase
    {
       var query = ActDbContext.TestEntities.WithTableHints(SqlServerTableHint.Index("IX_TestEntities_Id"));
 
-      query.ToQueryString().Should().Be("SELECT [t].[Id], [t].[ConvertibleClass], [t].[Count], [t].[Name], [t].[ParentId], [t].[PropertyWithBackingField], [t].[RequiredName], [t].[_privateField]" + Environment.NewLine +
+      query.ToQueryString().Should().Be("SELECT [t].[Id], [t].[ConvertibleClass], [t].[Count], [t].[Name], [t].[NullableCount], [t].[ParentId], [t].[PropertyWithBackingField], [t].[RequiredName], [t].[_privateField]" + Environment.NewLine +
                                         $"FROM {EscapedSchema}.[TestEntities] AS [t] WITH (INDEX([IX_TestEntities_Id]))");
 
       var result = await query.ToListAsync();
@@ -42,12 +42,12 @@ public class WithTableHints : IntegrationTestsBase
    {
       var query = ActDbContext.TestEntities.WithTableHints(SqlServerTableHint.NoLock);
 
-      query.ToQueryString().Should().Be("SELECT [t].[Id], [t].[ConvertibleClass], [t].[Count], [t].[Name], [t].[ParentId], [t].[PropertyWithBackingField], [t].[RequiredName], [t].[_privateField]" + Environment.NewLine +
+      query.ToQueryString().Should().Be("SELECT [t].[Id], [t].[ConvertibleClass], [t].[Count], [t].[Name], [t].[NullableCount], [t].[ParentId], [t].[PropertyWithBackingField], [t].[RequiredName], [t].[_privateField]" + Environment.NewLine +
                                         $"FROM {EscapedSchema}.[TestEntities] AS [t] WITH (NOLOCK)");
 
       query = ActDbContext.TestEntities.WithTableHints(SqlServerTableHint.UpdLock);
 
-      query.ToQueryString().Should().Be(@"SELECT [t].[Id], [t].[ConvertibleClass], [t].[Count], [t].[Name], [t].[ParentId], [t].[PropertyWithBackingField], [t].[RequiredName], [t].[_privateField]" + Environment.NewLine +
+      query.ToQueryString().Should().Be(@"SELECT [t].[Id], [t].[ConvertibleClass], [t].[Count], [t].[Name], [t].[NullableCount], [t].[ParentId], [t].[PropertyWithBackingField], [t].[RequiredName], [t].[_privateField]" + Environment.NewLine +
                                         $"FROM {EscapedSchema}.[TestEntities] AS [t] WITH (UPDLOCK)");
    }
 
@@ -57,7 +57,7 @@ public class WithTableHints : IntegrationTestsBase
       var query = ActDbContext.TestEntities.WithTableHints(SqlServerTableHint.NoLock)
                               .Include(e => e.Children);
 
-      query.ToQueryString().Should().Be("SELECT [t].[Id], [t].[ConvertibleClass], [t].[Count], [t].[Name], [t].[ParentId], [t].[PropertyWithBackingField], [t].[RequiredName], [t].[_privateField], [t0].[Id], [t0].[ConvertibleClass], [t0].[Count], [t0].[Name], [t0].[ParentId], [t0].[PropertyWithBackingField], [t0].[RequiredName], [t0].[_privateField]" + Environment.NewLine +
+      query.ToQueryString().Should().Be("SELECT [t].[Id], [t].[ConvertibleClass], [t].[Count], [t].[Name], [t].[NullableCount], [t].[ParentId], [t].[PropertyWithBackingField], [t].[RequiredName], [t].[_privateField], [t0].[Id], [t0].[ConvertibleClass], [t0].[Count], [t0].[Name], [t0].[NullableCount], [t0].[ParentId], [t0].[PropertyWithBackingField], [t0].[RequiredName], [t0].[_privateField]" + Environment.NewLine +
                                         $"FROM {EscapedSchema}.[TestEntities] AS [t] WITH (NOLOCK)" + Environment.NewLine +
                                         $"LEFT JOIN {EscapedSchema}.[TestEntities] AS [t0] ON [t].[Id] = [t0].[ParentId]" + Environment.NewLine +
                                         "ORDER BY [t].[Id]");
@@ -72,7 +72,7 @@ public class WithTableHints : IntegrationTestsBase
       var query = ActDbContext.TestEntities.WithTableHints(SqlServerTableHint.NoLock)
                               .Join(ActDbContext.TestEntities, e => e.Id, e => e.Id, (e1, e2) => new { e1, e2 });
 
-      query.ToQueryString().Should().Be("SELECT [t].[Id], [t].[ConvertibleClass], [t].[Count], [t].[Name], [t].[ParentId], [t].[PropertyWithBackingField], [t].[RequiredName], [t].[_privateField], [t0].[Id], [t0].[ConvertibleClass], [t0].[Count], [t0].[Name], [t0].[ParentId], [t0].[PropertyWithBackingField], [t0].[RequiredName], [t0].[_privateField]" + Environment.NewLine +
+      query.ToQueryString().Should().Be("SELECT [t].[Id], [t].[ConvertibleClass], [t].[Count], [t].[Name], [t].[NullableCount], [t].[ParentId], [t].[PropertyWithBackingField], [t].[RequiredName], [t].[_privateField], [t0].[Id], [t0].[ConvertibleClass], [t0].[Count], [t0].[Name], [t0].[NullableCount], [t0].[ParentId], [t0].[PropertyWithBackingField], [t0].[RequiredName], [t0].[_privateField]" + Environment.NewLine +
                                         $"FROM {EscapedSchema}.[TestEntities] AS [t] WITH (NOLOCK)" + Environment.NewLine +
                                         $"INNER JOIN {EscapedSchema}.[TestEntities] AS [t0] ON [t].[Id] = [t0].[Id]");
 
@@ -81,7 +81,7 @@ public class WithTableHints : IntegrationTestsBase
       query = ActDbContext.TestEntities
                           .Join(ActDbContext.TestEntities.WithTableHints(SqlServerTableHint.NoLock), e => e.Id, e => e.Id, (e1, e2) => new { e1, e2 });
 
-      query.ToQueryString().Should().Be("SELECT [t].[Id], [t].[ConvertibleClass], [t].[Count], [t].[Name], [t].[ParentId], [t].[PropertyWithBackingField], [t].[RequiredName], [t].[_privateField], [t0].[Id], [t0].[ConvertibleClass], [t0].[Count], [t0].[Name], [t0].[ParentId], [t0].[PropertyWithBackingField], [t0].[RequiredName], [t0].[_privateField]" + Environment.NewLine +
+      query.ToQueryString().Should().Be("SELECT [t].[Id], [t].[ConvertibleClass], [t].[Count], [t].[Name], [t].[NullableCount], [t].[ParentId], [t].[PropertyWithBackingField], [t].[RequiredName], [t].[_privateField], [t0].[Id], [t0].[ConvertibleClass], [t0].[Count], [t0].[Name], [t0].[NullableCount], [t0].[ParentId], [t0].[PropertyWithBackingField], [t0].[RequiredName], [t0].[_privateField]" + Environment.NewLine +
                                         $"FROM {EscapedSchema}.[TestEntities] AS [t]" + Environment.NewLine +
                                         $"INNER JOIN {EscapedSchema}.[TestEntities] AS [t0] WITH (NOLOCK) ON [t].[Id] = [t0].[Id]");
 
@@ -90,7 +90,7 @@ public class WithTableHints : IntegrationTestsBase
       query = ActDbContext.TestEntities.WithTableHints(SqlServerTableHint.NoLock)
                           .Join(ActDbContext.TestEntities.WithTableHints(SqlServerTableHint.NoLock), e => e.Id, e => e.Id, (e1, e2) => new { e1, e2 });
 
-      query.ToQueryString().Should().Be("SELECT [t].[Id], [t].[ConvertibleClass], [t].[Count], [t].[Name], [t].[ParentId], [t].[PropertyWithBackingField], [t].[RequiredName], [t].[_privateField], [t0].[Id], [t0].[ConvertibleClass], [t0].[Count], [t0].[Name], [t0].[ParentId], [t0].[PropertyWithBackingField], [t0].[RequiredName], [t0].[_privateField]" + Environment.NewLine +
+      query.ToQueryString().Should().Be("SELECT [t].[Id], [t].[ConvertibleClass], [t].[Count], [t].[Name], [t].[NullableCount], [t].[ParentId], [t].[PropertyWithBackingField], [t].[RequiredName], [t].[_privateField], [t0].[Id], [t0].[ConvertibleClass], [t0].[Count], [t0].[Name], [t0].[NullableCount], [t0].[ParentId], [t0].[PropertyWithBackingField], [t0].[RequiredName], [t0].[_privateField]" + Environment.NewLine +
                                         $"FROM {EscapedSchema}.[TestEntities] AS [t] WITH (NOLOCK)" + Environment.NewLine +
                                         $"INNER JOIN {EscapedSchema}.[TestEntities] AS [t0] WITH (NOLOCK) ON [t].[Id] = [t0].[Id]");
 
@@ -99,7 +99,7 @@ public class WithTableHints : IntegrationTestsBase
       query = ActDbContext.TestEntities.WithTableHints(SqlServerTableHint.NoLock)
                           .Join(ActDbContext.TestEntities.WithTableHints(SqlServerTableHint.UpdLock), e => e.Id, e => e.Id, (e1, e2) => new { e1, e2 });
 
-      query.ToQueryString().Should().Be("SELECT [t].[Id], [t].[ConvertibleClass], [t].[Count], [t].[Name], [t].[ParentId], [t].[PropertyWithBackingField], [t].[RequiredName], [t].[_privateField], [t0].[Id], [t0].[ConvertibleClass], [t0].[Count], [t0].[Name], [t0].[ParentId], [t0].[PropertyWithBackingField], [t0].[RequiredName], [t0].[_privateField]" + Environment.NewLine +
+      query.ToQueryString().Should().Be("SELECT [t].[Id], [t].[ConvertibleClass], [t].[Count], [t].[Name], [t].[NullableCount], [t].[ParentId], [t].[PropertyWithBackingField], [t].[RequiredName], [t].[_privateField], [t0].[Id], [t0].[ConvertibleClass], [t0].[Count], [t0].[Name], [t0].[NullableCount], [t0].[ParentId], [t0].[PropertyWithBackingField], [t0].[RequiredName], [t0].[_privateField]" + Environment.NewLine +
                                         $"FROM {EscapedSchema}.[TestEntities] AS [t] WITH (NOLOCK)" + Environment.NewLine +
                                         $"INNER JOIN {EscapedSchema}.[TestEntities] AS [t0] WITH (UPDLOCK) ON [t].[Id] = [t0].[Id]");
 
@@ -121,7 +121,7 @@ public class WithTableHints : IntegrationTestsBase
    {
       var query = ActDbContext.TestEntities_Own_SeparateMany_SeparateMany.WithTableHints(SqlServerTableHint.NoLock);
 
-      query.ToQueryString().Should().Be(@"SELECT [t].[Id], [t0].[TestEntity_Owns_SeparateMany_SeparateManyId], [t0].[Id], [t0].[IntColumn], [t0].[StringColumn], [t0].[OwnedEntity_Owns_SeparateManyTestEntity_Owns_SeparateMany_SeparateManyId], [t0].[OwnedEntity_Owns_SeparateManyId], [t0].[Id0], [t0].[IntColumn0], [t0].[StringColumn0]" + Environment.NewLine +
+      query.ToQueryString().Should().Be("SELECT [t].[Id], [t0].[TestEntity_Owns_SeparateMany_SeparateManyId], [t0].[Id], [t0].[IntColumn], [t0].[StringColumn], [t0].[OwnedEntity_Owns_SeparateManyTestEntity_Owns_SeparateMany_SeparateManyId], [t0].[OwnedEntity_Owns_SeparateManyId], [t0].[Id0], [t0].[IntColumn0], [t0].[StringColumn0]" + Environment.NewLine +
                                         $"FROM {EscapedSchema}.[TestEntities_Own_SeparateMany_SeparateMany] AS [t] WITH (NOLOCK)" + Environment.NewLine +
                                         "LEFT JOIN (" + Environment.NewLine +
                                         "    SELECT [s].[TestEntity_Owns_SeparateMany_SeparateManyId], [s].[Id], [s].[IntColumn], [s].[StringColumn], [s0].[OwnedEntity_Owns_SeparateManyTestEntity_Owns_SeparateMany_SeparateManyId], [s0].[OwnedEntity_Owns_SeparateManyId], [s0].[Id] AS [Id0], [s0].[IntColumn] AS [IntColumn0], [s0].[StringColumn] AS [StringColumn0]" + Environment.NewLine +
@@ -142,7 +142,7 @@ public class WithTableHints : IntegrationTestsBase
       var tempTable = await ActDbContext.BulkInsertValuesIntoTempTableAsync(new[] { Guid.Empty });
       var query = tempTable.Query.WithTableHints(SqlServerTableHint.UpdLock, SqlServerTableHint.RowLock);
 
-      query.ToQueryString().Should().Be(@"SELECT [#].[Column1]" + Environment.NewLine +
+      query.ToQueryString().Should().Be("SELECT [#].[Column1]" + Environment.NewLine +
                                         "FROM [#TempTable<Guid>_1] AS [#] WITH (UPDLOCK, ROWLOCK)");
 
       var result = await query.ToListAsync();
@@ -153,7 +153,7 @@ public class WithTableHints : IntegrationTestsBase
                                .LeftJoin(tempTable.Query.WithTableHints(SqlServerTableHint.UpdLock),
                                          e => e, e => e);
 
-      joinQuery.ToQueryString().Should().Be(@"SELECT [#].[Column1] AS [Left], [#0].[Column1] AS [Right]" + Environment.NewLine +
+      joinQuery.ToQueryString().Should().Be("SELECT [#].[Column1] AS [Left], [#0].[Column1] AS [Right]" + Environment.NewLine +
                                             "FROM [#TempTable<Guid>_1] AS [#] WITH (UPDLOCK, ROWLOCK)" + Environment.NewLine +
                                             "LEFT JOIN [#TempTable<Guid>_1] AS [#0] WITH (UPDLOCK) ON [#].[Column1] = [#0].[Column1]");
 
@@ -161,7 +161,7 @@ public class WithTableHints : IntegrationTestsBase
                            .LeftJoin(tempTable.Query.WithTableHints(SqlServerTableHint.UpdLock, SqlServerTableHint.RowLock),
                                      e => e, e => e);
 
-      joinQuery.ToQueryString().Should().Be(@"SELECT [#].[Column1] AS [Left], [#0].[Column1] AS [Right]" + Environment.NewLine +
+      joinQuery.ToQueryString().Should().Be("SELECT [#].[Column1] AS [Left], [#0].[Column1] AS [Right]" + Environment.NewLine +
                                             "FROM [#TempTable<Guid>_1] AS [#] WITH (UPDLOCK, ROWLOCK)" + Environment.NewLine +
                                             "LEFT JOIN [#TempTable<Guid>_1] AS [#0] WITH (UPDLOCK, ROWLOCK) ON [#].[Column1] = [#0].[Column1]");
    }
@@ -204,20 +204,20 @@ public class WithTableHints : IntegrationTestsBase
                                         }
                                      });
 
-      ExecutedCommands.Skip(ExecutedCommands.Count - 2).First().Should().Be(@"SELECT [t].[Id]" + Environment.NewLine +
+      ExecutedCommands.Skip(ExecutedCommands.Count - 2).First().Should().Be("SELECT [t].[Id]" + Environment.NewLine +
                                                                             $"FROM [{TestCtxProvider.Schema}].[TestEntities] AS [t] WITH (UPDLOCK, ROWLOCK)" + Environment.NewLine +
-                                                                            "WHERE EXISTS (" + Environment.NewLine +
-                                                                            "    SELECT 1" + Environment.NewLine +
+                                                                            "WHERE [t].[Id] IN (" + Environment.NewLine +
+                                                                            "    SELECT [#].[Column1]" + Environment.NewLine +
                                                                             "    FROM [#TempTable<Guid>_1] AS [#] WITH (UPDLOCK)" + Environment.NewLine +
-                                                                            "    WHERE [t].[Id] = [#].[Column1])" + Environment.NewLine +
+                                                                            ")" + Environment.NewLine +
                                                                             "ORDER BY [t].[Id]");
       ExecutedCommands.Last().Should().Be("SELECT [t0].[Id], [t].[Id]" + Environment.NewLine +
                                           $"FROM [{TestCtxProvider.Schema}].[TestEntities] AS [t] WITH (UPDLOCK, ROWLOCK)" + Environment.NewLine +
                                           $"INNER JOIN [{TestCtxProvider.Schema}].[TestEntities] AS [t0] ON [t].[Id] = [t0].[ParentId]" + Environment.NewLine +
-                                          "WHERE EXISTS (" + Environment.NewLine +
-                                          "    SELECT 1" + Environment.NewLine +
+                                          "WHERE [t].[Id] IN (" + Environment.NewLine +
+                                          "    SELECT [#].[Column1]" + Environment.NewLine +
                                           "    FROM [#TempTable<Guid>_1] AS [#] WITH (UPDLOCK)" + Environment.NewLine +
-                                          "    WHERE [t].[Id] = [#].[Column1])" + Environment.NewLine +
+                                          ")" + Environment.NewLine +
                                           "ORDER BY [t].[Id]");
    }
 }

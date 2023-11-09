@@ -36,14 +36,14 @@ public sealed class RelationalDbContextComponentDecorator : IRelationalDbContext
             continue;
 
          if (service.ImplementationType == null)
-            throw new NotSupportedException($@"The registration of the Entity Framework Core service '{serviceType.FullName}' found but the service is not registered 'by type'.");
+            throw new NotSupportedException($"The registration of the Entity Framework Core service '{serviceType.FullName}' found but the service is not registered 'by type'.");
 
          if (service.ImplementationType == serviceType)
-            throw new NotSupportedException($@"The implementation type '{service.ImplementationType.ShortDisplayName()}' cannot be the same as the service type '{serviceType.ShortDisplayName()}'.");
+            throw new NotSupportedException($"The implementation type '{service.ImplementationType.ShortDisplayName()}' cannot be the same as the service type '{serviceType.ShortDisplayName()}'.");
 
          return (service.ImplementationType, service.Lifetime, i);
       }
 
-      throw new InvalidOperationException($@"No registration of the Entity Framework Core service '{serviceType.FullName}' found. Please make sure the database provider is registered first (via 'UseSqlServer' or 'UseSqlite' etc).");
+      throw new InvalidOperationException($"No registration of the Entity Framework Core service '{serviceType.FullName}' found. Please make sure the database provider is registered first (via 'UseSqlServer' or 'UseSqlite' etc).");
    }
 }

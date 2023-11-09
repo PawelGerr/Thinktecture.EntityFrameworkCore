@@ -305,14 +305,23 @@ public sealed class SqliteBulkOperationExecutor
 
    private void LogBulkOperationStart(string statement)
    {
-      _logger.Logger.LogDebug(EventIds.Started, @"Executing DbCommand
-{Statement}", statement);
+      _logger.Logger.LogDebug(EventIds.Started,
+                              """
+                              Executing DbCommand
+                              {Statement}
+                              """,
+                              statement);
    }
 
    private void LogBulkOperationEnd(string statement, TimeSpan duration)
    {
-      _logger.Logger.LogInformation(EventIds.Finished, @"Executed DbCommand ({Duration}ms)
-{Statement}", (long)duration.TotalMilliseconds, statement);
+      _logger.Logger.LogInformation(EventIds.Finished,
+                                    """
+                                    Executed DbCommand ({Duration}ms)
+                                    {Statement}
+                                    """,
+                                    (long)duration.TotalMilliseconds,
+                                    statement);
    }
 
    /// <inheritdoc />

@@ -51,11 +51,14 @@ public interface ITestIsolationOptions
    /// Deletes all records from the tables using "DELETE".
    /// No ambient transaction; no unique schema.
    /// </summary>
-   public static ITestIsolationOptions DeleteData(Predicate<IEntityType>? filter = null)
+   public static ITestIsolationOptions DeleteData(
+      Predicate<IEntityType>? filter = null,
+      Func<IReadOnlyList<IEntityType>, IReadOnlyList<IEntityType>>? modifyDeletionOrder = null)
    {
       return new DeleteAllData(filter is null
                                   ? SkipTempTablesAndCollectionParameters
-                                  : entityType => filter(entityType) && SkipTempTablesAndCollectionParameters(entityType));
+                                  : entityType => filter(entityType) && SkipTempTablesAndCollectionParameters(entityType),
+                               modifyDeletionOrder);
    }
 
    private static bool SkipTempTablesAndCollectionParameters(IEntityType entityType)
@@ -188,52 +191,65 @@ public interface ITestIsolationOptions
 
    private class DeleteAllData : ITestIsolationOptions
    {
-      private readonly Predicate<IEntityType> _filter;
-
       private static readonly MethodInfo _deleteData = typeof(DeleteAllData).GetMethod(nameof(DeleteDataAsync), BindingFlags.Static | BindingFlags.NonPublic)
                                                        ?? throw new Exception($"Method '{nameof(DeleteDataAsync)}' not found.");
 
-      private readonly ConcurrentDictionary<Type, Func<DbContext, CancellationToken, Task>> _deleteDelegatesLookup;
+      private readonly Predicate<IEntityType> _filter;
+      private readonly Func<IReadOnlyList<IEntityType>, IReadOnlyList<IEntityType>>? _modifyDeletionOrder;
+      private readonly ConcurrentDictionary<IEntityType, Func<DbContext, string, CancellationToken, Task>> _deleteDelegatesLookup;
+
+      private IReadOnlyList<IEntityType>? _orderedEntities;
 
       public bool NeedsAmbientTransaction => false;
       public bool NeedsUniqueSchema => false;
       public bool NeedsCleanup => true;
 
-      public DeleteAllData(Predicate<IEntityType> filter)
+      public DeleteAllData(
+         Predicate<IEntityType> filter,
+         Func<IReadOnlyList<IEntityType>, IReadOnlyList<IEntityType>>? modifyDeletionOrder)
       {
          _filter = filter;
-         _deleteDelegatesLookup = new ConcurrentDictionary<Type, Func<DbContext, CancellationToken, Task>>();
+         _modifyDeletionOrder = modifyDeletionOrder;
+         _deleteDelegatesLookup = new ConcurrentDictionary<IEntityType, Func<DbContext, string, CancellationToken, Task>>();
       }
 
       [SuppressMessage("Usage", "EF1001:Internal EF Core API usage.")]
       public async ValueTask CleanupAsync(DbContext dbContext, string? schema, CancellationToken cancellationToken)
       {
-         foreach (var entityType in dbContext.Model.GetEntityTypesInHierarchicalOrder().Reverse())
+         if (_orderedEntities is null)
          {
-            if (entityType.GetTableName() is not null && _filter(entityType))
-            {
-               var delete = _deleteDelegatesLookup.GetOrAdd(entityType.ClrType, CreateDelegate);
+            var orderedEntities = dbContext.Model.GetEntityTypesInHierarchicalOrder().Reverse().ToList();
 
-               await delete(dbContext, cancellationToken);
-            }
+            _orderedEntities = _modifyDeletionOrder?.Invoke(orderedEntities) ?? orderedEntities;
+         }
+
+         foreach (var entityType in _orderedEntities)
+         {
+            if (entityType.GetTableName() is null || !_filter(entityType))
+               continue;
+
+            var delete = _deleteDelegatesLookup.GetOrAdd(entityType, CreateDelegate);
+
+            await delete(dbContext, entityType.Name, cancellationToken);
          }
       }
 
-      private Func<DbContext, CancellationToken, Task> CreateDelegate(Type type)
+      private static Func<DbContext, string, CancellationToken, Task> CreateDelegate(IEntityType type)
       {
          var ctxParam = Expression.Parameter(typeof(DbContext));
+         var nameParam = Expression.Parameter(typeof(string));
          var cancellationTokenParam = Expression.Parameter(typeof(CancellationToken));
-         var method = _deleteData.MakeGenericMethod(type);
+         var method = _deleteData.MakeGenericMethod(type.ClrType);
 
-         var call = Expression.Call(method, ctxParam, cancellationTokenParam);
+         var call = Expression.Call(method, ctxParam, nameParam, cancellationTokenParam);
 
-         return Expression.Lambda<Func<DbContext, CancellationToken, Task>>(call, ctxParam, cancellationTokenParam).Compile();
+         return Expression.Lambda<Func<DbContext, string, CancellationToken, Task>>(call, ctxParam, nameParam, cancellationTokenParam).Compile();
       }
 
-      private static async Task DeleteDataAsync<T>(DbContext dbContext, CancellationToken cancellationToken)
+      private static async Task DeleteDataAsync<T>(DbContext dbContext, string name, CancellationToken cancellationToken)
          where T : class
       {
-         await dbContext.Set<T>().ExecuteDeleteAsync(cancellationToken);
+         await dbContext.Set<T>(name).ExecuteDeleteAsync(cancellationToken);
       }
    }
 
@@ -265,81 +281,82 @@ public interface ITestIsolationOptions
 
    private static string GetSqlForCleanup()
    {
-      return @"
-DECLARE @crlf NVARCHAR(MAX) = CHAR(13) + CHAR(10);
-DECLARE @sql NVARCHAR(MAX);
-DECLARE @cursor CURSOR
+      return """
+             DECLARE @crlf NVARCHAR(MAX) = CHAR(13) + CHAR(10);
+             DECLARE @sql NVARCHAR(MAX);
+             DECLARE @cursor CURSOR
 
--- Drop Constraints
-SET @cursor = CURSOR FAST_FORWARD FOR
-SELECT DISTINCT sql = 'ALTER TABLE ' + QUOTENAME(tc.TABLE_SCHEMA) + '.' +  QUOTENAME(tc.TABLE_NAME) + ' DROP ' + QUOTENAME(rc.CONSTRAINT_NAME) + ';' + @crlf
-FROM
-	INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS rc
-	LEFT JOIN
-		INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc
-		ON tc.CONSTRAINT_NAME = rc.CONSTRAINT_NAME
-WHERE
-   tc.TABLE_SCHEMA = @schema
+             -- Drop Constraints
+             SET @cursor = CURSOR FAST_FORWARD FOR
+             SELECT DISTINCT sql = 'ALTER TABLE ' + QUOTENAME(tc.TABLE_SCHEMA) + '.' +  QUOTENAME(tc.TABLE_NAME) + ' DROP ' + QUOTENAME(rc.CONSTRAINT_NAME) + ';' + @crlf
+             FROM
+             	INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS rc
+             	LEFT JOIN
+             		INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc
+             		ON tc.CONSTRAINT_NAME = rc.CONSTRAINT_NAME
+             WHERE
+                tc.TABLE_SCHEMA = @schema
 
-OPEN @cursor FETCH NEXT FROM @cursor INTO @sql
+             OPEN @cursor FETCH NEXT FROM @cursor INTO @sql
 
-WHILE (@@FETCH_STATUS = 0)
-BEGIN
-Exec sp_executesql @sql
-FETCH NEXT FROM @cursor INTO @sql
-END
+             WHILE (@@FETCH_STATUS = 0)
+             BEGIN
+             Exec sp_executesql @sql
+             FETCH NEXT FROM @cursor INTO @sql
+             END
 
-CLOSE @cursor
-DEALLOCATE @cursor
+             CLOSE @cursor
+             DEALLOCATE @cursor
 
--- Drop Views
-SELECT	@sql = N'';
-SELECT @sql = @sql + 'DROP VIEW ' + QUOTENAME(SCHEMA_NAME(schema_id)) + '.' + QUOTENAME(name) +';' + @crlf
-FROM
-	SYS.VIEWS
-WHERE
-   schema_id = SCHEMA_ID(@schema)
+             -- Drop Views
+             SELECT	@sql = N'';
+             SELECT @sql = @sql + 'DROP VIEW ' + QUOTENAME(SCHEMA_NAME(schema_id)) + '.' + QUOTENAME(name) +';' + @crlf
+             FROM
+             	SYS.VIEWS
+             WHERE
+                schema_id = SCHEMA_ID(@schema)
 
-EXEC(@sql);
+             EXEC(@sql);
 
--- Drop Functions
-SELECT @sql = N'';
-SELECT @sql = @sql + N' DROP FUNCTION ' + QUOTENAME(SCHEMA_NAME(schema_id)) + N'.' + QUOTENAME(name)
-FROM sys.objects
-WHERE type_desc LIKE '%FUNCTION%'
-   AND schema_id = SCHEMA_ID(@schema);
+             -- Drop Functions
+             SELECT @sql = N'';
+             SELECT @sql = @sql + N' DROP FUNCTION ' + QUOTENAME(SCHEMA_NAME(schema_id)) + N'.' + QUOTENAME(name)
+             FROM sys.objects
+             WHERE type_desc LIKE '%FUNCTION%'
+                AND schema_id = SCHEMA_ID(@schema);
 
-EXEC(@sql);
+             EXEC(@sql);
 
--- Disable temporal tables
-SELECT	@sql = N'';
-SELECT @sql = @sql + 'IF OBJECTPROPERTY(OBJECT_ID(''' + QUOTENAME(SCHEMA_NAME(schema_id)) + '.' + QUOTENAME(name) +'''), ''TableTemporalType'') = 2' + @crlf
-            + ' ALTER TABLE ' + QUOTENAME(SCHEMA_NAME(schema_id)) + '.' + QUOTENAME(name) +' SET (SYSTEM_VERSIONING = OFF);' + @crlf
-FROM
-	SYS.TABLES
-WHERE
-   schema_id = SCHEMA_ID(@schema)
+             -- Disable temporal tables
+             SELECT	@sql = N'';
+             SELECT @sql = @sql + 'IF OBJECTPROPERTY(OBJECT_ID(''' + QUOTENAME(SCHEMA_NAME(schema_id)) + '.' + QUOTENAME(name) +'''), ''TableTemporalType'') = 2' + @crlf
+                         + ' ALTER TABLE ' + QUOTENAME(SCHEMA_NAME(schema_id)) + '.' + QUOTENAME(name) +' SET (SYSTEM_VERSIONING = OFF);' + @crlf
+             FROM
+             	SYS.TABLES
+             WHERE
+                schema_id = SCHEMA_ID(@schema)
 
-EXEC(@sql);
+             EXEC(@sql);
 
--- Drop tables
-SELECT	@sql = N'';
-SELECT @sql = @sql + 'DROP TABLE ' + QUOTENAME(SCHEMA_NAME(schema_id)) + '.' + QUOTENAME(name) +';' + @crlf
-FROM
-	SYS.TABLES
-WHERE
-   schema_id = SCHEMA_ID(@schema)
+             -- Drop tables
+             SELECT	@sql = N'';
+             SELECT @sql = @sql + 'DROP TABLE ' + QUOTENAME(SCHEMA_NAME(schema_id)) + '.' + QUOTENAME(name) +';' + @crlf
+             FROM
+             	SYS.TABLES
+             WHERE
+                schema_id = SCHEMA_ID(@schema)
 
-EXEC(@sql);
-";
+             EXEC(@sql);
+             """;
    }
 
    private static string GetDropSchemaSql(ISqlGenerationHelper sqlHelper, string schema)
    {
       ArgumentNullException.ThrowIfNull(sqlHelper);
 
-      return @$"
-IF SCHEMA_ID('{sqlHelper.DelimitIdentifier(schema)}') IS NOT NULL
-   DROP SCHEMA {sqlHelper.DelimitIdentifier(schema)};";
+      return $"""
+              IF SCHEMA_ID('{sqlHelper.DelimitIdentifier(schema)}') IS NOT NULL
+                 DROP SCHEMA {sqlHelper.DelimitIdentifier(schema)};
+              """;
    }
 }

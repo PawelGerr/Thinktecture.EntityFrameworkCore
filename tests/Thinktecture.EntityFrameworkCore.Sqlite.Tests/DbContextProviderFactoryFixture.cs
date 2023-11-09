@@ -23,7 +23,7 @@ public class DbContextProviderFactoryFixture : IAsyncLifetime
              .UseMigrationExecutionStrategy(IMigrationExecutionStrategy.Migrations)
              .UseMigrationLogLevel(LogLevel.Warning)
              .ConfigureSqliteOptions(optionsBuilder => optionsBuilder.AddBulkOperationSupport()
-                                                                     .AddRowNumberSupport());
+                                                                     .AddWindowFunctionsSupport());
    }
 
    public SqliteTestDbContextProvider<TestDbContext> CreateProvider(ILoggerFactory loggerFactory)

@@ -55,9 +55,9 @@ public sealed class RelationalDbContextOptionsExtension : DbContextOptionsExtens
    public bool AddNestedTransactionsSupport { get; set; }
 
    /// <summary>
-   /// Enables and disables support for "RowNumber".
+   /// Enables and disables support for windows functions like "RowNumber".
    /// </summary>
-   public bool AddRowNumberSupport { get; set; }
+   public bool AddWindowFunctionsSupport { get; set; }
 
    /// <summary>
    /// Enables and disables support for 'tenant database support'.
@@ -253,8 +253,8 @@ public sealed class RelationalDbContextOptionsExtension : DbContextOptionsExtens
          if (_extension.AddNestedTransactionsSupport)
             sb.Append("NestedTransactionsSupport ");
 
-         if (_extension.AddRowNumberSupport)
-            sb.Append("RowNumberSupport ");
+         if (_extension.AddWindowFunctionsSupport)
+            sb.Append("WindowFunctionsSupport ");
 
          if (_extension.AddTenantDatabaseSupport)
             sb.Append("TenantDatabaseSupport ");
@@ -278,7 +278,7 @@ public sealed class RelationalDbContextOptionsExtension : DbContextOptionsExtens
          hashCode.Add(_extension.AddSchemaRespectingComponents);
          hashCode.Add(_extension.AddNestedTransactionsSupport);
          hashCode.Add(_extension.AddTenantDatabaseSupport);
-         hashCode.Add(_extension.AddRowNumberSupport);
+         hashCode.Add(_extension.AddWindowFunctionsSupport);
          hashCode.Add(_extension.ComponentDecorator);
          hashCode.Add(_extension._stringBuilderPolicy.InitialCapacity);
          hashCode.Add(_extension._stringBuilderPolicy.MaximumRetainedCapacity);
@@ -302,7 +302,7 @@ public sealed class RelationalDbContextOptionsExtension : DbContextOptionsExtens
                         && _extension.AddSchemaRespectingComponents == otherRelationalInfo._extension.AddSchemaRespectingComponents
                         && _extension.AddNestedTransactionsSupport == otherRelationalInfo._extension.AddNestedTransactionsSupport
                         && _extension.AddTenantDatabaseSupport == otherRelationalInfo._extension.AddTenantDatabaseSupport
-                        && _extension.AddRowNumberSupport == otherRelationalInfo._extension.AddRowNumberSupport
+                        && _extension.AddWindowFunctionsSupport == otherRelationalInfo._extension.AddWindowFunctionsSupport
                         && _extension._stringBuilderPolicy.InitialCapacity == otherRelationalInfo._extension._stringBuilderPolicy.InitialCapacity
                         && _extension._stringBuilderPolicy.MaximumRetainedCapacity == otherRelationalInfo._extension._stringBuilderPolicy.MaximumRetainedCapacity
                         && _extension.ComponentDecorator.Equals(otherRelationalInfo._extension.ComponentDecorator);
@@ -364,7 +364,7 @@ public sealed class RelationalDbContextOptionsExtension : DbContextOptionsExtens
          debugInfo["Thinktecture:CustomRelationalQueryContextFactory"] = _extension.UseThinktectureRelationalQueryContextFactory.ToString(CultureInfo.InvariantCulture);
          debugInfo["Thinktecture:SchemaRespectingComponents"] = _extension.AddSchemaRespectingComponents.ToString(CultureInfo.InvariantCulture);
          debugInfo["Thinktecture:NestedTransactionsSupport"] = _extension.AddNestedTransactionsSupport.ToString(CultureInfo.InvariantCulture);
-         debugInfo["Thinktecture:RowNumberSupport"] = _extension.AddRowNumberSupport.ToString(CultureInfo.InvariantCulture);
+         debugInfo["Thinktecture:WindowFunctionsSupport"] = _extension.AddWindowFunctionsSupport.ToString(CultureInfo.InvariantCulture);
          debugInfo["Thinktecture:TenantDatabaseSupport"] = _extension.AddTenantDatabaseSupport.ToString(CultureInfo.InvariantCulture);
          debugInfo["Thinktecture:EvaluatableExpressionFilterPlugins"] = String.Join(", ", _extension._evaluatableExpressionFilterPlugins.Select(t => t.ShortDisplayName()));
          debugInfo["Thinktecture:ServiceDescriptors"] = String.Join(", ", _extension._serviceDescriptors);

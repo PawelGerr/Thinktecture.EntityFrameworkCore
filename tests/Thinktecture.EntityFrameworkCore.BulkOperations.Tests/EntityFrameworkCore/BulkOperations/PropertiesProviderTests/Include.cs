@@ -56,6 +56,18 @@ public class Include
    }
 
    [Fact]
+   public void Should_extract_complex_object()
+   {
+      var entityType = GetEntityType<TestEntity>();
+      var complexProperty = entityType.FindComplexProperty(nameof(TestEntity.Boundary)) ?? throw new Exception("Property must no be null");
+      var propertiesProvider = IEntityPropertiesProvider.Include<TestEntity>(entity => entity.Boundary);
+
+      var properties = propertiesProvider.GetPropertiesForTempTable(entityType);
+      properties.Should().HaveCount(2);
+      properties.Should().Contain(complexProperty.ComplexType.GetFlattenedProperties());
+   }
+
+   [Fact]
    public void Should_handle_properties_from_base_classes()
    {
       var entityType = GetEntityType<TestEntityWithBaseClass>();

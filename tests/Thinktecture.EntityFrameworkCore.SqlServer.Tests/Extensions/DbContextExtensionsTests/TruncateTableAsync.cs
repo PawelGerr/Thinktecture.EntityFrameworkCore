@@ -5,8 +5,8 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests;
 // ReSharper disable once InconsistentNaming
 public class TruncateTableAsync : IntegrationTestsBase
 {
-   public TruncateTableAsync(ITestOutputHelper testOutputHelper, SqlServerContainerFixture sqlServerContainerFixture)
-      : base(testOutputHelper, sqlServerContainerFixture)
+   public TruncateTableAsync(ITestOutputHelper testOutputHelper, SqlServerFixture sqlServerFixture)
+      : base(testOutputHelper, sqlServerFixture)
    {
    }
 
