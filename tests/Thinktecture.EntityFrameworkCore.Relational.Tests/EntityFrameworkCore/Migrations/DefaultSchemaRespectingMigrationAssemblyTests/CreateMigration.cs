@@ -66,7 +66,7 @@ public class CreateMigration : DefaultSchemaRespectingMigrationAssemblyTestsBase
       migration.Should().NotBeNull();
       migration.Should().BeOfType<MigrationWithoutSchema>();
 
-      createMigration.Should().BeEquivalentTo(migration);
+      createMigration.Should().BeEquivalentTo(migration, options => options.Excluding(m => m.TargetModel.ModelId));
    }
 
    [Fact]
@@ -98,7 +98,7 @@ public class CreateMigration : DefaultSchemaRespectingMigrationAssemblyTestsBase
 
       var createMigration = SUT.CreateMigration(typeof(MigrationWithoutSchema).GetTypeInfo(), "DummyProvider");
 
-      createMigration.Should().BeEquivalentTo(migration);
+      createMigration.Should().BeEquivalentTo(migration, options => options.Excluding(m => m.TargetModel.ModelId));
    }
 
    [Fact]
