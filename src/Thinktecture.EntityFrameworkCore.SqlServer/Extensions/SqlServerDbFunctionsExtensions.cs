@@ -366,4 +366,292 @@ public static class SqlServerDbFunctionsExtensions
    {
       throw new InvalidOperationException("This method is for use with Entity Framework Core only and has no in-memory implementation.");
    }
+
+   /// <summary>
+   /// Definition of a window function.
+   /// <remarks>
+   /// This method is for use with Entity Framework Core only and has no in-memory implementation.
+   /// </remarks>
+   /// </summary>
+   /// <exception cref="InvalidOperationException">Is thrown if executed in-memory.</exception>
+   public static TResult WindowFunction<TResult>(this DbFunctions _, WindowFunction<TResult> windowFunction)
+   {
+      throw new InvalidOperationException("This method is for use with Entity Framework Core only and has no in-memory implementation.");
+   }
+
+   /// <summary>
+   /// Definition of a window function.
+   /// <remarks>
+   /// This method is for use with Entity Framework Core only and has no in-memory implementation.
+   /// </remarks>
+   /// </summary>
+   /// <exception cref="InvalidOperationException">Is thrown if executed in-memory.</exception>
+   public static TResult WindowFunction<T1, TResult>(this DbFunctions _, WindowFunction<TResult> windowFunction, T1 argument1)
+   {
+      throw new InvalidOperationException("This method is for use with Entity Framework Core only and has no in-memory implementation.");
+   }
+
+   /// <summary>
+   /// Definition of a window function.
+   /// <remarks>
+   /// This method is for use with Entity Framework Core only and has no in-memory implementation.
+   /// </remarks>
+   /// </summary>
+   /// <exception cref="InvalidOperationException">Is thrown if executed in-memory.</exception>
+   public static TResult WindowFunction<T1, T2, TResult>(this DbFunctions _, WindowFunction<TResult> windowFunction, T1 argument1, T2 argument2)
+   {
+      throw new InvalidOperationException("This method is for use with Entity Framework Core only and has no in-memory implementation.");
+   }
+
+   /// <summary>
+   /// Definition of a window function.
+   /// <remarks>
+   /// This method is for use with Entity Framework Core only and has no in-memory implementation.
+   /// </remarks>
+   /// </summary>
+   /// <exception cref="InvalidOperationException">Is thrown if executed in-memory.</exception>
+   public static TResult WindowFunction<T1, T2, T3, TResult>(this DbFunctions _, WindowFunction<TResult> windowFunction, T1 argument1, T2 argument2, T3 argument3)
+   {
+      throw new InvalidOperationException("This method is for use with Entity Framework Core only and has no in-memory implementation.");
+   }
+
+   /// <summary>
+   /// Definition of a window function.
+   /// <remarks>
+   /// This method is for use with Entity Framework Core only and has no in-memory implementation.
+   /// </remarks>
+   /// </summary>
+   /// <exception cref="InvalidOperationException">Is thrown if executed in-memory.</exception>
+   public static TResult WindowFunction<T1, T2, T3, T4, TResult>(this DbFunctions _, WindowFunction<TResult> windowFunction, T1 argument1, T2 argument2, T3 argument3, T4 argument4)
+   {
+      throw new InvalidOperationException("This method is for use with Entity Framework Core only and has no in-memory implementation.");
+   }
+
+   /// <summary>
+   /// Definition of a window function.
+   /// <remarks>
+   /// This method is for use with Entity Framework Core only and has no in-memory implementation.
+   /// </remarks>
+   /// </summary>
+   /// <exception cref="InvalidOperationException">Is thrown if executed in-memory.</exception>
+   public static TResult WindowFunction<T1, T2, T3, T4, T5, TResult>(this DbFunctions _, WindowFunction<TResult> windowFunction, T1 argument1, T2 argument2, T3 argument3, T4 argument4, T5 argument5)
+   {
+      throw new InvalidOperationException("This method is for use with Entity Framework Core only and has no in-memory implementation.");
+   }
+
+   /// <summary>
+   /// Definition of a window function.
+   /// <remarks>
+   /// This method is for use with Entity Framework Core only and has no in-memory implementation.
+   /// </remarks>
+   /// </summary>
+   /// <exception cref="InvalidOperationException">Is thrown if executed in-memory.</exception>
+   public static TResult WindowFunction<TResult>(this DbFunctions _, WindowFunction<TResult> windowFunction, WindowFunctionPartitionByClause partitionBy, WindowFunctionOrderByClause orderBy)
+   {
+      throw new InvalidOperationException("This method is for use with Entity Framework Core only and has no in-memory implementation.");
+   }
+
+   /// <summary>
+   /// Definition of a window function.
+   /// <remarks>
+   /// This method is for use with Entity Framework Core only and has no in-memory implementation.
+   /// </remarks>
+   /// </summary>
+   /// <exception cref="InvalidOperationException">Is thrown if executed in-memory.</exception>
+   public static TResult WindowFunction<T1, TResult>(this DbFunctions _, WindowFunction<TResult> windowFunction, T1 argument1, WindowFunctionPartitionByClause partitionBy, WindowFunctionOrderByClause orderBy)
+   {
+      throw new InvalidOperationException("This method is for use with Entity Framework Core only and has no in-memory implementation.");
+   }
+
+   /// <summary>
+   /// Definition of a window function.
+   /// <remarks>
+   /// This method is for use with Entity Framework Core only and has no in-memory implementation.
+   /// </remarks>
+   /// </summary>
+   /// <exception cref="InvalidOperationException">Is thrown if executed in-memory.</exception>
+   public static TResult WindowFunction<T1, T2, TResult>(this DbFunctions _, WindowFunction<TResult> windowFunction, T1 argument1, T2 argument2, WindowFunctionPartitionByClause partitionBy, WindowFunctionOrderByClause orderBy)
+   {
+      throw new InvalidOperationException("This method is for use with Entity Framework Core only and has no in-memory implementation.");
+   }
+
+   /// <summary>
+   /// Definition of a window function.
+   /// <remarks>
+   /// This method is for use with Entity Framework Core only and has no in-memory implementation.
+   /// </remarks>
+   /// </summary>
+   /// <exception cref="InvalidOperationException">Is thrown if executed in-memory.</exception>
+   public static TResult WindowFunction<T1, T2, T3, TResult>(this DbFunctions _, WindowFunction<TResult> windowFunction, T1 argument1, T2 argument2, T3 argument3, WindowFunctionPartitionByClause partitionBy, WindowFunctionOrderByClause orderBy)
+   {
+      throw new InvalidOperationException("This method is for use with Entity Framework Core only and has no in-memory implementation.");
+   }
+
+   /// <summary>
+   /// Definition of a window function.
+   /// <remarks>
+   /// This method is for use with Entity Framework Core only and has no in-memory implementation.
+   /// </remarks>
+   /// </summary>
+   /// <exception cref="InvalidOperationException">Is thrown if executed in-memory.</exception>
+   public static TResult WindowFunction<T1, T2, T3, T4, TResult>(this DbFunctions _, WindowFunction<TResult> windowFunction, T1 argument1, T2 argument2, T3 argument3, T4 argument4, WindowFunctionPartitionByClause partitionBy, WindowFunctionOrderByClause orderBy)
+   {
+      throw new InvalidOperationException("This method is for use with Entity Framework Core only and has no in-memory implementation.");
+   }
+
+   /// <summary>
+   /// Definition of a window function.
+   /// <remarks>
+   /// This method is for use with Entity Framework Core only and has no in-memory implementation.
+   /// </remarks>
+   /// </summary>
+   /// <exception cref="InvalidOperationException">Is thrown if executed in-memory.</exception>
+   public static TResult WindowFunction<T1, T2, T3, T4, T5, TResult>(this DbFunctions _, WindowFunction<TResult> windowFunction, T1 argument1, T2 argument2, T3 argument3, T4 argument4, T5 argument5, WindowFunctionPartitionByClause partitionBy, WindowFunctionOrderByClause orderBy)
+   {
+      throw new InvalidOperationException("This method is for use with Entity Framework Core only and has no in-memory implementation.");
+   }
+
+   /// <summary>
+   /// Definition of a window function.
+   /// <remarks>
+   /// This method is for use with Entity Framework Core only and has no in-memory implementation.
+   /// </remarks>
+   /// </summary>
+   /// <exception cref="InvalidOperationException">Is thrown if executed in-memory.</exception>
+   public static TResult WindowFunction<TResult>(this DbFunctions _, WindowFunction<TResult> windowFunction, WindowFunctionPartitionByClause partitionBy)
+   {
+      throw new InvalidOperationException("This method is for use with Entity Framework Core only and has no in-memory implementation.");
+   }
+
+   /// <summary>
+   /// Definition of a window function.
+   /// <remarks>
+   /// This method is for use with Entity Framework Core only and has no in-memory implementation.
+   /// </remarks>
+   /// </summary>
+   /// <exception cref="InvalidOperationException">Is thrown if executed in-memory.</exception>
+   public static TResult WindowFunction<T1, TResult>(this DbFunctions _, WindowFunction<TResult> windowFunction, T1 argument1, WindowFunctionPartitionByClause partitionBy)
+   {
+      throw new InvalidOperationException("This method is for use with Entity Framework Core only and has no in-memory implementation.");
+   }
+
+   /// <summary>
+   /// Definition of a window function.
+   /// <remarks>
+   /// This method is for use with Entity Framework Core only and has no in-memory implementation.
+   /// </remarks>
+   /// </summary>
+   /// <exception cref="InvalidOperationException">Is thrown if executed in-memory.</exception>
+   public static TResult WindowFunction<T1, T2, TResult>(this DbFunctions _, WindowFunction<TResult> windowFunction, T1 argument1, T2 argument2, WindowFunctionPartitionByClause partitionBy)
+   {
+      throw new InvalidOperationException("This method is for use with Entity Framework Core only and has no in-memory implementation.");
+   }
+
+   /// <summary>
+   /// Definition of a window function.
+   /// <remarks>
+   /// This method is for use with Entity Framework Core only and has no in-memory implementation.
+   /// </remarks>
+   /// </summary>
+   /// <exception cref="InvalidOperationException">Is thrown if executed in-memory.</exception>
+   public static TResult WindowFunction<T1, T2, T3, TResult>(this DbFunctions _, WindowFunction<TResult> windowFunction, T1 argument1, T2 argument2, T3 argument3, WindowFunctionPartitionByClause partitionBy)
+   {
+      throw new InvalidOperationException("This method is for use with Entity Framework Core only and has no in-memory implementation.");
+   }
+
+   /// <summary>
+   /// Definition of a window function.
+   /// <remarks>
+   /// This method is for use with Entity Framework Core only and has no in-memory implementation.
+   /// </remarks>
+   /// </summary>
+   /// <exception cref="InvalidOperationException">Is thrown if executed in-memory.</exception>
+   public static TResult WindowFunction<T1, T2, T3, T4, TResult>(this DbFunctions _, WindowFunction<TResult> windowFunction, T1 argument1, T2 argument2, T3 argument3, T4 argument4, WindowFunctionPartitionByClause partitionBy)
+   {
+      throw new InvalidOperationException("This method is for use with Entity Framework Core only and has no in-memory implementation.");
+   }
+
+   /// <summary>
+   /// Definition of a window function.
+   /// <remarks>
+   /// This method is for use with Entity Framework Core only and has no in-memory implementation.
+   /// </remarks>
+   /// </summary>
+   /// <exception cref="InvalidOperationException">Is thrown if executed in-memory.</exception>
+   public static TResult WindowFunction<T1, T2, T3, T4, T5, TResult>(this DbFunctions _, WindowFunction<TResult> windowFunction, T1 argument1, T2 argument2, T3 argument3, T4 argument4, T5 argument5, WindowFunctionPartitionByClause partitionBy)
+   {
+      throw new InvalidOperationException("This method is for use with Entity Framework Core only and has no in-memory implementation.");
+   }
+
+   /// <summary>
+   /// Definition of a window function.
+   /// <remarks>
+   /// This method is for use with Entity Framework Core only and has no in-memory implementation.
+   /// </remarks>
+   /// </summary>
+   /// <exception cref="InvalidOperationException">Is thrown if executed in-memory.</exception>
+   public static TResult WindowFunction<TResult>(this DbFunctions _, WindowFunction<TResult> windowFunction, WindowFunctionOrderByClause orderBy)
+   {
+      throw new InvalidOperationException("This method is for use with Entity Framework Core only and has no in-memory implementation.");
+   }
+
+   /// <summary>
+   /// Definition of a window function.
+   /// <remarks>
+   /// This method is for use with Entity Framework Core only and has no in-memory implementation.
+   /// </remarks>
+   /// </summary>
+   /// <exception cref="InvalidOperationException">Is thrown if executed in-memory.</exception>
+   public static TResult WindowFunction<T1, TResult>(this DbFunctions _, WindowFunction<TResult> windowFunction, T1 argument1, WindowFunctionOrderByClause orderBy)
+   {
+      throw new InvalidOperationException("This method is for use with Entity Framework Core only and has no in-memory implementation.");
+   }
+
+   /// <summary>
+   /// Definition of a window function.
+   /// <remarks>
+   /// This method is for use with Entity Framework Core only and has no in-memory implementation.
+   /// </remarks>
+   /// </summary>
+   /// <exception cref="InvalidOperationException">Is thrown if executed in-memory.</exception>
+   public static TResult WindowFunction<T1, T2, TResult>(this DbFunctions _, WindowFunction<TResult> windowFunction, T1 argument1, T2 argument2, WindowFunctionOrderByClause orderBy)
+   {
+      throw new InvalidOperationException("This method is for use with Entity Framework Core only and has no in-memory implementation.");
+   }
+
+   /// <summary>
+   /// Definition of a window function.
+   /// <remarks>
+   /// This method is for use with Entity Framework Core only and has no in-memory implementation.
+   /// </remarks>
+   /// </summary>
+   /// <exception cref="InvalidOperationException">Is thrown if executed in-memory.</exception>
+   public static TResult WindowFunction<T1, T2, T3, TResult>(this DbFunctions _, WindowFunction<TResult> windowFunction, T1 argument1, T2 argument2, T3 argument3, WindowFunctionOrderByClause orderBy)
+   {
+      throw new InvalidOperationException("This method is for use with Entity Framework Core only and has no in-memory implementation.");
+   }
+
+   /// <summary>
+   /// Definition of a window function.
+   /// <remarks>
+   /// This method is for use with Entity Framework Core only and has no in-memory implementation.
+   /// </remarks>
+   /// </summary>
+   /// <exception cref="InvalidOperationException">Is thrown if executed in-memory.</exception>
+   public static TResult WindowFunction<T1, T2, T3, T4, TResult>(this DbFunctions _, WindowFunction<TResult> windowFunction, T1 argument1, T2 argument2, T3 argument3, T4 argument4, WindowFunctionOrderByClause orderBy)
+   {
+      throw new InvalidOperationException("This method is for use with Entity Framework Core only and has no in-memory implementation.");
+   }
+
+   /// <summary>
+   /// Definition of a window function.
+   /// <remarks>
+   /// This method is for use with Entity Framework Core only and has no in-memory implementation.
+   /// </remarks>
+   /// </summary>
+   /// <exception cref="InvalidOperationException">Is thrown if executed in-memory.</exception>
+   public static TResult WindowFunction<T1, T2, T3, T4, T5, TResult>(this DbFunctions _, WindowFunction<TResult> windowFunction, T1 argument1, T2 argument2, T3 argument3, T4 argument4, T5 argument5, WindowFunctionOrderByClause orderBy)
+   {
+      throw new InvalidOperationException("This method is for use with Entity Framework Core only and has no in-memory implementation.");
+   }
 }

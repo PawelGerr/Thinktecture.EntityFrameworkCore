@@ -1,6 +1,8 @@
 using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
+using Microsoft.EntityFrameworkCore.SqlServer.Query.Internal;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace Thinktecture.EntityFrameworkCore.Query.SqlExpressions;
 
@@ -12,24 +14,44 @@ public class WindowFunctionExpression : SqlExpression
    /// <summary>
    /// Creates a new instance of the <see cref="WindowFunctionExpression" /> class.
    /// </summary>
-   /// <param name="aggregateFunction">Aggregate function.</param>
+   /// <param name="name">Function name.</param>
+   /// <param name="useStarWhenNoArguments">Indication whether to use '*' when no arguments are provided.</param>
+   /// <param name="type">Return type.</param>
+   /// <param name="arguments">Arguments.</param>
+   /// <param name="typeMapping">Type mapping.</param>
    /// <param name="partitions">A list expressions to partition by.</param>
    /// <param name="orderings">A list of ordering expressions to order by.</param>
    public WindowFunctionExpression(
-      SqlExpression aggregateFunction,
+      string name,
+      bool useStarWhenNoArguments,
+      Type type,
+      RelationalTypeMapping? typeMapping,
+      IReadOnlyList<SqlExpression> arguments,
       IReadOnlyList<SqlExpression>? partitions,
       IReadOnlyList<OrderingExpression>? orderings)
-      : base(aggregateFunction.Type, aggregateFunction.TypeMapping)
+      : base(type, typeMapping)
    {
+      Name = name;
+      UseStarWhenNoArguments = useStarWhenNoArguments;
+      Arguments = arguments;
       Partitions = partitions ?? Array.Empty<SqlExpression>();
-      AggregateFunction = aggregateFunction;
       Orderings = orderings ?? Array.Empty<OrderingExpression>();
    }
 
    /// <summary>
-   /// Aggregate function.
+   /// Function name.
    /// </summary>
-   public SqlExpression AggregateFunction { get; }
+   public string Name { get; }
+
+   /// <summary>
+   /// Indication whether to use '*' when no arguments are provided.
+   /// </summary>
+   public bool UseStarWhenNoArguments { get; }
+
+   /// <summary>
+   /// Function arguments.
+   /// </summary>
+   public IReadOnlyList<SqlExpression> Arguments { get; }
 
    /// <summary>
    ///     The list of expressions used in partitioning.
@@ -44,58 +66,30 @@ public class WindowFunctionExpression : SqlExpression
    /// <inheritdoc />
    protected override Expression VisitChildren(ExpressionVisitor visitor)
    {
-      var partitions = new List<SqlExpression>();
+      var arguments = visitor.VisitExpressions(Arguments);
+      var partitions = visitor.VisitExpressions(Partitions);
+      var orderings = visitor.VisitExpressions(Orderings);
 
-      var visitedAggregateFunction = (SqlExpression)visitor.Visit(AggregateFunction);
-
-      var changed = AggregateFunction != visitedAggregateFunction;
-
-      foreach (var partition in Partitions)
-      {
-         var newPartition = (SqlExpression)visitor.Visit(partition);
-         changed |= newPartition != partition;
-         partitions.Add(newPartition);
-      }
-
-      var orderings = new List<OrderingExpression>();
-
-      foreach (var ordering in Orderings)
-      {
-         var newOrdering = (OrderingExpression)visitor.Visit(ordering);
-         changed |= newOrdering != ordering;
-         orderings.Add(newOrdering);
-      }
-
-      return changed
-                ? new WindowFunctionExpression(visitedAggregateFunction, partitions, orderings)
+      return !ReferenceEquals(arguments, Arguments) || !ReferenceEquals(partitions, Partitions) || !ReferenceEquals(orderings, Orderings)
+                ? new WindowFunctionExpression(Name, UseStarWhenNoArguments, Type, TypeMapping, arguments, partitions, orderings)
                 : this;
-   }
-
-   /// <summary>
-   /// Creates a new expression that is like this one, but using the supplied children. If all of the children are the same, it will return this expression.
-   /// </summary>
-   /// <param name="aggregateFunction">Aggregate function.</param>
-   /// <param name="partitions">The <see cref="Partitions" /> property of the result.</param>
-   /// <param name="orderings">The <see cref="Orderings" /> property of the result.</param>
-   /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
-   public virtual WindowFunctionExpression Update(
-      SqlExpression aggregateFunction,
-      IReadOnlyList<SqlExpression>? partitions,
-      IReadOnlyList<OrderingExpression>? orderings)
-   {
-      return AggregateFunction == aggregateFunction
-             && ((Partitions == null && partitions == null) || (Partitions != null && partitions != null && Partitions.SequenceEqual(partitions)))
-             && ((Orderings == null && orderings == null) || (Orderings != null && orderings != null && Orderings.SequenceEqual(orderings)))
-                ? this
-                : new WindowFunctionExpression(aggregateFunction, partitions, orderings);
    }
 
    /// <inheritdoc />
    protected override void Print(ExpressionPrinter expressionPrinter)
    {
-      expressionPrinter.Visit(AggregateFunction);
+      expressionPrinter.Append(Name).Append(" (");
 
-      expressionPrinter.Append(" OVER(");
+      if (Arguments.Count != 0)
+      {
+         expressionPrinter.VisitCollection(Arguments);
+      }
+      else if (UseStarWhenNoArguments)
+      {
+         expressionPrinter.Append(" * ");
+      }
+
+      expressionPrinter.Append(") OVER(");
 
       if (Partitions.Count != 0)
       {
@@ -123,7 +117,9 @@ public class WindowFunctionExpression : SqlExpression
    private bool Equals(WindowFunctionExpression windowFunctionExpression)
    {
       return base.Equals(windowFunctionExpression)
-             && AggregateFunction.Equals(windowFunctionExpression.AggregateFunction)
+             && Name.Equals(windowFunctionExpression.Name)
+             && UseStarWhenNoArguments.Equals(windowFunctionExpression.UseStarWhenNoArguments)
+             && (Arguments == null ? windowFunctionExpression.Arguments == null : Arguments.SequenceEqual(windowFunctionExpression.Arguments))
              && (Partitions == null ? windowFunctionExpression.Partitions == null : Partitions.SequenceEqual(windowFunctionExpression.Partitions))
              && (Orderings == null ? windowFunctionExpression.Orderings == null : Orderings.SequenceEqual(windowFunctionExpression.Orderings));
    }
@@ -133,7 +129,13 @@ public class WindowFunctionExpression : SqlExpression
    {
       var hash = new HashCode();
       hash.Add(base.GetHashCode());
-      hash.Add(AggregateFunction.GetHashCode());
+      hash.Add(Name);
+      hash.Add(UseStarWhenNoArguments);
+
+      foreach (var argument in Arguments)
+      {
+         hash.Add(argument);
+      }
 
       foreach (var partition in Partitions)
       {

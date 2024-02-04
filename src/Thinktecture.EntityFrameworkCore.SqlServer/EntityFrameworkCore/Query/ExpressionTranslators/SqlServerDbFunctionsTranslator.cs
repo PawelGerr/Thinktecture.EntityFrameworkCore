@@ -1,9 +1,11 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 using Microsoft.EntityFrameworkCore.SqlServer.Query.Internal;
+using Microsoft.EntityFrameworkCore.Storage;
 using Thinktecture.EntityFrameworkCore.Query.SqlExpressions;
 
 namespace Thinktecture.EntityFrameworkCore.Query.ExpressionTranslators;
@@ -14,10 +16,17 @@ namespace Thinktecture.EntityFrameworkCore.Query.ExpressionTranslators;
 public sealed class SqlServerDbFunctionsTranslator : IMethodCallTranslator
 {
    private readonly ISqlExpressionFactory _sqlExpressionFactory;
+   private readonly IRelationalTypeMappingSource _typeMappingSource;
+   private readonly IModel _model;
 
-   internal SqlServerDbFunctionsTranslator(ISqlExpressionFactory sqlExpressionFactory)
+   internal SqlServerDbFunctionsTranslator(
+      ISqlExpressionFactory sqlExpressionFactory,
+      IRelationalTypeMappingSource typeMappingSource,
+      IModel model)
    {
       _sqlExpressionFactory = sqlExpressionFactory;
+      _typeMappingSource = typeMappingSource;
+      _model = model;
    }
 
    /// <inheritdoc />
@@ -51,24 +60,68 @@ public sealed class SqlServerDbFunctionsTranslator : IMethodCallTranslator
          {
             return CreateWindowFunctionExpression("MIN", arguments);
          }
+         case nameof(SqlServerDbFunctionsExtensions.WindowFunction):
+         {
+            return CreateWindowFunction(arguments);
+         }
          default:
             throw new InvalidOperationException($"Unexpected method '{method.Name}' in '{nameof(SqlServerDbFunctionsExtensions)}'.");
       }
+   }
+
+   private SqlExpression CreateWindowFunction(IReadOnlyList<SqlExpression> arguments)
+   {
+      var (functionName, returnType, useStarWhenNoArguments) = (WindowFunction?)((SqlConstantExpression)arguments[1]).Value
+                                                               ?? throw new ArgumentException("Window function must not be null");
+
+      var orderByExpression = arguments[^1] as WindowFunctionOrderingsExpression;
+
+      WindowFunctionPartitionByExpression? partitionByExpression;
+      int numberOfArguments;
+
+      if (orderByExpression is null)
+      {
+         partitionByExpression = arguments[^1] as WindowFunctionPartitionByExpression;
+         numberOfArguments = partitionByExpression is null
+                                ? arguments.Count - 2
+                                : arguments.Count - 3;
+      }
+      else
+      {
+         partitionByExpression = arguments[^2] as WindowFunctionPartitionByExpression;
+         numberOfArguments = partitionByExpression is null
+                                ? arguments.Count - 3
+                                : arguments.Count - 4;
+      }
+
+      var functionArgs = numberOfArguments <= 0
+                            ? Array.Empty<SqlExpression>()
+                            : arguments.Skip(2).Take(numberOfArguments).Select(e => _sqlExpressionFactory.ApplyDefaultTypeMapping(e)).ToArray();
+
+      var partitionBy = partitionByExpression?.PartitionBy.Select(e => _sqlExpressionFactory.ApplyDefaultTypeMapping(e)).ToList();
+
+      return new WindowFunctionExpression(functionName,
+                                          useStarWhenNoArguments,
+                                          returnType,
+                                          _typeMappingSource.FindMapping(returnType, _model),
+                                          functionArgs,
+                                          partitionBy,
+                                          orderByExpression?.Orderings);
    }
 
    [SuppressMessage("Usage", "EF1001:Internal EF Core API usage.")]
    private SqlExpression CreateWindowFunctionExpression(string aggregateFunction, IReadOnlyList<SqlExpression> arguments)
    {
       var aggregate = arguments[1];
-      var aggregateExpression = new SqlServerAggregateFunctionExpression(aggregateFunction,
-                                                                         new[] { aggregate },
-                                                                         Array.Empty<OrderingExpression>(),
-                                                                         true,
-                                                                         new[] { false },
-                                                                         aggregate.Type,
-                                                                         aggregate.TypeMapping);
       var orderings = arguments[^1] as WindowFunctionOrderingsExpression;
       var partitionBy = arguments.Skip(2).Take(arguments.Count - (orderings is null ? 2 : 3)).Select(e => _sqlExpressionFactory.ApplyDefaultTypeMapping(e)).ToList();
-      return new WindowFunctionExpression(aggregateExpression, partitionBy, orderings?.Orderings);
+
+      return new WindowFunctionExpression(aggregateFunction,
+                                          false,
+                                          aggregate.Type,
+                                          aggregate.TypeMapping,
+                                          new[] { aggregate },
+                                          partitionBy,
+                                          orderings?.Orderings);
    }
 }

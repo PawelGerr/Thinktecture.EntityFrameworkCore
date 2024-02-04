@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 
 // ReSharper disable once CheckNamespace
 namespace Thinktecture;
@@ -20,19 +21,27 @@ public static class RelationalExpressionVisitorExtensions
    public static IReadOnlyList<T> VisitExpressions<T>(this ExpressionVisitor visitor, IReadOnlyList<T> expressions)
       where T : Expression
    {
-      ArgumentNullException.ThrowIfNull(visitor);
-      ArgumentNullException.ThrowIfNull(expressions);
+      T[]? visitedExpression = null;
 
-      var visitedExpressions = new List<T>();
-      var hasChanges = false;
-
-      foreach (var expression in expressions)
+      for (var i = 0; i < expressions.Count; i++)
       {
-         var visitedExpression = (T)visitor.Visit(expression);
-         visitedExpressions.Add(visitedExpression);
-         hasChanges |= !ReferenceEquals(visitedExpression, expression);
+         var expression = expressions[i];
+         var visited = (T)visitor.Visit(expression);
+
+         if (visited != expression && visitedExpression is null)
+         {
+            visitedExpression = new T[expressions.Count];
+
+            for (var j = 0; j < i; j++)
+            {
+               visitedExpression[j] = expressions[j];
+            }
+         }
+
+         if (visitedExpression is not null)
+            visitedExpression[i] = visited;
       }
 
-      return hasChanges ? visitedExpressions.AsReadOnly() : expressions;
+      return visitedExpression ?? expressions;
    }
 }

@@ -34,6 +34,10 @@ public sealed class RelationalDbFunctionsTranslator : IMethodCallTranslator
 
       switch (method.Name)
       {
+         case nameof(RelationalDbFunctionsExtensions.PartitionBy):
+         {
+            return new WindowFunctionPartitionByExpression(arguments.Skip(1).ToList());
+         }
          case nameof(RelationalDbFunctionsExtensions.OrderBy):
          {
             var orderBy = arguments.Skip(1).Select(e => new OrderingExpression(_sqlExpressionFactory.ApplyDefaultTypeMapping(e), true)).ToList();
