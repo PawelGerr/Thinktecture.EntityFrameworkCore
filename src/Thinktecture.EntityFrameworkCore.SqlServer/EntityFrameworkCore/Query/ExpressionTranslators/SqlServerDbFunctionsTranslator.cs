@@ -71,7 +71,7 @@ public sealed class SqlServerDbFunctionsTranslator : IMethodCallTranslator
 
    private SqlExpression CreateWindowFunction(IReadOnlyList<SqlExpression> arguments)
    {
-      var (functionName, returnType, useStarWhenNoArguments) = (WindowFunction?)((SqlConstantExpression)arguments[1]).Value
+      var (functionName, returnType, useAsteriskWhenNoArguments) = (WindowFunction?)((SqlConstantExpression)arguments[1]).Value
                                                                ?? throw new ArgumentException("Window function must not be null");
 
       var orderByExpression = arguments[^1] as WindowFunctionOrderingsExpression;
@@ -101,7 +101,7 @@ public sealed class SqlServerDbFunctionsTranslator : IMethodCallTranslator
       var partitionBy = partitionByExpression?.PartitionBy.Select(e => _sqlExpressionFactory.ApplyDefaultTypeMapping(e)).ToList();
 
       return new WindowFunctionExpression(functionName,
-                                          useStarWhenNoArguments,
+                                          useAsteriskWhenNoArguments,
                                           returnType,
                                           _typeMappingSource.FindMapping(returnType, _model),
                                           functionArgs,
