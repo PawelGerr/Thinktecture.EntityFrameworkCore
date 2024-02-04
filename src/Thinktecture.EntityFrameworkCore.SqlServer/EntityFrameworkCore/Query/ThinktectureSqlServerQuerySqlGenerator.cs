@@ -52,7 +52,7 @@ public class ThinktectureSqlServerQuerySqlGenerator : SqlServerQuerySqlGenerator
          Visit(argument);
       }
 
-      if (windowFunctionExpression.Arguments.Count == 0 && windowFunctionExpression.UseStarWhenNoArguments)
+      if (windowFunctionExpression.Arguments.Count == 0 && windowFunctionExpression.UseAsteriskWhenNoArguments)
          Sql.Append("*");
 
       Sql.Append(") OVER (");

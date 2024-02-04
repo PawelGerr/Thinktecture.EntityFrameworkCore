@@ -15,7 +15,7 @@ public class WindowFunctionExpression : SqlExpression
    /// Creates a new instance of the <see cref="WindowFunctionExpression" /> class.
    /// </summary>
    /// <param name="name">Function name.</param>
-   /// <param name="useStarWhenNoArguments">Indication whether to use '*' when no arguments are provided.</param>
+   /// <param name="useAsteriskWhenNoArguments">Indication whether to use '*' when no arguments are provided.</param>
    /// <param name="type">Return type.</param>
    /// <param name="arguments">Arguments.</param>
    /// <param name="typeMapping">Type mapping.</param>
@@ -23,7 +23,7 @@ public class WindowFunctionExpression : SqlExpression
    /// <param name="orderings">A list of ordering expressions to order by.</param>
    public WindowFunctionExpression(
       string name,
-      bool useStarWhenNoArguments,
+      bool useAsteriskWhenNoArguments,
       Type type,
       RelationalTypeMapping? typeMapping,
       IReadOnlyList<SqlExpression> arguments,
@@ -32,7 +32,7 @@ public class WindowFunctionExpression : SqlExpression
       : base(type, typeMapping)
    {
       Name = name;
-      UseStarWhenNoArguments = useStarWhenNoArguments;
+      UseAsteriskWhenNoArguments = useAsteriskWhenNoArguments;
       Arguments = arguments;
       Partitions = partitions ?? Array.Empty<SqlExpression>();
       Orderings = orderings ?? Array.Empty<OrderingExpression>();
@@ -46,7 +46,7 @@ public class WindowFunctionExpression : SqlExpression
    /// <summary>
    /// Indication whether to use '*' when no arguments are provided.
    /// </summary>
-   public bool UseStarWhenNoArguments { get; }
+   public bool UseAsteriskWhenNoArguments { get; }
 
    /// <summary>
    /// Function arguments.
@@ -71,7 +71,7 @@ public class WindowFunctionExpression : SqlExpression
       var orderings = visitor.VisitExpressions(Orderings);
 
       return !ReferenceEquals(arguments, Arguments) || !ReferenceEquals(partitions, Partitions) || !ReferenceEquals(orderings, Orderings)
-                ? new WindowFunctionExpression(Name, UseStarWhenNoArguments, Type, TypeMapping, arguments, partitions, orderings)
+                ? new WindowFunctionExpression(Name, UseAsteriskWhenNoArguments, Type, TypeMapping, arguments, partitions, orderings)
                 : this;
    }
 
@@ -84,7 +84,7 @@ public class WindowFunctionExpression : SqlExpression
       {
          expressionPrinter.VisitCollection(Arguments);
       }
-      else if (UseStarWhenNoArguments)
+      else if (UseAsteriskWhenNoArguments)
       {
          expressionPrinter.Append(" * ");
       }
@@ -118,7 +118,7 @@ public class WindowFunctionExpression : SqlExpression
    {
       return base.Equals(windowFunctionExpression)
              && Name.Equals(windowFunctionExpression.Name)
-             && UseStarWhenNoArguments.Equals(windowFunctionExpression.UseStarWhenNoArguments)
+             && UseAsteriskWhenNoArguments.Equals(windowFunctionExpression.UseAsteriskWhenNoArguments)
              && (Arguments == null ? windowFunctionExpression.Arguments == null : Arguments.SequenceEqual(windowFunctionExpression.Arguments))
              && (Partitions == null ? windowFunctionExpression.Partitions == null : Partitions.SequenceEqual(windowFunctionExpression.Partitions))
              && (Orderings == null ? windowFunctionExpression.Orderings == null : Orderings.SequenceEqual(windowFunctionExpression.Orderings));
@@ -130,7 +130,7 @@ public class WindowFunctionExpression : SqlExpression
       var hash = new HashCode();
       hash.Add(base.GetHashCode());
       hash.Add(Name);
-      hash.Add(UseStarWhenNoArguments);
+      hash.Add(UseAsteriskWhenNoArguments);
 
       foreach (var argument in Arguments)
       {

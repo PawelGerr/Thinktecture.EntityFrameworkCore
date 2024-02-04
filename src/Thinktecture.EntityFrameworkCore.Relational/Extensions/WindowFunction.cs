@@ -26,19 +26,19 @@ public abstract partial class WindowFunction
    /// <summary>
    /// Indication whether to use '*' when no arguments are provided.
    /// </summary>
-   public bool UseStarWhenNoArguments { get; }
+   public bool UseAsteriskWhenNoArguments { get; }
 
    /// <summary>
    /// Initializes a new instance of <see cref="WindowFunction"/>.
    /// </summary>
    /// <param name="name">The name of the window function.</param>
    /// <param name="returnType">Return type of the function.</param>
-   /// <param name="useStarWhenNoArguments">Indication whether to use '*' when no arguments are provided.</param>
-   protected WindowFunction(string name, Type returnType, bool useStarWhenNoArguments)
+   /// <param name="useAsteriskWhenNoArguments">Indication whether to use '*' when no arguments are provided.</param>
+   protected WindowFunction(string name, Type returnType, bool useAsteriskWhenNoArguments)
    {
       Name = EnsureValidName(name);
       ReturnType = returnType ?? throw new ArgumentNullException(nameof(returnType));
-      UseStarWhenNoArguments = useStarWhenNoArguments;
+      UseAsteriskWhenNoArguments = useAsteriskWhenNoArguments;
    }
 
    private static string EnsureValidName(string name)
@@ -59,12 +59,12 @@ public abstract partial class WindowFunction
    /// </summary>
    /// <param name="name">The name of the function.</param>
    /// <param name="returnType">The return type of the function.</param>
-   /// <param name="useStarWhenNoArguments">Indication whether to use '*' when no arguments are provided.</param>
-   public void Deconstruct(out string name, out Type returnType, out bool useStarWhenNoArguments)
+   /// <param name="useAsteriskWhenNoArguments">Indication whether to use '*' when no arguments are provided.</param>
+   public void Deconstruct(out string name, out Type returnType, out bool useAsteriskWhenNoArguments)
    {
       name = Name;
       returnType = ReturnType;
-      useStarWhenNoArguments = UseStarWhenNoArguments;
+      useAsteriskWhenNoArguments = UseAsteriskWhenNoArguments;
    }
 }
 
@@ -77,11 +77,11 @@ public sealed class WindowFunction<TResult> : WindowFunction, IEquatable<WindowF
    /// Initializes a new instance of <see cref="WindowFunction{TResult}"/>.
    /// </summary>
    /// <param name="name">The name of the window function</param>
-   /// <param name="useStarWhenNoArguments">Indication whether to use '*' when no arguments are provided.</param>
+   /// <param name="useAsteriskWhenNoArguments">Indication whether to use '*' when no arguments are provided.</param>
    public WindowFunction(
       string name,
-      bool useStarWhenNoArguments = false)
-      : base(name, typeof(TResult), useStarWhenNoArguments)
+      bool useAsteriskWhenNoArguments = false)
+      : base(name, typeof(TResult), useAsteriskWhenNoArguments)
    {
    }
 
