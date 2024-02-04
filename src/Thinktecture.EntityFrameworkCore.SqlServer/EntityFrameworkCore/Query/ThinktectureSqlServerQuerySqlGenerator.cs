@@ -41,9 +41,21 @@ public class ThinktectureSqlServerQuerySqlGenerator : SqlServerQuerySqlGenerator
 
    private Expression VisitWindowFunction(WindowFunctionExpression windowFunctionExpression)
    {
-      Visit(windowFunctionExpression.AggregateFunction);
+      Sql.Append(windowFunctionExpression.Name).Append(" (");
 
-      Sql.Append(" ").Append("OVER (");
+      for (var i = 0; i < windowFunctionExpression.Arguments.Count; i++)
+      {
+         if (i != 0)
+            Sql.Append(", ");
+
+         var argument = windowFunctionExpression.Arguments[i];
+         Visit(argument);
+      }
+
+      if (windowFunctionExpression.Arguments.Count == 0 && windowFunctionExpression.UseStarWhenNoArguments)
+         Sql.Append("*");
+
+      Sql.Append(") OVER (");
 
       if (windowFunctionExpression.Partitions.Count != 0)
       {

@@ -179,6 +179,13 @@ public sealed class SqlServerDbContextOptionsExtension : DbContextOptionsExtensi
 
       if (_relationalOptions.AddSchemaRespectingComponents)
          services.AddSingleton<IMigrationOperationSchemaSetter, SqlServerMigrationOperationSchemaSetter>();
+
+      if (AddWindowFunctionsSupport)
+      {
+         var lifetime = GetLifetime<IEvaluatableExpressionFilterPlugin>();
+         services.Add(ServiceDescriptor.Describe(typeof(IEvaluatableExpressionFilterPlugin), typeof(WindowFunctionEvaluatableExpressionFilterPlugin), lifetime));
+
+      }
    }
 
    /// <summary>
