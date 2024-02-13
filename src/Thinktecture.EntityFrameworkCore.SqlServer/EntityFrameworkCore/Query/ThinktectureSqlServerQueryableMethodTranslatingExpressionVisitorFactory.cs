@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.SqlServer.Infrastructure.Internal;
+using Microsoft.EntityFrameworkCore.SqlServer.Query.Internal;
 
 namespace Thinktecture.EntityFrameworkCore.Query;
 
@@ -34,6 +35,6 @@ public sealed class ThinktectureSqlServerQueryableMethodTranslatingExpressionVis
    /// <inheritdoc />
    public QueryableMethodTranslatingExpressionVisitor Create(QueryCompilationContext queryCompilationContext)
    {
-      return new ThinktectureSqlServerQueryableMethodTranslatingExpressionVisitor(_dependencies, _relationalDependencies, queryCompilationContext, _sqlServerSingletonOptions);
+      return new ThinktectureSqlServerQueryableMethodTranslatingExpressionVisitor(_dependencies, _relationalDependencies, (SqlServerQueryCompilationContext)queryCompilationContext, _sqlServerSingletonOptions);
    }
 }

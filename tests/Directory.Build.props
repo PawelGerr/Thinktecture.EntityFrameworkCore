@@ -3,19 +3,19 @@
    <PropertyGroup>
       <ParentPropsFile>$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))</ParentPropsFile>
       <IsPackable>false</IsPackable>
-      <NoWarn>$(NoWarn);CA1062;EF1002</NoWarn>
+      <NoWarn>$(NoWarn);CA1062;EF1002;xUnit1041</NoWarn>
    </PropertyGroup>
 
    <Import Condition="exists('$(ParentPropsFile)') " Project="$(ParentPropsFile)" />
 
    <ItemGroup>
       <PackageReference Include="FluentAssertions" Version="6.12.0" />
-      <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+      <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.9.0" />
       <PackageReference Include="NSubstitute" Version="5.1.0" />
-      <PackageReference Include="Serilog.Extensions.Logging" Version="7.0.0" />
+      <PackageReference Include="Serilog.Extensions.Logging" Version="8.0.0" />
       <PackageReference Include="Serilog.Sinks.XUnit" Version="3.0.5" />
-      <PackageReference Include="xunit" Version="2.6.1" />
-      <PackageReference Include="xunit.runner.visualstudio" Version="2.5.3" PrivateAssets="all" />
+      <PackageReference Include="xunit" Version="2.6.6" />
+      <PackageReference Include="xunit.runner.visualstudio" Version="2.5.6" PrivateAssets="all" />
    </ItemGroup>
 
    <ItemGroup>
