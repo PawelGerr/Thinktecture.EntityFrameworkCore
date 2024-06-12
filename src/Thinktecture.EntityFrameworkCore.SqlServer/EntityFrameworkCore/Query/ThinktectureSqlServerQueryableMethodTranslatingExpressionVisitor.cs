@@ -17,7 +17,7 @@ public class ThinktectureSqlServerQueryableMethodTranslatingExpressionVisitor
    public ThinktectureSqlServerQueryableMethodTranslatingExpressionVisitor(
       QueryableMethodTranslatingExpressionVisitorDependencies dependencies,
       RelationalQueryableMethodTranslatingExpressionVisitorDependencies relationalDependencies,
-      QueryCompilationContext queryCompilationContext,
+      SqlServerQueryCompilationContext queryCompilationContext,
       ISqlServerSingletonOptions sqlServerSingletonOptions)
       : base(dependencies, relationalDependencies, queryCompilationContext, sqlServerSingletonOptions)
    {

@@ -78,8 +78,26 @@ public class ThinktectureSqlServerQuerySqlGenerator : SqlServerQuerySqlGenerator
       return windowFunctionExpression;
    }
 
-   /// <inheritdoc />
-   protected override Expression VisitTable(TableExpression tableExpression)
+    /// <inheritdoc />
+    protected override Expression VisitColumn(ColumnExpression columnExpression)
+    {
+        ArgumentNullException.ThrowIfNull(columnExpression);
+        var cTable = columnExpression.Table;
+        while (cTable is SelectExpression selectExpression && cTable is not TableExpression)
+        {
+            cTable = selectExpression.Tables[0];
+        }
+        
+        var ignoredColumns = cTable.FindAnnotation(ThinktectureRelationalAnnotationNames.IGNORED_COLUMNS)?.Value as IReadOnlyList<string>;
+        if (ignoredColumns?.Contains(columnExpression.Name) ?? false)
+        {
+            Sql.Append($"NULL as {columnExpression.Name}");
+            return columnExpression;
+        }
+        return base.VisitColumn(columnExpression);
+    }
+    /// <inheritdoc />
+    protected override Expression VisitTable(TableExpression tableExpression)
    {
       ArgumentNullException.ThrowIfNull(tableExpression);
 
