@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 using Thinktecture.EntityFrameworkCore.Internal;
+using Thinktecture.EntityFrameworkCore.Relational.Internal;
 using Thinktecture.Internal;
 
 // ReSharper disable once CheckNamespace
@@ -45,7 +46,10 @@ public static class RelationalQueryableMethodTranslatingExpressionVisitorExtensi
 
          if (methodCallExpression.Method.Name == nameof(RelationalQueryableExtensions.WithTableHints))
             return TranslateTableHints(GetShapedQueryExpression(visitor, methodCallExpression), methodCallExpression);
-      }
+
+            if (methodCallExpression.Method.Name == nameof(RelationalQueryableExtensions.IgnoreProperties))
+                return TranslateIgnoreProperties(GetShapedQueryExpression(visitor, methodCallExpression), methodCallExpression);
+        }
 
       return null;
    }
@@ -66,7 +70,20 @@ public static class RelationalQueryableMethodTranslatingExpressionVisitorExtensi
       return shapedQueryExpression.Update(newSelectExpression, shapedQueryExpression.ShaperExpression);
    }
 
-   private static ShapedQueryExpression GetShapedQueryExpression(
+    private static Expression TranslateIgnoreProperties(
+      ShapedQueryExpression shapedQueryExpression,
+      MethodCallExpression methodCallExpression)
+    {
+        var ignorePropertiesExpression = (IgnorePropertiesExpression)methodCallExpression.Arguments[1] ?? throw new InvalidOperationException("Properties cannot be null.");
+        var propertiesToIgnore = ignorePropertiesExpression.Value ?? throw new Exception("No properties provided.");
+        if (propertiesToIgnore.Count == 0)
+            return shapedQueryExpression;
+        var selectExpression = (SelectExpression)shapedQueryExpression.QueryExpression;
+        var newSelectExpression = selectExpression.AddAnnotation(new Annotation(ThinktectureRelationalAnnotationNames.IGNORED_COLUMNS, propertiesToIgnore));
+        return shapedQueryExpression.Update(newSelectExpression, shapedQueryExpression.ShaperExpression);
+    }
+
+    private static ShapedQueryExpression GetShapedQueryExpression(
       ExpressionVisitor visitor,
       MethodCallExpression methodCallExpression)
    {

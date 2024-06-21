@@ -1,6 +1,7 @@
 using System.Linq.Expressions;
 using System.Reflection;
 using Thinktecture.EntityFrameworkCore;
+using Thinktecture.EntityFrameworkCore.Relational.Internal;
 using Thinktecture.Internal;
 
 // ReSharper disable once CheckNamespace
@@ -18,15 +19,18 @@ public static class RelationalQueryableExtensions
                                                                                              .Single(m => m.Name == nameof(WithTableHints)
                                                                                                           && m.IsGenericMethod
                                                                                                           && m.GetParameters()[1].ParameterType == typeof(IReadOnlyList<ITableHint>));
-
-   /// <summary>
-   /// Adds table hints to a table specified in <paramref name="source"/>.
-   /// </summary>
-   /// <param name="source">Query using a table to apply table hints to.</param>
-   /// <param name="hints">Table hints.</param>
-   /// <typeparam name="T">Entity type.</typeparam>
-   /// <returns>Query with table hints applied.</returns>
-   public static IQueryable<T> WithTableHints<T>(this IQueryable<T> source, params ITableHint[] hints)
+    private static readonly MethodInfo _ignoreProperties = typeof(RelationalQueryableExtensions).GetMethods(BindingFlags.Public | BindingFlags.Static)
+                                                                                              .Single(m => m.Name == nameof(IgnoreProperties)
+                                                                                                           && m.IsGenericMethod
+                                                                                                           && m.GetParameters()[1].ParameterType == typeof(IReadOnlyList<string>));
+    /// <summary>
+    /// Adds table hints to a table specified in <paramref name="source"/>.
+    /// </summary>
+    /// <param name="source">Query using a table to apply table hints to.</param>
+    /// <param name="hints">Table hints.</param>
+    /// <typeparam name="T">Entity type.</typeparam>
+    /// <returns>Query with table hints applied.</returns>
+    public static IQueryable<T> WithTableHints<T>(this IQueryable<T> source, params ITableHint[] hints)
    {
       return source.WithTableHints((IReadOnlyList<ITableHint>)hints);
    }
@@ -48,28 +52,44 @@ public static class RelationalQueryableExtensions
       return source.Provider.CreateQuery<T>(expression);
    }
 
-   /// <summary>
-   /// Performs a LEFT JOIN.
-   /// </summary>
-   /// <param name="left">Left side query.</param>
-   /// <param name="right">Right side query.</param>
-   /// <param name="leftKeySelector">JOIN key selector for the entity on the left.</param>
-   /// <param name="rightKeySelector">JOIN key selector for the entity on the right.</param>
-   /// <typeparam name="TLeft">Type of the entity on the left side.</typeparam>
-   /// <typeparam name="TRight">Type of the entity on the right side.</typeparam>
-   /// <typeparam name="TRight2">Type of the entity on the right side.</typeparam>
-   /// <typeparam name="TRight3">Type of the entity on the right side.</typeparam>
-   /// <typeparam name="TRight4">Type of the entity on the right side.</typeparam>
-   /// <typeparam name="TRight5">Type of the entity on the right side.</typeparam>
-   /// <typeparam name="TKey">Type of the JOIN key.</typeparam>
-   /// <returns>An <see cref="IQueryable{T}"/> with item type <see cref="LeftJoinResult{TLeft,TRight}"/>.</returns>
-   /// <exception cref="ArgumentNullException">
-   /// <paramref name="left"/> is <c>null</c>
-   /// - or <paramref name="right"/> is <c>null</c>
-   /// - or <paramref name="leftKeySelector"/> is <c>null</c>
-   /// - or <paramref name="rightKeySelector"/> is <c>null</c>
-   /// </exception>
-   public static IQueryable<LeftJoinResult<TLeft, TRight?, TRight2?, TRight3?, TRight4?, TRight5?>> LeftJoin<TLeft, TRight, TRight2, TRight3, TRight4, TRight5, TKey>(
+    /// <summary>
+    /// Adds table hints to a table specified in <paramref name="source"/>.
+    /// </summary>
+    /// <param name="source">Query using a table to apply table hints to.</param>
+    /// <param name="hints">Table hints.</param>
+    /// <typeparam name="T">Entity type.</typeparam>
+    /// <returns>Query with table hints applied.</returns>
+    public static IQueryable<T> IgnoreProperties<T>(this IQueryable<T> source, IReadOnlyList<string> properties)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        ArgumentNullException.ThrowIfNull(properties);
+        var methodInfo = _ignoreProperties.MakeGenericMethod(typeof(T));
+        var expression = Expression.Call(null, methodInfo, source.Expression, new IgnorePropertiesExpression(properties));
+        return source.Provider.CreateQuery<T>(expression);
+    }
+
+    /// <summary>
+    /// Performs a LEFT JOIN.
+    /// </summary>
+    /// <param name="left">Left side query.</param>
+    /// <param name="right">Right side query.</param>
+    /// <param name="leftKeySelector">JOIN key selector for the entity on the left.</param>
+    /// <param name="rightKeySelector">JOIN key selector for the entity on the right.</param>
+    /// <typeparam name="TLeft">Type of the entity on the left side.</typeparam>
+    /// <typeparam name="TRight">Type of the entity on the right side.</typeparam>
+    /// <typeparam name="TRight2">Type of the entity on the right side.</typeparam>
+    /// <typeparam name="TRight3">Type of the entity on the right side.</typeparam>
+    /// <typeparam name="TRight4">Type of the entity on the right side.</typeparam>
+    /// <typeparam name="TRight5">Type of the entity on the right side.</typeparam>
+    /// <typeparam name="TKey">Type of the JOIN key.</typeparam>
+    /// <returns>An <see cref="IQueryable{T}"/> with item type <see cref="LeftJoinResult{TLeft,TRight}"/>.</returns>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="left"/> is <c>null</c>
+    /// - or <paramref name="right"/> is <c>null</c>
+    /// - or <paramref name="leftKeySelector"/> is <c>null</c>
+    /// - or <paramref name="rightKeySelector"/> is <c>null</c>
+    /// </exception>
+    public static IQueryable<LeftJoinResult<TLeft, TRight?, TRight2?, TRight3?, TRight4?, TRight5?>> LeftJoin<TLeft, TRight, TRight2, TRight3, TRight4, TRight5, TKey>(
       this IQueryable<LeftJoinResult<TLeft, TRight?, TRight2?, TRight3?, TRight4?>> left,
       IEnumerable<TRight5> right,
       Expression<Func<LeftJoinResult<TLeft, TRight?, TRight2?, TRight3?, TRight4?>, TKey>> leftKeySelector,
