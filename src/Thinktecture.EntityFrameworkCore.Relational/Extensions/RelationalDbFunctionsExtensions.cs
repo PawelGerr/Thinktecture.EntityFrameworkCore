@@ -216,7 +216,7 @@ public static class RelationalDbFunctionsExtensions
    }
 
    /// <summary>
-   /// Definition of the ORDER BY clause of a the ROW_NUMBER expression.
+   /// Definition of the ORDER BY clause of a the window function.
    /// </summary>
    /// <remarks>
    /// This method is for use with Entity Framework Core only and has no in-memory implementation.
@@ -228,7 +228,7 @@ public static class RelationalDbFunctionsExtensions
    }
 
    /// <summary>
-   /// Definition of the ORDER BY clause of a the ROW_NUMBER expression.
+   /// Definition of the ORDER BY clause of a the window function.
    /// </summary>
    /// <remarks>
    /// This method is for use with Entity Framework Core only and has no in-memory implementation.
@@ -240,7 +240,7 @@ public static class RelationalDbFunctionsExtensions
    }
 
    /// <summary>
-   /// Definition of the ORDER BY clause of a the ROW_NUMBER expression.
+   /// Definition of the ORDER BY clause of a the window function.
    /// </summary>
    /// <remarks>
    /// This method is for use with Entity Framework Core only and has no in-memory implementation.
@@ -252,13 +252,73 @@ public static class RelationalDbFunctionsExtensions
    }
 
    /// <summary>
-   /// Definition of the ORDER BY clause of a the ROW_NUMBER expression.
+   /// Definition of the ORDER BY clause of a the window function.
    /// </summary>
    /// <remarks>
    /// This method is for use with Entity Framework Core only and has no in-memory implementation.
    /// </remarks>
    /// <exception cref="InvalidOperationException">Is thrown if executed in-memory.</exception>
    public static WindowFunctionOrderByClause ThenByDescending<T>(this WindowFunctionOrderByClause clause, T column)
+   {
+      throw new InvalidOperationException("This method is for use with Entity Framework Core only and has no in-memory implementation.");
+   }
+
+   /// <summary>
+   /// Definition of the PARTITION BY clause of a window function.
+   /// </summary>
+   /// <remarks>
+   /// This method is for use with Entity Framework Core only and has no in-memory implementation.
+   /// </remarks>
+   /// <exception cref="InvalidOperationException">Is thrown if executed in-memory.</exception>
+   public static WindowFunctionPartitionByClause PartitionBy<T1>(this DbFunctions _, T1 column1)
+   {
+      throw new InvalidOperationException("This method is for use with Entity Framework Core only and has no in-memory implementation.");
+   }
+
+   /// <summary>
+   /// Definition of the PARTITION BY clause of a window function.
+   /// </summary>
+   /// <remarks>
+   /// This method is for use with Entity Framework Core only and has no in-memory implementation.
+   /// </remarks>
+   /// <exception cref="InvalidOperationException">Is thrown if executed in-memory.</exception>
+   public static WindowFunctionPartitionByClause PartitionBy<T1, T2>(this DbFunctions _, T1 column1, T2 column2)
+   {
+      throw new InvalidOperationException("This method is for use with Entity Framework Core only and has no in-memory implementation.");
+   }
+
+   /// <summary>
+   /// Definition of the PARTITION BY clause of a window function.
+   /// </summary>
+   /// <remarks>
+   /// This method is for use with Entity Framework Core only and has no in-memory implementation.
+   /// </remarks>
+   /// <exception cref="InvalidOperationException">Is thrown if executed in-memory.</exception>
+   public static WindowFunctionPartitionByClause PartitionBy<T1, T2, T3>(this DbFunctions _, T1 column1, T2 column2, T3 column3)
+   {
+      throw new InvalidOperationException("This method is for use with Entity Framework Core only and has no in-memory implementation.");
+   }
+
+   /// <summary>
+   /// Definition of the PARTITION BY clause of a window function.
+   /// </summary>
+   /// <remarks>
+   /// This method is for use with Entity Framework Core only and has no in-memory implementation.
+   /// </remarks>
+   /// <exception cref="InvalidOperationException">Is thrown if executed in-memory.</exception>
+   public static WindowFunctionPartitionByClause PartitionBy<T1, T2, T3, T4>(this DbFunctions _, T1 column1, T2 column2, T3 column3, T4 column4)
+   {
+      throw new InvalidOperationException("This method is for use with Entity Framework Core only and has no in-memory implementation.");
+   }
+
+   /// <summary>
+   /// Definition of the PARTITION BY clause of a window function.
+   /// </summary>
+   /// <remarks>
+   /// This method is for use with Entity Framework Core only and has no in-memory implementation.
+   /// </remarks>
+   /// <exception cref="InvalidOperationException">Is thrown if executed in-memory.</exception>
+   public static WindowFunctionPartitionByClause PartitionBy<T1, T2, T3, T4, T5>(this DbFunctions _, T1 column1, T2 column2, T3 column3, T4 column4, T5 column5)
    {
       throw new InvalidOperationException("This method is for use with Entity Framework Core only and has no in-memory implementation.");
    }

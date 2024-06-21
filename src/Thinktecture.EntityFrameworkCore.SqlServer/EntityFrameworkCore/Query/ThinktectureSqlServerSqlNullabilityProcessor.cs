@@ -28,13 +28,10 @@ public class ThinktectureSqlServerSqlNullabilityProcessor : SqlServerSqlNullabil
             nullable = false;
             return sqlExpression;
          }
-         case WindowFunctionExpression { AggregateFunction: SqlServerAggregateFunctionExpression aggregateFunction } windowFunctionExpression:
+         case WindowFunctionExpression:
          {
-            var visitedAggregateFunction = base.VisitSqlServerAggregateFunction(aggregateFunction, allowOptimizedExpansion, out nullable);
-
-            return aggregateFunction == visitedAggregateFunction
-                      ? windowFunctionExpression
-                      : new WindowFunctionExpression(visitedAggregateFunction, windowFunctionExpression.Partitions, windowFunctionExpression.Orderings);
+            nullable = true;
+            return sqlExpression;
          }
          default:
             return base.VisitCustomSqlExpression(sqlExpression, allowOptimizedExpansion, out nullable);

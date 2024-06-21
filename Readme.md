@@ -1,6 +1,8 @@
 # Thinktecture.EntityFrameworkCore
 
 [![Build Status](https://dev.azure.com/pawelgerr/Thinktecture.EntityFrameworkCore/_apis/build/status/Thinktecture.EntityFrameworkCore/Thinktecture.EntityFrameworkCore%20CI?branchName=master)](https://dev.azure.com/pawelgerr/Thinktecture.EntityFrameworkCore/_build/latest?definitionId=4&branchName=master)
+![NuGet Downloads](https://img.shields.io/nuget/dt/Thinktecture.EntityFrameworkCore.Relational)
+
 
 [![Thinktecture.EntityFrameworkCore.Relational](https://img.shields.io/nuget/vpre/Thinktecture.EntityFrameworkCore.Relational.svg?label=Thinktecture.EntityFrameworkCore.Relational&maxAge=3600)](https://www.nuget.org/packages/Thinktecture.EntityFrameworkCore.Relational/)  
 [![Thinktecture.EntityFrameworkCore.SqlServer](https://img.shields.io/nuget/vpre/Thinktecture.EntityFrameworkCore.SqlServer.svg?label=Thinktecture.EntityFrameworkCore.SqlServer&maxAge=3600)](https://www.nuget.org/packages/Thinktecture.EntityFrameworkCore.SqlServer/)  
