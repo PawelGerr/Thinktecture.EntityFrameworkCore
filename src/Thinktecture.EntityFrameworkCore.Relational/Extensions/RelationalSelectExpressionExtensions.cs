@@ -26,9 +26,6 @@ public static class RelationalSelectExpressionExtensions
         if (tables.Count == 0)
            throw new InvalidOperationException($"No tables found to add annotation '{annotation.Name}' to.");
 
-        //if (tables.Count > 1)
-        //   throw new InvalidOperationException($"Multiple tables found to add annotation '{annotation.Name}' to. Expressions: {String.Join(", ", tables.Select(t => t.Print()))}");
-
         foreach (var table in tables)
         {
             if (table is not TableExpression && table is not LeftJoinExpression && table is not CrossJoinExpression && table is not InnerJoinExpression)

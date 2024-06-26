@@ -1,9 +1,13 @@
 ﻿using Thinktecture.Internal;
 namespace Thinktecture.EntityFrameworkCore.Relational.Internal
 {
+    /// <inheritdoc/>
     public class IgnorePropertiesExpression : NonEvaluatableConstantExpression<IReadOnlyList<string>>
     {
-        /// <inheritdoc />
+        /// <summary>
+        /// Initializes new instance of <see cref="IgnorePropertiesExpression"/>
+        /// </summary>
+        /// <param name="value"></param>
         public IgnorePropertiesExpression(IReadOnlyList<string> value)
            : base(value)
         {

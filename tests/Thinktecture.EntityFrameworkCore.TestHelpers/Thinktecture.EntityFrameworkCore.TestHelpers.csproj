@@ -3,7 +3,7 @@
    <PropertyGroup>
       <NoWarn>$(NoWarn);CS1591;CA1063;CA1812;CA1816;CA1822;CA2000;EF1001</NoWarn>
       <IsTestProject>false</IsTestProject>
-      <TargetFrameworks>net7.0</TargetFrameworks>
+      <TargetFrameworks>net8.0</TargetFrameworks>
    </PropertyGroup>
 
    <ItemGroup>

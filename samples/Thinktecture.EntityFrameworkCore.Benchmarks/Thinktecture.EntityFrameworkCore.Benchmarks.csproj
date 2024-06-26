@@ -4,7 +4,6 @@
       <OutputType>Exe</OutputType>
       <NoWarn>$(NoWarn);CS1591;CS8321</NoWarn>
       <IsPackable>false</IsPackable>
-      <TargetFrameworks>net7.0</TargetFrameworks>
    </PropertyGroup>
 
    <ItemGroup>
