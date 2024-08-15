@@ -17,7 +17,7 @@ public class SqlServerContainerFixture : IDisposable, IAsyncDisposable, IAsyncLi
    private static MsSqlContainer BuildContainer()
    {
       return new MsSqlBuilder()
-             .WithImage("mcr.microsoft.com/mssql/server:2022-latest")
+             .WithImage("mcr.microsoft.com/mssql/server:2022-CU13-ubuntu-22.04")
              .WithPassword($"P@sswo0d01_{Guid.NewGuid()}")
              .WithCleanUp(true)
              .Build();
