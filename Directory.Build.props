@@ -17,6 +17,7 @@
     <Nullable>enable</Nullable>
     <NoWarn>$(NoWarn);CA1303;MSB3884;</NoWarn>
     <ImplicitUsings>enable</ImplicitUsings>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
 
     <VSTestLogger>trx%3bLogFileName=$(MSBuildProjectName).trx</VSTestLogger>
     <VSTestResultsDirectory>$(MSBuildThisFileDirectory)test-results/$(TargetFramework)</VSTestResultsDirectory>

@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
    <ItemGroup>
-      <PackageReference Include="Serilog.Extensions.Logging" Version="8.0.0" />
-      <PackageReference Include="Serilog.Sinks.XUnit" Version="3.0.5" />
+      <PackageReference Include="Serilog.Extensions.Logging" />
+      <PackageReference Include="Serilog.Sinks.XUnit" />
    </ItemGroup>
 
    <ItemGroup>
