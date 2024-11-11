@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
+using Thinktecture.EntityFrameworkCore;
 using Thinktecture.EntityFrameworkCore.Internal;
 using Thinktecture.Internal;
 
@@ -54,8 +55,13 @@ public static class RelationalQueryableMethodTranslatingExpressionVisitorExtensi
       ShapedQueryExpression shapedQueryExpression,
       MethodCallExpression methodCallExpression)
    {
-      var tableHintsExpression = (TableHintsExpression)methodCallExpression.Arguments[1] ?? throw new InvalidOperationException("Table hints cannot be null.");
-      var tableHints = tableHintsExpression.Value ?? throw new Exception("No table hints provided.");
+      var hintArgs = methodCallExpression.Arguments[1];
+      var tableHints = hintArgs switch
+      {
+         TableHintsExpression tableHintsExpression => tableHintsExpression.Value,
+         ConstantExpression constantExpression => (IReadOnlyList<ITableHint>?)constantExpression.Value ?? throw new Exception("No table hints provided."),
+         _ => throw new NotSupportedException($"Table hint argument of type '{hintArgs.GetType().FullName}' is not supported.")
+      };
 
       if (tableHints.Count == 0)
          return shapedQueryExpression;

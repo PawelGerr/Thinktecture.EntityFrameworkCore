@@ -1,4 +1,6 @@
 using System.Data;
+using System.Data.Common;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -49,12 +51,13 @@ public sealed class SqliteTempTableReference : ITempTableReference
    {
       try
       {
-         if (!_dropTableOnDispose || _database.GetDbConnection().State != ConnectionState.Open)
+         using var command = TryCreateCleanupCommand();
+
+         if (command is null)
             return;
 
-         var sql = $"DROP TABLE IF EXISTS {_sqlGenerationHelper.DelimitIdentifier(Name, "temp")}";
+         command.ExecuteNonQuery();
 
-         _database.ExecuteSqlRaw(sql);
          _database.CloseConnection();
       }
       catch (ObjectDisposedException ex)
@@ -72,12 +75,13 @@ public sealed class SqliteTempTableReference : ITempTableReference
    {
       try
       {
-         if (!_dropTableOnDispose || _database.GetDbConnection().State != ConnectionState.Open)
+         await using var command = TryCreateCleanupCommand();
+
+         if (command is null)
             return;
 
-         var sql = $"DROP TABLE IF EXISTS {_sqlGenerationHelper.DelimitIdentifier(Name, "temp")}";
+         await command.ExecuteNonQueryAsync();
 
-         await _database.ExecuteSqlRawAsync(sql).ConfigureAwait(false);
          await _database.CloseConnectionAsync().ConfigureAwait(false);
       }
       catch (ObjectDisposedException ex)
@@ -87,6 +91,34 @@ public sealed class SqliteTempTableReference : ITempTableReference
       finally
       {
          _nameLease.Dispose();
+      }
+   }
+
+   private DbCommand? TryCreateCleanupCommand()
+   {
+      DbCommand? command = null;
+
+      try
+      {
+         if (!_dropTableOnDispose)
+            return null;
+
+         var connection = _database.GetDbConnection();
+
+         if (connection.State != ConnectionState.Open)
+            return null;
+
+         var sql = $"DROP TABLE IF EXISTS {_sqlGenerationHelper.DelimitIdentifier(Name, "temp")}";
+
+         command = connection.CreateCommand();
+         command.CommandText = sql;
+
+         return command;
+      }
+      catch
+      {
+         command?.Dispose();
+         throw;
       }
    }
 }

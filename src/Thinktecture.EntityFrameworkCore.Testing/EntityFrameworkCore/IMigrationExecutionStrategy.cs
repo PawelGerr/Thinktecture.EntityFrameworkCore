@@ -13,7 +13,7 @@ public interface IMigrationExecutionStrategy
    public static readonly IMigrationExecutionStrategy NoMigration = new NoMigrationExecutionStrategy();
 
    /// <summary>
-   /// The database will be migrated using <see cref="RelationalDatabaseFacadeExtensions.Migrate"/>.
+   /// The database will be migrated using <see cref="RelationalDatabaseFacadeExtensions.Migrate(Microsoft.EntityFrameworkCore.Infrastructure.DatabaseFacade)"/>.
    /// </summary>
    public static readonly IMigrationExecutionStrategy Migrations = new MigrationExecutionStrategy();
 

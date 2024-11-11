@@ -240,76 +240,6 @@ public class SqlServerTestDbContextProvider<T> : SqlServerTestDbContextProvider,
    }
 
    /// <summary>
-   /// Starts a new transaction for migration and cleanup.
-   /// </summary>
-   /// <param name="ctx">Database context.</param>
-   /// <returns>An instance of <see cref="IDbContextTransaction"/>.</returns>
-   protected virtual IDbContextTransaction? BeginMigrationAndCleanupTransaction(T ctx)
-   {
-      ArgumentNullException.ThrowIfNull(ctx);
-
-      if (!_lockTableEnabled)
-         return ctx.Database.BeginTransaction(IsolationLevel.Serializable);
-
-      var sqlGenerationHelper = ctx.GetService<ISqlGenerationHelper>();
-      var lockTableName = sqlGenerationHelper.DelimitIdentifier(_lockTableName, _lockTableSchema);
-
-      CreateTestIsolationTable(ctx, lockTableName);
-
-      for (var i = 0;; i++)
-      {
-         var tx = ctx.Database.BeginTransaction(IsolationLevel.Serializable);
-
-         try
-         {
-            LockDatabase(ctx, lockTableName);
-            return tx;
-         }
-         catch (Exception)
-         {
-            tx.Dispose();
-
-            if (i > _maxNumberOfLockRetries)
-               throw;
-
-            var delay = new TimeSpan(_random.NextInt64(_minRetryDelay.Ticks, _maxRetryDelay.Ticks));
-            Task.Delay(delay).GetAwaiter().GetResult();
-         }
-      }
-   }
-
-   private void CreateTestIsolationTable(T ctx, string lockTableName)
-   {
-      var createTableSql = $"""
-                            IF(OBJECT_ID('{lockTableName}') IS NULL)
-                            	CREATE TABLE {lockTableName}(Id INT NOT NULL)
-                            """;
-
-      for (var i = 0;; i++)
-      {
-         try
-         {
-            ctx.Database.ExecuteSqlRaw(createTableSql);
-            return;
-         }
-         catch (Exception)
-         {
-            if (i > _maxNumberOfLockRetries)
-               throw;
-
-            var delay = new TimeSpan(_random.NextInt64(_minRetryDelay.Ticks, _maxRetryDelay.Ticks));
-            Task.Delay(delay).GetAwaiter().GetResult();
-         }
-      }
-   }
-
-   private static void LockDatabase(T ctx, string lockTableName)
-   {
-      var selectSql = $"SELECT * FROM {lockTableName} WITH (HOLDLOCK, UPDLOCK)";
-      ctx.Database.ExecuteSqlRaw(selectSql);
-   }
-
-   /// <summary>
    /// Runs migrations for provided <paramref name="ctx" />.
    /// </summary>
    /// <param name="ctx">Database context to run migrations for.</param>
@@ -326,21 +256,7 @@ public class SqlServerTestDbContextProvider<T> : SqlServerTestDbContextProvider,
          try
          {
             LogLevelSwitch.MinimumLogLevel = _testingLoggingOptions.MigrationLogLevel;
-
-            IDbContextTransaction? migrationTx = null;
-
-            if (ctx.Database.CurrentTransaction is null)
-               migrationTx = BeginMigrationAndCleanupTransaction(ctx);
-
-            try
-            {
-               _migrationExecutionStrategy.Migrate(ctx);
-               migrationTx?.Commit();
-            }
-            finally
-            {
-               migrationTx?.Dispose();
-            }
+            _migrationExecutionStrategy.Migrate(ctx);
          }
          finally
          {
@@ -427,22 +343,7 @@ public class SqlServerTestDbContextProvider<T> : SqlServerTestDbContextProvider,
       {
          // Create a new ctx as a last resort to rollback migrations and clean up the database
          await using var ctx = _actDbContext ?? _arrangeDbContext ?? _assertDbContext ?? CreateDbContext(_masterDbContextOptions, Schema is null ? null : new DbDefaultSchema(Schema));
-
-         IDbContextTransaction? migrationTx = null;
-
-         if (ctx.Database.CurrentTransaction is null)
-            migrationTx = BeginMigrationAndCleanupTransaction(ctx);
-
-         try
-         {
-            await _isolationOptions.CleanupAsync(ctx, Schema, cancellationToken);
-
-            await (migrationTx?.CommitAsync(cancellationToken) ?? Task.CompletedTask);
-         }
-         finally
-         {
-            await (migrationTx?.DisposeAsync() ?? ValueTask.CompletedTask);
-         }
+         await _isolationOptions.CleanupAsync(ctx, Schema, cancellationToken);
       }
 
       await (_arrangeDbContext?.DisposeAsync() ?? ValueTask.CompletedTask);

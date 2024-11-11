@@ -1,4 +1,6 @@
 using System.Data;
+using System.Data.Common;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -56,15 +58,13 @@ public sealed class SqlServerTempTableReference : ITempTableReference
 
       try
       {
-         if (!_dropTableOnDispose || _database.GetDbConnection().State != ConnectionState.Open)
+         using var command = TryCreateCleanupCommand();
+
+         if (command is null)
             return;
 
-         var sql = $"""
-                    IF(OBJECT_ID('tempdb..{Name}') IS NOT NULL)
-                        DROP TABLE {_sqlGenerationHelper.DelimitIdentifier(Name)};
-                    """;
+         command.ExecuteNonQuery();
 
-         _database.ExecuteSqlRaw(sql);
          _database.CloseConnection();
       }
       catch (ObjectDisposedException ex)
@@ -87,14 +87,13 @@ public sealed class SqlServerTempTableReference : ITempTableReference
 
       try
       {
-         if (!_dropTableOnDispose || _database.GetDbConnection().State != ConnectionState.Open)
+         await using var command = TryCreateCleanupCommand();
+
+         if (command is null)
             return;
 
-         var sql = $"""
-                    IF(OBJECT_ID('tempdb..{Name}') IS NOT NULL)
-                        DROP TABLE {_sqlGenerationHelper.DelimitIdentifier(Name)};
-                    """;
-         await _database.ExecuteSqlRawAsync(sql).ConfigureAwait(false);
+         await command.ExecuteNonQueryAsync();
+
          await _database.CloseConnectionAsync().ConfigureAwait(false);
       }
       catch (ObjectDisposedException ex)
@@ -104,6 +103,34 @@ public sealed class SqlServerTempTableReference : ITempTableReference
       finally
       {
          _nameLease.Dispose();
+      }
+   }
+
+   private DbCommand? TryCreateCleanupCommand()
+   {
+      DbCommand? command = null;
+
+      try
+      {
+         if (!_dropTableOnDispose)
+            return null;
+
+         var connection = _database.GetDbConnection();
+
+         if (connection.State != ConnectionState.Open)
+            return null;
+
+         command = connection.CreateCommand();
+         command.CommandText = $"""
+                                IF(OBJECT_ID('tempdb..{Name}') IS NOT NULL)
+                                    DROP TABLE {_sqlGenerationHelper.DelimitIdentifier(Name)};
+                                """;
+         return command;
+      }
+      catch
+      {
+         command?.Dispose();
+         throw;
       }
    }
 }

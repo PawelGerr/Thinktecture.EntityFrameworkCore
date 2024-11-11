@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+using System.Reflection;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -10,6 +11,8 @@ namespace Thinktecture.EntityFrameworkCore.Query.SqlExpressions;
 /// </summary>
 public class WindowFunctionPartitionByExpression : SqlExpression, INotNullableSqlExpression
 {
+   private static readonly ConstructorInfo _quotingConstructor = typeof(WindowFunctionPartitionByExpression).GetConstructors().Single();
+
    /// <summary>
    /// Partition by expressions.
    /// </summary>
@@ -37,6 +40,13 @@ public class WindowFunctionPartitionByExpression : SqlExpression, INotNullableSq
       var visited = visitor.VisitExpressions(PartitionBy);
 
       return ReferenceEquals(visited, PartitionBy) ? this : new WindowFunctionPartitionByExpression(visited);
+   }
+
+   /// <inheritdoc />
+   public override Expression Quote()
+   {
+      return New(_quotingConstructor,
+                 NewArrayInit(typeof(SqlExpression), initializers: PartitionBy.Select(o => o.Quote())));
    }
 
    /// <inheritdoc />

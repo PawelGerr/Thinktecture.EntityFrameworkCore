@@ -40,6 +40,7 @@ public class TestDbContext : DbContext, IDbDefaultSchema
 #nullable enable
 
    public Action<ModelBuilder>? ConfigureModel { get; set; }
+   public Action<DbContextOptionsBuilder>? Configure { get; set; }
 
    public TestDbContext(DbContextOptions<TestDbContext> options, IDbDefaultSchema? schema)
       : base(options)
@@ -47,11 +48,18 @@ public class TestDbContext : DbContext, IDbDefaultSchema
       Schema = schema?.Schema;
    }
 
+   protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+   {
+      base.OnConfiguring(optionsBuilder);
+
+      Configure?.Invoke(optionsBuilder);
+   }
+
    /// <inheritdoc />
    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
    {
       configurationBuilder.Properties<decimal>(builder => builder
-                                                          .HavePrecision(18, 5));
+                                                  .HavePrecision(18, 5));
    }
 
    protected override void OnModelCreating(ModelBuilder modelBuilder)

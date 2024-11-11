@@ -23,6 +23,14 @@ steps:
     includePreviewVersions: false
     installationPath: $(Agent.ToolsDirectory)/dotnet
       
+- task: UseDotNet@2
+  displayName: 'use .NET 9.0 SDK'
+  inputs:
+    packageType: sdk
+    version: 9.0.x
+    includePreviewVersions: false
+    installationPath: $(Agent.ToolsDirectory)/dotnet
+      
 - script: |
     echo dotnet --version
     dotnet --version

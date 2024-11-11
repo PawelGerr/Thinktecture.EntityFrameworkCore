@@ -15,7 +15,7 @@ public class ThinktectureSqliteQueryableMethodTranslatingExpressionVisitor : Sql
    public ThinktectureSqliteQueryableMethodTranslatingExpressionVisitor(
       QueryableMethodTranslatingExpressionVisitorDependencies dependencies,
       RelationalQueryableMethodTranslatingExpressionVisitorDependencies relationalDependencies,
-      QueryCompilationContext queryCompilationContext)
+      RelationalQueryCompilationContext queryCompilationContext)
       : base(dependencies, relationalDependencies, queryCompilationContext)
    {
    }

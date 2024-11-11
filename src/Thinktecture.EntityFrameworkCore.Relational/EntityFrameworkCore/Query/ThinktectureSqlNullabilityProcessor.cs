@@ -12,8 +12,8 @@ public class ThinktectureSqlNullabilityProcessor : SqlNullabilityProcessor
    /// <inheritdoc />
    public ThinktectureSqlNullabilityProcessor(
       RelationalParameterBasedSqlProcessorDependencies dependencies,
-      bool useRelationalNulls)
-      : base(dependencies, useRelationalNulls)
+      RelationalParameterBasedSqlProcessorParameters parameters)
+      : base(dependencies, parameters)
    {
    }
 

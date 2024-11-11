@@ -14,8 +14,8 @@ public class ThinktectureSqliteParameterBasedSqlProcessor : SqliteParameterBased
    /// <inheritdoc />
    public ThinktectureSqliteParameterBasedSqlProcessor(
       RelationalParameterBasedSqlProcessorDependencies dependencies,
-      bool useRelationalNulls)
-      : base(dependencies, useRelationalNulls)
+      RelationalParameterBasedSqlProcessorParameters parameters)
+      : base(dependencies, parameters)
    {
    }
 
@@ -25,6 +25,6 @@ public class ThinktectureSqliteParameterBasedSqlProcessor : SqliteParameterBased
       ArgumentNullException.ThrowIfNull(expression);
       ArgumentNullException.ThrowIfNull(parametersValues);
 
-      return new ThinktectureSqlNullabilityProcessor(Dependencies, UseRelationalNulls).Process(expression, parametersValues, out canCache);
+      return new ThinktectureSqlNullabilityProcessor(Dependencies, Parameters).Process(expression, parametersValues, out canCache);
    }
 }

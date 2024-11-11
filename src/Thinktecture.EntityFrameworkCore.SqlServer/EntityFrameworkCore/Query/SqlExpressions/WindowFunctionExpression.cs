@@ -1,7 +1,8 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
+using System.Reflection;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
-using Microsoft.EntityFrameworkCore.SqlServer.Query.Internal;
 using Microsoft.EntityFrameworkCore.Storage;
 
 namespace Thinktecture.EntityFrameworkCore.Query.SqlExpressions;
@@ -11,6 +12,8 @@ namespace Thinktecture.EntityFrameworkCore.Query.SqlExpressions;
 /// </summary>
 public class WindowFunctionExpression : SqlExpression
 {
+   private static readonly ConstructorInfo _quotingConstructor = typeof(WindowFunctionExpression).GetConstructors().Single();
+
    /// <summary>
    /// Creates a new instance of the <see cref="WindowFunctionExpression" /> class.
    /// </summary>
@@ -73,6 +76,20 @@ public class WindowFunctionExpression : SqlExpression
       return !ReferenceEquals(arguments, Arguments) || !ReferenceEquals(partitions, Partitions) || !ReferenceEquals(orderings, Orderings)
                 ? new WindowFunctionExpression(Name, UseAsteriskWhenNoArguments, Type, TypeMapping, arguments, partitions, orderings)
                 : this;
+   }
+
+   /// <inheritdoc />
+   [Experimental("EF9100")]
+   public override Expression Quote()
+   {
+      return New(_quotingConstructor,
+                 Constant(Name),
+                 Constant(UseAsteriskWhenNoArguments),
+                 Constant(Type),
+                 RelationalExpressionQuotingUtilities.QuoteTypeMapping(TypeMapping),
+                 NewArrayInit(typeof(SqlExpression), Arguments.Select(a => a.Quote())),
+                 NewArrayInit(typeof(SqlExpression), Partitions.Select(p => p.Quote())),
+                 NewArrayInit(typeof(OrderingExpression), Orderings.Select(o => o.Quote())));
    }
 
    /// <inheritdoc />

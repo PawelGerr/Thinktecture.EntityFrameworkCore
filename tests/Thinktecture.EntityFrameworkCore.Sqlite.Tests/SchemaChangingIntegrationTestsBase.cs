@@ -10,6 +10,7 @@ public abstract class SchemaChangingIntegrationTestsBase : SqliteDbContextIntegr
    private readonly IMigrationExecutionStrategy? _migrationExecutionStrategy;
 
    protected Action<ModelBuilder>? ConfigureModel { get; set; }
+   protected Action<DbContextOptionsBuilder>? Configure { get; set; }
    protected ILoggerFactory LoggerFactory { get; }
 
    protected SchemaChangingIntegrationTestsBase(
@@ -27,7 +28,11 @@ public abstract class SchemaChangingIntegrationTestsBase : SqliteDbContextIntegr
              .UseMigrationLogLevel(LogLevel.Warning)
              .ConfigureSqliteOptions(optionsBuilder => optionsBuilder.AddBulkOperationSupport()
                                                                      .AddWindowFunctionsSupport())
-             .InitializeContext(ctx => ctx.ConfigureModel = ConfigureModel);
+             .InitializeContext(ctx =>
+                                {
+                                   ctx.ConfigureModel = ConfigureModel;
+                                   ctx.Configure = Configure;
+                                });
 
       if (ConfigureModel is not null)
          builder.DisableModelCache();

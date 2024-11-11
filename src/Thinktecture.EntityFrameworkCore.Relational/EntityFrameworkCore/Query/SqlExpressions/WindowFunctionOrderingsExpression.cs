@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+using System.Reflection;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -10,6 +11,8 @@ namespace Thinktecture.EntityFrameworkCore.Query.SqlExpressions;
 /// </summary>
 public sealed class WindowFunctionOrderingsExpression : SqlExpression, INotNullableSqlExpression
 {
+   private static readonly ConstructorInfo _quotingConstructor = typeof(WindowFunctionOrderingsExpression).GetConstructors().Single();
+
    /// <summary>
    /// Orderings.
    /// </summary>
@@ -37,6 +40,13 @@ public sealed class WindowFunctionOrderingsExpression : SqlExpression, INotNulla
       var visited = visitor.VisitExpressions(Orderings);
 
       return ReferenceEquals(visited, Orderings) ? this : new WindowFunctionOrderingsExpression(visited);
+   }
+
+   /// <inheritdoc />
+   public override Expression Quote()
+   {
+      return New(_quotingConstructor,
+                 NewArrayInit(typeof(OrderingExpression), initializers: Orderings.Select(o => o.Quote())));
    }
 
    /// <inheritdoc />

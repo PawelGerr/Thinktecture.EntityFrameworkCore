@@ -121,14 +121,14 @@ public class WithTableHints : IntegrationTestsBase
    {
       var query = ActDbContext.TestEntities_Own_SeparateMany_SeparateMany.WithTableHints(SqlServerTableHint.NoLock);
 
-      query.ToQueryString().Should().Be("SELECT [t].[Id], [t0].[TestEntity_Owns_SeparateMany_SeparateManyId], [t0].[Id], [t0].[IntColumn], [t0].[StringColumn], [t0].[OwnedEntity_Owns_SeparateManyTestEntity_Owns_SeparateMany_SeparateManyId], [t0].[OwnedEntity_Owns_SeparateManyId], [t0].[Id0], [t0].[IntColumn0], [t0].[StringColumn0]" + Environment.NewLine +
+      query.ToQueryString().Should().Be("SELECT [t].[Id], [s1].[TestEntity_Owns_SeparateMany_SeparateManyId], [s1].[Id], [s1].[IntColumn], [s1].[StringColumn], [s1].[OwnedEntity_Owns_SeparateManyTestEntity_Owns_SeparateMany_SeparateManyId], [s1].[OwnedEntity_Owns_SeparateManyId], [s1].[Id0], [s1].[IntColumn0], [s1].[StringColumn0]" + Environment.NewLine +
                                         $"FROM {EscapedSchema}.[TestEntities_Own_SeparateMany_SeparateMany] AS [t] WITH (NOLOCK)" + Environment.NewLine +
                                         "LEFT JOIN (" + Environment.NewLine +
                                         "    SELECT [s].[TestEntity_Owns_SeparateMany_SeparateManyId], [s].[Id], [s].[IntColumn], [s].[StringColumn], [s0].[OwnedEntity_Owns_SeparateManyTestEntity_Owns_SeparateMany_SeparateManyId], [s0].[OwnedEntity_Owns_SeparateManyId], [s0].[Id] AS [Id0], [s0].[IntColumn] AS [IntColumn0], [s0].[StringColumn] AS [StringColumn0]" + Environment.NewLine +
                                         $"    FROM {EscapedSchema}.[SeparateEntitiesMany_SeparateEntitiesMany] AS [s] WITH (NOLOCK)" + Environment.NewLine +
                                         $"    LEFT JOIN {EscapedSchema}.[SeparateEntitiesMany_SeparateEntitiesMany_Inner] AS [s0] WITH (NOLOCK) ON [s].[TestEntity_Owns_SeparateMany_SeparateManyId] = [s0].[OwnedEntity_Owns_SeparateManyTestEntity_Owns_SeparateMany_SeparateManyId] AND [s].[Id] = [s0].[OwnedEntity_Owns_SeparateManyId]" + Environment.NewLine +
-                                        ") AS [t0] ON [t].[Id] = [t0].[TestEntity_Owns_SeparateMany_SeparateManyId]" + Environment.NewLine +
-                                        "ORDER BY [t].[Id], [t0].[TestEntity_Owns_SeparateMany_SeparateManyId], [t0].[Id], [t0].[OwnedEntity_Owns_SeparateManyTestEntity_Owns_SeparateMany_SeparateManyId], [t0].[OwnedEntity_Owns_SeparateManyId]");
+                                        ") AS [s1] ON [t].[Id] = [s1].[TestEntity_Owns_SeparateMany_SeparateManyId]" + Environment.NewLine +
+                                        "ORDER BY [t].[Id], [s1].[TestEntity_Owns_SeparateMany_SeparateManyId], [s1].[Id], [s1].[OwnedEntity_Owns_SeparateManyTestEntity_Owns_SeparateMany_SeparateManyId], [s1].[OwnedEntity_Owns_SeparateManyId]");
 
       var result = await query.ToListAsync();
       result.Should().BeEmpty();
@@ -211,9 +211,9 @@ public class WithTableHints : IntegrationTestsBase
                                                                             "    FROM [#TempTable<Guid>_1] AS [#] WITH (UPDLOCK)" + Environment.NewLine +
                                                                             ")" + Environment.NewLine +
                                                                             "ORDER BY [t].[Id]");
-      ExecutedCommands.Last().Should().Be("SELECT [t0].[Id], [t].[Id]" + Environment.NewLine +
+      ExecutedCommands.Last().Should().Be("SELECT [t2].[Id], [t].[Id]" + Environment.NewLine +
                                           $"FROM [{TestCtxProvider.Schema}].[TestEntities] AS [t] WITH (UPDLOCK, ROWLOCK)" + Environment.NewLine +
-                                          $"INNER JOIN [{TestCtxProvider.Schema}].[TestEntities] AS [t0] ON [t].[Id] = [t0].[ParentId]" + Environment.NewLine +
+                                          $"INNER JOIN [{TestCtxProvider.Schema}].[TestEntities] AS [t2] ON [t].[Id] = [t2].[ParentId]" + Environment.NewLine +
                                           "WHERE [t].[Id] IN (" + Environment.NewLine +
                                           "    SELECT [#].[Column1]" + Environment.NewLine +
                                           "    FROM [#TempTable<Guid>_1] AS [#] WITH (UPDLOCK)" + Environment.NewLine +

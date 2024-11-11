@@ -13,8 +13,10 @@ namespace Thinktecture.EntityFrameworkCore.Query;
 public class ThinktectureSqlServerSqlNullabilityProcessor : SqlServerSqlNullabilityProcessor
 {
    /// <inheritdoc />
-   public ThinktectureSqlServerSqlNullabilityProcessor(RelationalParameterBasedSqlProcessorDependencies dependencies, bool useRelationalNulls)
-      : base(dependencies, useRelationalNulls)
+   public ThinktectureSqlServerSqlNullabilityProcessor(
+      RelationalParameterBasedSqlProcessorDependencies dependencies,
+      RelationalParameterBasedSqlProcessorParameters parameters)
+      : base(dependencies, parameters)
    {
    }
 

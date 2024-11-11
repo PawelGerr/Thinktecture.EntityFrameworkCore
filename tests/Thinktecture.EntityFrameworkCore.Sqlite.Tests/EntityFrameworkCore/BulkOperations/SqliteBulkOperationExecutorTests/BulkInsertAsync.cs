@@ -1,4 +1,5 @@
 using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Thinktecture.TestDatabaseContext;
 
@@ -19,6 +20,7 @@ public class BulkInsertAsync : SchemaChangingIntegrationTestsBase
    public async Task Should_throw_when_inserting_entities_without_creating_table_first()
    {
       ConfigureModel = builder => builder.Entity<CustomTempTable>().HasNoKey();
+      Configure = builder => builder.ConfigureWarnings(warningsBuilder => warningsBuilder.Ignore(RelationalEventId.PendingModelChangesWarning));
 
       await SUT.Awaiting(sut => sut.BulkInsertAsync(new List<CustomTempTable>(), new SqliteBulkInsertOptions()))
                .Should().ThrowAsync<InvalidOperationException>().WithMessage("Error during bulk operation on table '\"CustomTempTable\"'. See inner exception for more details.");

@@ -1,28 +1,33 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
-   <PropertyGroup>
-      <ParentPropsFile>$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))</ParentPropsFile>
-      <IsPackable>false</IsPackable>
-      <NoWarn>$(NoWarn);CA1062;EF1002;xUnit1041</NoWarn>
-   </PropertyGroup>
+    <PropertyGroup>
+        <ParentPropsFile>$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))</ParentPropsFile>
+        <IsPackable>false</IsPackable>
+        <NoWarn>$(NoWarn);CA1062;EF1002;xUnit1041</NoWarn>
+    </PropertyGroup>
 
-   <Import Condition="exists('$(ParentPropsFile)') " Project="$(ParentPropsFile)" />
+    <Import Condition="exists('$(ParentPropsFile)') " Project="$(ParentPropsFile)"/>
 
-   <ItemGroup>
-      <PackageReference Include="FluentAssertions" />
-      <PackageReference Include="Microsoft.NET.Test.Sdk" />
-      <PackageReference Include="NSubstitute" />
-      <PackageReference Include="Serilog.Extensions.Logging" />
-      <PackageReference Include="Serilog.Sinks.XUnit" />
-      <PackageReference Include="xunit" />
-      <PackageReference Include="xunit.runner.visualstudio" PrivateAssets="all" />
-   </ItemGroup>
+    <PropertyGroup>
+        <TargetFramework></TargetFramework>
+        <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+    </PropertyGroup>
 
-   <ItemGroup>
-      <Using Include="FluentAssertions" />
-      <Using Include="NSubstitute" />
-      <Using Include="Xunit" />
-      <Using Include="Xunit.Abstractions" />
-   </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="FluentAssertions"/>
+        <PackageReference Include="Microsoft.NET.Test.Sdk"/>
+        <PackageReference Include="NSubstitute"/>
+        <PackageReference Include="Serilog.Extensions.Logging"/>
+        <PackageReference Include="Serilog.Sinks.XUnit"/>
+        <PackageReference Include="xunit"/>
+        <PackageReference Include="xunit.runner.visualstudio" PrivateAssets="all"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Using Include="FluentAssertions"/>
+        <Using Include="NSubstitute"/>
+        <Using Include="Xunit"/>
+        <Using Include="Xunit.Abstractions"/>
+    </ItemGroup>
 
 </Project>

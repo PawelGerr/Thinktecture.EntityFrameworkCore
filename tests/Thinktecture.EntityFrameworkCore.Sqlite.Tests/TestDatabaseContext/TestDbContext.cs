@@ -31,10 +31,18 @@ public class TestDbContext : DbContext
 #nullable enable
 
    public Action<ModelBuilder>? ConfigureModel { get; set; }
+   public Action<DbContextOptionsBuilder>? Configure { get; set; }
 
    public TestDbContext(DbContextOptions<TestDbContext> options)
       : base(options)
    {
+   }
+
+   protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+   {
+      base.OnConfiguring(optionsBuilder);
+
+      Configure?.Invoke(optionsBuilder);
    }
 
    protected override void OnModelCreating(ModelBuilder modelBuilder)

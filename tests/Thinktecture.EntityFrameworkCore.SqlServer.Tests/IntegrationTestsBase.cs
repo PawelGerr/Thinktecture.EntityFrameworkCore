@@ -16,6 +16,7 @@ public class IntegrationTestsBase : SqlServerDbContextIntegrationTests<TestDbCon
    private static readonly JsonSerializerOptions _jsonSerializerOptions = new() { Converters = { new ConvertibleClassConverter() } };
 
    protected Action<ModelBuilder>? ConfigureModel { get; set; }
+   protected Action<DbContextOptionsBuilder>? Configure { get; set; }
    protected IReadOnlyCollection<string> ExecutedCommands => TestCtxProvider.ExecutedCommands ?? throw new InvalidOperationException("Capturing executed commands wasn't enabled.");
    protected string? Schema => TestCtxProvider.Schema;
 
@@ -25,6 +26,7 @@ public class IntegrationTestsBase : SqlServerDbContextIntegrationTests<TestDbCon
    protected IntegrationTestsBase(ITestOutputHelper testOutputHelper, SqlServerFixture sqlServerFixture)
       : this(sqlServerFixture.ConnectionString, testOutputHelper, ITestIsolationOptions.DeleteData(NonExistingTableFilter))
    {
+      Configure = b => b.ConfigureWarnings(warningsBuilder => warningsBuilder.Ignore(RelationalEventId.PendingModelChangesWarning));
    }
 
    private static bool NonExistingTableFilter(IEntityType entityType)
@@ -76,6 +78,10 @@ public class IntegrationTestsBase : SqlServerDbContextIntegrationTests<TestDbCon
                                               optionsBuilder.AddTenantDatabaseSupport<TestTenantDatabaseProviderFactory>();
                                         })
              .UseSharedTableSchema(schema)
-             .InitializeContext(ctx => ctx.ConfigureModel = ConfigureModel);
+             .InitializeContext(ctx =>
+                                {
+                                   ctx.ConfigureModel = ConfigureModel;
+                                   ctx.Configure = Configure;
+                                });
    }
 }

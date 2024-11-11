@@ -12,8 +12,8 @@ public class ThinktectureSqlServerParameterBasedSqlProcessor : SqlServerParamete
    /// <inheritdoc />
    public ThinktectureSqlServerParameterBasedSqlProcessor(
       RelationalParameterBasedSqlProcessorDependencies dependencies,
-      bool useRelationalNulls)
-      : base(dependencies, useRelationalNulls)
+      RelationalParameterBasedSqlProcessorParameters parameters)
+      : base(dependencies, parameters)
    {
    }
 
@@ -23,6 +23,6 @@ public class ThinktectureSqlServerParameterBasedSqlProcessor : SqlServerParamete
       ArgumentNullException.ThrowIfNull(selectExpression);
       ArgumentNullException.ThrowIfNull(parametersValues);
 
-      return new ThinktectureSqlServerSqlNullabilityProcessor(Dependencies, UseRelationalNulls).Process(selectExpression, parametersValues, out canCache);
+      return new ThinktectureSqlServerSqlNullabilityProcessor(Dependencies, Parameters).Process(selectExpression, parametersValues, out canCache);
    }
 }
