@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -54,6 +55,7 @@ public class SamplesContext
                                                                                               .AddCollectionParameterSupport()
                                                                                               .UseThinktectureSqlServerMigrationsSqlGenerator();
                                                                                  })
+                                                 .ConfigureWarnings(warningsBuilder => warningsBuilder.Ignore(RelationalEventId.PendingModelChangesWarning))
                                                  .EnableSensitiveDataLogging()
                                                  .UseLoggerFactory(_loggerFactory)
                                                  .AddSchemaRespectingComponents()
