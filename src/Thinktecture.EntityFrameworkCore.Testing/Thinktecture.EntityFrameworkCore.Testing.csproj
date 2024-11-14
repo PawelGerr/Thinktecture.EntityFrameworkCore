@@ -3,6 +3,10 @@
    <ItemGroup>
       <PackageReference Include="Serilog.Extensions.Logging" />
       <PackageReference Include="Serilog.Sinks.XUnit" />
+       
+      <!-- Version upgrade due to vulnerabilities in older versions --> 
+      <PackageReference Include="System.Net.Http" />
+      <PackageReference Include="System.Text.RegularExpressions" />
    </ItemGroup>
 
    <ItemGroup>
