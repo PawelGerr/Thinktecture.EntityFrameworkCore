@@ -31,6 +31,7 @@ public class TestContext
       return new ConfigurationBuilder()
              .AddJsonFile("appsettings.json")
              .AddEnvironmentVariables()
+             .AddUserSecrets<TestContext>()
              .Build();
    }
 
