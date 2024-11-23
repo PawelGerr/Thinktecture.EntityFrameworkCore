@@ -12,7 +12,7 @@ namespace Thinktecture.EntityFrameworkCore.Testing;
 public class SqliteTestDbContextProvider<T> : ITestDbContextProvider<T>
    where T : DbContext
 {
-   private readonly object _lock = new();
+   private readonly Lock _lock = new();
 
    private readonly DbContextOptions<T> _masterDbContextOptions;
    private readonly DbContextOptions<T> _dbContextOptions;

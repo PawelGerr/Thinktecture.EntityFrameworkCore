@@ -8,11 +8,6 @@
 
     <Import Condition="exists('$(ParentPropsFile)') " Project="$(ParentPropsFile)"/>
 
-    <PropertyGroup>
-        <TargetFramework></TargetFramework>
-        <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
-    </PropertyGroup>
-
     <ItemGroup>
         <PackageReference Include="FluentAssertions"/>
         <PackageReference Include="Microsoft.NET.Test.Sdk"/>

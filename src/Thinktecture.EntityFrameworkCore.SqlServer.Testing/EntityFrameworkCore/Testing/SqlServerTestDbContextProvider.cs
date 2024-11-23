@@ -13,14 +13,14 @@ namespace Thinktecture.EntityFrameworkCore.Testing;
 /// </summary>
 public abstract class SqlServerTestDbContextProvider
 {
-   private static readonly object _sharedLock = new();
+   private static readonly Lock _sharedLock = new();
 
    /// <summary>
    /// Provides a lock object for database-wide operations like creation of tables.
    /// </summary>
    /// <param name="ctx">Current database context.</param>
    /// <returns>A lock object.</returns>
-   protected virtual object GetSharedLock(DbContext ctx)
+   protected virtual Lock GetSharedLock(DbContext ctx)
    {
       return _sharedLock;
    }
@@ -33,7 +33,7 @@ public abstract class SqlServerTestDbContextProvider
 public class SqlServerTestDbContextProvider<T> : SqlServerTestDbContextProvider, ITestDbContextProvider<T>
    where T : DbContext
 {
-   private readonly object _instanceWideLock;
+   private readonly Lock _instanceWideLock;
    private readonly ITestIsolationOptions _isolationOptions;
    private readonly DbContextOptions<T> _masterDbContextOptions;
    private readonly DbContextOptions<T> _dbContextOptions;
@@ -93,7 +93,7 @@ public class SqlServerTestDbContextProvider<T> : SqlServerTestDbContextProvider,
    {
       ArgumentNullException.ThrowIfNull(options);
 
-      _instanceWideLock = new object();
+      _instanceWideLock = new Lock();
       Schema = options.Schema;
       _sharedTablesIsolationLevel = ValidateIsolationLevel(options.SharedTablesIsolationLevel);
       _isolationOptions = options.IsolationOptions;

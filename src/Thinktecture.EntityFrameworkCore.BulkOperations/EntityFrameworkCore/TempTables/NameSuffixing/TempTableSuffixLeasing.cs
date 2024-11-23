@@ -6,7 +6,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.NameSuffixing;
 
 internal class TempTableSuffixLeasing : IDisposable
 {
-   private readonly object _lock;
+   private readonly Lock _lock;
    private readonly TempTableSuffixCache _cache;
    private readonly ICurrentDbContext _currentDbContext;
    private DbConnection? _connection;
@@ -20,7 +20,7 @@ internal class TempTableSuffixLeasing : IDisposable
    {
       _cache = cache ?? throw new ArgumentNullException(nameof(cache));
       _currentDbContext = currentDbContext ?? throw new ArgumentNullException(nameof(currentDbContext));
-      _lock = new object();
+      _lock = new Lock();
 
       // don't fetch the connection and suffix lookup immediately but on first use only
    }

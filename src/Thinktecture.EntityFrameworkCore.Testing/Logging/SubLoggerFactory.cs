@@ -5,7 +5,7 @@ namespace Thinktecture.Logging;
 internal class SubLoggerFactory : ILoggerProvider
 {
    private readonly Dictionary<string, SubLogger> _loggers = new(StringComparer.Ordinal);
-   private readonly object _sync = new();
+   private readonly Lock _sync = new();
 
    private readonly ILoggerFactory _loggerFactory;
 
