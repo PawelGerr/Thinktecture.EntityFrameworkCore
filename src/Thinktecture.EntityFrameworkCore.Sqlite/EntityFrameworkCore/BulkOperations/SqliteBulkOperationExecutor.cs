@@ -153,7 +153,7 @@ public sealed class SqliteBulkOperationExecutor
                                       options.PropertiesToUpdate.DeterminePropertiesForUpdate(entityType, null),
                                       sqliteOptions.AutoIncrementBehavior);
       var tableName = entityType.GetTableName()
-                      ?? throw new Exception($"The entity '{entityType.Name}' has no table name.");
+                   ?? throw new Exception($"The entity '{entityType.Name}' has no table name.");
 
       return await ExecuteBulkOperationAsync(entities, entityType.GetSchema(), tableName, ctx, cancellationToken);
    }
@@ -180,7 +180,7 @@ public sealed class SqliteBulkOperationExecutor
                                               sqliteOptions.PropertiesToUpdate.DeterminePropertiesForUpdate(entityType, true),
                                               sqliteOptions.AutoIncrementBehavior);
       var tableName = entityType.GetTableName()
-                      ?? throw new Exception($"The entity '{entityType.Name}' has no table name.");
+                   ?? throw new Exception($"The entity '{entityType.Name}' has no table name.");
 
       return await ExecuteBulkOperationAsync(entities, entityType.GetSchema(), tableName, ctx, cancellationToken);
    }
@@ -196,6 +196,11 @@ public sealed class SqliteBulkOperationExecutor
 
       try
       {
+         // Execute bulk operations within a transaction, otherwise SQLite will start a new transaction for every statement
+         await using var tx = _ctx.Database.CurrentTransaction == null
+                                 ? await _ctx.Database.BeginTransactionAsync(cancellationToken).ConfigureAwait(false)
+                                 : null;
+
          var tableIdentifier = _sqlGenerationHelper.DelimitIdentifier(tableName, schema);
 
          using var reader = bulkOperationContext.CreateReader(entitiesOrValues);
@@ -206,6 +211,9 @@ public sealed class SqliteBulkOperationExecutor
             var readEntities = reader.GetReadEntities();
             numberOfAffectedRows += await ExecuteBulkOperationForSeparatedOwnedEntitiesAsync((IReadOnlyList<object>)readEntities, bulkOperationContext, cancellationToken);
          }
+
+         if (tx is not null)
+            await tx.CommitAsync(cancellationToken);
 
          return numberOfAffectedRows;
       }
@@ -228,7 +236,7 @@ public sealed class SqliteBulkOperationExecutor
       foreach (var childContext in parentBulkOperationContext.GetChildren(parentEntities))
       {
          var childTableName = childContext.EntityType.GetTableName()
-                              ?? throw new InvalidOperationException($"The entity '{childContext.EntityType.Name}' has no table name.");
+                           ?? throw new InvalidOperationException($"The entity '{childContext.EntityType.Name}' has no table name.");
 
          numberOfAffectedRows += await ExecuteBulkOperationAsync(childContext.Entities,
                                                                  childContext.EntityType.GetSchema(),
@@ -416,7 +424,7 @@ public sealed class SqliteBulkOperationExecutor
    {
       var entityType = _ctx.Model.GetEntityType(type);
       var tableName = entityType.GetTableName()
-                      ?? throw new InvalidOperationException($"The entity '{entityType.Name}' has no table name.");
+                   ?? throw new InvalidOperationException($"The entity '{entityType.Name}' has no table name.");
 
       var tableIdentifier = _sqlGenerationHelper.DelimitIdentifier(tableName, entityType.GetSchema());
       var truncateStatement = $"DELETE FROM {tableIdentifier};";
