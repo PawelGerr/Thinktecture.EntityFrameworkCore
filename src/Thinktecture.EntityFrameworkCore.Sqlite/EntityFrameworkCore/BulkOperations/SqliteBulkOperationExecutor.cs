@@ -196,6 +196,11 @@ public sealed class SqliteBulkOperationExecutor
 
       try
       {
+         // Execute bulk operations within a transaction, otherwise SQLite will start a new transaction for every statement
+         await using var tx = _ctx.Database.CurrentTransaction == null
+                                 ? await _ctx.Database.BeginTransactionAsync(cancellationToken).ConfigureAwait(false)
+                                 : null;
+
          var tableIdentifier = _sqlGenerationHelper.DelimitIdentifier(tableName, schema);
 
          using var reader = bulkOperationContext.CreateReader(entitiesOrValues);
@@ -206,6 +211,9 @@ public sealed class SqliteBulkOperationExecutor
             var readEntities = reader.GetReadEntities();
             numberOfAffectedRows += await ExecuteBulkOperationForSeparatedOwnedEntitiesAsync((IReadOnlyList<object>)readEntities, bulkOperationContext, cancellationToken);
          }
+
+         if (tx is not null)
+            await tx.CommitAsync(cancellationToken);
 
          return numberOfAffectedRows;
       }
