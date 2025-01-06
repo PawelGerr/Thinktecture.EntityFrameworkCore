@@ -24,6 +24,37 @@ public class BulkInsertValuesIntoTempTableAsync_2_Column : IntegrationTestsBase
    }
 
    [Fact]
+   public async Task Should_insert_int_nullable_int_empty_temp_table()
+   {
+      // Arrange
+      ConfigureModel = builder => builder.ConfigureTempTable<int, int?>();
+
+      await using var query = await ActDbContext.BulkInsertValuesIntoTempTableAsync(new List<(int, int?)>(), new SqlServerTempTableBulkInsertOptions { PrimaryKeyCreation = IPrimaryKeyPropertiesProvider.None });
+
+      // Act
+      await ActDbContext.BulkInsertValuesIntoTempTableAsync(new List<(int, int?)> { (2, null), (3, 4) }, query);
+
+      var tempTable = await query.Query.ToListAsync();
+      tempTable.Should().BeEquivalentTo([new TempTable<int, int?>(2, null), new TempTable<int, int?>(3, 4)]);
+   }
+
+   [Fact]
+   public async Task Should_insert_int_nullable_int_non_empty_temp_table()
+   {
+      // Arrange
+      ConfigureModel = builder => builder.ConfigureTempTable<int, int?>();
+
+      var values = new List<(int, int?)> { (1, null) };
+      await using var query = await ActDbContext.BulkInsertValuesIntoTempTableAsync(values, new SqlServerTempTableBulkInsertOptions { PrimaryKeyCreation = IPrimaryKeyPropertiesProvider.None });
+
+      // Act
+      await ActDbContext.BulkInsertValuesIntoTempTableAsync(new List<(int, int?)> { (2, null), (3, 4) }, query);
+
+      var tempTable = await query.Query.ToListAsync();
+      tempTable.Should().BeEquivalentTo([new TempTable<int, int?>(1, null), new TempTable<int, int?>(2, null), new TempTable<int, int?>(3, 4)]);
+   }
+
+   [Fact]
    public async Task Should_insert_string_string()
    {
       ConfigureModel = builder => builder.ConfigureTempTable<string, string>(typeBuilder => typeBuilder.Property(t => t.Column2).IsRequired(false));

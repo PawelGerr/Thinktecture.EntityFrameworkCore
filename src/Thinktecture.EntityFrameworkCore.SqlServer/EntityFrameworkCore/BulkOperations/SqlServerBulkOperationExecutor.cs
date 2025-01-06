@@ -59,6 +59,12 @@ public sealed class SqlServerBulkOperationExecutor
    }
 
    /// <inheritdoc />
+   public IBulkInsertOptions CreateBulkInsertOptions(IEntityPropertiesProvider? propertiesToInsert = null)
+   {
+      return new SqlServerBulkInsertOptions { PropertiesToInsert = propertiesToInsert };
+   }
+
+   /// <inheritdoc />
    ITempTableBulkInsertOptions ITempTableBulkInsertExecutor.CreateOptions(IEntityPropertiesProvider? propertiesToInsert)
    {
       return new SqlServerTempTableBulkInsertOptions { PropertiesToInsert = propertiesToInsert };
@@ -353,6 +359,100 @@ public sealed class SqlServerBulkOperationExecutor
          await tempTableReference.DisposeAsync().ConfigureAwait(false);
          throw;
       }
+   }
+
+   /// <inheritdoc />
+   public Task BulkInsertValuesIntoTempTableAsync<TColumn1>(
+      IEnumerable<TColumn1> values,
+      ITempTableReference tempTable,
+      ITempTableBulkInsertOptions? options,
+      CancellationToken cancellationToken)
+   {
+      ArgumentNullException.ThrowIfNull(values);
+      ArgumentNullException.ThrowIfNull(tempTable);
+
+      if (options is not SqlServerTempTableBulkInsertOptions sqlServerOptions)
+         sqlServerOptions = new SqlServerTempTableBulkInsertOptions(options);
+
+      return BulkInsertIntoTempTableAsync<TColumn1, TempTable<TColumn1>>(values,
+                                                                         tempTable,
+                                                                         sqlServerOptions.GetBulkInsertOptions(),
+                                                                         SqlServerBulkOperationContextFactoryForValues.Instance,
+                                                                         cancellationToken);
+   }
+
+   /// <inheritdoc />
+   public Task BulkInsertValuesIntoTempTableAsync<TColumn1>(
+      IEnumerable<TColumn1> values,
+      ITempTableReference tempTable,
+      IBulkInsertOptions? options,
+      CancellationToken cancellationToken)
+   {
+      ArgumentNullException.ThrowIfNull(values);
+      ArgumentNullException.ThrowIfNull(tempTable);
+
+      return BulkInsertIntoTempTableAsync<TColumn1, TempTable<TColumn1>>(values,
+                                                                         tempTable,
+                                                                         options,
+                                                                         SqlServerBulkOperationContextFactoryForValues.Instance,
+                                                                         cancellationToken);
+   }
+
+   /// <inheritdoc />
+   public Task BulkInsertIntoTempTableAsync<T>(
+      IEnumerable<T> entities,
+      ITempTableReference tempTable,
+      ITempTableBulkInsertOptions? options,
+      CancellationToken cancellationToken = default)
+      where T : class
+   {
+      ArgumentNullException.ThrowIfNull(entities);
+      ArgumentNullException.ThrowIfNull(tempTable);
+
+      if (options is not SqlServerTempTableBulkInsertOptions sqlServerOptions)
+         sqlServerOptions = new SqlServerTempTableBulkInsertOptions(options);
+
+      return BulkInsertIntoTempTableAsync<T, T>(entities,
+                                                tempTable,
+                                                sqlServerOptions.GetBulkInsertOptions(),
+                                                SqlServerBulkOperationContextFactoryForEntities.Instance,
+                                                cancellationToken);
+   }
+
+   /// <inheritdoc />
+   public Task BulkInsertIntoTempTableAsync<T>(
+      IEnumerable<T> entities,
+      ITempTableReference tempTable,
+      IBulkInsertOptions? options,
+      CancellationToken cancellationToken = default)
+      where T : class
+   {
+      ArgumentNullException.ThrowIfNull(entities);
+      ArgumentNullException.ThrowIfNull(tempTable);
+
+      return BulkInsertIntoTempTableAsync<T, T>(entities,
+                                                tempTable,
+                                                options,
+                                                SqlServerBulkOperationContextFactoryForEntities.Instance,
+                                                cancellationToken);
+   }
+
+   private async Task BulkInsertIntoTempTableAsync<T, TEntity>(
+      IEnumerable<T> entitiesOrValues,
+      ITempTableReference tempTable,
+      IBulkInsertOptions? options,
+      ISqlServerBulkOperationContextFactory bulkOperationContextFactory,
+      CancellationToken cancellationToken)
+      where TEntity : class
+   {
+      var type = typeof(TEntity);
+      var entityTypeName = EntityNameProvider.GetTempTableName(type);
+      var entityType = _ctx.Model.GetEntityType(entityTypeName, type);
+
+      if (options is not SqlServerBulkInsertOptions sqlServerOptions)
+         sqlServerOptions = new SqlServerBulkInsertOptions(options);
+
+      await BulkInsertAsync(entityType, entitiesOrValues, null, tempTable.Name, sqlServerOptions, bulkOperationContextFactory, cancellationToken).ConfigureAwait(false);
    }
 
    /// <inheritdoc />

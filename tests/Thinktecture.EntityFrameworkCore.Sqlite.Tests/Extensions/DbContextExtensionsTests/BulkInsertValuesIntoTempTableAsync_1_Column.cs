@@ -26,6 +26,23 @@ public class BulkInsertValuesIntoTempTableAsync_1_Column : SchemaChangingIntegra
    }
 
    [Fact]
+   public async Task Should_insert_int_into_non_empty_temp_table()
+   {
+      // Arrange
+      ConfigureModel = builder => builder.ConfigureTempTable<int>();
+
+      var values = new List<int> { 1, 2 };
+      await using var query = await ActDbContext.BulkInsertValuesIntoTempTableAsync(values);
+
+      // Act
+      await ActDbContext.BulkInsertValuesIntoTempTableAsync(new List<int> { 3, 4 }, query);
+
+      // Assert
+      var tempTable = await query.Query.ToListAsync();
+      tempTable.Should().BeEquivalentTo([1, 2, 3, 4]);
+   }
+
+   [Fact]
    public async Task Should_throw_if_inserting_duplicates()
    {
       ConfigureModel = builder => builder.ConfigureTempTable<int>(false);
@@ -197,9 +214,9 @@ public class BulkInsertValuesIntoTempTableAsync_1_Column : SchemaChangingIntegra
       var joinQuery = tempTable.Query.LeftJoin(tempTable.Query, e => e, e => e);
 
       joinQuery.ToQueryString().Should().Be("""
-                                            SELECT "#"."Column1" AS "Left", "#0"."Column1" AS "Right"
-                                            FROM "#TempTable<Guid>_1" AS "#"
-                                            LEFT JOIN "#TempTable<Guid>_1" AS "#0" ON "#"."Column1" = "#0"."Column1"
-                                            """.WithEnvironmentLineBreaks());
+                                               SELECT "#"."Column1" AS "Left", "#0"."Column1" AS "Right"
+                                               FROM "#TempTable<Guid>_1" AS "#"
+                                               LEFT JOIN "#TempTable<Guid>_1" AS "#0" ON "#"."Column1" = "#0"."Column1"
+                                               """.WithEnvironmentLineBreaks());
    }
 }

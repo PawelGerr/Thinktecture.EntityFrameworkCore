@@ -294,6 +294,179 @@ public static class BulkOperationsDbContextExtensions
    }
 
    /// <summary>
+   /// Copies <paramref name="values"/> into a temp table and returns the query for accessing the inserted records.
+   /// </summary>
+   /// <param name="ctx">Database context.</param>
+   /// <param name="values">Values to insert.</param>
+   /// <param name="tempTable">Temp table to insert into.</param>
+   /// <param name="options">Options.</param>
+   /// <param name="cancellationToken">Cancellation token.</param>
+   /// <typeparam name="TColumn1">Type of the values to insert.</typeparam>
+   /// <returns>A query for accessing the inserted values.</returns>
+   /// <exception cref="ArgumentNullException"> <paramref name="ctx"/> or <paramref name="values"/> is <c>null</c>.</exception>
+   public static Task BulkInsertValuesIntoTempTableAsync<TColumn1>(
+      this DbContext ctx,
+      IEnumerable<TColumn1> values,
+      ITempTableReference tempTable,
+      ITempTableBulkInsertOptions? options,
+      CancellationToken cancellationToken = default)
+   {
+      ArgumentNullException.ThrowIfNull(values);
+
+      var executor = ctx.GetService<ITempTableBulkInsertExecutor>();
+
+      return executor.BulkInsertValuesIntoTempTableAsync(values, tempTable, options, cancellationToken);
+   }
+
+   /// <summary>
+   /// Copies <paramref name="values"/> into a temp table and returns the query for accessing the inserted records.
+   /// </summary>
+   /// <param name="ctx">Database context.</param>
+   /// <param name="values">Values to insert.</param>
+   /// <param name="tempTable">Temp table to insert into.</param>
+   /// <param name="options">Options.</param>
+   /// <param name="cancellationToken">Cancellation token.</param>
+   /// <typeparam name="TColumn1">Type of the values to insert.</typeparam>
+   /// <returns>A query for accessing the inserted values.</returns>
+   /// <exception cref="ArgumentNullException"> <paramref name="ctx"/> or <paramref name="values"/> is <c>null</c>.</exception>
+   public static Task BulkInsertValuesIntoTempTableAsync<TColumn1>(
+      this DbContext ctx,
+      IEnumerable<TColumn1> values,
+      ITempTableReference tempTable,
+      IBulkInsertOptions? options = null,
+      CancellationToken cancellationToken = default)
+   {
+      ArgumentNullException.ThrowIfNull(values);
+
+      var executor = ctx.GetService<ITempTableBulkInsertExecutor>();
+
+      return executor.BulkInsertValuesIntoTempTableAsync(values, tempTable, options, cancellationToken);
+   }
+
+   /// <summary>
+   /// Copies <paramref name="values"/> into a temp table and returns the query for accessing the inserted records.
+   /// </summary>
+   /// <param name="ctx">Database context.</param>
+   /// <param name="values">Values to insert.</param>
+   /// <param name="tempTable">Temp table to insert into.</param>
+   /// <param name="options">Options.</param>
+   /// <param name="cancellationToken">Cancellation token.</param>
+   /// <typeparam name="TColumn1">Type of the column 1.</typeparam>
+   /// <typeparam name="TColumn2">Type of the column 2.</typeparam>
+   /// <returns>A query for accessing the inserted values.</returns>
+   /// <exception cref="ArgumentNullException"> <paramref name="ctx"/> or <paramref name="values"/> is <c>null</c>.</exception>
+   public static Task BulkInsertValuesIntoTempTableAsync<TColumn1, TColumn2>(
+      this DbContext ctx,
+      IEnumerable<(TColumn1 column1, TColumn2 column2)> values,
+      ITempTableReference tempTable,
+      ITempTableBulkInsertOptions? options,
+      CancellationToken cancellationToken = default)
+   {
+      ArgumentNullException.ThrowIfNull(values);
+
+      var entities = values.Select(t => new TempTable<TColumn1, TColumn2>(t.column1, t.column2));
+
+      return ctx.BulkInsertIntoTempTableAsync(entities, tempTable, options, cancellationToken);
+   }
+
+   /// <summary>
+   /// Copies <paramref name="values"/> into a temp table and returns the query for accessing the inserted records.
+   /// </summary>
+   /// <param name="ctx">Database context.</param>
+   /// <param name="values">Values to insert.</param>
+   /// <param name="tempTable">Temp table to insert into.</param>
+   /// <param name="options">Options.</param>
+   /// <param name="cancellationToken">Cancellation token.</param>
+   /// <typeparam name="TColumn1">Type of the column 1.</typeparam>
+   /// <typeparam name="TColumn2">Type of the column 2.</typeparam>
+   /// <returns>A query for accessing the inserted values.</returns>
+   /// <exception cref="ArgumentNullException"> <paramref name="ctx"/> or <paramref name="values"/> is <c>null</c>.</exception>
+   public static Task BulkInsertValuesIntoTempTableAsync<TColumn1, TColumn2>(
+      this DbContext ctx,
+      IEnumerable<(TColumn1 column1, TColumn2 column2)> values,
+      ITempTableReference tempTable,
+      IBulkInsertOptions? options = null,
+      CancellationToken cancellationToken = default)
+   {
+      ArgumentNullException.ThrowIfNull(values);
+
+      var entities = values.Select(t => new TempTable<TColumn1, TColumn2>(t.column1, t.column2));
+
+      return ctx.BulkInsertIntoTempTableAsync(entities, tempTable, options, cancellationToken);
+   }
+
+   /// <summary>
+   /// Copies <paramref name="entities"/> into a temp table and returns the query for accessing the inserted records.
+   /// </summary>
+   /// <param name="ctx">Database context.</param>
+   /// <param name="entities">Entities to insert.</param>
+   /// <param name="tempTable">Temp table to insert into.</param>
+   /// <param name="propertiesToInsert">Properties to insert. If <c>null</c> then all properties are used.</param>
+   /// <param name="cancellationToken">Cancellation token.</param>
+   /// <typeparam name="T">Entity type.</typeparam>
+   /// <returns>A query for accessing the inserted values.</returns>
+   /// <exception cref="ArgumentNullException"> <paramref name="ctx"/> or <paramref name="entities"/> is <c>null</c>.</exception>
+   public static Task BulkInsertIntoTempTableAsync<T>(
+      this DbContext ctx,
+      IEnumerable<T> entities,
+      ITempTableReference tempTable,
+      Expression<Func<T, object?>>? propertiesToInsert = null,
+      CancellationToken cancellationToken = default)
+      where T : class
+   {
+      var executor = ctx.GetService<ITempTableBulkInsertExecutor>();
+      var options = executor.CreateBulkInsertOptions(propertiesToInsert is null ? null : IEntityPropertiesProvider.Include(propertiesToInsert));
+
+      return executor.BulkInsertIntoTempTableAsync(entities, tempTable, options, cancellationToken);
+   }
+
+   /// <summary>
+   /// Copies <paramref name="entities"/> into a temp table and returns the query for accessing the inserted records.
+   /// </summary>
+   /// <param name="ctx">Database context.</param>
+   /// <param name="entities">Entities to insert.</param>
+   /// <param name="tempTable">Temp table to insert into.</param>
+   /// <param name="options">Options.</param>
+   /// <param name="cancellationToken">Cancellation token.</param>
+   /// <typeparam name="T">Entity type.</typeparam>
+   /// <exception cref="ArgumentNullException"> <paramref name="ctx"/> or <paramref name="entities"/> is <c>null</c>.</exception>
+   public static Task BulkInsertIntoTempTableAsync<T>(
+      this DbContext ctx,
+      IEnumerable<T> entities,
+      ITempTableReference tempTable,
+      ITempTableBulkInsertOptions? options,
+      CancellationToken cancellationToken = default)
+      where T : class
+   {
+      var executor = ctx.GetService<ITempTableBulkInsertExecutor>();
+
+      return executor.BulkInsertIntoTempTableAsync(entities, tempTable, options, cancellationToken);
+   }
+
+   /// <summary>
+   /// Copies <paramref name="entities"/> into a temp table and returns the query for accessing the inserted records.
+   /// </summary>
+   /// <param name="ctx">Database context.</param>
+   /// <param name="entities">Entities to insert.</param>
+   /// <param name="tempTable">Temp table to insert into.</param>
+   /// <param name="options">Options.</param>
+   /// <param name="cancellationToken">Cancellation token.</param>
+   /// <typeparam name="T">Entity type.</typeparam>
+   /// <exception cref="ArgumentNullException"> <paramref name="ctx"/> or <paramref name="entities"/> is <c>null</c>.</exception>
+   public static Task BulkInsertIntoTempTableAsync<T>(
+      this DbContext ctx,
+      IEnumerable<T> entities,
+      ITempTableReference tempTable,
+      IBulkInsertOptions? options,
+      CancellationToken cancellationToken = default)
+      where T : class
+   {
+      var executor = ctx.GetService<ITempTableBulkInsertExecutor>();
+
+      return executor.BulkInsertIntoTempTableAsync(entities, tempTable, options, cancellationToken);
+   }
+
+   /// <summary>
    /// Truncates the table of the entity of type <typeparamref name="T"/>.
    /// </summary>
    /// <param name="ctx">Database context.</param>
