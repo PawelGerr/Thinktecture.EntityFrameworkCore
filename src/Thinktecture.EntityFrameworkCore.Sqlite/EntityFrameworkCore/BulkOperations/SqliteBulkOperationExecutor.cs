@@ -60,6 +60,12 @@ public sealed class SqliteBulkOperationExecutor
    }
 
    /// <inheritdoc />
+   IBulkInsertOptions ITempTableBulkInsertExecutor.CreateBulkInsertOptions(IEntityPropertiesProvider? propertiesToInsert)
+   {
+      return new SqliteBulkInsertOptions { PropertiesToInsert = propertiesToInsert };
+   }
+
+   /// <inheritdoc />
    ITempTableBulkInsertOptions ITempTableBulkInsertExecutor.CreateOptions(IEntityPropertiesProvider? propertiesToInsert)
    {
       return new SqliteTempTableBulkInsertOptions { PropertiesToInsert = propertiesToInsert };
@@ -153,7 +159,7 @@ public sealed class SqliteBulkOperationExecutor
                                       options.PropertiesToUpdate.DeterminePropertiesForUpdate(entityType, null),
                                       sqliteOptions.AutoIncrementBehavior);
       var tableName = entityType.GetTableName()
-                   ?? throw new Exception($"The entity '{entityType.Name}' has no table name.");
+                      ?? throw new Exception($"The entity '{entityType.Name}' has no table name.");
 
       return await ExecuteBulkOperationAsync(entities, entityType.GetSchema(), tableName, ctx, cancellationToken);
    }
@@ -180,7 +186,7 @@ public sealed class SqliteBulkOperationExecutor
                                               sqliteOptions.PropertiesToUpdate.DeterminePropertiesForUpdate(entityType, true),
                                               sqliteOptions.AutoIncrementBehavior);
       var tableName = entityType.GetTableName()
-                   ?? throw new Exception($"The entity '{entityType.Name}' has no table name.");
+                      ?? throw new Exception($"The entity '{entityType.Name}' has no table name.");
 
       return await ExecuteBulkOperationAsync(entities, entityType.GetSchema(), tableName, ctx, cancellationToken);
    }
@@ -236,7 +242,7 @@ public sealed class SqliteBulkOperationExecutor
       foreach (var childContext in parentBulkOperationContext.GetChildren(parentEntities))
       {
          var childTableName = childContext.EntityType.GetTableName()
-                           ?? throw new InvalidOperationException($"The entity '{childContext.EntityType.Name}' has no table name.");
+                              ?? throw new InvalidOperationException($"The entity '{childContext.EntityType.Name}' has no table name.");
 
          numberOfAffectedRows += await ExecuteBulkOperationAsync(childContext.Entities,
                                                                  childContext.EntityType.GetSchema(),
@@ -413,6 +419,105 @@ public sealed class SqliteBulkOperationExecutor
    }
 
    /// <inheritdoc />
+   public Task BulkInsertValuesIntoTempTableAsync<TColumn1>(
+      IEnumerable<TColumn1> values,
+      ITempTableReference tempTable,
+      ITempTableBulkInsertOptions? options,
+      CancellationToken cancellationToken)
+   {
+      ArgumentNullException.ThrowIfNull(values);
+      ArgumentNullException.ThrowIfNull(tempTable);
+
+      if (options is not SqliteTempTableBulkInsertOptions sqliteOptions)
+         sqliteOptions = new SqliteTempTableBulkInsertOptions(options);
+
+      return BulkInsertValuesIntoTempTableAsync(values,
+                                                tempTable,
+                                                sqliteOptions.GetBulkInsertOptions(),
+                                                cancellationToken);
+   }
+
+   /// <inheritdoc />
+   public Task BulkInsertValuesIntoTempTableAsync<TColumn1>(
+      IEnumerable<TColumn1> values,
+      ITempTableReference tempTable,
+      IBulkInsertOptions? options,
+      CancellationToken cancellationToken)
+   {
+      ArgumentNullException.ThrowIfNull(values);
+      ArgumentNullException.ThrowIfNull(tempTable);
+
+      return BulkInsertIntoTempTableAsync<TColumn1, TempTable<TColumn1>>(values,
+                                                                         options,
+                                                                         tempTable,
+                                                                         SqliteBulkOperationContextFactoryForValues.Instance,
+                                                                         cancellationToken);
+   }
+
+   /// <inheritdoc />
+   public Task BulkInsertIntoTempTableAsync<T>(
+      IEnumerable<T> entities,
+      ITempTableReference tempTable,
+      ITempTableBulkInsertOptions? options,
+      CancellationToken cancellationToken)
+      where T : class
+   {
+      ArgumentNullException.ThrowIfNull(entities);
+      ArgumentNullException.ThrowIfNull(tempTable);
+
+      if (options is not SqliteTempTableBulkInsertOptions sqliteOptions)
+         sqliteOptions = new SqliteTempTableBulkInsertOptions(options);
+
+      return BulkInsertIntoTempTableAsync(entities,
+                                          tempTable,
+                                          sqliteOptions.GetBulkInsertOptions(),
+                                          cancellationToken);
+   }
+
+   /// <inheritdoc />
+   public Task BulkInsertIntoTempTableAsync<T>(
+      IEnumerable<T> entities,
+      ITempTableReference tempTable,
+      IBulkInsertOptions? options,
+      CancellationToken cancellationToken)
+      where T : class
+   {
+      ArgumentNullException.ThrowIfNull(entities);
+      ArgumentNullException.ThrowIfNull(tempTable);
+
+      return BulkInsertIntoTempTableAsync<T, T>(entities,
+                                                options,
+                                                tempTable,
+                                                SqliteBulkOperationContextFactoryForEntities.Instance,
+                                                cancellationToken);
+   }
+
+   private async Task BulkInsertIntoTempTableAsync<T, TEntity>(
+      IEnumerable<T> entitiesOrValues,
+      IBulkInsertOptions? options,
+      ITempTableReference tempTable,
+      ISqliteBulkOperationContextFactory bulkOperationContextFactory,
+      CancellationToken cancellationToken)
+      where TEntity : class
+   {
+      var type = typeof(TEntity);
+      var entityTypeName = EntityNameProvider.GetTempTableName(type);
+      var entityType = _ctx.Model.GetEntityType(entityTypeName, type);
+
+      if (options is not SqliteBulkInsertOptions sqliteOptions)
+         sqliteOptions = new SqliteBulkInsertOptions(options);
+
+      await BulkInsertAsync(entityType,
+                            entitiesOrValues,
+                            null,
+                            tempTable.Name,
+                            sqliteOptions,
+                            bulkOperationContextFactory,
+                            cancellationToken)
+         .ConfigureAwait(false);
+   }
+
+   /// <inheritdoc />
    public async Task TruncateTableAsync<T>(CancellationToken cancellationToken = default)
       where T : class
    {
@@ -424,7 +529,7 @@ public sealed class SqliteBulkOperationExecutor
    {
       var entityType = _ctx.Model.GetEntityType(type);
       var tableName = entityType.GetTableName()
-                   ?? throw new InvalidOperationException($"The entity '{entityType.Name}' has no table name.");
+                      ?? throw new InvalidOperationException($"The entity '{entityType.Name}' has no table name.");
 
       var tableIdentifier = _sqlGenerationHelper.DelimitIdentifier(tableName, entityType.GetSchema());
       var truncateStatement = $"DELETE FROM {tableIdentifier};";

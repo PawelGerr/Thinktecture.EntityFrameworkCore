@@ -25,6 +25,23 @@ public class BulkInsertIntoTempTableAsync : SchemaChangingIntegrationTestsBase
    }
 
    [Fact]
+   public async Task Should_insert_keyless_type_into_non_empty_temp_table()
+   {
+      // Arrage
+      ConfigureModel = builder => builder.ConfigureTempTableEntity<CustomTempTable>(typeBuilder => typeBuilder.Property(t => t.Column2).HasMaxLength(100).IsRequired());
+
+      var entities = new List<CustomTempTable> { new(1, "value") };
+      await using var query = await ActDbContext.BulkInsertIntoTempTableAsync(entities);
+
+      // Act
+      await ActDbContext.BulkInsertIntoTempTableAsync(new List<CustomTempTable> { new(2, "value2") }, query);
+
+      // Assert
+      var tempTable = await query.Query.ToListAsync();
+      tempTable.Should().BeEquivalentTo([new CustomTempTable(1, "value"), new CustomTempTable(2, "value2")]);
+   }
+
+   [Fact]
    public async Task Should_insert_entityType_without_touching_real_table()
    {
       var entity = new TestEntity

@@ -5,15 +5,10 @@ namespace Thinktecture.EntityFrameworkCore.TempTables;
 /// Disposal of this query will delete the corresponding temp table.
 /// </summary>
 /// <typeparam name="T">Type of the query item.</typeparam>
-public interface ITempTableQuery<out T> : IAsyncDisposable, IDisposable
+public interface ITempTableQuery<out T> : ITempTableReference
 {
    /// <summary>
    /// The query itself.
    /// </summary>
    IQueryable<T> Query { get; }
-
-   /// <summary>
-   /// The name of the temp table.
-   /// </summary>
-   string Name { get; }
 }

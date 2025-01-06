@@ -26,6 +26,39 @@ public class BulkInsertValuesIntoTempTableAsync_1_Column : IntegrationTestsBase
    }
 
    [Fact]
+   public async Task Should_insert_int_into_existing_into_empty_temp_table()
+   {
+      // Arrange
+      ConfigureModel = builder => builder.ConfigureTempTable<int>();
+
+      await using var query = await ActDbContext.BulkInsertValuesIntoTempTableAsync(new List<int>());
+
+      // Act
+      await ActDbContext.BulkInsertValuesIntoTempTableAsync(new List<int> { 3, 4 }, query);
+
+      // Assert
+      var tempTable = await query.Query.ToListAsync();
+      tempTable.Should().BeEquivalentTo([3, 4]);
+   }
+
+   [Fact]
+   public async Task Should_insert_int_into_existing_into_non_empty_temp_table()
+   {
+      // Arrange
+      ConfigureModel = builder => builder.ConfigureTempTable<int>();
+
+      var values = new List<int> { 1, 2 };
+      await using var query = await ActDbContext.BulkInsertValuesIntoTempTableAsync(values);
+
+      // Act
+      await ActDbContext.BulkInsertValuesIntoTempTableAsync(new List<int> { 3, 4 }, query);
+
+      // Assert
+      var tempTable = await query.Query.ToListAsync();
+      tempTable.Should().BeEquivalentTo([1, 2, 3, 4]);
+   }
+
+   [Fact]
    public async Task Should_throw_if_inserting_duplicates()
    {
       ConfigureModel = builder => builder.ConfigureTempTable<int>(false);
