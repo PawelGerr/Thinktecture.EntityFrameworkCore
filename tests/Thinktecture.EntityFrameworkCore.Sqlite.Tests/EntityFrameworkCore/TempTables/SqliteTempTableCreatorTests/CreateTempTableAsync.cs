@@ -69,6 +69,26 @@ public class CreateTempTableAsync : SchemaChangingIntegrationTestsBase
    }
 
    [Fact]
+   public async Task Should_use_existing_transaction_in_disposeAsync()
+   {
+      ConfigureModel = builder => builder.ConfigureTempTableEntity<CustomTempTable>();
+
+      _optionsWithNonUniqueNameAndNoPrimaryKey.DropTableOnDispose = true;
+
+      await using var tx = await ActDbContext.Database.BeginTransactionAsync();
+
+      // ReSharper disable once UseAwaitUsing
+      await using (await SUT.CreateTempTableAsync(ActDbContext.GetTempTableEntityType<CustomTempTable>(), _optionsWithNonUniqueNameAndNoPrimaryKey))
+      {
+      }
+
+      await tx.CommitAsync();
+
+      AssertDbContext.GetTempTableColumns<CustomTempTable>().ToList()
+                     .Should().HaveCount(0);
+   }
+
+   [Fact]
    public async Task Should_delete_temp_table_on_disposeAsync_if_DropTableOnDispose_is_true()
    {
       ConfigureModel = builder => builder.ConfigureTempTableEntity<CustomTempTable>();
