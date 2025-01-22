@@ -2,8 +2,8 @@
 
   <PropertyGroup>
     <Copyright>(c) $([System.DateTime]::Now.Year), Pawel Gerr. All rights reserved.</Copyright>
-    <VersionPrefix>9.2.0</VersionPrefix>
-    <Authors>Pawel Gerr</Authors>    
+    <VersionPrefix>9.2.1</VersionPrefix>
+    <Authors>Pawel Gerr</Authors>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <PackageProjectUrl>https://dev.azure.com/pawelgerr/Thinktecture.EntityFrameworkCore</PackageProjectUrl>
     <PackageIcon>icon.png</PackageIcon>
@@ -12,7 +12,7 @@
     <RepositoryUrl>https://pawelgerr@dev.azure.com/pawelgerr/Thinktecture.EntityFrameworkCore/_git/Thinktecture.EntityFrameworkCore</RepositoryUrl>
     <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
     <RootNamespace>Thinktecture</RootNamespace>
-    <TargetFrameworks>net8.0;net9.0;</TargetFrameworks> 
+    <TargetFrameworks>net8.0;net9.0;</TargetFrameworks>
     <LangVersion>13.0</LangVersion>
     <Nullable>enable</Nullable>
     <NoWarn>$(NoWarn);CA1303;MSB3884;</NoWarn>
@@ -22,7 +22,7 @@
     <VSTestLogger>trx%3bLogFileName=$(MSBuildProjectName).trx</VSTestLogger>
     <VSTestResultsDirectory>$(MSBuildThisFileDirectory)test-results/$(TargetFramework)</VSTestResultsDirectory>
   </PropertyGroup>
-  
+
   <ItemGroup>
     <Using Include="Microsoft.EntityFrameworkCore" />
   </ItemGroup>

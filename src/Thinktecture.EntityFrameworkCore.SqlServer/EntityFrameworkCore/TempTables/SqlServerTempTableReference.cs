@@ -1,6 +1,5 @@
 using System.Data;
 using System.Data.Common;
-using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -121,6 +120,7 @@ public sealed class SqlServerTempTableReference : ITempTableReference
             return null;
 
          command = connection.CreateCommand();
+         command.Transaction = _database.CurrentTransaction?.GetDbTransaction();
          command.CommandText = $"""
                                 IF(OBJECT_ID('tempdb..{Name}') IS NOT NULL)
                                     DROP TABLE {_sqlGenerationHelper.DelimitIdentifier(Name)};
