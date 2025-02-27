@@ -54,14 +54,6 @@ public class TestDbContext : DbContext, IDbDefaultSchema
 
       Configure?.Invoke(optionsBuilder);
    }
-
-   /// <inheritdoc />
-   protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
-   {
-      configurationBuilder.Properties<decimal>(builder => builder
-                                                  .HavePrecision(18, 5));
-   }
-
    protected override void OnModelCreating(ModelBuilder modelBuilder)
    {
       base.OnModelCreating(modelBuilder);
