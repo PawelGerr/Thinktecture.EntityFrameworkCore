@@ -9,7 +9,7 @@
     <Import Condition="exists('$(ParentPropsFile)') " Project="$(ParentPropsFile)"/>
 
     <ItemGroup>
-        <PackageReference Include="FluentAssertions"/>
+        <PackageReference Include="AwesomeAssertions"/>
         <PackageReference Include="Microsoft.NET.Test.Sdk"/>
         <PackageReference Include="NSubstitute"/>
         <PackageReference Include="Serilog.Extensions.Logging"/>
