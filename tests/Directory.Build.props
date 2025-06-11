@@ -19,7 +19,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Using Include="FluentAssertions"/>
+        <Using Include="AwesomeAssertions"/>
         <Using Include="NSubstitute"/>
         <Using Include="Xunit"/>
         <Using Include="Xunit.Abstractions"/>
