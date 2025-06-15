@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -17,6 +18,7 @@ public abstract class ExistTestBase
       var options = new DbContextOptionsBuilder<MigrationExtensionsTestDbContext>()
                     .UseSqlServer(sqlServerFixture.ConnectionString,
                                   sqlServerBuilder => sqlServerBuilder.UseThinktectureSqlServerMigrationsSqlGenerator())
+                    .ConfigureWarnings(warningsBuilder => warningsBuilder.Ignore(CoreEventId.ManyServiceProvidersCreatedWarning))
                     .UseLoggerFactory(loggerFactory)
                     .EnableDetailedErrors()
                     .EnableSensitiveDataLogging()
