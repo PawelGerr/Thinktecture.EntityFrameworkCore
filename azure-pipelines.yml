@@ -6,7 +6,7 @@ trigger:
 - releases/*
 
 variables:
-  solution: 'Thinktecture.EntityFrameworkCore.sln'
+  solution: 'Thinktecture.EntityFrameworkCore.slnx'
   buildConfiguration: 'Release'
   SourceBranchName: '$(Build.SourceBranchName)'
 
