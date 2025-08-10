@@ -1,0 +1,27 @@
+# Code Style and Conventions
+- Namespaces start with `Thinktecture` and match folder structure
+- Nullable reference types enabled; use explicit null checks with `ArgumentNullException.ThrowIfNull(...)`
+- Async-first: provide async APIs with `CancellationToken` for I/O operations; avoid sync-over-async
+- Minimal public surface: prefer `internal` unless cross-package usage is needed
+- File-scoped namespaces, expression-bodied members where appropriate
+- Immutability: use `readonly` fields/structs where intended; prefer `record` for value-like objects
+- Query composition: keep operations server-evaluable; avoid client evaluation; prefer `IQueryable` over early `ToList()`
+- SQL safety: never concatenate raw SQL; use `FromSqlInterpolated` or helpers
+- Read-only queries: use `AsNoTracking()` unless state tracking is needed
+- Transactions: use EF Core `IDbContextTransaction`/`ExecutionStrategy` patterns
+- Provider specifics: SQL Server (table hints, temp tables, bulk ops), SQLite (conditional code for limitations)
+- XML documentation required for all public APIs
+- Tests: xUnit + AwesomeAssertions + NSubstitute + Serilog XUnit sink
+- Test naming: `MethodName_Should_DoSomething_When_Condition`
+- Test structure mirrors source structure
+- Deterministic tests: avoid time-based operations, use predictable data
+- Use `CollectExecutedCommands()` to verify SQL in tests
+- Centralized package versions in `Directory.Packages.props`
+- No inline package versions in `.csproj`
+- Build and test for both `net8.0` and `net9.0`
+- No new analyzer warnings or violations
+- Add XML docs and examples for public APIs
+- Use file-scoped namespaces and expression-bodied members where it improves clarity
+- Use guard clauses for argument validation
+- Use async/await and propagate `CancellationToken`
+- Throw appropriate exceptions for error handling

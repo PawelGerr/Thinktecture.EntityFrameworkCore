@@ -3,5 +3,8 @@
 **/bin/**
 **/obj/**
 **/packages/**
+.serena/cache/**
+.local-memory/**
 
 *\.sln\.DotSettings\.user
+.claude/settings.local.json

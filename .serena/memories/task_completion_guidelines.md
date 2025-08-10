@@ -1,0 +1,12 @@
+# Task Completion Guidelines
+- Ensure all code builds and tests pass (`dotnet build`, `dotnet test`)
+- Update documentation if new features or changes are introduced
+- If releasing, ensure version suffix is set for tags
+- Run benchmarks if performance is affected
+- Follow code style and conventions
+- Update samples if APIs change
+- Commit and push changes with clear messages
+- For CI/CD, verify Azure Pipelines status
+- For new features, add or update tests in the appropriate `tests/` project
+- For bug fixes, add regression tests if possible
+- For new features or changes, update Readme.md and relevant wiki pages
