@@ -4,6 +4,7 @@
         <OutputType>Exe</OutputType>
         <NoWarn>$(NoWarn);CS1591</NoWarn>
         <IsPackable>false</IsPackable>
+        <UserSecretsId>431fda5c-a042-4494-a2cc-57078fd57484</UserSecretsId>
     </PropertyGroup>
 
     <ItemGroup>
@@ -19,6 +20,7 @@
     <ItemGroup>
       <PackageReference Include="Microsoft.EntityFrameworkCore.Design" PrivateAssets="all" />
       <PackageReference Include="Microsoft.Extensions.Configuration.Json" />
+      <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" />
       <PackageReference Include="Microsoft.Extensions.Logging.Console" />
     </ItemGroup>
 
