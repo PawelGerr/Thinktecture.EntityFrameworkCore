@@ -1,0 +1,53 @@
+name: Claude Code
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+  issues:
+    types: [opened, assigned]
+  pull_request_review:
+    types: [submitted]
+
+jobs:
+  claude:
+    if: |
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
+      (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+      issues: read
+      id-token: write
+      actions: read # Required for Claude to read CI results on PRs
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Python and Serena MCP
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3 python3-pip
+          pip3 install uv
+
+      - name: Run Claude Code
+        id: claude
+        uses: anthropics/claude-code-action@v1
+        env:
+          CONTEXT7_API_KEY: ${{ secrets.CONTEXT7_API_KEY }}
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          use_commit_signing: true
+
+          additional_permissions: |
+            actions: read
+          
+          claude_args: |
+            --mcp-config ".github/workflows/mcp-config.json"
+            --allowedTools mcp__context7__resolve-library-id,mcp__context7__get-library-docs,mcp__sequential-thinking__sequentialthinking,mcp__serena__list_dir,mcp__serena__find_file,mcp__serena__search_for_pattern,mcp__serena__get_symbols_overview,mcp__serena__find_symbol,mcp__serena__find_referencing_symbols,mcp__serena__replace_symbol_body,mcp__serena__insert_after_symbol,mcp__serena__insert_before_symbol,mcp__serena__write_memory,mcp__serena__read_memory,mcp__serena__list_memories,mcp__serena__delete_memory,mcp__serena__activate_project,mcp__serena__check_onboarding_performed,mcp__serena__onboarding,mcp__serena__think_about_collected_information,mcp__serena__think_about_task_adherence,mcp__serena__think_about_whether_you_are_done
