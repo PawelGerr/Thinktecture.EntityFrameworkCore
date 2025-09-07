@@ -12,8 +12,13 @@
     <File Path="icon.png" />
     <File Path="LICENSE.md" />
     <File Path="README.md" />
-    <File Path=".github\copilot-instructions.md" />
     <File Path="CLAUDE.md" />
+  </Folder>
+  <Folder Name="/assets/.github/">
+    <File Path=".github\copilot-instructions.md" />
+    <File Path=".github\workflows\main.yml" />
+    <File Path=".github\workflows\claude.yml" />
+    <File Path=".github\workflows\claude-code-review.yml" />
   </Folder>
   <Folder Name="/samples/">
     <Project Path="samples/Thinktecture.EntityFrameworkCore.Benchmarks/Thinktecture.EntityFrameworkCore.Benchmarks.csproj" />
