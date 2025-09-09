@@ -37,6 +37,7 @@ public class SamplesContext
    {
       return new ConfigurationBuilder()
              .AddJsonFile("appsettings.json")
+             .AddUserSecrets<SamplesContext>()
              .Build();
    }
 
