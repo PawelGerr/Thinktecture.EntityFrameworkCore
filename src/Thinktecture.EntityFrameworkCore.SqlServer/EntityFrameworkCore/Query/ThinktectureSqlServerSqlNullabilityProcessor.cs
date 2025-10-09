@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
+using Microsoft.EntityFrameworkCore.SqlServer.Infrastructure.Internal;
 using Microsoft.EntityFrameworkCore.SqlServer.Query.Internal;
 using Thinktecture.EntityFrameworkCore.Query.SqlExpressions;
 
@@ -15,8 +16,9 @@ public class ThinktectureSqlServerSqlNullabilityProcessor : SqlServerSqlNullabil
    /// <inheritdoc />
    public ThinktectureSqlServerSqlNullabilityProcessor(
       RelationalParameterBasedSqlProcessorDependencies dependencies,
-      RelationalParameterBasedSqlProcessorParameters parameters)
-      : base(dependencies, parameters)
+      RelationalParameterBasedSqlProcessorParameters parameters,
+      ISqlServerSingletonOptions sqlServerSingletonOptions)
+      : base(dependencies, parameters, sqlServerSingletonOptions)
    {
    }
 

@@ -7,8 +7,4 @@
 
     <Import Condition="exists('$(ParentPropsFile)') " Project="$(ParentPropsFile)"/>
 
-    <PropertyGroup>
-        <TargetFramework>net9.0</TargetFramework>
-    </PropertyGroup>
-
 </Project>

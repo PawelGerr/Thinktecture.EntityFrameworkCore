@@ -16,21 +16,13 @@ pool:
 steps:
       
 - task: UseDotNet@2
-  displayName: 'use .NET 8.0 SDK'
+  displayName: 'use .NET 10.0 SDK'
   inputs:
     packageType: sdk
-    version: 8.0.x
-    includePreviewVersions: false
+    version: 10.0.x
+    includePreviewVersions: true
     installationPath: $(Agent.ToolsDirectory)/dotnet
-
-- task: UseDotNet@2
-  displayName: 'use .NET 9.0 SDK'
-  inputs:
-    packageType: sdk
-    version: 9.0.x
-    includePreviewVersions: false
-    installationPath: $(Agent.ToolsDirectory)/dotnet
-      
+   
 - script: |
     echo dotnet --version
     dotnet --version
@@ -69,6 +61,12 @@ steps:
   displayName: 'publish build artifacts'
   inputs:
     artifactName: 'NugetPackages'
+
+- script: |
+    sudo apt-get update
+    sudo apt-get install -y mono-complete
+  displayName: 'install mono'
+  condition: startsWith(variables['Build.SourceBranch'], 'refs/tags/')
 
 - task: NuGetCommand@2
   displayName: 'push to nuget.org'
