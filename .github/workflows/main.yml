@@ -12,13 +12,12 @@ jobs:
 
     steps:
 
-      - name: install .NET Core 8/9 SDKs
+      - name: install .NET Core 10 SDKs
         uses: actions/setup-dotnet@v2
         with:
-          include-prerelease: false
+          include-prerelease: true
           dotnet-version: |
-            8.0.x
-            9.0.x
+            10.0.x
 
       - name: checkout repository
         uses: actions/checkout@v2
