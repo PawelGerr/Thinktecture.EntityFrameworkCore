@@ -20,11 +20,11 @@ public class ThinktectureSqliteParameterBasedSqlProcessor : SqliteParameterBased
    }
 
    /// <inheritdoc />
-   protected override Expression ProcessSqlNullability(Expression expression, IReadOnlyDictionary<string, object?> parametersValues, out bool canCache)
+   protected override Expression ProcessSqlNullability(Expression selectExpression, ParametersCacheDecorator decorator)
    {
-      ArgumentNullException.ThrowIfNull(expression);
-      ArgumentNullException.ThrowIfNull(parametersValues);
+      ArgumentNullException.ThrowIfNull(selectExpression);
+      ArgumentNullException.ThrowIfNull(decorator);
 
-      return new ThinktectureSqlNullabilityProcessor(Dependencies, Parameters).Process(expression, parametersValues, out canCache);
+      return new ThinktectureSqlNullabilityProcessor(Dependencies, Parameters).Process(selectExpression, decorator);
    }
 }

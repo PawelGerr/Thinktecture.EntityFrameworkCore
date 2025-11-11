@@ -56,10 +56,6 @@ public class Program
          await DoComplexCollectionParameterAsync(ctx, customerId);
          ctx.ChangeTracker.Clear();
 
-         // LEFT JOIN
-         await DoLeftJoinAsync(ctx);
-         ctx.ChangeTracker.Clear();
-
          // ROWNUMBER
          await DoRowNumberAsync(ctx);
          ctx.ChangeTracker.Clear();
@@ -181,18 +177,6 @@ public class Program
                                   .Where(i => i.RowNumber == 1)
                                   .ToListAsync();
       Console.WriteLine($"Latest orders: {String.Join(", ", latestOrders.Select(o => $"{{ CustomerId={o.CustomerId}, OrderId={o.Id} }}"))}");
-   }
-
-   private static async Task DoLeftJoinAsync(DemoDbContext ctx)
-   {
-      var customerOrder = await ctx.Customers
-                                   .LeftJoin(ctx.Orders,
-                                             c => c.Id,
-                                             o => o.CustomerId,
-                                             result => new { Customer = result.Left, Order = result.Right })
-                                   .ToListAsync();
-
-      Console.WriteLine($"Found customers: {String.Join(", ", customerOrder.Select(co => $"{{ CustomerId={co.Customer.Id}, OrderId={co.Order?.Id} }}"))}");
    }
 
    private static async Task DoBulkInsertAsync(DemoDbContext ctx)

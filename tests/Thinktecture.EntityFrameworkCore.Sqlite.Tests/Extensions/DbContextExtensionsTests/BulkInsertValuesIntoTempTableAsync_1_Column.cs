@@ -211,7 +211,7 @@ public class BulkInsertValuesIntoTempTableAsync_1_Column : SchemaChangingIntegra
 
       var tempTable = await ActDbContext.BulkInsertValuesIntoTempTableAsync(new[] { Guid.Empty });
 
-      var joinQuery = tempTable.Query.LeftJoin(tempTable.Query, e => e, e => e);
+      var joinQuery = tempTable.Query.LeftJoin(tempTable.Query, e => e, e => e, (e1, e2) => new { Left = e1, Right = e2 });
 
       joinQuery.ToQueryString().Should().Be("""
                                                SELECT "#"."Column1" AS "Left", "#0"."Column1" AS "Right"

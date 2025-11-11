@@ -1,6 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore.Query;
-using Microsoft.EntityFrameworkCore.Query.Internal;
 using Thinktecture.EntityFrameworkCore.Infrastructure;
 
 namespace Thinktecture.EntityFrameworkCore.Query;
@@ -47,9 +46,9 @@ public class ThinktectureRelationalQueryContextFactory<TFactory> : IQueryContext
    /// </summary>
    /// <param name="ctx">Query context.</param>
    [SuppressMessage("Usage", "EF1001", MessageId = "Internal EF Core API usage.")]
-   private void AddTenantParameter(IParameterValues ctx)
+   private void AddTenantParameter(QueryContext ctx)
    {
       var tenantDatabaseProvider = _tenantDatabaseProviderFactory.Create();
-      ctx.AddParameter($"{_TENANT_PARAM_PREFIX}|{tenantDatabaseProvider.Tenant}", null);
+      ctx.Parameters.Add($"{_TENANT_PARAM_PREFIX}|{tenantDatabaseProvider.Tenant}", null);
    }
 }

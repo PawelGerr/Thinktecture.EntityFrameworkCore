@@ -151,7 +151,7 @@ public class WithTableHints : IntegrationTestsBase
 
       var joinQuery = tempTable.Query.WithTableHints(SqlServerTableHint.UpdLock, SqlServerTableHint.RowLock)
                                .LeftJoin(tempTable.Query.WithTableHints(SqlServerTableHint.UpdLock),
-                                         e => e, e => e);
+                                         e => e, e => e, (e1, e2) => new { Left = e1, Right = e2 });
 
       joinQuery.ToQueryString().Should().Be("SELECT [#].[Column1] AS [Left], [#0].[Column1] AS [Right]" + Environment.NewLine +
                                             "FROM [#TempTable<Guid>_1] AS [#] WITH (UPDLOCK, ROWLOCK)" + Environment.NewLine +
@@ -159,7 +159,7 @@ public class WithTableHints : IntegrationTestsBase
 
       joinQuery = tempTable.Query.WithTableHints(SqlServerTableHint.UpdLock, SqlServerTableHint.RowLock)
                            .LeftJoin(tempTable.Query.WithTableHints(SqlServerTableHint.UpdLock, SqlServerTableHint.RowLock),
-                                     e => e, e => e);
+                                     e => e, e => e, (e1, e2) => new { Left = e1, Right = e2 });
 
       joinQuery.ToQueryString().Should().Be("SELECT [#].[Column1] AS [Left], [#0].[Column1] AS [Right]" + Environment.NewLine +
                                             "FROM [#TempTable<Guid>_1] AS [#] WITH (UPDLOCK, ROWLOCK)" + Environment.NewLine +
