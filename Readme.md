@@ -33,7 +33,6 @@ Use the [repo on GitHub](https://github.com/PawelGerr/Thinktecture.EntityFramewo
 * [If-Exists / If-Not-Exists checks in migrations](https://dev.azure.com/pawelgerr/Thinktecture.EntityFrameworkCore/_wiki/wikis/Thinktecture.EntityFrameworkCore.wiki/7/If-(Not-)Exists-checks-in-migrations) (SQL Server)
 
 ## Convenience
-* [Extension method LeftJoin](https://dev.azure.com/pawelgerr/Thinktecture.EntityFrameworkCore/_wiki/wikis/Thinktecture.EntityFrameworkCore.wiki/4/Extension-method-LeftJoin)
 * [Migrations: include-columns](https://dev.azure.com/pawelgerr/Thinktecture.EntityFrameworkCore/_wiki/wikis/Thinktecture.EntityFrameworkCore.wiki/9/Migrations-Include-columns) (SQL Server)
 * [Migrations: identity column](https://dev.azure.com/pawelgerr/Thinktecture.EntityFrameworkCore/_wiki/wikis/Thinktecture.EntityFrameworkCore.wiki/28/Migrations-Identity-column) (SQL Server)
 * [Migrations: (non-)clustered PK](https://dev.azure.com/pawelgerr/Thinktecture.EntityFrameworkCore/_wiki/wikis/Thinktecture.EntityFrameworkCore.wiki/29/Migrations-(Non-)Clustered-PK) (SQL Server)
