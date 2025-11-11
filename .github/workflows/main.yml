@@ -15,7 +15,7 @@ jobs:
       - name: install .NET Core 10 SDKs
         uses: actions/setup-dotnet@v2
         with:
-          include-prerelease: true
+          include-prerelease: false
           dotnet-version: |
             10.0.x
 
