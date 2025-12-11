@@ -12,34 +12,30 @@
 
 These libraries extend [Entity Framework Core](https://docs.microsoft.com/en-us/ef/core/) by a few features to make it easier to work with EF and for easier integration testing or to get more performance in some special cases.
 
-The code and the documentation can be found on [Thinktecture.EntityFrameworkCore](https://dev.azure.com/pawelgerr/Thinktecture.EntityFrameworkCore)
-
-Use the [repo on GitHub](https://github.com/PawelGerr/Thinktecture.EntityFrameworkCore) to create issues and feature requests.
-
 ## Performance
-* [Temp-Tables](https://dev.azure.com/pawelgerr/Thinktecture.EntityFrameworkCore/_wiki/wikis/Thinktecture.EntityFrameworkCore.wiki/2/Temp-Tables)
-* [Bulk-Insert](https://dev.azure.com/pawelgerr/Thinktecture.EntityFrameworkCore/_wiki/wikis/Thinktecture.EntityFrameworkCore.wiki/65/Bulk-Insert)
-* [Bulk-Update](https://dev.azure.com/pawelgerr/Thinktecture.EntityFrameworkCore/_wiki/wikis/Thinktecture.EntityFrameworkCore.wiki/67/Bulk-Update)
-* [Bulk-Upsert (Insert-or-Update)](https://dev.azure.com/pawelgerr/Thinktecture.EntityFrameworkCore/_wiki/wikis/Thinktecture.EntityFrameworkCore.wiki/69/Bulk-Upsert-(Insert-or-Update))
-* [Truncate Tables](https://dev.azure.com/pawelgerr/Thinktecture.EntityFrameworkCore/_wiki/wikis/Thinktecture.EntityFrameworkCore.wiki/64/Truncate-Tables)
+* [Temp-Tables](https://github.com/PawelGerr/Thinktecture.EntityFrameworkCore/wiki/Temp-Tables)
+* [Bulk-Insert](https://github.com/PawelGerr/Thinktecture.EntityFrameworkCore/wiki/Bulk-Insert)
+* [Bulk-Update](https://github.com/PawelGerr/Thinktecture.EntityFrameworkCore/wiki/Bulk-Update)
+* [Bulk-Upsert (Insert-or-Update)](https://github.com/PawelGerr/Thinktecture.EntityFrameworkCore/wiki/Bulk-Upsert-(Insert-or-Update))
+* [Truncate Tables](https://github.com/PawelGerr/Thinktecture.EntityFrameworkCore/wiki/Truncate-Tables)
 
 ## Features
-* [Collection Parameters (temp-tables *light*)](https://dev.azure.com/pawelgerr/Thinktecture.EntityFrameworkCore/_wiki/wikis/Thinktecture.EntityFrameworkCore.wiki/109/Collection-Parameters-(temp-tables-light)) (SQL Server)
-* [Window Functions Support (RowNumber, Sum, Average, Min, Max)](https://dev.azure.com/pawelgerr/Thinktecture.EntityFrameworkCore/_wiki/wikis/Thinktecture.EntityFrameworkCore.wiki?wikiVersion=GBwikiMaster&pagePath=/Features/Window%20Functions%20Support%20(RowNumber%2C%20Sum%2C%20Average%2C%20Min%2C%20Max)&pageId=14&_a=edit)
-* [Nested (virtual) Transactions](https://dev.azure.com/pawelgerr/Thinktecture.EntityFrameworkCore/_wiki/wikis/Thinktecture.EntityFrameworkCore.wiki/40/Nested-(virtual)-Transactions)
-* [Table Hints](https://dev.azure.com/pawelgerr/Thinktecture.EntityFrameworkCore/_wiki/wikis/Thinktecture.EntityFrameworkCore.wiki/71/Table-Hints-(SQL-Server)) (SQL Server)
-* [Queries accross multiple databases](https://dev.azure.com/pawelgerr/Thinktecture.EntityFrameworkCore/_wiki/wikis/Thinktecture.EntityFrameworkCore.wiki/43/Queries-accross-multiple-databases) (SQL Server)
-* [Changing default schema at runtime](https://dev.azure.com/pawelgerr/Thinktecture.EntityFrameworkCore/_wiki/wikis/Thinktecture.EntityFrameworkCore.wiki/6/Changing-default-schema-at-runtime)
-* [If-Exists / If-Not-Exists checks in migrations](https://dev.azure.com/pawelgerr/Thinktecture.EntityFrameworkCore/_wiki/wikis/Thinktecture.EntityFrameworkCore.wiki/7/If-(Not-)Exists-checks-in-migrations) (SQL Server)
+* [Collection Parameters (temp-tables *light*)](https://github.com/PawelGerr/Thinktecture.EntityFrameworkCore/wiki/Collection-Parameters-(temp-tables-light)) (SQL Server)
+* [Window Functions Support (RowNumber, Sum, Average, Min, Max)](https://github.com/PawelGerr/Thinktecture.EntityFrameworkCore/wiki/Window-Functions-Support-(RowNumber,-Sum,-Average,-Min,-Max))
+* [Nested (virtual) Transactions](https://github.com/PawelGerr/Thinktecture.EntityFrameworkCore/wiki/Nested-(virtual)-Transactions)
+* [Table Hints](https://github.com/PawelGerr/Thinktecture.EntityFrameworkCore/wiki/Table-Hints-(SQL-Server)) (SQL Server)
+* [Queries accross multiple databases](https://github.com/PawelGerr/Thinktecture.EntityFrameworkCore/wiki/Queries-accross-multiple-databases) (SQL Server)
+* [Changing default schema at runtime](https://github.com/PawelGerr/Thinktecture.EntityFrameworkCore/wiki/Changing-default-schema-at-runtime)
+* [If-Exists / If-Not-Exists checks in migrations](https://github.com/PawelGerr/Thinktecture.EntityFrameworkCore/wiki/If-(Not-)Exists-checks-in-migrations-(SQL-Server)) (SQL Server)
 
 ## Convenience
-* [Migrations: include-columns](https://dev.azure.com/pawelgerr/Thinktecture.EntityFrameworkCore/_wiki/wikis/Thinktecture.EntityFrameworkCore.wiki/9/Migrations-Include-columns) (SQL Server)
-* [Migrations: identity column](https://dev.azure.com/pawelgerr/Thinktecture.EntityFrameworkCore/_wiki/wikis/Thinktecture.EntityFrameworkCore.wiki/28/Migrations-Identity-column) (SQL Server)
-* [Migrations: (non-)clustered PK](https://dev.azure.com/pawelgerr/Thinktecture.EntityFrameworkCore/_wiki/wikis/Thinktecture.EntityFrameworkCore.wiki/29/Migrations-(Non-)Clustered-PK) (SQL Server)
+* [Migrations: include-columns](https://github.com/PawelGerr/Thinktecture.EntityFrameworkCore/wiki/Migrations-Include-columns-(SQL-Server)) (SQL Server)
+* [Migrations: identity column](https://github.com/PawelGerr/Thinktecture.EntityFrameworkCore/wiki/Migrations-Identity-column-(SQL-Server)) (SQL Server)
+* [Migrations: (non-)clustered PK](https://github.com/PawelGerr/Thinktecture.EntityFrameworkCore/wiki/Migrations-(Non-)Clustered-PK-(SQL-Server)) (SQL Server)
 
 ## Integration Testing
-* [Isolation of tests](https://dev.azure.com/pawelgerr/Thinktecture.EntityFrameworkCore/_wiki/wikis/Thinktecture.EntityFrameworkCore.wiki/12/Isolation-of-tests) (SQL Server, SQLite)
+* [Isolation of tests](https://github.com/PawelGerr/Thinktecture.EntityFrameworkCore/wiki/Isolation-of-tests) (SQL Server, SQLite)
 
 ## Extensibility
-* [Adding custom IRelationalTypeMappingSourcePlugin](https://dev.azure.com/pawelgerr/Thinktecture.EntityFrameworkCore/_wiki/wikis/Thinktecture.EntityFrameworkCore.wiki/26/Adding-custom-IRelationalTypeMappingSourcePlugin)
-* [Adding custom IEvaluatableExpressionFilter](https://dev.azure.com/pawelgerr/Thinktecture.EntityFrameworkCore/_wiki/wikis/Thinktecture.EntityFrameworkCore.wiki/31/Adding-custom-IEvaluatableExpressionFilter)
+* [Adding custom IRelationalTypeMappingSourcePlugin](https://github.com/PawelGerr/Thinktecture.EntityFrameworkCore/wiki/Adding-custom-IRelationalTypeMappingSourcePlugin)
+* [Adding custom IEvaluatableExpressionFilter](https://github.com/PawelGerr/Thinktecture.EntityFrameworkCore/wiki/Adding-custom-IEvaluatableExpressionFilter)
