@@ -30,6 +30,7 @@
     <Project Path="src/Thinktecture.EntityFrameworkCore.BulkOperations/Thinktecture.EntityFrameworkCore.BulkOperations.csproj" />
     <Project Path="src/Thinktecture.EntityFrameworkCore.Relational/Thinktecture.EntityFrameworkCore.Relational.csproj" />
     <Project Path="src/Thinktecture.EntityFrameworkCore.Sqlite.Testing/Thinktecture.EntityFrameworkCore.Sqlite.Testing.csproj" />
+    <Project Path="src/Thinktecture.EntityFrameworkCore.Sqlite.Core/Thinktecture.EntityFrameworkCore.Sqlite.Core.csproj" />
     <Project Path="src/Thinktecture.EntityFrameworkCore.Sqlite/Thinktecture.EntityFrameworkCore.Sqlite.csproj" />
     <Project Path="src/Thinktecture.EntityFrameworkCore.SqlServer.Testing/Thinktecture.EntityFrameworkCore.SqlServer.Testing.csproj" />
     <Project Path="src/Thinktecture.EntityFrameworkCore.SqlServer/Thinktecture.EntityFrameworkCore.SqlServer.csproj" />

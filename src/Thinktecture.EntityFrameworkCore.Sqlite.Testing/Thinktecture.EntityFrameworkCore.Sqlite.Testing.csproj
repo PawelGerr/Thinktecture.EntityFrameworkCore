@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <ItemGroup>
-        <ProjectReference Include="..\Thinktecture.EntityFrameworkCore.Sqlite\Thinktecture.EntityFrameworkCore.Sqlite.csproj" />
+        <ProjectReference Include="..\Thinktecture.EntityFrameworkCore.Sqlite.Core\Thinktecture.EntityFrameworkCore.Sqlite.Core.csproj" />
         <ProjectReference Include="..\Thinktecture.EntityFrameworkCore.Testing\Thinktecture.EntityFrameworkCore.Testing.csproj" />
     </ItemGroup>
 
