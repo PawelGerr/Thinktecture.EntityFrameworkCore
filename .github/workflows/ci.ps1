@@ -18,7 +18,11 @@ function Set-VersionSuffixOnTag([string]$dir, [string]$branch)
         {
             Set-VersionSuffix $dir $suffix
         }
+
+        return
     }
+
+    Set-VersionSuffix $dir "ci"
 }
 
 # Add xml element "VersionSuffix" to *.csproj files in $dir.
@@ -40,7 +44,7 @@ function Set-VersionSuffix([string]$dir, [string]$suffix)
         if ($content.Project.PropertyGroup -eq $null)
         {
             $propertyGroup = $content.CreateElement("PropertyGroup");
-            $content.Project.AppendChild($propertyGroup);
+            [void] $content.Project.AppendChild($propertyGroup);
         }
         else
         {

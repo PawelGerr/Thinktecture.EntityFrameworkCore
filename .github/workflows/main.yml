@@ -12,15 +12,25 @@ jobs:
 
     steps:
 
-      - name: install .NET Core 10 SDKs
+      - name: install .NET Core 10 SDK
         uses: actions/setup-dotnet@v2
         with:
           include-prerelease: false
           dotnet-version: |
             10.0.x
 
+      - name: .NET info
+        run: dotnet --info
+        shell: pwsh
+
       - name: checkout repository
         uses: actions/checkout@v2
+
+      - name: set version
+        run: |
+          . ./.github/workflows/ci.ps1
+          Set-VersionSuffixOnTag "$Env:GITHUB_WORKSPACE/src" "$Env:GITHUB_REF"
+        shell: pwsh
 
       - name: dotnet restore
         run: dotnet restore
@@ -38,3 +48,56 @@ jobs:
         with:
           check_name: tests results
           trx_files: "**/test-results/**/*.trx"
+
+      - name: test results badge color
+        shell: bash
+        run: |
+          case ${{ fromJSON( steps.test-results.outputs.json ).conclusion }} in
+            success)
+              echo "BADGE_COLOR=31c653" >> $GITHUB_ENV
+              ;;
+            failure)
+              echo "BADGE_COLOR=800000" >> $GITHUB_ENV
+              ;;
+            neutral)
+              echo "BADGE_COLOR=696969" >> $GITHUB_ENV
+              ;;
+          esac
+
+      - name: create test result badge
+        uses: emibcn/badge-action@d6f51ff11b5c3382b3b88689ae2d6db22d9737d1
+        with:
+          label: tests
+          status: '${{ fromJSON( steps.test-results.outputs.json ).formatted.stats.tests }} tests, ${{ fromJSON( steps.test-results.outputs.json ).formatted.stats.runs }} runs: ${{ fromJSON( steps.test-results.outputs.json ).conclusion }}'
+          color: ${{ env.BADGE_COLOR }}
+          path: badge.svg
+
+      - name: Upload badge to Gist
+        if: >
+          github.event_name == 'workflow_run' && github.event.workflow_run.head_branch == 'master' ||
+          github.event_name != 'workflow_run' && github.ref == 'refs/heads/master'
+        uses: andymckay/append-gist-action@1fbfbbce708a39bd45846f0955ed5521f2099c6d
+        with:
+          token: ${{ secrets.GIST_TOKEN }}
+          gistURL: https://gist.github.com/PawelGerr/2311eb236eb4a66e7c422005bd498060
+          file: badge.svg
+
+      - name: pack
+        run: dotnet pack --configuration Release --no-build --output out
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nuget-packages
+          path: |
+            out/*.nupkg
+            out/*.snupkg
+          if-no-files-found: 'error'
+
+      - name: push to nuget.org
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          cd out
+          dotnet nuget push "*.nupkg" -k "$env:API_KEY" --skip-duplicate
+        shell: pwsh
+        env:
+          API_KEY: ${{ secrets.NUGET_ORG_API_KEY }}
