@@ -34,7 +34,7 @@ These libraries extend [Entity Framework Core](https://docs.microsoft.com/en-us/
 * [Window Functions Support (RowNumber, Sum, Average, Min, Max)](https://github.com/PawelGerr/Thinktecture.EntityFrameworkCore/wiki/Window-Functions-Support-(RowNumber,-Sum,-Average,-Min,-Max)) (SQL Server, PostgreSQL, SQLite*)
 * [Nested (virtual) Transactions](https://github.com/PawelGerr/Thinktecture.EntityFrameworkCore/wiki/Nested-(virtual)-Transactions)
 * [Table Hints](https://github.com/PawelGerr/Thinktecture.EntityFrameworkCore/wiki/Table-Hints-(SQL-Server)) (SQL Server)
-* [Queries across multiple databases](https://github.com/PawelGerr/Thinktecture.EntityFrameworkCore/wiki/Queries-accross-multiple-databases) (SQL Server)
+* [Queries across multiple databases](https://github.com/PawelGerr/Thinktecture.EntityFrameworkCore/wiki/Queries-accross-multiple-databases-(SQL-Server)) (SQL Server)
 * [Changing default schema at runtime](https://github.com/PawelGerr/Thinktecture.EntityFrameworkCore/wiki/Changing-default-schema-at-runtime)
 * [If-Exists / If-Not-Exists checks in migrations](https://github.com/PawelGerr/Thinktecture.EntityFrameworkCore/wiki/If-(Not-)Exists-checks-in-migrations) (SQL Server, PostgreSQL)
 
