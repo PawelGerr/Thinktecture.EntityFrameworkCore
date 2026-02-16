@@ -67,7 +67,7 @@ public static class BulkOperationsDbContextExtensions
    /// <param name="cancellationToken">Cancellation token.</param>
    /// <typeparam name="T">Entity type.</typeparam>
    /// <exception cref="ArgumentNullException"> <paramref name="ctx"/> or <paramref name="entities"/> is <c>null</c>.</exception>
-   public static async Task BulkInsertAsync<T>(
+   public static async Task<int> BulkInsertAsync<T>(
       this DbContext ctx,
       IEnumerable<T> entities,
       Expression<Func<T, object?>>? propertiesToInsert = null,
@@ -77,7 +77,7 @@ public static class BulkOperationsDbContextExtensions
       var bulkInsertExecutor = ctx.GetService<IBulkInsertExecutor>();
       var options = bulkInsertExecutor.CreateOptions(propertiesToInsert is null ? null : IEntityPropertiesProvider.Include(propertiesToInsert));
 
-      await bulkInsertExecutor.BulkInsertAsync(entities, options, cancellationToken).ConfigureAwait(false);
+      return await bulkInsertExecutor.BulkInsertAsync(entities, options, cancellationToken).ConfigureAwait(false);
    }
 
    /// <summary>
@@ -89,15 +89,15 @@ public static class BulkOperationsDbContextExtensions
    /// <param name="cancellationToken">Cancellation token.</param>
    /// <typeparam name="T">Entity type.</typeparam>
    /// <exception cref="ArgumentNullException"> <paramref name="ctx"/> or <paramref name="entities"/> is <c>null</c>.</exception>
-   public static async Task BulkInsertAsync<T>(
+   public static async Task<int> BulkInsertAsync<T>(
       this DbContext ctx,
       IEnumerable<T> entities,
       IBulkInsertOptions options,
       CancellationToken cancellationToken = default)
       where T : class
    {
-      await ctx.GetService<IBulkInsertExecutor>()
-               .BulkInsertAsync(entities, options, cancellationToken).ConfigureAwait(false);
+      return await ctx.GetService<IBulkInsertExecutor>()
+                      .BulkInsertAsync(entities, options, cancellationToken).ConfigureAwait(false);
    }
 
    /// <summary>

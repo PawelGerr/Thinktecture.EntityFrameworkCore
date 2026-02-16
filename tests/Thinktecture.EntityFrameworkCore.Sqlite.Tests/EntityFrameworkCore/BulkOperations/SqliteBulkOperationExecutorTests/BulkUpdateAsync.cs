@@ -156,7 +156,7 @@ public class BulkUpdateAsync : IntegrationTestsBase
 
       var loadedEntity = await AssertDbContext.TestEntities.FirstOrDefaultAsync();
       loadedEntity.Should().NotBeNull();
-      loadedEntity!.GetPrivateField().Should().Be(1);
+      loadedEntity.GetPrivateField().Should().Be(1);
    }
 
    [Fact]
@@ -175,8 +175,8 @@ public class BulkUpdateAsync : IntegrationTestsBase
 
       var loadedEntity = await AssertDbContext.TestEntitiesWithShadowProperties.FirstOrDefaultAsync();
       loadedEntity.Should().NotBeNull();
-      AssertDbContext.Entry(loadedEntity!).Property("ShadowStringProperty").CurrentValue.Should().Be("value");
-      AssertDbContext.Entry(loadedEntity!).Property("ShadowIntProperty").CurrentValue.Should().Be(42);
+      AssertDbContext.Entry(loadedEntity).Property("ShadowStringProperty").CurrentValue.Should().Be("value");
+      AssertDbContext.Entry(loadedEntity).Property("ShadowIntProperty").CurrentValue.Should().Be(42);
    }
 
    [Fact]
@@ -353,7 +353,7 @@ public class BulkUpdateAsync : IntegrationTestsBase
 
       var loadedEntity = await AssertDbContext.TestEntitiesWithBaseClass.FirstOrDefaultAsync();
       loadedEntity.Should().NotBeNull();
-      loadedEntity!.Name.Should().Be("changed");
+      loadedEntity.Name.Should().Be("changed");
    }
 
    [Fact]
@@ -373,5 +373,40 @@ public class BulkUpdateAsync : IntegrationTestsBase
 
       var loadedEntities = await AssertDbContext.TestEntities_with_ComplexType.ToListAsync();
       loadedEntities.Should().BeEquivalentTo(new[] { testEntity });
+   }
+
+   [Fact]
+   public async Task Should_update_entities_in_table_name_override()
+   {
+      await ActDbContext.Database.ExecuteSqlRawAsync("""
+         CREATE TABLE "TestEntities_BulkUpdateRedirect" AS SELECT * FROM "TestEntities" WHERE 0;
+         INSERT INTO "TestEntities_BulkUpdateRedirect" ("Id", "RequiredName", "Name", "Count", "NullableCount", "ConvertibleClass", "ParentId", "PropertyWithBackingField", "_privateField")
+         VALUES ('40B5CA93-5C02-48AD-B8A1-12BC13313866', 'RequiredName', NULL, 0, NULL, NULL, NULL, 0, 0);
+         """);
+
+      try
+      {
+         var entity = new TestEntity
+                      {
+                         Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
+                         RequiredName = "RequiredName",
+                         Name = "UpdatedName",
+                         Count = 99
+                      };
+
+         var affectedRows = await SUT.BulkUpdateAsync(new[] { entity }, new SqliteBulkUpdateOptions { TableName = "TestEntities_BulkUpdateRedirect" });
+
+         affectedRows.Should().Be(1);
+
+         var redirectedNames = await AssertDbContext.Database
+                                                   .SqlQueryRaw<string>("SELECT [Name] FROM [TestEntities_BulkUpdateRedirect]")
+                                                   .ToListAsync();
+         redirectedNames.Should().HaveCount(1);
+         redirectedNames[0].Should().Be("UpdatedName");
+      }
+      finally
+      {
+         await ActDbContext.Database.ExecuteSqlRawAsync("DROP TABLE IF EXISTS [TestEntities_BulkUpdateRedirect]");
+      }
    }
 }

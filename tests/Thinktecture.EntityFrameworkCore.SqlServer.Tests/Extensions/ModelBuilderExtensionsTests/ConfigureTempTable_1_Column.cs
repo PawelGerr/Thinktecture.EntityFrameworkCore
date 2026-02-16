@@ -44,7 +44,7 @@ public class ConfigureTempTable_1_Column : IntegrationTestsBase
 
       var entityType = ActDbContext.GetTempTableEntityType<TempTable<int?>>();
       entityType.Should().NotBeNull();
-      entityType!.Name.Should().Be("Thinktecture:TempTable:Thinktecture.EntityFrameworkCore.TempTables.TempTable<int?>");
+      entityType.Name.Should().Be("Thinktecture:TempTable:Thinktecture.EntityFrameworkCore.TempTables.TempTable<int?>");
 
       var properties = entityType.GetProperties();
       properties.Should().HaveCount(1);

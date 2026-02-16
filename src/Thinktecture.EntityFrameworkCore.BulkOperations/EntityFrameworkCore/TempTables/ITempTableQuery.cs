@@ -11,4 +11,9 @@ public interface ITempTableQuery<out T> : ITempTableReference
    /// The query itself.
    /// </summary>
    IQueryable<T> Query { get; }
+
+   /// <summary>
+   /// Gets the number of rows that were inserted into the temp table.
+   /// </summary>
+   int NumberOfInsertedRows { get; }
 }

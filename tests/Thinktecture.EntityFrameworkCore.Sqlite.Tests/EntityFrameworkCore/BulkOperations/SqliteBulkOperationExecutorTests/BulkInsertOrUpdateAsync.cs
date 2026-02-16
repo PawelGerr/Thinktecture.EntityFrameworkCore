@@ -470,4 +470,59 @@ public class BulkInsertOrUpdateAsync : IntegrationTestsBase
       var loadedEntities = await AssertDbContext.TestEntities_with_ComplexType.ToListAsync();
       loadedEntities.Should().BeEquivalentTo(new[] { testEntity_1, testEntity_2 });
    }
+
+   [Fact]
+   public async Task Should_insert_or_update_entities_in_table_name_override()
+   {
+      await ActDbContext.Database.ExecuteSqlRawAsync("""
+         CREATE TABLE "TestEntities_BulkUpsertRedirect" (
+            "Id" TEXT NOT NULL PRIMARY KEY,
+            "Name" TEXT NULL,
+            "RequiredName" TEXT NOT NULL,
+            "Count" INTEGER NOT NULL,
+            "NullableCount" INTEGER NULL,
+            "ConvertibleClass" INTEGER NULL,
+            "ParentId" TEXT NULL,
+            "PropertyWithBackingField" INTEGER NOT NULL,
+            "_privateField" INTEGER NOT NULL
+         );
+         INSERT INTO "TestEntities_BulkUpsertRedirect" ("Id", "RequiredName", "Name", "Count", "NullableCount", "ConvertibleClass", "ParentId", "PropertyWithBackingField", "_privateField")
+         VALUES ('40B5CA93-5C02-48AD-B8A1-12BC13313866', 'RequiredName', 'OldName', 0, NULL, NULL, NULL, 0, 0);
+         """);
+
+      try
+      {
+         var existingEntity = new TestEntity
+                              {
+                                 Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
+                                 RequiredName = "RequiredName",
+                                 Name = "UpdatedName",
+                                 Count = 99
+                              };
+         var newEntity = new TestEntity
+                         {
+                            Id = new Guid("8AF163D7-D316-4B2D-A62F-6326A80C8BEE"),
+                            RequiredName = "RequiredName",
+                            Name = "NewName",
+                            Count = 1
+                         };
+
+         var affectedRows = await SUT.BulkInsertOrUpdateAsync(new[] { existingEntity, newEntity },
+                                                               new SqliteBulkInsertOrUpdateOptions { TableName = "TestEntities_BulkUpsertRedirect" });
+
+         affectedRows.Should().Be(2);
+
+         var loadedEntities = await AssertDbContext.TestEntities.ToListAsync();
+         loadedEntities.Should().HaveCount(0, "original table should be empty");
+
+         var redirectedIds = await AssertDbContext.Database
+                                                 .SqlQueryRaw<string>("SELECT [Id] FROM [TestEntities_BulkUpsertRedirect] ORDER BY [Name]")
+                                                 .ToListAsync();
+         redirectedIds.Should().HaveCount(2);
+      }
+      finally
+      {
+         await ActDbContext.Database.ExecuteSqlRawAsync("DROP TABLE IF EXISTS [TestEntities_BulkUpsertRedirect]");
+      }
+   }
 }

@@ -38,7 +38,7 @@ internal class TempTableSuffixes
             return;
          }
 
-         _suffixes = new SortedSet<int> { _firstSuffix.Value };
+         _suffixes = [_firstSuffix.Value];
          _firstSuffix = null;
       }
 

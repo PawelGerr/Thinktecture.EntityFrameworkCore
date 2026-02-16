@@ -74,6 +74,7 @@ public static class SqlServerOperationBuilderExtensions
    {
       ArgumentNullException.ThrowIfNull(operation);
       ArgumentNullException.ThrowIfNull(columns);
+
       if (columns.Length == 0)
          throw new ArgumentException("There must be at least one column in provided collection.", nameof(columns));
 

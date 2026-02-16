@@ -1,5 +1,6 @@
 using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Thinktecture.Internal;
 
 namespace Thinktecture.EntityFrameworkCore.TempTables;
 

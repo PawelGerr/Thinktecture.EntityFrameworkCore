@@ -136,7 +136,7 @@ public class BulkUpdateAsync : IntegrationTestsBase
 
       var loadedEntity = await AssertDbContext.TestEntities.FirstOrDefaultAsync();
       loadedEntity.Should().NotBeNull();
-      loadedEntity!.GetPrivateField().Should().Be(1);
+      loadedEntity.GetPrivateField().Should().Be(1);
    }
 
    [Fact]
@@ -155,8 +155,8 @@ public class BulkUpdateAsync : IntegrationTestsBase
 
       var loadedEntity = await AssertDbContext.TestEntitiesWithShadowProperties.FirstOrDefaultAsync();
       loadedEntity.Should().NotBeNull();
-      AssertDbContext.Entry(loadedEntity!).Property("ShadowStringProperty").CurrentValue.Should().Be("value");
-      AssertDbContext.Entry(loadedEntity!).Property("ShadowIntProperty").CurrentValue.Should().Be(42);
+      AssertDbContext.Entry(loadedEntity).Property("ShadowStringProperty").CurrentValue.Should().Be("value");
+      AssertDbContext.Entry(loadedEntity).Property("ShadowIntProperty").CurrentValue.Should().Be(42);
    }
 
    [Fact]
@@ -208,7 +208,7 @@ public class BulkUpdateAsync : IntegrationTestsBase
 
       var loadedEntity = await AssertDbContext.TestEntitiesWithRowVersion.FirstOrDefaultAsync();
       loadedEntity.Should().NotBeNull();
-      loadedEntity!.Id.Should().Be(new Guid("EBC95620-4D80-4318-9B92-AD7528B2965C"));
+      loadedEntity.Id.Should().Be(new Guid("EBC95620-4D80-4318-9B92-AD7528B2965C"));
       loadedEntity.RowVersion.Should().NotBe(Int32.MaxValue);
    }
 

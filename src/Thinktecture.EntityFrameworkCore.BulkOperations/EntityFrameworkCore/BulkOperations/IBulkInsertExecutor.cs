@@ -19,8 +19,8 @@ public interface IBulkInsertExecutor
    /// <param name="options">Options.</param>
    /// <param name="cancellationToken">Cancellation token.</param>
    /// <typeparam name="T">Entity/query type.</typeparam>
-   /// <returns></returns>
-   Task BulkInsertAsync<T>(
+   /// <returns>Number of inserted rows.</returns>
+   Task<int> BulkInsertAsync<T>(
       IEnumerable<T> entities,
       IBulkInsertOptions options,
       CancellationToken cancellationToken = default)

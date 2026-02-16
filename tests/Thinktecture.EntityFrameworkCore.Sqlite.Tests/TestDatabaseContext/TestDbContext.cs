@@ -72,6 +72,7 @@ public class TestDbContext : DbContext
       TestEntity_Owns_SeparateMany_Inline.Configure(modelBuilder);
       TestEntity_Owns_SeparateMany_SeparateMany.Configure(modelBuilder);
       TestEntityWithComplexType.Configure(modelBuilder);
+      TestEntityWithDifferentColumnNames.Configure(modelBuilder);
 
       ConfigureModel?.Invoke(modelBuilder);
 

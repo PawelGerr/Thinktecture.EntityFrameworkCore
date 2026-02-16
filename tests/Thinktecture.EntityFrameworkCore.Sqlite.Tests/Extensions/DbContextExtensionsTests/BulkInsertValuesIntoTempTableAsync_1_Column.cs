@@ -22,7 +22,7 @@ public class BulkInsertValuesIntoTempTableAsync_1_Column : SchemaChangingIntegra
       await using var query = await ActDbContext.BulkInsertValuesIntoTempTableAsync(values);
 
       var tempTable = await query.Query.ToListAsync();
-      tempTable.Should().BeEquivalentTo(new[] { 1, 2 });
+      tempTable.Should().BeEquivalentTo([1, 2]);
    }
 
    [Fact]
@@ -61,7 +61,7 @@ public class BulkInsertValuesIntoTempTableAsync_1_Column : SchemaChangingIntegra
       await using var query = await ActDbContext.BulkInsertValuesIntoTempTableAsync(values, new SqliteTempTableBulkInsertOptions { PrimaryKeyCreation = IPrimaryKeyPropertiesProvider.None });
 
       var tempTable = await query.Query.ToListAsync();
-      tempTable.Should().BeEquivalentTo(new[] { 1, (int?)null });
+      tempTable.Should().BeEquivalentTo([1, (int?)null]);
    }
 
    [Fact]
@@ -78,7 +78,7 @@ public class BulkInsertValuesIntoTempTableAsync_1_Column : SchemaChangingIntegra
       await using var query = await ActDbContext.BulkInsertValuesIntoTempTableAsync(values, new SqliteTempTableBulkInsertOptions { PrimaryKeyCreation = IPrimaryKeyPropertiesProvider.None });
 
       var tempTable = await query.Query.ToListAsync();
-      tempTable.Should().BeEquivalentTo(new[] { 1, 2 });
+      tempTable.Should().BeEquivalentTo([1, 2]);
    }
 
    [Fact]
@@ -182,7 +182,7 @@ public class BulkInsertValuesIntoTempTableAsync_1_Column : SchemaChangingIntegra
                                         });
       await ArrangeDbContext.SaveChangesAsync();
 
-      await using var tempTable = await ActDbContext.BulkInsertValuesIntoTempTableAsync(new[] { parentId });
+      await using var tempTable = await ActDbContext.BulkInsertValuesIntoTempTableAsync([parentId]);
 
       var query = await ActDbContext.TestEntities
                                     .AsSplitQuery()
@@ -194,14 +194,13 @@ public class BulkInsertValuesIntoTempTableAsync_1_Column : SchemaChangingIntegra
                                                  })
                                     .ToListAsync();
 
-      query.Should().BeEquivalentTo(new[]
-                                    {
-                                       new
+      query.Should().BeEquivalentTo([
+         new
                                        {
                                           Id = parentId,
                                           ChildrenIds = new List<Guid> { childId }
-                                       }
-                                    });
+                                       },
+      ]);
    }
 
    [Fact]
@@ -209,7 +208,7 @@ public class BulkInsertValuesIntoTempTableAsync_1_Column : SchemaChangingIntegra
    {
       ConfigureModel = builder => builder.ConfigureTempTable<Guid>();
 
-      var tempTable = await ActDbContext.BulkInsertValuesIntoTempTableAsync(new[] { Guid.Empty });
+      var tempTable = await ActDbContext.BulkInsertValuesIntoTempTableAsync([Guid.Empty]);
 
       var joinQuery = tempTable.Query.LeftJoin(tempTable.Query, e => e, e => e, (e1, e2) => new { Left = e1, Right = e2 });
 
@@ -218,5 +217,16 @@ public class BulkInsertValuesIntoTempTableAsync_1_Column : SchemaChangingIntegra
                                                FROM "#TempTable<Guid>_1" AS "#"
                                                LEFT JOIN "#TempTable<Guid>_1" AS "#0" ON "#"."Column1" = "#0"."Column1"
                                                """.WithEnvironmentLineBreaks());
+   }
+
+   [Fact]
+   public async Task Should_return_number_of_inserted_rows()
+   {
+      ConfigureModel = builder => builder.ConfigureTempTable<int>();
+
+      var values = new List<int> { 1, 2 };
+      await using var query = await ActDbContext.BulkInsertValuesIntoTempTableAsync(values);
+
+      query.NumberOfInsertedRows.Should().Be(2);
    }
 }

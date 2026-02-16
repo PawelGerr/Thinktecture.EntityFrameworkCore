@@ -16,4 +16,16 @@ public interface IBulkUpdateOptions
    /// The primary key of the entity is used by default.
    /// </summary>
    IEntityPropertiesProvider? KeyProperties { get; }
+
+   /// <summary>
+   /// Overrides the target table name resolved from the entity type.
+   /// If <c>null</c>, the table name is resolved from the EF Core model metadata.
+   /// </summary>
+   string? TableName { get; }
+
+   /// <summary>
+   /// Overrides the target schema resolved from the entity type.
+   /// If <c>null</c>, the schema is resolved from the EF Core model metadata.
+   /// </summary>
+   string? Schema { get; }
 }

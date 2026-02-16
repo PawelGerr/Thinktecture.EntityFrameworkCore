@@ -8,6 +8,12 @@ public sealed class SqliteBulkInsertOptions : IBulkInsertOptions
    /// <inheritdoc />
    public IEntityPropertiesProvider? PropertiesToInsert { get; set; }
 
+   /// <inheritdoc />
+   public string? TableName { get; set; }
+
+   /// <inheritdoc />
+   public string? Schema { get; set; }
+
    /// <summary>
    /// Behavior for auto-increment columns.
    /// Default is <see cref="SqliteAutoIncrementBehavior.SetZeroToNull"/>
@@ -25,6 +31,8 @@ public sealed class SqliteBulkInsertOptions : IBulkInsertOptions
       if (optionsToInitializeFrom is not null)
       {
          PropertiesToInsert = optionsToInitializeFrom.PropertiesToInsert;
+         TableName = optionsToInitializeFrom.TableName;
+         Schema = optionsToInitializeFrom.Schema;
 
          if (optionsToInitializeFrom is SqliteBulkInsertOptions sqliteOptions)
             AutoIncrementBehavior = sqliteOptions.AutoIncrementBehavior;

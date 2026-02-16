@@ -53,7 +53,9 @@ public class BulkInsertAsync : IntegrationTestsBase
 
       var testEntities = new[] { testEntity };
 
-      await SUT.BulkInsertAsync(testEntities, new SqlServerBulkInsertOptions());
+      var affectedRows = await SUT.BulkInsertAsync(testEntities, new SqlServerBulkInsertOptions());
+
+      affectedRows.Should().Be(1);
 
       var loadedEntities = await AssertDbContext.TestEntities.ToListAsync();
       loadedEntities.Should().HaveCount(1)
@@ -94,8 +96,8 @@ public class BulkInsertAsync : IntegrationTestsBase
 
       var loadedEntity = await AssertDbContext.TestEntitiesWithShadowProperties.FirstOrDefaultAsync();
       loadedEntity.Should().NotBeNull();
-      AssertDbContext.Entry(loadedEntity!).Property("ShadowStringProperty").CurrentValue.Should().Be("value");
-      AssertDbContext.Entry(loadedEntity!).Property("ShadowIntProperty").CurrentValue.Should().Be(42);
+      AssertDbContext.Entry(loadedEntity).Property("ShadowStringProperty").CurrentValue.Should().Be("value");
+      AssertDbContext.Entry(loadedEntity).Property("ShadowIntProperty").CurrentValue.Should().Be(42);
    }
 
    [Fact]
@@ -207,7 +209,7 @@ public class BulkInsertAsync : IntegrationTestsBase
 
       var loadedEntity = await AssertDbContext.TestEntitiesWithAutoIncrement.FirstOrDefaultAsync();
       loadedEntity.Should().NotBeNull();
-      loadedEntity!.Id.Should().Be(42);
+      loadedEntity.Id.Should().Be(42);
    }
 
    [Fact]
@@ -220,7 +222,7 @@ public class BulkInsertAsync : IntegrationTestsBase
 
       var loadedEntity = await AssertDbContext.TestEntitiesWithAutoIncrement.FirstOrDefaultAsync();
       loadedEntity.Should().NotBeNull();
-      loadedEntity!.Id.Should().NotBe(0);
+      loadedEntity.Id.Should().NotBe(0);
       loadedEntity.Name.Should().Be("value");
    }
 
@@ -234,7 +236,7 @@ public class BulkInsertAsync : IntegrationTestsBase
 
       var loadedEntity = await AssertDbContext.TestEntitiesWithRowVersion.FirstOrDefaultAsync();
       loadedEntity.Should().NotBeNull();
-      loadedEntity!.Id.Should().Be(new Guid("EBC95620-4D80-4318-9B92-AD7528B2965C"));
+      loadedEntity.Id.Should().Be(new Guid("EBC95620-4D80-4318-9B92-AD7528B2965C"));
       loadedEntity.RowVersion.Should().NotBe(Int32.MaxValue);
    }
 
@@ -251,7 +253,7 @@ public class BulkInsertAsync : IntegrationTestsBase
                        };
       testEntity.SetPrivateField(3);
 
-      await SUT.BulkInsertAsync(new[] { testEntity },
+      await SUT.BulkInsertAsync([testEntity],
                                 new SqlServerBulkInsertOptions
                                 {
                                    PropertiesToInsert = IEntityPropertiesProvider.Include(TestEntity.GetRequiredProperties())
@@ -279,7 +281,7 @@ public class BulkInsertAsync : IntegrationTestsBase
                           InlineEntity = null!
                        };
 
-      await ActDbContext.Awaiting(ctx => ctx.BulkInsertIntoTempTableAsync(new[] { testEntity }))
+      await ActDbContext.Awaiting(ctx => ctx.BulkInsertIntoTempTableAsync([testEntity]))
                         .Should().ThrowAsync<NotSupportedException>().WithMessage("Temp tables don't support owned entities.");
    }
 
@@ -292,7 +294,7 @@ public class BulkInsertAsync : IntegrationTestsBase
                           InlineEntity = new OwnedEntity()
                        };
 
-      await SUT.BulkInsertAsync(new[] { testEntity }, new SqlServerBulkInsertOptions());
+      await SUT.BulkInsertAsync([testEntity], new SqlServerBulkInsertOptions());
 
       var loadedEntities = await AssertDbContext.TestEntities_Own_Inline.ToListAsync();
       loadedEntities.Should().HaveCount(1);
@@ -321,7 +323,7 @@ public class BulkInsertAsync : IntegrationTestsBase
                                          }
                        };
 
-      await SUT.BulkInsertAsync(new[] { testEntity }, new SqlServerBulkInsertOptions());
+      await SUT.BulkInsertAsync([testEntity], new SqlServerBulkInsertOptions());
 
       var loadedEntities = await AssertDbContext.TestEntities_Own_Inline.ToListAsync();
       loadedEntities.Should().HaveCount(1);
@@ -350,7 +352,7 @@ public class BulkInsertAsync : IntegrationTestsBase
                                            }
                        };
 
-      await SUT.Awaiting(sut => sut.BulkInsertAsync(new[] { testEntity }, new SqlServerBulkInsertOptions()))
+      await SUT.Awaiting(sut => sut.BulkInsertAsync([testEntity], new SqlServerBulkInsertOptions()))
                .Should().ThrowAsync<InvalidOperationException>()
                .WithMessage("The entity type 'OwnedEntity' uses a shared type and the supplied entity is currently not being tracked. To start tracking this entity, call '.Reference().TargetEntry' or '.Collection().FindEntry()' on the owner entry.");
    }
@@ -369,7 +371,9 @@ public class BulkInsertAsync : IntegrationTestsBase
                        };
       ActDbContext.Add(testEntity);
 
-      await SUT.BulkInsertAsync(new[] { testEntity }, new SqlServerBulkInsertOptions());
+      var affectedRows = await SUT.BulkInsertAsync([testEntity], new SqlServerBulkInsertOptions());
+
+      affectedRows.Should().Be(2);
 
       var loadedEntities = await AssertDbContext.TestEntities_Own_SeparateOne.ToListAsync();
       loadedEntities.Should().HaveCount(1);
@@ -383,17 +387,17 @@ public class BulkInsertAsync : IntegrationTestsBase
       var testEntity = new TestEntity_Owns_SeparateMany
                        {
                           Id = new Guid("54FF93FC-6BE9-4F19-A52E-E517CA9FEAA7"),
-                          SeparateEntities = new List<OwnedEntity>
-                                             {
-                                                new()
-                                                {
-                                                   IntColumn = 42,
-                                                   StringColumn = "value 1"
-                                                }
-                                             }
+                          SeparateEntities =
+                          [
+                             new()
+                             {
+                                IntColumn = 42,
+                                StringColumn = "value 1"
+                             },
+                          ]
                        };
 
-      await SUT.Awaiting(sut => sut.BulkInsertAsync(new[] { testEntity }, new SqlServerBulkInsertOptions()))
+      await SUT.Awaiting(sut => sut.BulkInsertAsync([testEntity], new SqlServerBulkInsertOptions()))
                .Should().ThrowAsync<InvalidOperationException>()
                .WithMessage("The entity type 'OwnedEntity' uses a shared type and the supplied entity is currently not being tracked. To start tracking this entity, call '.Reference().TargetEntry' or '.Collection().FindEntry()' on the owner entry.");
    }
@@ -404,23 +408,26 @@ public class BulkInsertAsync : IntegrationTestsBase
       var testEntity = new TestEntity_Owns_SeparateMany
                        {
                           Id = new Guid("54FF93FC-6BE9-4F19-A52E-E517CA9FEAA7"),
-                          SeparateEntities = new List<OwnedEntity>
-                                             {
-                                                new()
-                                                {
-                                                   IntColumn = 42,
-                                                   StringColumn = "value 1"
-                                                },
-                                                new()
-                                                {
-                                                   IntColumn = 43,
-                                                   StringColumn = "value 2"
-                                                }
-                                             }
+                          SeparateEntities =
+                          [
+                             new()
+                             {
+                                IntColumn = 42,
+                                StringColumn = "value 1"
+                             },
+
+                             new()
+                             {
+                                IntColumn = 43,
+                                StringColumn = "value 2"
+                             },
+                          ]
                        };
       ActDbContext.Add(testEntity);
 
-      await SUT.BulkInsertAsync(new[] { testEntity }, new SqlServerBulkInsertOptions());
+      var affectedRows = await SUT.BulkInsertAsync([testEntity], new SqlServerBulkInsertOptions());
+
+      affectedRows.Should().Be(3);
 
       var loadedEntities = await AssertDbContext.TestEntities_Own_SeparateMany.ToListAsync();
       loadedEntities.Should().HaveCount(1);
@@ -447,10 +454,10 @@ public class BulkInsertAsync : IntegrationTestsBase
                        };
       ActDbContext.Add(testEntity);
 
-      await SUT.BulkInsertAsync(new[] { testEntity }, new SqlServerBulkInsertOptions());
+      await SUT.BulkInsertAsync([testEntity], new SqlServerBulkInsertOptions());
 
       var loadedEntities = await AssertDbContext.TestEntities_Own_Inline_Inline.ToListAsync();
-      loadedEntities.Should().BeEquivalentTo(new[] { testEntity });
+      loadedEntities.Should().BeEquivalentTo([testEntity]);
    }
 
    [Fact]
@@ -463,27 +470,28 @@ public class BulkInsertAsync : IntegrationTestsBase
                                          {
                                             IntColumn = 42,
                                             StringColumn = "value 1",
-                                            SeparateEntities = new List<OwnedEntity>
-                                                               {
-                                                                  new()
-                                                                  {
-                                                                     IntColumn = 43,
-                                                                     StringColumn = "value 2"
-                                                                  },
-                                                                  new()
-                                                                  {
-                                                                     IntColumn = 44,
-                                                                     StringColumn = "value 3"
-                                                                  }
-                                                               }
+                                            SeparateEntities =
+                                            [
+                                               new()
+                                               {
+                                                  IntColumn = 43,
+                                                  StringColumn = "value 2"
+                                               },
+
+                                               new()
+                                               {
+                                                  IntColumn = 44,
+                                                  StringColumn = "value 3"
+                                               },
+                                            ]
                                          }
                        };
       ActDbContext.Add(testEntity);
 
-      await SUT.BulkInsertAsync(new[] { testEntity }, new SqlServerBulkInsertOptions());
+      await SUT.BulkInsertAsync([testEntity], new SqlServerBulkInsertOptions());
 
       var loadedEntities = await AssertDbContext.TestEntities_Own_Inline_SeparateMany.ToListAsync();
-      loadedEntities.Should().BeEquivalentTo(new[] { testEntity });
+      loadedEntities.Should().BeEquivalentTo([testEntity]);
    }
 
    [Fact]
@@ -506,13 +514,12 @@ public class BulkInsertAsync : IntegrationTestsBase
 
       ActDbContext.Add(testEntity);
 
-      await SUT.BulkInsertAsync(new[]
-                                {
-                                   testEntity
-                                }, new SqlServerBulkInsertOptions());
+      await SUT.BulkInsertAsync([
+         testEntity,
+      ], new SqlServerBulkInsertOptions());
 
       var loadedEntities = await AssertDbContext.TestEntities_Own_Inline_SeparateOne.ToListAsync();
-      loadedEntities.Should().BeEquivalentTo(new[] { testEntity });
+      loadedEntities.Should().BeEquivalentTo([testEntity]);
    }
 
    [Fact]
@@ -521,37 +528,38 @@ public class BulkInsertAsync : IntegrationTestsBase
       var testEntity = new TestEntity_Owns_SeparateMany_Inline
                        {
                           Id = new Guid("54FF93FC-6BE9-4F19-A52E-E517CA9FEAA7"),
-                          SeparateEntities = new List<OwnedEntity_Owns_Inline>
-                                             {
-                                                new()
-                                                {
-                                                   IntColumn = 42,
-                                                   StringColumn = "value 1",
-                                                   InlineEntity = new OwnedEntity
-                                                                  {
-                                                                     IntColumn = 43,
-                                                                     StringColumn = "value 2"
-                                                                  }
-                                                },
-                                                new()
-                                                {
-                                                   IntColumn = 44,
-                                                   StringColumn = "value 3",
-                                                   InlineEntity = new OwnedEntity
-                                                                  {
-                                                                     IntColumn = 45,
-                                                                     StringColumn = "value 4"
-                                                                  }
-                                                }
-                                             }
+                          SeparateEntities =
+                          [
+                             new()
+                             {
+                                IntColumn = 42,
+                                StringColumn = "value 1",
+                                InlineEntity = new OwnedEntity
+                                               {
+                                                  IntColumn = 43,
+                                                  StringColumn = "value 2"
+                                               }
+                             },
+
+                             new()
+                             {
+                                IntColumn = 44,
+                                StringColumn = "value 3",
+                                InlineEntity = new OwnedEntity
+                                               {
+                                                  IntColumn = 45,
+                                                  StringColumn = "value 4"
+                                               }
+                             },
+                          ]
                        };
 
       ActDbContext.Add(testEntity);
 
-      await SUT.BulkInsertAsync(new[] { testEntity }, new SqlServerBulkInsertOptions());
+      await SUT.BulkInsertAsync([testEntity], new SqlServerBulkInsertOptions());
 
       var loadedEntities = await AssertDbContext.TestEntities_Own_SeparateMany_Inline.ToListAsync();
-      loadedEntities.Should().BeEquivalentTo(new[] { testEntity });
+      loadedEntities.Should().BeEquivalentTo([testEntity]);
    }
 
    [Fact]
@@ -560,50 +568,53 @@ public class BulkInsertAsync : IntegrationTestsBase
       var testEntity = new TestEntity_Owns_SeparateMany_SeparateMany
                        {
                           Id = new Guid("54FF93FC-6BE9-4F19-A52E-E517CA9FEAA7"),
-                          SeparateEntities = new List<OwnedEntity_Owns_SeparateMany>
-                                             {
-                                                new()
-                                                {
-                                                   IntColumn = 42,
-                                                   StringColumn = "value 1",
-                                                   SeparateEntities = new List<OwnedEntity>
-                                                                      {
-                                                                         new()
-                                                                         {
-                                                                            IntColumn = 43,
-                                                                            StringColumn = "value 2"
-                                                                         },
-                                                                         new()
-                                                                         {
-                                                                            IntColumn = 44,
-                                                                            StringColumn = "value 3"
-                                                                         }
-                                                                      }
-                                                },
-                                                new()
-                                                {
-                                                   IntColumn = 45,
-                                                   StringColumn = "value 4",
-                                                   SeparateEntities = new List<OwnedEntity>
-                                                                      {
-                                                                         new()
-                                                                         {
-                                                                            IntColumn = 46,
-                                                                            StringColumn = "value 5"
-                                                                         },
-                                                                         new()
-                                                                         {
-                                                                            IntColumn = 47,
-                                                                            StringColumn = "value 6"
-                                                                         }
-                                                                      }
-                                                }
-                                             }
+                          SeparateEntities =
+                          [
+                             new()
+                             {
+                                IntColumn = 42,
+                                StringColumn = "value 1",
+                                SeparateEntities =
+                                [
+                                   new()
+                                   {
+                                      IntColumn = 43,
+                                      StringColumn = "value 2"
+                                   },
+
+                                   new()
+                                   {
+                                      IntColumn = 44,
+                                      StringColumn = "value 3"
+                                   },
+                                ]
+                             },
+
+                             new()
+                             {
+                                IntColumn = 45,
+                                StringColumn = "value 4",
+                                SeparateEntities =
+                                [
+                                   new()
+                                   {
+                                      IntColumn = 46,
+                                      StringColumn = "value 5"
+                                   },
+
+                                   new()
+                                   {
+                                      IntColumn = 47,
+                                      StringColumn = "value 6"
+                                   },
+                                ]
+                             },
+                          ]
                        };
 
       ActDbContext.Add(testEntity);
 
-      await SUT.Awaiting(sut => sut.BulkInsertAsync(new[] { testEntity }, new SqlServerBulkInsertOptions()))
+      await SUT.Awaiting(sut => sut.BulkInsertAsync([testEntity], new SqlServerBulkInsertOptions()))
                .Should().ThrowAsync<NotSupportedException>().WithMessage("Non-inlined (i.e. with its own table) nested owned type 'Thinktecture.TestDatabaseContext.TestEntity_Owns_SeparateMany_SeparateMany.SeparateEntities#OwnedEntity_Owns_SeparateMany.SeparateEntities' inside another owned type collection 'Thinktecture.TestDatabaseContext.TestEntity_Owns_SeparateMany_SeparateMany.SeparateEntities' is not supported.");
    }
 
@@ -613,34 +624,35 @@ public class BulkInsertAsync : IntegrationTestsBase
       var testEntity = new TestEntity_Owns_SeparateMany_SeparateOne
                        {
                           Id = new Guid("54FF93FC-6BE9-4F19-A52E-E517CA9FEAA7"),
-                          SeparateEntities = new List<OwnedEntity_Owns_SeparateOne>
-                                             {
-                                                new()
-                                                {
-                                                   IntColumn = 42,
-                                                   StringColumn = "value 1",
-                                                   SeparateEntity = new()
-                                                                    {
-                                                                       IntColumn = 43,
-                                                                       StringColumn = "value 2"
-                                                                    }
-                                                },
-                                                new()
-                                                {
-                                                   IntColumn = 45,
-                                                   StringColumn = "value 4",
-                                                   SeparateEntity = new()
-                                                                    {
-                                                                       IntColumn = 46,
-                                                                       StringColumn = "value 5"
-                                                                    }
-                                                }
-                                             }
+                          SeparateEntities =
+                          [
+                             new()
+                             {
+                                IntColumn = 42,
+                                StringColumn = "value 1",
+                                SeparateEntity = new()
+                                                 {
+                                                    IntColumn = 43,
+                                                    StringColumn = "value 2"
+                                                 }
+                             },
+
+                             new()
+                             {
+                                IntColumn = 45,
+                                StringColumn = "value 4",
+                                SeparateEntity = new()
+                                                 {
+                                                    IntColumn = 46,
+                                                    StringColumn = "value 5"
+                                                 }
+                             },
+                          ]
                        };
 
       ActDbContext.Add(testEntity);
 
-      await SUT.Awaiting(sut => sut.BulkInsertAsync(new[] { testEntity }, new SqlServerBulkInsertOptions()))
+      await SUT.Awaiting(sut => sut.BulkInsertAsync([testEntity], new SqlServerBulkInsertOptions()))
                .Should().ThrowAsync<NotSupportedException>().WithMessage("Non-inlined (i.e. with its own table) nested owned type 'Thinktecture.TestDatabaseContext.TestEntity_Owns_SeparateMany_SeparateOne.SeparateEntities#OwnedEntity_Owns_SeparateOne.SeparateEntity' inside another owned type collection 'Thinktecture.TestDatabaseContext.TestEntity_Owns_SeparateMany_SeparateOne.SeparateEntities' is not supported.");
    }
 
@@ -664,10 +676,10 @@ public class BulkInsertAsync : IntegrationTestsBase
 
       ActDbContext.Add(testEntity);
 
-      await SUT.BulkInsertAsync(new[] { testEntity }, new SqlServerBulkInsertOptions());
+      await SUT.BulkInsertAsync([testEntity], new SqlServerBulkInsertOptions());
 
       var loadedEntities = await AssertDbContext.TestEntities_Own_SeparateOne_Inline.ToListAsync();
-      loadedEntities.Should().BeEquivalentTo(new[] { testEntity });
+      loadedEntities.Should().BeEquivalentTo([testEntity]);
    }
 
    [Fact]
@@ -680,28 +692,29 @@ public class BulkInsertAsync : IntegrationTestsBase
                                            {
                                               IntColumn = 42,
                                               StringColumn = "value 1",
-                                              SeparateEntities = new List<OwnedEntity>
-                                                                 {
-                                                                    new()
-                                                                    {
-                                                                       IntColumn = 43,
-                                                                       StringColumn = "value 2"
-                                                                    },
-                                                                    new()
-                                                                    {
-                                                                       IntColumn = 44,
-                                                                       StringColumn = "value 3"
-                                                                    }
-                                                                 }
+                                              SeparateEntities =
+                                              [
+                                                 new()
+                                                 {
+                                                    IntColumn = 43,
+                                                    StringColumn = "value 2"
+                                                 },
+
+                                                 new()
+                                                 {
+                                                    IntColumn = 44,
+                                                    StringColumn = "value 3"
+                                                 },
+                                              ]
                                            }
                        };
 
       ActDbContext.Add(testEntity);
 
-      await SUT.BulkInsertAsync(new[] { testEntity }, new SqlServerBulkInsertOptions());
+      await SUT.BulkInsertAsync([testEntity], new SqlServerBulkInsertOptions());
 
       var loadedEntities = await AssertDbContext.TestEntities_Own_SeparateOne_SeparateMany.ToListAsync();
-      loadedEntities.Should().BeEquivalentTo(new[] { testEntity });
+      loadedEntities.Should().BeEquivalentTo([testEntity]);
    }
 
    [Fact]
@@ -724,10 +737,10 @@ public class BulkInsertAsync : IntegrationTestsBase
 
       ActDbContext.Add(testEntity);
 
-      await SUT.BulkInsertAsync(new[] { testEntity }, new SqlServerBulkInsertOptions());
+      await SUT.BulkInsertAsync([testEntity], new SqlServerBulkInsertOptions());
 
       var loadedEntities = await AssertDbContext.TestEntities_Own_SeparateOne_SeparateOne.ToListAsync();
-      loadedEntities.Should().BeEquivalentTo(new[] { testEntity });
+      loadedEntities.Should().BeEquivalentTo([testEntity]);
    }
 
    [Fact]
@@ -736,9 +749,44 @@ public class BulkInsertAsync : IntegrationTestsBase
       var testEntity = new TestEntityWithComplexType(new Guid("54FF93FC-6BE9-4F19-A52E-E517CA9FEAA7"),
                                                      new BoundaryValueObject(2, 5));
 
-      await SUT.BulkInsertAsync(new[] { testEntity }, new SqlServerBulkInsertOptions());
+      await SUT.BulkInsertAsync([testEntity], new SqlServerBulkInsertOptions());
 
       var loadedEntities = await AssertDbContext.TestEntities_with_ComplexType.ToListAsync();
-      loadedEntities.Should().BeEquivalentTo(new[] { testEntity });
+      loadedEntities.Should().BeEquivalentTo([testEntity]);
+   }
+
+   [Fact]
+   public async Task Should_insert_into_table_name_override()
+   {
+      await ActDbContext.Database.ExecuteSqlRawAsync($"""
+         SELECT TOP 0 * INTO [{Schema}].[TestEntities_BulkInsertRedirect] FROM [{Schema}].[TestEntities];
+         ALTER TABLE [{Schema}].[TestEntities_BulkInsertRedirect] ADD PRIMARY KEY ([Id]);
+         """);
+
+      try
+      {
+         var testEntity = new TestEntity
+                          {
+                             Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
+                             Name = "Name",
+                             RequiredName = "RequiredName",
+                             Count = 42
+                          };
+
+         await SUT.BulkInsertAsync([testEntity], new SqlServerBulkInsertOptions { TableName = "TestEntities_BulkInsertRedirect" });
+
+         var loadedEntities = await AssertDbContext.TestEntities.ToListAsync();
+         loadedEntities.Should().HaveCount(0, "original table should be empty");
+
+         var redirectedEntities = await AssertDbContext.Database
+                                                      .SqlQueryRaw<Guid>($"SELECT [Id] FROM [{Schema}].[TestEntities_BulkInsertRedirect]")
+                                                      .ToListAsync();
+         redirectedEntities.Should().HaveCount(1);
+         redirectedEntities[0].Should().Be(new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"));
+      }
+      finally
+      {
+         await ActDbContext.Database.ExecuteSqlRawAsync($"DROP TABLE IF EXISTS [{Schema}].[TestEntities_BulkInsertRedirect]");
+      }
    }
 }

@@ -103,6 +103,7 @@ public class TestDbContext : DbContext, IDbDefaultSchema
       TestEntity_Owns_SeparateMany_SeparateMany.Configure(modelBuilder);
       TestEntityWithCollation.Configure(modelBuilder);
       TestEntityWithComplexType.Configure(modelBuilder);
+      TestEntityWithDifferentColumnNames.Configure(modelBuilder);
 
       ConfigureModel?.Invoke(modelBuilder);
 

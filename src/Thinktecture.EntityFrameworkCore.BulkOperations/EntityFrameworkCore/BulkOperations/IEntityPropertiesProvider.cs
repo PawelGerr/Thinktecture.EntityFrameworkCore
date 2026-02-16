@@ -2,6 +2,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Thinktecture.EntityFrameworkCore.Data;
+using Thinktecture.Internal;
 
 namespace Thinktecture.EntityFrameworkCore.BulkOperations;
 

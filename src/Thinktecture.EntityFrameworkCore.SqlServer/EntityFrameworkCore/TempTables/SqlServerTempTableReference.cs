@@ -66,9 +66,9 @@ public sealed class SqlServerTempTableReference : ITempTableReference
 
          _database.CloseConnection();
       }
-      catch (ObjectDisposedException ex)
+      catch (Exception ex)
       {
-         _logger.Logger.LogWarning(ex, $"Trying to dispose of the temp table reference '{Name}' after the corresponding DbContext has been disposed.");
+         _logger.Logger.LogWarning(ex, $"Error during disposal of the temp table reference '{Name}'.");
       }
       finally
       {
@@ -95,9 +95,9 @@ public sealed class SqlServerTempTableReference : ITempTableReference
 
          await _database.CloseConnectionAsync().ConfigureAwait(false);
       }
-      catch (ObjectDisposedException ex)
+      catch (Exception ex)
       {
-         _logger.Logger.LogWarning(ex, $"Trying to dispose of the temp table reference '{Name}' after the corresponding DbContext has been disposed.");
+         _logger.Logger.LogWarning(ex, $"Error during disposal of the temp table reference '{Name}'.");
       }
       finally
       {

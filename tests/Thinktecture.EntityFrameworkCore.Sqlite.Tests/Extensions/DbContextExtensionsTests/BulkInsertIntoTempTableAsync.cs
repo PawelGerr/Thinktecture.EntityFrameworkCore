@@ -94,6 +94,23 @@ public class BulkInsertIntoTempTableAsync : SchemaChangingIntegrationTestsBase
    }
 
    [Fact]
+   public async Task Should_insert_entityType_without_required_fields_if_excluded_and_without_UsePropertiesToInsertForTempTableCreation()
+   {
+      var entity = new TestEntity
+                   {
+                      Id = new Guid("577BFD36-21BC-4F9E-97B4-367B8F29B730")
+                   };
+      var entities = new List<TestEntity> { entity };
+
+      await ActDbContext.Awaiting(ctx => ctx.BulkInsertIntoTempTableAsync(entities, new SqliteTempTableBulkInsertOptions
+                                                                                     {
+                                                                                        PropertiesToInsert = IEntityPropertiesProvider.Include<TestEntity>(e => e.Id),
+                                                                                        Advanced = { UsePropertiesToInsertForTempTableCreation = false }
+                                                                                     }))
+                        .Should().ThrowAsync<SqliteException>().WithMessage("*NOT NULL constraint failed*");
+   }
+
+   [Fact]
    public async Task Should_return_disposable_query()
    {
       await using var tempTableQuery = await ActDbContext.BulkInsertIntoTempTableAsync(Array.Empty<TestEntity>());
@@ -208,5 +225,16 @@ public class BulkInsertIntoTempTableAsync : SchemaChangingIntegrationTestsBase
 
       var loadedEntities = await tempTable.Query.ToListAsync();
       loadedEntities.Should().BeEquivalentTo(new[] { testEntity });
+   }
+
+   [Fact]
+   public async Task Should_return_number_of_inserted_rows()
+   {
+      ConfigureModel = builder => builder.ConfigureTempTableEntity<CustomTempTable>(typeBuilder => typeBuilder.Property(t => t.Column2).HasMaxLength(100).IsRequired());
+
+      var entities = new List<CustomTempTable> { new(1, "value") };
+      await using var query = await ActDbContext.BulkInsertIntoTempTableAsync(entities);
+
+      query.NumberOfInsertedRows.Should().Be(1);
    }
 }

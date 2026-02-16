@@ -15,6 +15,9 @@ public sealed class ValueDataReader<TValue> : IEntityDataReader<TValue>
    public IReadOnlyList<PropertyWithNavigations> Properties { get; }
 
    /// <inheritdoc />
+   public int RowsRead { get; private set; }
+
+   /// <inheritdoc />
    public int FieldCount => 1;
 
    /// <summary>
@@ -62,7 +65,11 @@ public sealed class ValueDataReader<TValue> : IEntityDataReader<TValue>
    /// <inheritdoc />
    public bool Read()
    {
-      return _enumerator.MoveNext();
+      if (!_enumerator.MoveNext())
+         return false;
+
+      RowsRead++;
+      return true;
    }
 
    /// <inheritdoc />

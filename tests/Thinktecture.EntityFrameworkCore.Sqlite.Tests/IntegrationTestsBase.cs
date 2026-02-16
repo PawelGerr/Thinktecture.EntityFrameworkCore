@@ -10,6 +10,7 @@ public abstract class IntegrationTestsBase : IAssemblyFixture<DbContextProviderF
    protected ILoggerFactory LoggerFactory { get; }
    protected SqliteTestDbContextProvider<TestDbContext> TestCtxProvider { get; }
 
+   protected IReadOnlyCollection<string> ExecutedCommands => TestCtxProvider.ExecutedCommands ?? throw new InvalidOperationException("Capturing executed commands wasn't enabled.");
    protected TestDbContext ArrangeDbContext => TestCtxProvider.ArrangeDbContext;
    protected TestDbContext ActDbContext => TestCtxProvider.ActDbContext;
    protected TestDbContext AssertDbContext => TestCtxProvider.AssertDbContext;

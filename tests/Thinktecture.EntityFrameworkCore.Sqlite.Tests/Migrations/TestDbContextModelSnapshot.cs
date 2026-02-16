@@ -16,7 +16,7 @@ namespace Thinktecture.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "8.0.0-rc.2.23480.1");
+            modelBuilder.HasAnnotation("ProductVersion", "10.0.2");
 
             modelBuilder.Entity("Thinktecture.TestDatabaseContext.KeylessTestEntity", b =>
                 {
@@ -176,7 +176,7 @@ namespace Thinktecture.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
-                    b.ComplexProperty<Dictionary<string, object>>("Boundary", "Thinktecture.TestDatabaseContext.TestEntityWithComplexType.Boundary#BoundaryValueObject", b1 =>
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "Boundary", "Thinktecture.TestDatabaseContext.TestEntityWithComplexType.Boundary#BoundaryValueObject", b1 =>
                         {
                             b1.IsRequired();
 
@@ -190,6 +190,26 @@ namespace Thinktecture.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("TestEntities_with_ComplexType");
+                });
+
+            modelBuilder.Entity("Thinktecture.TestDatabaseContext.TestEntityWithDifferentColumnNames", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("entity_id");
+
+                    b.Property<int>("Count")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("item_count");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("display_name");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("TestEntityWithDifferentColumnNames");
                 });
 
             modelBuilder.Entity("Thinktecture.TestDatabaseContext.TestEntityWithDotnetDefaultValues", b =>

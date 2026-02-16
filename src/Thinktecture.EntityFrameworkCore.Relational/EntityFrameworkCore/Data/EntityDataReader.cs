@@ -19,6 +19,9 @@ public sealed class EntityDataReader<TEntity> : IEntityDataReader<TEntity>
    public IReadOnlyList<PropertyWithNavigations> Properties { get; }
 
    /// <inheritdoc />
+   public int RowsRead { get; private set; }
+
+   /// <inheritdoc />
    public int FieldCount => Properties.Count;
 
    /// <summary>
@@ -107,6 +110,7 @@ public sealed class EntityDataReader<TEntity> : IEntityDataReader<TEntity>
       if (!_enumerator.MoveNext())
          return false;
 
+      RowsRead++;
       _readEntities?.Add(_enumerator.Current);
       return true;
    }

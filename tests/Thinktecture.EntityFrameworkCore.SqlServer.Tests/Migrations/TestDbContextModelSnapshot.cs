@@ -18,7 +18,7 @@ namespace Thinktecture.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.0-rc.2.23480.1")
+                .HasAnnotation("ProductVersion", "10.0.2")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -298,7 +298,7 @@ namespace Thinktecture.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.ComplexProperty<Dictionary<string, object>>("Boundary", "Thinktecture.TestDatabaseContext.TestEntityWithComplexType.Boundary#BoundaryValueObject", b1 =>
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "Boundary", "Thinktecture.TestDatabaseContext.TestEntityWithComplexType.Boundary#BoundaryValueObject", b1 =>
                         {
                             b1.IsRequired();
 
@@ -312,6 +312,26 @@ namespace Thinktecture.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("TestEntities_with_ComplexType");
+                });
+
+            modelBuilder.Entity("Thinktecture.TestDatabaseContext.TestEntityWithDifferentColumnNames", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("entity_id");
+
+                    b.Property<int>("Count")
+                        .HasColumnType("int")
+                        .HasColumnName("item_count");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("display_name");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("TestEntityWithDifferentColumnNames");
                 });
 
             modelBuilder.Entity("Thinktecture.TestDatabaseContext.TestEntityWithDotnetDefaultValues", b =>

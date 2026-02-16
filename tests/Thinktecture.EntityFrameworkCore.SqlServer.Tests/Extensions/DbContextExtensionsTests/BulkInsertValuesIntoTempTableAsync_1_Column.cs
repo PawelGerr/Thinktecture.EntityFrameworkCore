@@ -238,4 +238,15 @@ public class BulkInsertValuesIntoTempTableAsync_1_Column : IntegrationTestsBase
                                             "FROM [#TempTable<Guid>_1] AS [#]" + Environment.NewLine +
                                             "LEFT JOIN [#TempTable<Guid>_1] AS [#0] ON [#].[Column1] = [#0].[Column1]");
    }
+
+   [Fact]
+   public async Task Should_return_number_of_inserted_rows()
+   {
+      ConfigureModel = builder => builder.ConfigureTempTable<int>();
+
+      var values = new List<int> { 1, 2 };
+      await using var query = await ActDbContext.BulkInsertValuesIntoTempTableAsync(values);
+
+      query.NumberOfInsertedRows.Should().Be(2);
+   }
 }

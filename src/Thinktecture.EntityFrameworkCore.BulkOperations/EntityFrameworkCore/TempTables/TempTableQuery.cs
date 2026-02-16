@@ -20,14 +20,21 @@ public sealed class TempTableQuery<T> : ITempTableQuery<T>
    public string Name => _tempTableReference?.Name ?? throw new ObjectDisposedException(nameof(TempTableQuery<T>));
 
    /// <summary>
+   /// Gets the number of rows that were inserted into the temp table.
+   /// </summary>
+   public int NumberOfInsertedRows { get; }
+
+   /// <summary>
    /// Initializes new instance of <see cref="TempTableQuery{T}"/>.
    /// </summary>
    /// <param name="query">Query.</param>
    /// <param name="tempTableReference">Reference to a temp table.</param>
-   public TempTableQuery(IQueryable<T> query, ITempTableReference tempTableReference)
+   /// <param name="numberOfInsertedRows">Number of rows inserted into the temp table.</param>
+   public TempTableQuery(IQueryable<T> query, ITempTableReference tempTableReference, int numberOfInsertedRows)
    {
       _query = query ?? throw new ArgumentNullException(nameof(query));
       _tempTableReference = tempTableReference ?? throw new ArgumentNullException(nameof(tempTableReference));
+      NumberOfInsertedRows = numberOfInsertedRows;
    }
 
    /// <inheritdoc />

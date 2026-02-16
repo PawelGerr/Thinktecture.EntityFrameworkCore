@@ -15,6 +15,11 @@ public interface IEntityDataReader : IDataReader
    IReadOnlyList<PropertyWithNavigations> Properties { get; }
 
    /// <summary>
+   /// Gets the number of rows read so far.
+   /// </summary>
+   int RowsRead { get; }
+
+   /// <summary>
    /// Gets the index of the provided <paramref name="property"/> that matches with the one of <see cref="IDataRecord.GetValue"/>.
    /// </summary>
    /// <param name="property">Property to get the index for.</param>

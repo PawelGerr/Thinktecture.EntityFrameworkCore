@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Linq.Expressions;
 using System.Text;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -7,6 +9,7 @@ using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.ObjectPool;
+using Thinktecture.EntityFrameworkCore.BulkOperations.Internal;
 using Thinktecture.EntityFrameworkCore.Data;
 using Thinktecture.EntityFrameworkCore.TempTables;
 using Thinktecture.Internal;
@@ -16,6 +19,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations;
 /// <summary>
 /// Executes bulk operations.
 /// </summary>
+[SuppressMessage("Usage", "EF1001:Internal EF Core API usage.")]
 public sealed class SqlServerBulkOperationExecutor
    : IBulkInsertExecutor, ITempTableBulkInsertExecutor, IBulkUpdateExecutor,
      IBulkInsertOrUpdateExecutor, ITruncateTableExecutor
@@ -95,19 +99,20 @@ public sealed class SqlServerBulkOperationExecutor
    }
 
    /// <inheritdoc />
-   public Task BulkInsertAsync<T>(
+   public Task<int> BulkInsertAsync<T>(
       IEnumerable<T> entities,
       IBulkInsertOptions options,
       CancellationToken cancellationToken = default)
       where T : class
    {
       var entityType = _ctx.Model.GetEntityType(typeof(T));
-      var tableName = entityType.GetTableName() ?? throw new InvalidOperationException($"The entity '{entityType.Name}' has no table name.");
+      var tableName = options.TableName ?? entityType.GetTableName() ?? throw new InvalidOperationException($"The entity '{entityType.Name}' has no table name.");
+      var schema = options.Schema ?? entityType.GetSchema();
 
-      return BulkInsertAsync(entityType, entities, entityType.GetSchema(), tableName, options, SqlServerBulkOperationContextFactoryForEntities.Instance, cancellationToken);
+      return BulkInsertAsync(entityType, entities, schema, tableName, options, SqlServerBulkOperationContextFactoryForEntities.Instance, cancellationToken);
    }
 
-   private async Task BulkInsertAsync<T>(
+   private async Task<int> BulkInsertAsync<T>(
       IEntityType entityType,
       IEnumerable<T> entitiesOrValues,
       string? schema,
@@ -128,10 +133,10 @@ public sealed class SqlServerBulkOperationExecutor
 
       var ctx = bulkOperationContextFactory.CreateForBulkInsert(_ctx, sqlServerOptions, properties);
 
-      await BulkInsertAsync(entitiesOrValues, schema, tableName, ctx, cancellationToken);
+      return await BulkInsertAsync(entitiesOrValues, schema, tableName, ctx, cancellationToken);
    }
 
-   private async Task BulkInsertAsync<T>(
+   private async Task<int> BulkInsertAsync<T>(
       IEnumerable<T> entitiesOrValues,
       string? schema,
       string tableName,
@@ -142,6 +147,7 @@ public sealed class SqlServerBulkOperationExecutor
       using var bulkCopy = CreateSqlBulkCopy(ctx.Connection, ctx.Transaction, schema, tableName, ctx.Options);
 
       var columns = SetColumnMappings(bulkCopy, reader);
+      int numberOfInsertedRows;
 
       await _ctx.Database.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
 
@@ -152,6 +158,8 @@ public sealed class SqlServerBulkOperationExecutor
 
          await bulkCopy.WriteToServerAsync(reader, cancellationToken).ConfigureAwait(false);
 
+         numberOfInsertedRows = reader.RowsRead;
+
          LogInserted(ctx.Options.SqlBulkCopyOptions, stopwatch.Elapsed, bulkCopy, columns);
 
          if (ctx.HasExternalProperties)
@@ -159,33 +167,39 @@ public sealed class SqlServerBulkOperationExecutor
             var readEntities = reader.GetReadEntities();
 
             if (readEntities.Count != 0)
-               await BulkInsertSeparatedOwnedEntitiesAsync((IReadOnlyList<object>)readEntities, ctx, cancellationToken);
+               numberOfInsertedRows += await BulkInsertSeparatedOwnedEntitiesAsync((IReadOnlyList<object>)readEntities, ctx, cancellationToken);
          }
       }
       finally
       {
          await _ctx.Database.CloseConnectionAsync().ConfigureAwait(false);
       }
+
+      return numberOfInsertedRows;
    }
 
-   private async Task BulkInsertSeparatedOwnedEntitiesAsync(
+   private async Task<int> BulkInsertSeparatedOwnedEntitiesAsync(
       IReadOnlyList<object> parentEntities,
       ISqlServerBulkOperationContext parentBulkOperationContext,
       CancellationToken cancellationToken)
    {
       if (parentEntities.Count == 0)
-         return;
+         return 0;
+
+      var numberOfInsertedRows = 0;
 
       foreach (var childContext in parentBulkOperationContext.GetChildren(parentEntities))
       {
          var childTableName = childContext.EntityType.GetTableName() ?? throw new InvalidOperationException($"The entity '{childContext.EntityType.Name}' has no table name.");
 
-         await BulkInsertAsync(childContext.Entities,
-                               childContext.EntityType.GetSchema(),
-                               childTableName,
-                               childContext,
-                               cancellationToken).ConfigureAwait(false);
+         numberOfInsertedRows += await BulkInsertAsync(childContext.Entities,
+                                                       childContext.EntityType.GetSchema(),
+                                                       childTableName,
+                                                       childContext,
+                                                       cancellationToken).ConfigureAwait(false);
       }
+
+      return numberOfInsertedRows;
    }
 
    private string SetColumnMappings(SqlBulkCopy bulkCopy, IEntityDataReader reader)
@@ -330,7 +344,7 @@ public sealed class SqlServerBulkOperationExecutor
       try
       {
          var bulkInsertOptions = options.GetBulkInsertOptions();
-         await BulkInsertAsync(entityType, entitiesOrValues, null, tempTableReference.Name, bulkInsertOptions, bulkOperationContextFactory, cancellationToken).ConfigureAwait(false);
+         var numberOfInsertedRows = await BulkInsertAsync(entityType, entitiesOrValues, null, tempTableReference.Name, bulkInsertOptions, bulkOperationContextFactory, cancellationToken).ConfigureAwait(false);
 
          if (options.MomentOfPrimaryKeyCreation == MomentOfSqlServerPrimaryKeyCreation.AfterBulkInsert)
          {
@@ -352,7 +366,7 @@ public sealed class SqlServerBulkOperationExecutor
          if (pk is not null && pk.Properties.Count != 0)
             query = query.AsNoTracking();
 
-         return new TempTableQuery<T>(projection(query), tempTableReference);
+         return new TempTableQuery<T>(projection(query), tempTableReference, numberOfInsertedRows);
       }
       catch (Exception)
       {
@@ -494,6 +508,8 @@ public sealed class SqlServerBulkOperationExecutor
       where T : class
    {
       var entityType = _ctx.Model.GetEntityType(typeof(T));
+      var tableName = options.TableName ?? entityType.GetTableName() ?? throw new InvalidOperationException($"The entity '{entityType.Name}' has no table name.");
+      var schema = options.Schema ?? entityType.GetSchema();
       var propertiesForUpdate = options.PropertiesToUpdate.DeterminePropertiesForUpdate(entityType, true);
 
       if (propertiesForUpdate.Count == 0)
@@ -502,7 +518,7 @@ public sealed class SqlServerBulkOperationExecutor
       var tempTableOptions = options.GetTempTableBulkInsertOptions();
       await using var tempTable = await BulkInsertIntoTempTableAsync(entities, tempTableOptions, cancellationToken);
 
-      var mergeStatement = CreateMergeCommand(entityType, tempTable.Name, options, null, propertiesForUpdate, options.KeyProperties.DetermineKeyProperties(entityType));
+      var mergeStatement = CreateMergeCommand(entityType, schema, tableName, tempTable.Name, options, null, propertiesForUpdate, options.KeyProperties.DetermineKeyProperties(entityType));
 
       return await _ctx.Database.ExecuteSqlRawAsync(mergeStatement, cancellationToken);
    }
@@ -527,6 +543,8 @@ public sealed class SqlServerBulkOperationExecutor
       where T : class
    {
       var entityType = _ctx.Model.GetEntityType(typeof(T));
+      var tableName = options.TableName ?? entityType.GetTableName() ?? throw new InvalidOperationException($"The entity '{entityType.Name}' has no table name.");
+      var schema = options.Schema ?? entityType.GetSchema();
       var propertiesForInsert = options.PropertiesToInsert.DeterminePropertiesForInsert(entityType, true);
       var propertiesForUpdate = options.PropertiesToUpdate.DeterminePropertiesForInsert(entityType, true);
 
@@ -536,13 +554,15 @@ public sealed class SqlServerBulkOperationExecutor
       var tempTableOptions = options.GetTempTableBulkInsertOptions();
       await using var tempTable = await BulkInsertIntoTempTableAsync(entities, tempTableOptions, cancellationToken);
 
-      var mergeStatement = CreateMergeCommand(entityType, tempTable.Name, options, propertiesForInsert, propertiesForUpdate, options.KeyProperties.DetermineKeyProperties(entityType));
+      var mergeStatement = CreateMergeCommand(entityType, schema, tableName, tempTable.Name, options, propertiesForInsert, propertiesForUpdate, options.KeyProperties.DetermineKeyProperties(entityType));
 
       return await _ctx.Database.ExecuteSqlRawAsync(mergeStatement, cancellationToken);
    }
 
    private string CreateMergeCommand<T>(
       IEntityType entityType,
+      string? schema,
+      string tableName,
       string sourceTempTableName,
       T options,
       IReadOnlyList<PropertyWithNavigations>? propertiesToInsert,
@@ -554,12 +574,11 @@ public sealed class SqlServerBulkOperationExecutor
 
       try
       {
-         var tableName = entityType.GetTableName() ?? throw new Exception($"The entity '{entityType.Name}' has no table name.");
          var storeObject = StoreObjectIdentifier.Create(entityType, StoreObjectType.Table)
                            ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{entityType.Name}'.");
 
          sb.Append("MERGE INTO ")
-           .Append(_sqlGenerationHelper.DelimitIdentifier(tableName, entityType.GetSchema()));
+           .Append(_sqlGenerationHelper.DelimitIdentifier(tableName, schema));
 
          if (options.MergeTableHints.Count != 0)
          {
@@ -672,5 +691,87 @@ public sealed class SqlServerBulkOperationExecutor
       {
          _stringBuilderPool.Return(sb);
       }
+   }
+
+   /// <summary>
+   /// Performs a query-based bulk update, joining the target table to a source query using the specified keys
+   /// and updating columns via <paramref name="setPropertyCalls"/>.
+   /// </summary>
+   public async Task<int> BulkUpdateAsync<TTarget, TSource, TResult>(
+      IQueryable<TSource> sourceQuery,
+      Expression<Func<TTarget, TResult?>> targetKeySelector,
+      Expression<Func<TSource, TResult?>> sourceKeySelector,
+      Func<SetPropertyBuilder<TTarget, TSource>, SetPropertyBuilder<TTarget, TSource>> setPropertyCalls,
+      Expression<Func<TTarget, TSource, bool>>? filter = null,
+      SqlServerBulkUpdateFromQueryOptions? options = null,
+      CancellationToken cancellationToken = default)
+      where TTarget : class
+      where TSource : class
+   {
+      ArgumentNullException.ThrowIfNull(sourceQuery);
+      ArgumentNullException.ThrowIfNull(targetKeySelector);
+      ArgumentNullException.ThrowIfNull(sourceKeySelector);
+      ArgumentNullException.ThrowIfNull(setPropertyCalls);
+
+      var setClauseBuilder = setPropertyCalls(new SetPropertyBuilder<TTarget, TSource>());
+
+      if (setClauseBuilder.Entries.Count == 0)
+         throw new ArgumentException("At least one property assignment is required.", nameof(setPropertyCalls));
+
+      var targetKeyMembers = targetKeySelector.ExtractMembers();
+      var sourceKeyMembers = sourceKeySelector.ExtractMembers();
+
+      if (targetKeyMembers.Count != sourceKeyMembers.Count)
+         throw new ArgumentException($"The number of target key properties ({targetKeyMembers.Count}) must match the number of source key properties ({sourceKeyMembers.Count}).");
+
+      var translator = new EfCoreValueExpressionTranslator(_logger.Logger, _ctx);
+      var (sql, parameters) = translator.TranslateUpdateFromQuery(
+         sourceQuery,
+         targetKeySelector,
+         sourceKeySelector,
+         setClauseBuilder.Entries,
+         filter,
+         options?.TableName,
+         options?.Schema);
+
+      var sqlParams = parameters.Select(kv => new SqlParameter(kv.Key, kv.Value ?? DBNull.Value));
+      return await _ctx.Database.ExecuteSqlRawAsync(sql, sqlParams, cancellationToken);
+   }
+
+   /// <summary>
+   /// Performs a bulk insert using a server-side query as the source.
+   /// </summary>
+   /// <param name="sourceQuery">The source query providing insert values.</param>
+   /// <param name="mapPropertyCalls">A function configuring the column mappings.</param>
+   /// <param name="options">Optional settings to override the target table name or schema.</param>
+   /// <param name="cancellationToken">Cancellation token.</param>
+   /// <typeparam name="TTarget">The target entity type.</typeparam>
+   /// <typeparam name="TSource">The source entity type.</typeparam>
+   /// <returns>The number of rows affected.</returns>
+   public async Task<int> BulkInsertAsync<TTarget, TSource>(
+      IQueryable<TSource> sourceQuery,
+      Func<InsertPropertyBuilder<TTarget, TSource>, InsertPropertyBuilder<TTarget, TSource>> mapPropertyCalls,
+      SqlServerBulkInsertFromQueryOptions? options = null,
+      CancellationToken cancellationToken = default)
+      where TTarget : class
+      where TSource : class
+   {
+      ArgumentNullException.ThrowIfNull(sourceQuery);
+      ArgumentNullException.ThrowIfNull(mapPropertyCalls);
+
+      var builder = mapPropertyCalls(new InsertPropertyBuilder<TTarget, TSource>());
+
+      if (builder.Entries.Count == 0)
+         throw new ArgumentException("At least one column mapping is required.", nameof(mapPropertyCalls));
+
+      var translator = new EfCoreValueExpressionTranslator(_logger.Logger, _ctx);
+      var (sql, parameters) = translator.TranslateInsertFromQuery<TTarget, TSource>(
+                                                                                    sourceQuery,
+                                                                                    builder.Entries,
+                                                                                    options?.TableName,
+                                                                                    options?.Schema);
+
+      var sqlParams = parameters.Select(kv => new SqlParameter(kv.Key, kv.Value ?? DBNull.Value));
+      return await _ctx.Database.ExecuteSqlRawAsync(sql, sqlParams, cancellationToken);
    }
 }

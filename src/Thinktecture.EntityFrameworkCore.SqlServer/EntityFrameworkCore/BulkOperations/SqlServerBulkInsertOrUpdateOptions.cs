@@ -22,6 +22,12 @@ public sealed class SqlServerBulkInsertOrUpdateOptions : ISqlServerMergeOperatio
    /// <inheritdoc />
    public SqlServerBulkOperationTempTableOptions TempTableOptions { get; }
 
+   /// <inheritdoc />
+   public string? TableName { get; set; }
+
+   /// <inheritdoc />
+   public string? Schema { get; set; }
+
    /// <summary>
    /// Initializes new instance of <see cref="SqlServerBulkUpdateOptions"/>.
    /// </summary>
@@ -49,6 +55,8 @@ public sealed class SqlServerBulkInsertOrUpdateOptions : ISqlServerMergeOperatio
          PropertiesToInsert = optionsToInitializeFrom.PropertiesToInsert;
          PropertiesToUpdate = optionsToInitializeFrom.PropertiesToUpdate;
          KeyProperties = optionsToInitializeFrom.KeyProperties;
+         TableName = optionsToInitializeFrom.TableName;
+         Schema = optionsToInitializeFrom.Schema;
       }
 
       if (optionsToInitializeFrom is ISqlServerMergeOperationOptions mergeOptions)

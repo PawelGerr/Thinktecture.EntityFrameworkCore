@@ -115,7 +115,7 @@ public class WindowFunctionExpression : SqlExpression
          expressionPrinter.Append(" ");
       }
 
-      if (Partitions.Count != 0)
+      if (Orderings.Count != 0)
       {
          expressionPrinter.Append("ORDER BY ");
          expressionPrinter.VisitCollection(Orderings);

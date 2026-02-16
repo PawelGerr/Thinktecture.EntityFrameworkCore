@@ -314,7 +314,11 @@ public sealed class SqlServerDbContextOptionsExtension : DbContextOptionsExtensi
          debugInfo["Thinktecture:CustomQuerySqlGeneratorFactory"] = _extension.AddCustomQuerySqlGeneratorFactory.ToString(CultureInfo.InvariantCulture);
          debugInfo["Thinktecture:CustomRelationalParameterBasedSqlProcessorFactory"] = _extension.AddCustomRelationalParameterBasedSqlProcessorFactory.ToString(CultureInfo.InvariantCulture);
          debugInfo["Thinktecture:BulkOperationSupport"] = _extension.AddBulkOperationSupport.ToString(CultureInfo.InvariantCulture);
+         debugInfo["Thinktecture:ConfigureTempTablesForPrimitiveTypes"] = _extension.ConfigureTempTablesForPrimitiveTypes.ToString(CultureInfo.InvariantCulture);
          debugInfo["Thinktecture:CollectionParameterSupport"] = _extension._addCollectionParameterSupport.ToString(CultureInfo.InvariantCulture);
+         debugInfo["Thinktecture:ConfigureCollectionParametersForPrimitiveTypes"] = _extension.ConfigureCollectionParametersForPrimitiveTypes.ToString(CultureInfo.InvariantCulture);
+         debugInfo["Thinktecture:UseDeferredCollectionParameterSerialization"] = _extension.UseDeferredCollectionParameterSerialization.ToString(CultureInfo.InvariantCulture);
+         debugInfo["Thinktecture:CollectionParameterJsonSerializerOptions"] = (_extension._collectionParameterJsonSerializerOptions?.GetHashCode() ?? 0).ToString(CultureInfo.InvariantCulture);
          debugInfo["Thinktecture:TenantDatabaseSupport"] = _extension.AddTenantDatabaseSupport.ToString(CultureInfo.InvariantCulture);
          debugInfo["Thinktecture:TableHintSupport"] = _extension.AddTableHintSupport.ToString(CultureInfo.InvariantCulture);
          debugInfo["Thinktecture:UseThinktectureSqlServerMigrationsSqlGenerator"] = _extension.UseThinktectureSqlServerMigrationsSqlGenerator.ToString(CultureInfo.InvariantCulture);

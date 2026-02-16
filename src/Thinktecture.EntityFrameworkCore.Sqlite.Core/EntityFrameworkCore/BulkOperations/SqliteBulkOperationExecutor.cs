@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Linq.Expressions;
 using System.Text;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -7,6 +9,7 @@ using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.ObjectPool;
+using Thinktecture.EntityFrameworkCore.BulkOperations.Internal;
 using Thinktecture.EntityFrameworkCore.Data;
 using Thinktecture.EntityFrameworkCore.TempTables;
 using Thinktecture.Internal;
@@ -17,6 +20,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations;
 /// Executes bulk operations.
 /// </summary>
 // ReSharper disable once ClassNeverInstantiated.Global
+[SuppressMessage("Usage", "EF1001:Internal EF Core API usage.")]
 public sealed class SqliteBulkOperationExecutor
    : IBulkInsertExecutor, ITempTableBulkInsertExecutor, IBulkUpdateExecutor,
      IBulkInsertOrUpdateExecutor, ITruncateTableExecutor
@@ -96,7 +100,7 @@ public sealed class SqliteBulkOperationExecutor
    }
 
    /// <inheritdoc />
-   public async Task BulkInsertAsync<T>(
+   public async Task<int> BulkInsertAsync<T>(
       IEnumerable<T> entities,
       IBulkInsertOptions options,
       CancellationToken cancellationToken = default)
@@ -106,21 +110,23 @@ public sealed class SqliteBulkOperationExecutor
       ArgumentNullException.ThrowIfNull(options);
 
       var entityType = _ctx.Model.GetEntityType(typeof(T));
-      var tableName = entityType.GetTableName() ?? throw new InvalidOperationException($"The entity '{entityType.Name}' has no table name.");
 
       if (options is not SqliteBulkInsertOptions sqliteOptions)
          sqliteOptions = new SqliteBulkInsertOptions(options);
 
-      await BulkInsertAsync(entityType,
-                            entities,
-                            entityType.GetSchema(),
-                            tableName,
-                            sqliteOptions,
-                            SqliteBulkOperationContextFactoryForEntities.Instance,
-                            cancellationToken);
+      var tableName = sqliteOptions.TableName ?? entityType.GetTableName() ?? throw new InvalidOperationException($"The entity '{entityType.Name}' has no table name.");
+      var schema = sqliteOptions.Schema ?? entityType.GetSchema();
+
+      return await BulkInsertAsync(entityType,
+                                   entities,
+                                   schema,
+                                   tableName,
+                                   sqliteOptions,
+                                   SqliteBulkOperationContextFactoryForEntities.Instance,
+                                   cancellationToken);
    }
 
-   private async Task BulkInsertAsync<T>(
+   private async Task<int> BulkInsertAsync<T>(
       IEntityType entityType,
       IEnumerable<T> entitiesOrValues,
       string? schema,
@@ -134,7 +140,7 @@ public sealed class SqliteBulkOperationExecutor
 
       var ctx = bulkOperationContextFactory.CreateForBulkInsert(_ctx, options, properties);
 
-      await ExecuteBulkOperationAsync(entitiesOrValues, schema, tableName, ctx, cancellationToken);
+      return await ExecuteBulkOperationAsync(entitiesOrValues, schema, tableName, ctx, cancellationToken);
    }
 
    /// <inheritdoc />
@@ -152,16 +158,16 @@ public sealed class SqliteBulkOperationExecutor
       if (options is not SqliteBulkUpdateOptions sqliteOptions)
          sqliteOptions = new SqliteBulkUpdateOptions(options);
 
+      var tableName = sqliteOptions.TableName ?? entityType.GetTableName() ?? throw new InvalidOperationException($"The entity '{entityType.Name}' has no table name.");
+      var schema = sqliteOptions.Schema ?? entityType.GetSchema();
       var ctx = new BulkUpdateContext(_ctx,
                                       _ctx.GetService<IEntityDataReaderFactory>(),
                                       (SqliteConnection)_ctx.Database.GetDbConnection(),
                                       options.KeyProperties.DetermineKeyProperties(entityType),
                                       options.PropertiesToUpdate.DeterminePropertiesForUpdate(entityType, null),
                                       sqliteOptions.AutoIncrementBehavior);
-      var tableName = entityType.GetTableName()
-                      ?? throw new Exception($"The entity '{entityType.Name}' has no table name.");
 
-      return await ExecuteBulkOperationAsync(entities, entityType.GetSchema(), tableName, ctx, cancellationToken);
+      return await ExecuteBulkOperationAsync(entities, schema, tableName, ctx, cancellationToken);
    }
 
    /// <inheritdoc />
@@ -178,6 +184,8 @@ public sealed class SqliteBulkOperationExecutor
          sqliteOptions = new SqliteBulkInsertOrUpdateOptions(options);
 
       var entityType = _ctx.Model.GetEntityType(typeof(T));
+      var tableName = sqliteOptions.TableName ?? entityType.GetTableName() ?? throw new InvalidOperationException($"The entity '{entityType.Name}' has no table name.");
+      var schema = sqliteOptions.Schema ?? entityType.GetSchema();
       var ctx = new BulkInsertOrUpdateContext(_ctx,
                                               _ctx.GetService<IEntityDataReaderFactory>(),
                                               (SqliteConnection)_ctx.Database.GetDbConnection(),
@@ -185,10 +193,8 @@ public sealed class SqliteBulkOperationExecutor
                                               sqliteOptions.PropertiesToInsert.DeterminePropertiesForInsert(entityType, null),
                                               sqliteOptions.PropertiesToUpdate.DeterminePropertiesForUpdate(entityType, true),
                                               sqliteOptions.AutoIncrementBehavior);
-      var tableName = entityType.GetTableName()
-                      ?? throw new Exception($"The entity '{entityType.Name}' has no table name.");
 
-      return await ExecuteBulkOperationAsync(entities, entityType.GetSchema(), tableName, ctx, cancellationToken);
+      return await ExecuteBulkOperationAsync(entities, schema, tableName, ctx, cancellationToken);
    }
 
    private async Task<int> ExecuteBulkOperationAsync<T>(
@@ -396,7 +402,7 @@ public sealed class SqliteBulkOperationExecutor
       try
       {
          var bulkInsertOptions = options.GetBulkInsertOptions();
-         await BulkInsertAsync(entityType, entitiesOrValues, null, tempTableReference.Name, bulkInsertOptions, bulkOperationContextFactory, cancellationToken).ConfigureAwait(false);
+         var numberOfInsertedRows = await BulkInsertAsync(entityType, entitiesOrValues, null, tempTableReference.Name, bulkInsertOptions, bulkOperationContextFactory, cancellationToken).ConfigureAwait(false);
 
          var dbSet = entityType.Name == entityTypeName
                         ? _ctx.Set<TEntity>(entityTypeName)
@@ -409,7 +415,7 @@ public sealed class SqliteBulkOperationExecutor
          if (pk is not null && pk.Properties.Count != 0)
             query = query.AsNoTracking();
 
-         return new TempTableQuery<T>(projection(query), tempTableReference);
+         return new TempTableQuery<T>(projection(query), tempTableReference, numberOfInsertedRows);
       }
       catch (Exception)
       {
@@ -535,6 +541,88 @@ public sealed class SqliteBulkOperationExecutor
       var truncateStatement = $"DELETE FROM {tableIdentifier};";
 
       await _ctx.Database.ExecuteSqlRawAsync(truncateStatement, cancellationToken);
+   }
+
+   /// <summary>
+   /// Performs a query-based bulk update, joining the target table to a source query using the specified keys
+   /// and updating columns via <paramref name="setPropertyCalls"/>.
+   /// </summary>
+   public async Task<int> BulkUpdateAsync<TTarget, TSource, TResult>(
+      IQueryable<TSource> sourceQuery,
+      Expression<Func<TTarget, TResult?>> targetKeySelector,
+      Expression<Func<TSource, TResult?>> sourceKeySelector,
+      Func<SetPropertyBuilder<TTarget, TSource>, SetPropertyBuilder<TTarget, TSource>> setPropertyCalls,
+      Expression<Func<TTarget, TSource, bool>>? filter = null,
+      SqliteBulkUpdateFromQueryOptions? options = null,
+      CancellationToken cancellationToken = default)
+      where TTarget : class
+      where TSource : class
+   {
+      ArgumentNullException.ThrowIfNull(sourceQuery);
+      ArgumentNullException.ThrowIfNull(targetKeySelector);
+      ArgumentNullException.ThrowIfNull(sourceKeySelector);
+      ArgumentNullException.ThrowIfNull(setPropertyCalls);
+
+      var setClauseBuilder = setPropertyCalls(new SetPropertyBuilder<TTarget, TSource>());
+
+      if (setClauseBuilder.Entries.Count == 0)
+         throw new ArgumentException("At least one property assignment is required.", nameof(setPropertyCalls));
+
+      var targetKeyMembers = targetKeySelector.ExtractMembers();
+      var sourceKeyMembers = sourceKeySelector.ExtractMembers();
+
+      if (targetKeyMembers.Count != sourceKeyMembers.Count)
+         throw new ArgumentException($"The number of target key properties ({targetKeyMembers.Count}) must match the number of source key properties ({sourceKeyMembers.Count}).");
+
+      var translator = new EfCoreValueExpressionTranslator(_logger.Logger, _ctx);
+      var (sql, parameters) = translator.TranslateUpdateFromQuery(
+         sourceQuery,
+         targetKeySelector,
+         sourceKeySelector,
+         setClauseBuilder.Entries,
+         filter,
+         options?.TableName,
+         options?.Schema);
+
+      var sqlParams = parameters.Select(kv => new SqliteParameter(kv.Key, kv.Value ?? DBNull.Value));
+      return await _ctx.Database.ExecuteSqlRawAsync(sql, sqlParams, cancellationToken);
+   }
+
+   /// <summary>
+   /// Performs a bulk insert using a server-side query as the source.
+   /// </summary>
+   /// <param name="sourceQuery">The source query providing insert values.</param>
+   /// <param name="mapPropertyCalls">A function configuring the column mappings.</param>
+   /// <param name="options">Optional settings to override the target table name or schema.</param>
+   /// <param name="cancellationToken">Cancellation token.</param>
+   /// <typeparam name="TTarget">The target entity type.</typeparam>
+   /// <typeparam name="TSource">The source entity type.</typeparam>
+   /// <returns>The number of rows affected.</returns>
+   public async Task<int> BulkInsertAsync<TTarget, TSource>(
+      IQueryable<TSource> sourceQuery,
+      Func<InsertPropertyBuilder<TTarget, TSource>, InsertPropertyBuilder<TTarget, TSource>> mapPropertyCalls,
+      SqliteBulkInsertFromQueryOptions? options = null,
+      CancellationToken cancellationToken = default)
+      where TTarget : class
+      where TSource : class
+   {
+      ArgumentNullException.ThrowIfNull(sourceQuery);
+      ArgumentNullException.ThrowIfNull(mapPropertyCalls);
+
+      var builder = mapPropertyCalls(new InsertPropertyBuilder<TTarget, TSource>());
+
+      if (builder.Entries.Count == 0)
+         throw new ArgumentException("At least one column mapping is required.", nameof(mapPropertyCalls));
+
+      var translator = new EfCoreValueExpressionTranslator(_logger.Logger, _ctx );
+      var (sql, parameters) = translator.TranslateInsertFromQuery<TTarget, TSource>(
+                                                                                    sourceQuery,
+                                                                                    builder.Entries,
+                                                                                    options?.TableName,
+                                                                                    options?.Schema);
+
+      var sqlParams = parameters.Select(kv => new SqliteParameter(kv.Key, kv.Value ?? DBNull.Value));
+      return await _ctx.Database.ExecuteSqlRawAsync(sql, sqlParams, cancellationToken);
    }
 
    private readonly record struct ParameterInfo(SqliteParameter Parameter, bool IsAutoIncrementColumn);

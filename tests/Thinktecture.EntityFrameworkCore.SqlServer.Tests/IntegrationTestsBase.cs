@@ -38,7 +38,8 @@ public class IntegrationTestsBase : SqlServerDbContextIntegrationTests<TestDbCon
              && entityType.ClrType != typeof(OwnedEntity_Owns_SeparateOne)
              && entityType.ClrType != typeof(OwnedEntity_Owns_SeparateMany)
              && entityType.ClrType != typeof(MyParameter)
-             && entityType.ClrType != typeof(TestTemporalTableEntity);
+             && entityType.ClrType != typeof(TestTemporalTableEntity)
+             && entityType.ClrType != typeof(TempSourceWithMappedColumns);
    }
 
    protected IntegrationTestsBase(string connectionString, ITestOutputHelper testOutputHelper, ITestIsolationOptions isolationOptions)

@@ -40,17 +40,17 @@ public class Program
          ctx.ChangeTracker.Clear();
 
          // Bulk insert into temp tables
-         await DoBulkInsertIntoTempTableAsync(ctx, new List<Guid> { customerId });
+         await DoBulkInsertIntoTempTableAsync(ctx, [customerId]);
          ctx.ChangeTracker.Clear();
 
-         await DoBulkInsertIntoTempTableAsync(ctx, new List<(Guid, Guid)> { (customerId, productId) });
+         await DoBulkInsertIntoTempTableAsync(ctx, [(customerId, productId)]);
          ctx.ChangeTracker.Clear();
 
          await DoBulkInsertIntoTempTableAsync(ctx);
          ctx.ChangeTracker.Clear();
 
          // Collection parameter
-         await DoScalarCollectionParameterAsync(ctx, new List<Guid> { customerId });
+         await DoScalarCollectionParameterAsync(ctx, [customerId]);
          ctx.ChangeTracker.Clear();
 
          await DoComplexCollectionParameterAsync(ctx, customerId);
@@ -83,7 +83,7 @@ public class Program
 
    private static async Task DoComplexCollectionParameterAsync(DemoDbContext ctx, Guid customerId)
    {
-      var parameters = ctx.CreateComplexCollectionParameter(new[] { new MyParameter(customerId, 42) });
+      var parameters = ctx.CreateComplexCollectionParameter([new MyParameter(customerId, 42)]);
 
       var customers = await ctx.Customers.Join(parameters, c => c.Id, t => t.Column1, (c, t) => new { Customer = c, Number = t.Column2 }).ToListAsync();
 
@@ -183,7 +183,7 @@ public class Program
    {
       var id = Guid.NewGuid();
       var customersToInsert = new Customer(id, $"First name of '{id}'", $"Last name of '{id}'");
-      await ctx.BulkInsertAsync(new[] { customersToInsert });
+      await ctx.BulkInsertAsync([customersToInsert]);
 
       var insertedCustomer = await ctx.Customers.FirstAsync(c => c.Id == customersToInsert.Id);
 
@@ -199,7 +199,7 @@ public class Program
       // * c => new { c.Id }
       // * c => c.Id
       // * new SqlServerBulkInsertOptions { PropertiesToInsert = IPropertiesProvider.Include<Customer>(c => new { c.Id })}
-      await ctx.BulkInsertAsync(new[] { customersToInsert }, c => new { c.Id });
+      await ctx.BulkInsertAsync([customersToInsert], c => new { c.Id });
 
       var insertedCustomer = await ctx.Customers.FirstAsync(c => c.Id == customersToInsert.Id);
 
@@ -211,7 +211,7 @@ public class Program
       var customer = new Customer(customerId, "First name - DoBulkInsertOrUpdateAsync", "Last name will not be updated");
       var newCustomer = new Customer(Guid.NewGuid(), "First name - DoBulkInsertOrUpdateAsync", "Last name - DoBulkInsertOrUpdateAsync");
 
-      await ctx.BulkInsertOrUpdateAsync(new[] { newCustomer, customer }, propertiesToUpdate: c => c.FirstName);
+      await ctx.BulkInsertOrUpdateAsync([newCustomer, customer], propertiesToUpdate: c => c.FirstName);
 
       var customers = await ctx.Customers.Where(c => c.Id == customerId || c.Id == newCustomer.Id).ToListAsync();
 
@@ -223,7 +223,7 @@ public class Program
    {
       var customer = new Customer(customerId, "First name - DoBulkUpdateAsync", "Last name will not be updated");
 
-      await ctx.BulkUpdateAsync(new[] { customer }, c => c.FirstName);
+      await ctx.BulkUpdateAsync([customer], c => c.FirstName);
 
       var updatedCustomer = await ctx.Customers.FirstAsync(c => c.Id == customerId);
 

@@ -24,7 +24,9 @@ public class BulkInsertAsync : IntegrationTestsBase
                        };
       var testEntities = new[] { testEntity };
 
-      await ActDbContext.BulkInsertAsync(testEntities);
+      var affectedRows = await ActDbContext.BulkInsertAsync(testEntities);
+
+      affectedRows.Should().Be(1);
 
       var loadedEntities = await AssertDbContext.TestEntities.ToListAsync();
       loadedEntities.Should().HaveCount(1);

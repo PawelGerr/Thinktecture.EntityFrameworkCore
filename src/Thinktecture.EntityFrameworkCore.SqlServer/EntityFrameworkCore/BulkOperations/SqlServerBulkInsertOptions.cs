@@ -32,6 +32,12 @@ public sealed class SqlServerBulkInsertOptions : IBulkInsertOptions
    /// <inheritdoc />
    public IEntityPropertiesProvider? PropertiesToInsert { get; set; }
 
+   /// <inheritdoc />
+   public string? TableName { get; set; }
+
+   /// <inheritdoc />
+   public string? Schema { get; set; }
+
    /// <summary>
    /// Initializes new instance of <see cref="SqlServerBulkInsertOptions"/>.
    /// </summary>
@@ -44,6 +50,8 @@ public sealed class SqlServerBulkInsertOptions : IBulkInsertOptions
          return;
 
       PropertiesToInsert = optionsToInitializeFrom.PropertiesToInsert;
+      TableName = optionsToInitializeFrom.TableName;
+      Schema = optionsToInitializeFrom.Schema;
 
       if (optionsToInitializeFrom is SqlServerBulkInsertOptions sqlServerOptions)
       {

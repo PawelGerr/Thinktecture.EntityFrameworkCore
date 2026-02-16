@@ -17,6 +17,12 @@ public class SqliteBulkUpdateOptions : IBulkUpdateOptions
    /// </summary>
    public SqliteAutoIncrementBehavior AutoIncrementBehavior { get; set; }
 
+   /// <inheritdoc />
+   public string? TableName { get; set; }
+
+   /// <inheritdoc />
+   public string? Schema { get; set; }
+
    /// <summary>
    /// Initializes new instance of <see cref="SqliteBulkUpdateOptions"/>.
    /// </summary>
@@ -29,6 +35,8 @@ public class SqliteBulkUpdateOptions : IBulkUpdateOptions
       {
          PropertiesToUpdate = optionsToInitializeFrom.PropertiesToUpdate;
          KeyProperties = optionsToInitializeFrom.KeyProperties;
+         TableName = optionsToInitializeFrom.TableName;
+         Schema = optionsToInitializeFrom.Schema;
 
          if (optionsToInitializeFrom is SqliteBulkUpdateOptions sqliteOptions)
             AutoIncrementBehavior = sqliteOptions.AutoIncrementBehavior;

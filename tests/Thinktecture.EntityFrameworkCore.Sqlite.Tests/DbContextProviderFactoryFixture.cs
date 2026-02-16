@@ -22,6 +22,7 @@ public class DbContextProviderFactoryFixture : IAsyncLifetime
       return new SqliteTestDbContextProviderBuilder<TestDbContext>()
              .UseMigrationExecutionStrategy(IMigrationExecutionStrategy.Migrations)
              .UseMigrationLogLevel(LogLevel.Warning)
+             .CollectExecutedCommands()
              .ConfigureSqliteOptions(optionsBuilder => optionsBuilder.AddBulkOperationSupport()
                                                                      .AddWindowFunctionsSupport());
    }

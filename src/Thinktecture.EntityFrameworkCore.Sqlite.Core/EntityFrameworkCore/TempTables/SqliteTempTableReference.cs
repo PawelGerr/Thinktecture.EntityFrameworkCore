@@ -1,6 +1,5 @@
 using System.Data;
 using System.Data.Common;
-using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -60,9 +59,9 @@ public sealed class SqliteTempTableReference : ITempTableReference
 
          _database.CloseConnection();
       }
-      catch (ObjectDisposedException ex)
+      catch (Exception ex)
       {
-         _logger.Logger.LogWarning(ex, $"Trying to dispose of the temp table reference '{Name}' after the corresponding DbContext has been disposed.");
+         _logger.Logger.LogWarning(ex, $"Error during disposal of the temp table reference '{Name}'.");
       }
       finally
       {
@@ -84,9 +83,9 @@ public sealed class SqliteTempTableReference : ITempTableReference
 
          await _database.CloseConnectionAsync().ConfigureAwait(false);
       }
-      catch (ObjectDisposedException ex)
+      catch (Exception ex)
       {
-         _logger.Logger.LogWarning(ex, $"Trying to dispose of the temp table reference '{Name}' after the corresponding DbContext has been disposed.");
+         _logger.Logger.LogWarning(ex, $"Error during disposal of the temp table reference '{Name}'.");
       }
       finally
       {

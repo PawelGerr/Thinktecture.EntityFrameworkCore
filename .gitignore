@@ -3,7 +3,8 @@
 **/bin/**
 **/obj/**
 **/packages/**
-.serena/cache/**
+test-results/**
+
 .local-memory/**
 
 *\.sln\.DotSettings\.user
