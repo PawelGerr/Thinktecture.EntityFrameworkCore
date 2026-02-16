@@ -1,0 +1,5 @@
+namespace Thinktecture.EntityFrameworkCore.BulkOperations;
+
+internal interface INpgsqlOwnedTypeBulkOperationContext : INpgsqlBulkOperationContext, IOwnedTypeBulkOperationContext
+{
+}

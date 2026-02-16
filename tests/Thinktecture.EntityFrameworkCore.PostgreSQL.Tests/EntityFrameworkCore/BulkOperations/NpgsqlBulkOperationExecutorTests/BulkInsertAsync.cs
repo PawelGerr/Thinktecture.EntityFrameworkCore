@@ -1,0 +1,842 @@
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Thinktecture.EntityFrameworkCore.TempTables;
+using Thinktecture.TestDatabaseContext;
+
+namespace Thinktecture.EntityFrameworkCore.BulkOperations.NpgsqlBulkOperationExecutorTests;
+
+// ReSharper disable once InconsistentNaming
+public class BulkInsertAsync : IntegrationTestsBase
+{
+   private NpgsqlBulkOperationExecutor SUT => field ??= ActDbContext.GetService<NpgsqlBulkOperationExecutor>();
+
+   public BulkInsertAsync(ITestOutputHelper testOutputHelper, NpgsqlFixture npgsqlFixture)
+      : base(testOutputHelper, npgsqlFixture)
+   {
+   }
+
+   [Fact]
+   public async Task Should_throw_when_trying_to_insert_into_pure_temp_table_entity()
+   {
+      ConfigureModel = builder => builder.ConfigureTempTable<int>();
+
+      await SUT.Invoking(sut => sut.BulkInsertAsync(new List<TempTable<int>> { new(0) }, new NpgsqlBulkInsertOptions()))
+               .Should().ThrowAsync<ArgumentException>()
+               .WithMessage("The provided type 'TempTable<int>' is not part of the provided Entity Framework model. (Parameter 'type')");
+   }
+
+   [Fact]
+   public async Task Should_insert_entities()
+   {
+      await ArrangeDbContext.Database.EnsureCreatedAsync();
+      await SUT.TruncateTableAsync<TestEntity>();
+
+      var testEntity = new TestEntity
+                       {
+                          Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
+                          Name = "Name",
+                          RequiredName = "RequiredName",
+                          Count = 42
+                       };
+
+      var testEntities = new[] { testEntity };
+
+      var affectedRows = await SUT.BulkInsertAsync(testEntities, new NpgsqlBulkInsertOptions());
+
+      affectedRows.Should().Be(1);
+
+      var loadedEntities = await AssertDbContext.TestEntities.ToListAsync();
+      loadedEntities.Should().HaveCount(1)
+                    .And.Subject.First()
+                    .Should().BeEquivalentTo(new TestEntity
+                                             {
+                                                Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
+                                                Name = "Name",
+                                                RequiredName = "RequiredName",
+                                                Count = 42
+                                             });
+   }
+
+   [Fact]
+   public async Task Should_insert_column_with_converter()
+   {
+      await ArrangeDbContext.Database.EnsureCreatedAsync();
+      await SUT.TruncateTableAsync<TestEntity>();
+
+      var entities = new List<TestEntity> { new() { ConvertibleClass = new ConvertibleClass(42), RequiredName = "RequiredName" } };
+
+      await SUT.BulkInsertAsync(entities, new NpgsqlBulkInsertOptions());
+
+      var entity = AssertDbContext.TestEntities.Single();
+
+      entity.ConvertibleClass.Should().NotBeNull();
+      entity.ConvertibleClass!.Key.Should().Be(42);
+   }
+
+   [Fact]
+   public async Task Should_insert_private_property()
+   {
+      await ArrangeDbContext.Database.EnsureCreatedAsync();
+      await SUT.TruncateTableAsync<TestEntity>();
+
+      var testEntity = new TestEntity { Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"), RequiredName = "RequiredName" };
+      testEntity.SetPrivateField(3);
+
+      var testEntities = new[] { testEntity };
+
+      await SUT.BulkInsertAsync(testEntities, new NpgsqlBulkInsertOptions());
+
+      var loadedEntity = await AssertDbContext.TestEntities.FirstOrDefaultAsync();
+      loadedEntity!.GetPrivateField().Should().Be(3);
+   }
+
+   [Fact]
+   public async Task Should_insert_shadow_properties()
+   {
+      await ArrangeDbContext.Database.EnsureCreatedAsync();
+      await SUT.TruncateTableAsync<TestEntityWithShadowProperties>();
+
+      var testEntity = new TestEntityWithShadowProperties { Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866") };
+      ActDbContext.Entry(testEntity).Property("ShadowStringProperty").CurrentValue = "value";
+      ActDbContext.Entry(testEntity).Property("ShadowIntProperty").CurrentValue = 42;
+
+      var testEntities = new[] { testEntity };
+
+      await SUT.BulkInsertAsync(testEntities, new NpgsqlBulkInsertOptions());
+
+      var loadedEntity = await AssertDbContext.TestEntitiesWithShadowProperties.FirstOrDefaultAsync();
+      loadedEntity.Should().NotBeNull();
+      AssertDbContext.Entry(loadedEntity).Property("ShadowStringProperty").CurrentValue.Should().Be("value");
+      AssertDbContext.Entry(loadedEntity).Property("ShadowIntProperty").CurrentValue.Should().Be(42);
+   }
+
+   [Fact]
+   public async Task Should_insert_specified_properties_only()
+   {
+      await ArrangeDbContext.Database.EnsureCreatedAsync();
+      await SUT.TruncateTableAsync<TestEntity>();
+
+      var testEntity = new TestEntity
+                       {
+                          Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
+                          Name = "Name",
+                          RequiredName = "RequiredName",
+                          Count = 42,
+                          PropertyWithBackingField = 7
+                       };
+      testEntity.SetPrivateField(3);
+
+      await SUT.BulkInsertAsync([testEntity],
+                                new NpgsqlBulkInsertOptions
+                                {
+                                   PropertiesToInsert = IEntityPropertiesProvider.Include(TestEntity.GetRequiredProperties())
+                                });
+
+      var loadedEntities = await AssertDbContext.TestEntities.ToListAsync();
+      loadedEntities.Should().HaveCount(1);
+      var loadedEntity = loadedEntities[0];
+      loadedEntity.Should().BeEquivalentTo(new TestEntity
+                                           {
+                                              Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
+                                              RequiredName = "RequiredName",
+                                              Count = 42,
+                                              PropertyWithBackingField = 7
+                                           });
+      loadedEntity.GetPrivateField().Should().Be(3);
+   }
+
+   [Fact]
+   public async Task Should_insert_auto_increment_column()
+   {
+      await ArrangeDbContext.Database.EnsureCreatedAsync();
+      await SUT.TruncateTableAsync<TestEntityWithAutoIncrement>();
+
+      var testEntity = new TestEntityWithAutoIncrement { Name = "value" };
+      var testEntities = new[] { testEntity };
+
+      await SUT.BulkInsertAsync(testEntities, new NpgsqlBulkInsertOptions
+                                               {
+                                                  PropertiesToInsert = IEntityPropertiesProvider.Include<TestEntityWithAutoIncrement>(e => e.Name)
+                                               });
+
+      var loadedEntity = await AssertDbContext.TestEntitiesWithAutoIncrement.FirstOrDefaultAsync();
+      loadedEntity.Should().NotBeNull();
+      loadedEntity.Id.Should().NotBe(0);
+      loadedEntity.Name.Should().Be("value");
+   }
+
+   [Fact]
+   public async Task Should_insert_inlined_owned_types()
+   {
+      await ArrangeDbContext.Database.EnsureCreatedAsync();
+      await SUT.TruncateTableAsync<TestEntity_Owns_Inline>();
+
+      var testEntity = new TestEntity_Owns_Inline
+                       {
+                          Id = new Guid("3A1B2FFF-8E11-44E5-80E5-8C7FEEDACEB3"),
+                          InlineEntity = new OwnedEntity
+                                         {
+                                            IntColumn = 42,
+                                            StringColumn = "value"
+                                         }
+                       };
+
+      await SUT.BulkInsertAsync([testEntity], new NpgsqlBulkInsertOptions());
+
+      var loadedEntities = await AssertDbContext.TestEntities_Own_Inline.ToListAsync();
+      loadedEntities.Should().HaveCount(1);
+      var loadedEntity = loadedEntities[0];
+      loadedEntity.Should().BeEquivalentTo(new TestEntity_Owns_Inline
+                                           {
+                                              Id = new Guid("3A1B2FFF-8E11-44E5-80E5-8C7FEEDACEB3"),
+                                              InlineEntity = new OwnedEntity
+                                                             {
+                                                                IntColumn = 42,
+                                                                StringColumn = "value"
+                                                             }
+                                           });
+   }
+
+   [Fact]
+   public async Task Should_insert_TestEntity_Owns_SeparateOne()
+   {
+      await ArrangeDbContext.Database.EnsureCreatedAsync();
+      await SUT.TruncateTableAsync<TestEntity_Owns_SeparateOne>(true);
+
+      var testEntity = new TestEntity_Owns_SeparateOne
+                       {
+                          Id = new Guid("7C00ABFE-875B-4396-BE51-3E898647A264"),
+                          SeparateEntity = new OwnedEntity
+                                           {
+                                              IntColumn = 42,
+                                              StringColumn = "value"
+                                           }
+                       };
+      ActDbContext.Add(testEntity);
+
+      var affectedRows = await SUT.BulkInsertAsync([testEntity], new NpgsqlBulkInsertOptions());
+
+      affectedRows.Should().Be(2);
+
+      var loadedEntities = await AssertDbContext.TestEntities_Own_SeparateOne.ToListAsync();
+      loadedEntities.Should().HaveCount(1);
+      var loadedEntity = loadedEntities[0];
+      loadedEntity.Should().BeEquivalentTo(testEntity);
+   }
+
+   [Fact]
+   public async Task Should_insert_TestEntity_Owns_SeparateMany()
+   {
+      await ArrangeDbContext.Database.EnsureCreatedAsync();
+      await SUT.TruncateTableAsync<TestEntity_Owns_SeparateMany>(true);
+
+      var testEntity = new TestEntity_Owns_SeparateMany
+                       {
+                          Id = new Guid("54FF93FC-6BE9-4F19-A52E-E517CA9FEAA7"),
+                          SeparateEntities =
+                          [
+                             new()
+                             {
+                                IntColumn = 42,
+                                StringColumn = "value 1"
+                             },
+
+                             new()
+                             {
+                                IntColumn = 43,
+                                StringColumn = "value 2"
+                             },
+                          ]
+                       };
+      ActDbContext.Add(testEntity);
+
+      var affectedRows = await SUT.BulkInsertAsync([testEntity], new NpgsqlBulkInsertOptions());
+
+      affectedRows.Should().Be(3);
+
+      var loadedEntities = await AssertDbContext.TestEntities_Own_SeparateMany.ToListAsync();
+      loadedEntities.Should().HaveCount(1);
+      var loadedEntity = loadedEntities[0];
+      loadedEntity.Should().BeEquivalentTo(testEntity);
+   }
+
+   [Fact]
+   public async Task Should_insert_inlined_owned_type_if_it_has_default_values_only()
+   {
+      await ArrangeDbContext.Database.EnsureCreatedAsync();
+      await SUT.TruncateTableAsync<TestEntity_Owns_Inline>();
+
+      var testEntity = new TestEntity_Owns_Inline
+                       {
+                          Id = new Guid("3A1B2FFF-8E11-44E5-80E5-8C7FEEDACEB3"),
+                          InlineEntity = new OwnedEntity()
+                       };
+
+      await SUT.BulkInsertAsync([testEntity], new NpgsqlBulkInsertOptions());
+
+      var loadedEntities = await AssertDbContext.TestEntities_Own_Inline.ToListAsync();
+      loadedEntities.Should().HaveCount(1);
+      var loadedEntity = loadedEntities[0];
+      loadedEntity.Should().BeEquivalentTo(new TestEntity_Owns_Inline
+                                           {
+                                              Id = new Guid("3A1B2FFF-8E11-44E5-80E5-8C7FEEDACEB3"),
+                                              InlineEntity = new OwnedEntity
+                                                             {
+                                                                IntColumn = 0,
+                                                                StringColumn = null
+                                                             }
+                                           });
+   }
+
+   [Fact]
+   public async Task Should_throw_if_separated_owned_type_uses_shadow_property_id_and_is_detached()
+   {
+      await ArrangeDbContext.Database.EnsureCreatedAsync();
+      await SUT.TruncateTableAsync<TestEntity_Owns_SeparateOne>(true);
+
+      var testEntity = new TestEntity_Owns_SeparateOne
+                       {
+                          Id = new Guid("7C00ABFE-875B-4396-BE51-3E898647A264"),
+                          SeparateEntity = new OwnedEntity
+                                           {
+                                              IntColumn = 42,
+                                              StringColumn = "value"
+                                           }
+                       };
+
+      await SUT.Awaiting(sut => sut.BulkInsertAsync([testEntity], new NpgsqlBulkInsertOptions()))
+               .Should().ThrowAsync<InvalidOperationException>()
+               .WithMessage("The entity type 'OwnedEntity' uses a shared type and the supplied entity is currently not being tracked. To start tracking this entity, call '.Reference().TargetEntry' or '.Collection().FindEntry()' on the owner entry.");
+   }
+
+   [Fact]
+   public async Task Should_throw_if_separated_owned_types_uses_shadow_property_id_and_is_detached()
+   {
+      await ArrangeDbContext.Database.EnsureCreatedAsync();
+      await SUT.TruncateTableAsync<TestEntity_Owns_SeparateMany>(true);
+
+      var testEntity = new TestEntity_Owns_SeparateMany
+                       {
+                          Id = new Guid("54FF93FC-6BE9-4F19-A52E-E517CA9FEAA7"),
+                          SeparateEntities =
+                          [
+                             new()
+                             {
+                                IntColumn = 42,
+                                StringColumn = "value 1"
+                             },
+                          ]
+                       };
+
+      await SUT.Awaiting(sut => sut.BulkInsertAsync([testEntity], new NpgsqlBulkInsertOptions()))
+               .Should().ThrowAsync<InvalidOperationException>()
+               .WithMessage("The entity type 'OwnedEntity' uses a shared type and the supplied entity is currently not being tracked. To start tracking this entity, call '.Reference().TargetEntry' or '.Collection().FindEntry()' on the owner entry.");
+   }
+
+   [Fact]
+   public async Task Should_insert_TestEntity_Owns_Inline_Inline()
+   {
+      await ArrangeDbContext.Database.EnsureCreatedAsync();
+      await SUT.TruncateTableAsync<TestEntity_Owns_Inline_Inline>();
+
+      var testEntity = new TestEntity_Owns_Inline_Inline
+                       {
+                          Id = new Guid("54FF93FC-6BE9-4F19-A52E-E517CA9FEAA7"),
+                          InlineEntity = new OwnedEntity_Owns_Inline
+                                         {
+                                            IntColumn = 42,
+                                            StringColumn = "value 1",
+                                            InlineEntity = new OwnedEntity
+                                                           {
+                                                              IntColumn = 43,
+                                                              StringColumn = "value 2"
+                                                           }
+                                         }
+                       };
+      ActDbContext.Add(testEntity);
+
+      await SUT.BulkInsertAsync([testEntity], new NpgsqlBulkInsertOptions());
+
+      var loadedEntities = await AssertDbContext.TestEntities_Own_Inline_Inline.ToListAsync();
+      loadedEntities.Should().BeEquivalentTo([testEntity]);
+   }
+
+   [Fact]
+   public async Task Should_insert_TestEntity_Owns_Inline_SeparateMany()
+   {
+      await ArrangeDbContext.Database.EnsureCreatedAsync();
+      await SUT.TruncateTableAsync<TestEntity_Owns_Inline_SeparateMany>(true);
+
+      var testEntity = new TestEntity_Owns_Inline_SeparateMany
+                       {
+                          Id = new Guid("54FF93FC-6BE9-4F19-A52E-E517CA9FEAA7"),
+                          InlineEntity = new OwnedEntity_Owns_SeparateMany
+                                         {
+                                            IntColumn = 42,
+                                            StringColumn = "value 1",
+                                            SeparateEntities =
+                                            [
+                                               new()
+                                               {
+                                                  IntColumn = 43,
+                                                  StringColumn = "value 2"
+                                               },
+
+                                               new()
+                                               {
+                                                  IntColumn = 44,
+                                                  StringColumn = "value 3"
+                                               },
+                                            ]
+                                         }
+                       };
+      ActDbContext.Add(testEntity);
+
+      await SUT.BulkInsertAsync([testEntity], new NpgsqlBulkInsertOptions());
+
+      var loadedEntities = await AssertDbContext.TestEntities_Own_Inline_SeparateMany.ToListAsync();
+      loadedEntities.Should().BeEquivalentTo([testEntity]);
+   }
+
+   [Fact]
+   public async Task Should_insert_TestEntity_Owns_Inline_SeparateOne()
+   {
+      await ArrangeDbContext.Database.EnsureCreatedAsync();
+      await SUT.TruncateTableAsync<TestEntity_Owns_Inline_SeparateOne>(true);
+
+      var testEntity = new TestEntity_Owns_Inline_SeparateOne
+                       {
+                          Id = new Guid("54FF93FC-6BE9-4F19-A52E-E517CA9FEAA7"),
+                          InlineEntity = new OwnedEntity_Owns_SeparateOne
+                                         {
+                                            IntColumn = 42,
+                                            StringColumn = "value 1",
+                                            SeparateEntity = new()
+                                                             {
+                                                                IntColumn = 43,
+                                                                StringColumn = "value 2"
+                                                             }
+                                         }
+                       };
+
+      ActDbContext.Add(testEntity);
+
+      await SUT.BulkInsertAsync([testEntity], new NpgsqlBulkInsertOptions());
+
+      var loadedEntities = await AssertDbContext.TestEntities_Own_Inline_SeparateOne.ToListAsync();
+      loadedEntities.Should().BeEquivalentTo([testEntity]);
+   }
+
+   [Fact]
+   public async Task Should_insert_TestEntity_Owns_SeparateMany_Inline()
+   {
+      await ArrangeDbContext.Database.EnsureCreatedAsync();
+      await SUT.TruncateTableAsync<TestEntity_Owns_SeparateMany_Inline>(true);
+
+      var testEntity = new TestEntity_Owns_SeparateMany_Inline
+                       {
+                          Id = new Guid("54FF93FC-6BE9-4F19-A52E-E517CA9FEAA7"),
+                          SeparateEntities =
+                          [
+                             new()
+                             {
+                                IntColumn = 42,
+                                StringColumn = "value 1",
+                                InlineEntity = new OwnedEntity
+                                               {
+                                                  IntColumn = 43,
+                                                  StringColumn = "value 2"
+                                               }
+                             },
+
+                             new()
+                             {
+                                IntColumn = 44,
+                                StringColumn = "value 3",
+                                InlineEntity = new OwnedEntity
+                                               {
+                                                  IntColumn = 45,
+                                                  StringColumn = "value 4"
+                                               }
+                             },
+                          ]
+                       };
+
+      ActDbContext.Add(testEntity);
+
+      await SUT.BulkInsertAsync([testEntity], new NpgsqlBulkInsertOptions());
+
+      var loadedEntities = await AssertDbContext.TestEntities_Own_SeparateMany_Inline.ToListAsync();
+      loadedEntities.Should().BeEquivalentTo([testEntity]);
+   }
+
+   [Fact]
+   public async Task Should_throw_on_insert_of_TestEntity_Owns_SeparateMany_SeparateMany()
+   {
+      await ArrangeDbContext.Database.EnsureCreatedAsync();
+      await SUT.TruncateTableAsync<TestEntity_Owns_SeparateMany_SeparateMany>(true);
+
+      var testEntity = new TestEntity_Owns_SeparateMany_SeparateMany
+                       {
+                          Id = new Guid("54FF93FC-6BE9-4F19-A52E-E517CA9FEAA7"),
+                          SeparateEntities =
+                          [
+                             new()
+                             {
+                                IntColumn = 42,
+                                StringColumn = "value 1",
+                                SeparateEntities =
+                                [
+                                   new()
+                                   {
+                                      IntColumn = 43,
+                                      StringColumn = "value 2"
+                                   },
+
+                                   new()
+                                   {
+                                      IntColumn = 44,
+                                      StringColumn = "value 3"
+                                   },
+                                ]
+                             },
+
+                             new()
+                             {
+                                IntColumn = 45,
+                                StringColumn = "value 4",
+                                SeparateEntities =
+                                [
+                                   new()
+                                   {
+                                      IntColumn = 46,
+                                      StringColumn = "value 5"
+                                   },
+
+                                   new()
+                                   {
+                                      IntColumn = 47,
+                                      StringColumn = "value 6"
+                                   },
+                                ]
+                             },
+                          ]
+                       };
+
+      ActDbContext.Add(testEntity);
+
+      await SUT.Awaiting(sut => sut.BulkInsertAsync([testEntity], new NpgsqlBulkInsertOptions()))
+               .Should().ThrowAsync<NotSupportedException>().WithMessage("Non-inlined (i.e. with its own table) nested owned type 'Thinktecture.TestDatabaseContext.TestEntity_Owns_SeparateMany_SeparateMany.SeparateEntities#OwnedEntity_Owns_SeparateMany.SeparateEntities' inside another owned type collection 'Thinktecture.TestDatabaseContext.TestEntity_Owns_SeparateMany_SeparateMany.SeparateEntities' is not supported.");
+   }
+
+   [Fact]
+   public async Task Should_throw_on_insert_of_TestEntity_Owns_SeparateMany_SeparateOne()
+   {
+      await ArrangeDbContext.Database.EnsureCreatedAsync();
+      await SUT.TruncateTableAsync<TestEntity_Owns_SeparateMany_SeparateOne>(true);
+
+      var testEntity = new TestEntity_Owns_SeparateMany_SeparateOne
+                       {
+                          Id = new Guid("54FF93FC-6BE9-4F19-A52E-E517CA9FEAA7"),
+                          SeparateEntities =
+                          [
+                             new()
+                             {
+                                IntColumn = 42,
+                                StringColumn = "value 1",
+                                SeparateEntity = new()
+                                                 {
+                                                    IntColumn = 43,
+                                                    StringColumn = "value 2"
+                                                 }
+                             },
+
+                             new()
+                             {
+                                IntColumn = 45,
+                                StringColumn = "value 4",
+                                SeparateEntity = new()
+                                                 {
+                                                    IntColumn = 46,
+                                                    StringColumn = "value 5"
+                                                 }
+                             },
+                          ]
+                       };
+
+      ActDbContext.Add(testEntity);
+
+      await SUT.Awaiting(sut => sut.BulkInsertAsync([testEntity], new NpgsqlBulkInsertOptions()))
+               .Should().ThrowAsync<NotSupportedException>().WithMessage("Non-inlined (i.e. with its own table) nested owned type 'Thinktecture.TestDatabaseContext.TestEntity_Owns_SeparateMany_SeparateOne.SeparateEntities#OwnedEntity_Owns_SeparateOne.SeparateEntity' inside another owned type collection 'Thinktecture.TestDatabaseContext.TestEntity_Owns_SeparateMany_SeparateOne.SeparateEntities' is not supported.");
+   }
+
+   [Fact]
+   public async Task Should_insert_TestEntity_Owns_SeparateOne_Inline()
+   {
+      await ArrangeDbContext.Database.EnsureCreatedAsync();
+      await SUT.TruncateTableAsync<TestEntity_Owns_SeparateOne_Inline>(true);
+
+      var testEntity = new TestEntity_Owns_SeparateOne_Inline
+                       {
+                          Id = new Guid("54FF93FC-6BE9-4F19-A52E-E517CA9FEAA7"),
+                          SeparateEntity = new()
+                                           {
+                                              IntColumn = 42,
+                                              StringColumn = "value 1",
+                                              InlineEntity = new OwnedEntity
+                                                             {
+                                                                IntColumn = 43,
+                                                                StringColumn = "value 2"
+                                                             }
+                                           }
+                       };
+
+      ActDbContext.Add(testEntity);
+
+      await SUT.BulkInsertAsync([testEntity], new NpgsqlBulkInsertOptions());
+
+      var loadedEntities = await AssertDbContext.TestEntities_Own_SeparateOne_Inline.ToListAsync();
+      loadedEntities.Should().BeEquivalentTo([testEntity]);
+   }
+
+   [Fact]
+   public async Task Should_insert_TestEntity_Owns_SeparateOne_SeparateMany()
+   {
+      await ArrangeDbContext.Database.EnsureCreatedAsync();
+      await SUT.TruncateTableAsync<TestEntity_Owns_SeparateOne_SeparateMany>(true);
+
+      var testEntity = new TestEntity_Owns_SeparateOne_SeparateMany
+                       {
+                          Id = new Guid("54FF93FC-6BE9-4F19-A52E-E517CA9FEAA7"),
+                          SeparateEntity = new()
+                                           {
+                                              IntColumn = 42,
+                                              StringColumn = "value 1",
+                                              SeparateEntities =
+                                              [
+                                                 new()
+                                                 {
+                                                    IntColumn = 43,
+                                                    StringColumn = "value 2"
+                                                 },
+
+                                                 new()
+                                                 {
+                                                    IntColumn = 44,
+                                                    StringColumn = "value 3"
+                                                 },
+                                              ]
+                                           }
+                       };
+
+      ActDbContext.Add(testEntity);
+
+      await SUT.BulkInsertAsync([testEntity], new NpgsqlBulkInsertOptions());
+
+      var loadedEntities = await AssertDbContext.TestEntities_Own_SeparateOne_SeparateMany.ToListAsync();
+      loadedEntities.Should().BeEquivalentTo([testEntity]);
+   }
+
+   [Fact]
+   public async Task Should_insert_TestEntity_Owns_SeparateOne_SeparateOne()
+   {
+      await ArrangeDbContext.Database.EnsureCreatedAsync();
+      await SUT.TruncateTableAsync<TestEntity_Owns_SeparateOne_SeparateOne>(true);
+
+      var testEntity = new TestEntity_Owns_SeparateOne_SeparateOne
+                       {
+                          Id = new Guid("54FF93FC-6BE9-4F19-A52E-E517CA9FEAA7"),
+                          SeparateEntity = new()
+                                           {
+                                              IntColumn = 42,
+                                              StringColumn = "value 1",
+                                              SeparateEntity = new()
+                                                               {
+                                                                  IntColumn = 43,
+                                                                  StringColumn = "value 2"
+                                                               }
+                                           }
+                       };
+
+      ActDbContext.Add(testEntity);
+
+      await SUT.BulkInsertAsync([testEntity], new NpgsqlBulkInsertOptions());
+
+      var loadedEntities = await AssertDbContext.TestEntities_Own_SeparateOne_SeparateOne.ToListAsync();
+      loadedEntities.Should().BeEquivalentTo([testEntity]);
+   }
+
+   [Fact]
+   public async Task Should_insert_TestEntity_with_ComplexType()
+   {
+      await ArrangeDbContext.Database.EnsureCreatedAsync();
+      await SUT.TruncateTableAsync<TestEntityWithComplexType>();
+
+      var testEntity = new TestEntityWithComplexType(new Guid("54FF93FC-6BE9-4F19-A52E-E517CA9FEAA7"),
+                                                     new BoundaryValueObject(2, 5));
+
+      await SUT.BulkInsertAsync([testEntity], new NpgsqlBulkInsertOptions());
+
+      var loadedEntities = await AssertDbContext.TestEntities_with_ComplexType.ToListAsync();
+      loadedEntities.Should().BeEquivalentTo([testEntity]);
+   }
+
+   [Fact]
+   public async Task Should_insert_entities_with_freeze()
+   {
+      await using var transaction = await ActDbContext.Database.BeginTransactionAsync();
+      await SUT.TruncateTableAsync<TestEntity>();
+
+      var testEntity = new TestEntity
+                       {
+                          Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
+                          Name = "Name",
+                          RequiredName = "RequiredName",
+                          Count = 42
+                       };
+
+      await SUT.BulkInsertAsync([testEntity], new NpgsqlBulkInsertOptions { Freeze = true });
+      await transaction.CommitAsync();
+
+      var loadedEntities = await AssertDbContext.TestEntities.ToListAsync();
+      loadedEntities.Should().HaveCount(1)
+                    .And.Subject.First()
+                    .Should().BeEquivalentTo(new TestEntity
+                                             {
+                                                Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
+                                                Name = "Name",
+                                                RequiredName = "RequiredName",
+                                                Count = 42
+                                             });
+   }
+
+   [Fact]
+   public async Task Should_insert_multiple_entities_with_freeze()
+   {
+      await using var transaction = await ActDbContext.Database.BeginTransactionAsync();
+      await SUT.TruncateTableAsync<TestEntity>();
+
+      var entity1 = new TestEntity
+                    {
+                       Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
+                       Name = "Name1",
+                       RequiredName = "RequiredName1",
+                       Count = 1
+                    };
+      var entity2 = new TestEntity
+                    {
+                       Id = new Guid("8AF163D7-D316-4B2D-A62F-6326A80C8BEE"),
+                       Name = "Name2",
+                       RequiredName = "RequiredName2",
+                       Count = 2
+                    };
+
+      await SUT.BulkInsertAsync([entity1, entity2], new NpgsqlBulkInsertOptions { Freeze = true });
+      await transaction.CommitAsync();
+
+      var loadedEntities = await AssertDbContext.TestEntities.ToListAsync();
+      loadedEntities.Should().BeEquivalentTo([entity1, entity2]);
+   }
+
+   [Fact]
+   public async Task Should_insert_into_table_name_override()
+   {
+      await ActDbContext.Database.ExecuteSqlRawAsync($"""
+         CREATE TABLE "{Schema}"."TestEntities_BulkInsertRedirect" (LIKE "{Schema}"."TestEntities" INCLUDING ALL)
+         """);
+
+      try
+      {
+         var testEntity = new TestEntity
+                          {
+                             Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
+                             Name = "Name",
+                             RequiredName = "RequiredName",
+                             Count = 42
+                          };
+
+         await SUT.BulkInsertAsync([testEntity], new NpgsqlBulkInsertOptions { TableName = "TestEntities_BulkInsertRedirect", Schema = Schema });
+
+         var loadedEntities = await AssertDbContext.TestEntities.ToListAsync();
+         loadedEntities.Should().HaveCount(0, "original table should be empty");
+
+         var redirectedIds = await AssertDbContext.Database
+                                                 .SqlQueryRaw<Guid>($"""SELECT "Id" FROM "{Schema}"."TestEntities_BulkInsertRedirect" """)
+                                                 .ToListAsync();
+         redirectedIds.Should().HaveCount(1);
+         redirectedIds[0].Should().Be(new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"));
+      }
+      finally
+      {
+         await ActDbContext.Database.ExecuteSqlRawAsync($"""DROP TABLE IF EXISTS "{Schema}"."TestEntities_BulkInsertRedirect" """);
+      }
+   }
+
+   [Fact]
+   public async Task Should_insert_entity_with_jsonb_column()
+   {
+      await ArrangeDbContext.Database.EnsureCreatedAsync();
+      await SUT.TruncateTableAsync<TestEntityWithJsonColumns>();
+
+      var entity = new TestEntityWithJsonColumns
+                   {
+                      Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
+                      JsonbColumn = """{"key": "value"}""",
+                      JsonColumn = null
+                   };
+
+      var affectedRows = await SUT.BulkInsertAsync([entity], new NpgsqlBulkInsertOptions());
+
+      affectedRows.Should().Be(1);
+
+      var loadedEntity = await AssertDbContext.TestEntitiesWithJsonColumns.SingleAsync();
+      loadedEntity.Id.Should().Be(new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"));
+      loadedEntity.JsonbColumn.Should().Be("""{"key": "value"}""");
+      loadedEntity.JsonColumn.Should().BeNull();
+   }
+
+   [Fact]
+   public async Task Should_insert_entity_with_json_column()
+   {
+      await ArrangeDbContext.Database.EnsureCreatedAsync();
+      await SUT.TruncateTableAsync<TestEntityWithJsonColumns>();
+
+      var entity = new TestEntityWithJsonColumns
+                   {
+                      Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
+                      JsonbColumn = null,
+                      JsonColumn = """{"key": "value"}"""
+                   };
+
+      var affectedRows = await SUT.BulkInsertAsync([entity], new NpgsqlBulkInsertOptions());
+
+      affectedRows.Should().Be(1);
+
+      var loadedEntity = await AssertDbContext.TestEntitiesWithJsonColumns.SingleAsync();
+      loadedEntity.Id.Should().Be(new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"));
+      loadedEntity.JsonbColumn.Should().BeNull();
+      loadedEntity.JsonColumn.Should().Be("""{"key": "value"}""");
+   }
+
+   [Fact]
+   public async Task Should_insert_entity_with_null_jsonb_column()
+   {
+      await ArrangeDbContext.Database.EnsureCreatedAsync();
+      await SUT.TruncateTableAsync<TestEntityWithJsonColumns>();
+
+      var entity = new TestEntityWithJsonColumns
+                   {
+                      Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
+                      JsonbColumn = null,
+                      JsonColumn = null
+                   };
+
+      var affectedRows = await SUT.BulkInsertAsync([entity], new NpgsqlBulkInsertOptions());
+
+      affectedRows.Should().Be(1);
+
+      var loadedEntity = await AssertDbContext.TestEntitiesWithJsonColumns.SingleAsync();
+      loadedEntity.Id.Should().Be(new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"));
+      loadedEntity.JsonbColumn.Should().BeNull();
+      loadedEntity.JsonColumn.Should().BeNull();
+   }
+}

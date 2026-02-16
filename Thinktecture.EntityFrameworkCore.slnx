@@ -13,9 +13,6 @@
   </Folder>
   <Folder Name="/assets/.claude/">
     <File Path=".claude/CLAUDE.md" />
-    <File Path=".claude/CLAUDE-ARCHITECTURE.md" />
-    <File Path=".claude/CLAUDE-CODE-STYLE.md" />
-    <File Path=".claude/CLAUDE-TESTING.md" />
   </Folder>
   <Folder Name="/assets/.github/">
     <File Path=".github/workflows/ci.ps1" />
@@ -32,6 +29,7 @@
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/Thinktecture.EntityFrameworkCore.BulkOperations/Thinktecture.EntityFrameworkCore.BulkOperations.csproj" />
+    <Project Path="src/Thinktecture.EntityFrameworkCore.PostgreSQL/Thinktecture.EntityFrameworkCore.PostgreSQL.csproj" />
     <Project Path="src/Thinktecture.EntityFrameworkCore.Relational/Thinktecture.EntityFrameworkCore.Relational.csproj" />
     <Project Path="src/Thinktecture.EntityFrameworkCore.Sqlite.Testing/Thinktecture.EntityFrameworkCore.Sqlite.Testing.csproj" />
     <Project Path="src/Thinktecture.EntityFrameworkCore.Sqlite.Core/Thinktecture.EntityFrameworkCore.Sqlite.Core.csproj" />
@@ -43,6 +41,7 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Thinktecture.EntityFrameworkCore.BulkOperations.Tests/Thinktecture.EntityFrameworkCore.BulkOperations.Tests.csproj" />
+    <Project Path="tests/Thinktecture.EntityFrameworkCore.PostgreSQL.Tests/Thinktecture.EntityFrameworkCore.PostgreSQL.Tests.csproj" />
     <Project Path="tests/Thinktecture.EntityFrameworkCore.Relational.Tests/Thinktecture.EntityFrameworkCore.Relational.Tests.csproj" />
     <Project Path="tests/Thinktecture.EntityFrameworkCore.Sqlite.Tests/Thinktecture.EntityFrameworkCore.Sqlite.Tests.csproj" />
     <Project Path="tests/Thinktecture.EntityFrameworkCore.SqlServer.Tests/Thinktecture.EntityFrameworkCore.SqlServer.Tests.csproj" />
