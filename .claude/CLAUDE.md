@@ -177,7 +177,7 @@ private NpgsqlBulkOperationExecutor SUT => field ??= ActDbContext.GetService<Npg
 | Window Functions | Y | Y | Y |
 | Collection Parameters | Y | Y | - |
 | Nested Transactions | Y | Y | Y |
-| Tenant Database Support | Y | Y | Y |
+| Tenant Database Support | Y | - | - |
 | Table Hints | Y | - | - |
 | Bulk Update from Query | Y | Y | Y |
 | Bulk Insert from Query | Y | Y | Y |
