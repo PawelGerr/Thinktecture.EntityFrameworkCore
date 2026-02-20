@@ -1,15 +1,16 @@
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Query.Internal;
 using Thinktecture.EntityFrameworkCore.Query.SqlExpressions;
 
 namespace Thinktecture.EntityFrameworkCore.Query;
 
 /// <summary>
-/// Extends <see cref="SqlNullabilityProcessor"/> to support Thinktecture extensions.
+/// Extends <see cref="NpgsqlSqlNullabilityProcessor"/> to support Thinktecture extensions.
 /// </summary>
 [SuppressMessage("Usage", "EF1001", MessageId = "Internal EF Core API usage.")]
-public class ThinktectureNpgsqlSqlNullabilityProcessor : SqlNullabilityProcessor
+public class ThinktectureNpgsqlSqlNullabilityProcessor : NpgsqlSqlNullabilityProcessor
 {
    /// <inheritdoc />
    public ThinktectureNpgsqlSqlNullabilityProcessor(
