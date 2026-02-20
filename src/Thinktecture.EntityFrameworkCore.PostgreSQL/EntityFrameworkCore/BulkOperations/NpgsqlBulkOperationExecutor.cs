@@ -22,7 +22,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations;
 /// Executes bulk operations for PostgreSQL.
 /// </summary>
 [SuppressMessage("Usage", "EF1001:Internal EF Core API usage.")]
-public sealed class NpgsqlBulkOperationExecutor
+public sealed partial class NpgsqlBulkOperationExecutor
    : IBulkInsertExecutor, ITempTableBulkInsertExecutor, IBulkUpdateExecutor,
      IBulkInsertOrUpdateExecutor, INpgsqlTruncateTableExecutor
 {
@@ -30,12 +30,6 @@ public sealed class NpgsqlBulkOperationExecutor
    private readonly IDiagnosticsLogger<NpgsqlDbLoggerCategory.BulkOperation> _logger;
    private readonly ISqlGenerationHelper _sqlGenerationHelper;
    private readonly ObjectPool<StringBuilder> _stringBuilderPool;
-
-   private static class EventIds
-   {
-      public static readonly EventId Inserting = 0;
-      public static readonly EventId Inserted = 1;
-   }
 
    /// <summary>
    /// Initializes new instance of <see cref="NpgsqlBulkOperationExecutor"/>.
@@ -159,7 +153,7 @@ public sealed class NpgsqlBulkOperationExecutor
       {
          var connection = ctx.Connection;
 
-         LogInserting(copySql, columns);
+         LogInserting(_logger.Logger, copySql, columns);
          var stopwatch = Stopwatch.StartNew();
 
          await using (var importer = await connection.BeginBinaryImportAsync(copySql, cancellationToken).ConfigureAwait(false))
@@ -190,7 +184,7 @@ public sealed class NpgsqlBulkOperationExecutor
             numberOfInsertedRows = (int)await importer.CompleteAsync(cancellationToken).ConfigureAwait(false);
          }
 
-         LogInserted(stopwatch.Elapsed, copySql, columns);
+         LogInserted(_logger.Logger, (long)stopwatch.Elapsed.TotalMilliseconds, copySql, columns);
 
          if (ctx.HasExternalProperties)
          {
@@ -280,30 +274,15 @@ public sealed class NpgsqlBulkOperationExecutor
       }
    }
 
-   private void LogInserting(string copySql, string columns)
-   {
-      _logger.Logger.LogDebug(EventIds.Inserting,
-                              """
-                              Executing DbCommand
-                              {CopySql}
-                              Columns: {Columns}
-                              """,
-                              copySql,
-                              columns);
-   }
+   [LoggerMessage(EventId = 0,
+                  Level = LogLevel.Debug,
+                  Message = "Executing DbCommand\n{CopySql}\nColumns: {Columns}")]
+   private static partial void LogInserting(ILogger logger, string copySql, string columns);
 
-   private void LogInserted(TimeSpan duration, string copySql, string columns)
-   {
-      _logger.Logger.LogInformation(EventIds.Inserted,
-                                    """
-                                    Executed DbCommand ({Duration}ms)
-                                    {CopySql}
-                                    Columns: {Columns}
-                                    """,
-                                    (long)duration.TotalMilliseconds,
-                                    copySql,
-                                    columns);
-   }
+   [LoggerMessage(EventId = 1,
+                  Level = LogLevel.Information,
+                  Message = "Executed DbCommand ({Duration}ms)\n{CopySql}\nColumns: {Columns}")]
+   private static partial void LogInserted(ILogger logger, long duration, string copySql, string columns);
 
    /// <inheritdoc />
    public Task<ITempTableQuery<TColumn1>> BulkInsertValuesIntoTempTableAsync<TColumn1>(
@@ -712,14 +691,13 @@ public sealed class NpgsqlBulkOperationExecutor
          throw new ArgumentException($"The number of target key properties ({targetKeyMembers.Count}) must match the number of source key properties ({sourceKeyMembers.Count}).");
 
       var translator = new EfCoreValueExpressionTranslator(_logger.Logger, _ctx);
-      var (sql, parameters) = translator.TranslateUpdateFromQuery(
-         sourceQuery,
-         targetKeySelector,
-         sourceKeySelector,
-         setClauseBuilder.Entries,
-         filter,
-         options?.TableName,
-         options?.Schema);
+      var (sql, parameters) = translator.TranslateUpdateFromQuery(sourceQuery,
+                                                                  targetKeySelector,
+                                                                  sourceKeySelector,
+                                                                  setClauseBuilder.Entries,
+                                                                  filter,
+                                                                  options?.TableName,
+                                                                  options?.Schema);
 
       var sqlParams = parameters.Select(kv => (object)new NpgsqlParameter(kv.Key, kv.Value ?? DBNull.Value));
       return await _ctx.Database.ExecuteSqlRawAsync(sql, sqlParams, cancellationToken);

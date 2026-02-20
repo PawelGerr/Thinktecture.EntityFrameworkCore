@@ -10,7 +10,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables;
 /// <summary>
 /// A reference to SQLite temp table.
 /// </summary>
-public sealed class SqliteTempTableReference : ITempTableReference
+public sealed partial class SqliteTempTableReference : ITempTableReference
 {
    private readonly IDiagnosticsLogger<DbLoggerCategory.Query> _logger;
    private readonly ISqlGenerationHelper _sqlGenerationHelper;
@@ -61,7 +61,7 @@ public sealed class SqliteTempTableReference : ITempTableReference
       }
       catch (Exception ex)
       {
-         _logger.Logger.LogWarning(ex, $"Error during disposal of the temp table reference '{Name}'.");
+         LogTempTableDisposalError(_logger.Logger, ex, Name);
       }
       finally
       {
@@ -85,7 +85,7 @@ public sealed class SqliteTempTableReference : ITempTableReference
       }
       catch (Exception ex)
       {
-         _logger.Logger.LogWarning(ex, $"Error during disposal of the temp table reference '{Name}'.");
+         LogTempTableDisposalError(_logger.Logger, ex, Name);
       }
       finally
       {
@@ -120,4 +120,8 @@ public sealed class SqliteTempTableReference : ITempTableReference
          throw;
       }
    }
+
+   [LoggerMessage(Level = LogLevel.Warning,
+                  Message = "Error during disposal of the temp table reference '{Name}'.")]
+   private static partial void LogTempTableDisposalError(ILogger logger, Exception ex, string name);
 }

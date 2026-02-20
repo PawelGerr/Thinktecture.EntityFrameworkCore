@@ -10,7 +10,7 @@ namespace Thinktecture.EntityFrameworkCore.Storage;
 /// <summary>
 /// Transaction manager with nested transaction support.
 /// </summary>
-public class NestedRelationalTransactionManager : IRelationalTransactionManager, ITransactionEnlistmentManager
+public partial class NestedRelationalTransactionManager : IRelationalTransactionManager, ITransactionEnlistmentManager
 {
    private readonly IDiagnosticsLogger<RelationalDbLoggerCategory.NestedTransaction> _logger;
    private readonly IRelationalConnection _innerManager;
@@ -66,7 +66,7 @@ public class NestedRelationalTransactionManager : IRelationalTransactionManager,
    {
       if (transaction == null)
       {
-         _logger.Logger.LogInformation($"Setting {nameof(DbTransaction)} to null.");
+         LogSettingDbTransactionToNull(_logger.Logger);
 
          if (transactionId.HasValue)
          {
@@ -81,14 +81,14 @@ public class NestedRelationalTransactionManager : IRelationalTransactionManager,
       }
       else
       {
-         _logger.Logger.LogInformation($"Setting {nameof(DbTransaction)} to the provided one.");
+         LogSettingDbTransactionToProvided(_logger.Logger);
          var tx = transactionId.HasValue
                      ? _innerManager.UseTransaction(transaction, transactionId.Value)
                      : _innerManager.UseTransaction(transaction);
 
          if (tx == null)
          {
-            _logger.Logger.LogWarning("The inner transaction manager returned 'null' although the provided one is not null.");
+            LogInnerManagerReturnedNull(_logger.Logger);
             ClearTransactions();
          }
          else
@@ -124,7 +124,7 @@ public class NestedRelationalTransactionManager : IRelationalTransactionManager,
    {
       if (transaction == null)
       {
-         _logger.Logger.LogInformation($"Setting {nameof(DbTransaction)} to null.");
+         LogSettingDbTransactionToNull(_logger.Logger);
 
          if (transactionId.HasValue)
          {
@@ -139,14 +139,14 @@ public class NestedRelationalTransactionManager : IRelationalTransactionManager,
       }
       else
       {
-         _logger.Logger.LogInformation($"Setting {nameof(DbTransaction)} to the provided one.");
+         LogSettingDbTransactionToProvided(_logger.Logger);
          var tx = transactionId.HasValue
                      ? await _innerManager.UseTransactionAsync(transaction, transactionId.Value, cancellationToken).ConfigureAwait(false)
                      : await _innerManager.UseTransactionAsync(transaction, cancellationToken).ConfigureAwait(false);
 
          if (tx == null)
          {
-            _logger.Logger.LogWarning("The inner transaction manager returned 'null' although the provided one is not null.");
+            LogInnerManagerReturnedNull(_logger.Logger);
             ClearTransactions();
          }
          else
@@ -161,7 +161,7 @@ public class NestedRelationalTransactionManager : IRelationalTransactionManager,
    /// <inheritdoc />
    public void ResetState()
    {
-      _logger.Logger.LogInformation("Resetting inner state.");
+      LogResettingInnerState(_logger.Logger);
       _innerManager.ResetState();
 
       while (_transactions.Count > 0)
@@ -173,7 +173,7 @@ public class NestedRelationalTransactionManager : IRelationalTransactionManager,
    /// <inheritdoc />
    public async Task ResetStateAsync(CancellationToken cancellationToken = default)
    {
-      _logger.Logger.LogInformation("Resetting inner state.");
+      LogResettingInnerState(_logger.Logger);
       await _innerManager.ResetStateAsync(cancellationToken).ConfigureAwait(false);
 
       while (_transactions.Count > 0)
@@ -213,13 +213,13 @@ public class NestedRelationalTransactionManager : IRelationalTransactionManager,
       if (currentTx != null)
       {
          currentTx = currentTx.BeginTransaction(isolationLevel);
-         _logger.Logger.LogInformation("Started a child transaction with id '{TransactionId}' using isolation level '{IsolationLevel}'.", currentTx.TransactionId, isolationLevel);
+         LogStartedChildTransaction(_logger.Logger, currentTx.TransactionId, isolationLevel);
       }
       else
       {
          var tx = isolationLevel.HasValue ? _innerManager.BeginTransaction(isolationLevel.Value) : _innerManager.BeginTransaction();
          currentTx = new RootNestedDbContextTransaction(_logger, this, _innerManager, tx, null);
-         _logger.Logger.LogInformation("Started a root transaction with id '{TransactionId}' using isolation level '{IsolationLevel}'.", currentTx.TransactionId, isolationLevel);
+         LogStartedRootTransaction(_logger.Logger, currentTx.TransactionId, isolationLevel);
       }
 
       _transactions.Push(currentTx);
@@ -234,7 +234,7 @@ public class NestedRelationalTransactionManager : IRelationalTransactionManager,
       if (currentTx != null)
       {
          currentTx = currentTx.BeginTransaction(isolationLevel);
-         _logger.Logger.LogInformation("Started a child transaction with id '{TransactionId}' using isolation level '{IsolationLevel}'.", currentTx.TransactionId, isolationLevel);
+         LogStartedChildTransaction(_logger.Logger, currentTx.TransactionId, isolationLevel);
       }
       else
       {
@@ -243,7 +243,7 @@ public class NestedRelationalTransactionManager : IRelationalTransactionManager,
                             : _innerManager.BeginTransactionAsync(cancellationToken))
                      .ConfigureAwait(false);
          currentTx = new RootNestedDbContextTransaction(_logger, this, _innerManager, tx, null);
-         _logger.Logger.LogInformation("Started a root transaction with id '{TransactionId}' using isolation level '{IsolationLevel}'.", currentTx.TransactionId, isolationLevel);
+         LogStartedRootTransaction(_logger.Logger, currentTx.TransactionId, isolationLevel);
       }
 
       _transactions.Push(currentTx);
@@ -324,4 +324,25 @@ public class NestedRelationalTransactionManager : IRelationalTransactionManager,
          await tx.DisposeAsync().ConfigureAwait(false);
       }
    }
+
+   [LoggerMessage(Level = LogLevel.Information, Message = "Setting DbTransaction to null.")]
+   private static partial void LogSettingDbTransactionToNull(ILogger logger);
+
+   [LoggerMessage(Level = LogLevel.Information, Message = "Setting DbTransaction to the provided one.")]
+   private static partial void LogSettingDbTransactionToProvided(ILogger logger);
+
+   [LoggerMessage(Level = LogLevel.Warning,
+                  Message = "The inner transaction manager returned 'null' although the provided one is not null.")]
+   private static partial void LogInnerManagerReturnedNull(ILogger logger);
+
+   [LoggerMessage(Level = LogLevel.Information, Message = "Resetting inner state.")]
+   private static partial void LogResettingInnerState(ILogger logger);
+
+   [LoggerMessage(Level = LogLevel.Information,
+                  Message = "Started a child transaction with id '{TransactionId}' using isolation level '{IsolationLevel}'.")]
+   private static partial void LogStartedChildTransaction(ILogger logger, Guid transactionId, IsolationLevel? isolationLevel);
+
+   [LoggerMessage(Level = LogLevel.Information,
+                  Message = "Started a root transaction with id '{TransactionId}' using isolation level '{IsolationLevel}'.")]
+   private static partial void LogStartedRootTransaction(ILogger logger, Guid transactionId, IsolationLevel? isolationLevel);
 }

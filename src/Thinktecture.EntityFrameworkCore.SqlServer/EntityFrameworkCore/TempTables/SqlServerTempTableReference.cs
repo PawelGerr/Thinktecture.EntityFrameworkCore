@@ -10,7 +10,7 @@ namespace Thinktecture.EntityFrameworkCore.TempTables;
 /// <summary>
 /// A reference to SQL Server temp table.
 /// </summary>
-public sealed class SqlServerTempTableReference : ITempTableReference
+public sealed partial class SqlServerTempTableReference : ITempTableReference
 {
    private readonly IDiagnosticsLogger<DbLoggerCategory.Query> _logger;
    private readonly ISqlGenerationHelper _sqlGenerationHelper;
@@ -68,7 +68,7 @@ public sealed class SqlServerTempTableReference : ITempTableReference
       }
       catch (Exception ex)
       {
-         _logger.Logger.LogWarning(ex, $"Error during disposal of the temp table reference '{Name}'.");
+         LogTempTableDisposalError(_logger.Logger, ex, Name);
       }
       finally
       {
@@ -97,7 +97,7 @@ public sealed class SqlServerTempTableReference : ITempTableReference
       }
       catch (Exception ex)
       {
-         _logger.Logger.LogWarning(ex, $"Error during disposal of the temp table reference '{Name}'.");
+         LogTempTableDisposalError(_logger.Logger, ex, Name);
       }
       finally
       {
@@ -122,9 +122,9 @@ public sealed class SqlServerTempTableReference : ITempTableReference
          command = connection.CreateCommand();
          command.Transaction = _database.CurrentTransaction?.GetDbTransaction();
          command.CommandText = $"""
-                                IF(OBJECT_ID('tempdb..{Name}') IS NOT NULL)
-                                    DROP TABLE {_sqlGenerationHelper.DelimitIdentifier(Name)};
-                                """;
+            IF(OBJECT_ID('tempdb..{Name}') IS NOT NULL)
+                DROP TABLE {_sqlGenerationHelper.DelimitIdentifier(Name)};
+            """;
          return command;
       }
       catch
@@ -133,4 +133,8 @@ public sealed class SqlServerTempTableReference : ITempTableReference
          throw;
       }
    }
+
+   [LoggerMessage(Level = LogLevel.Warning,
+                  Message = "Error during disposal of the temp table reference '{Name}'.")]
+   private static partial void LogTempTableDisposalError(ILogger logger, Exception ex, string name);
 }

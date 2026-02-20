@@ -20,7 +20,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations;
 /// Executes bulk operations.
 /// </summary>
 [SuppressMessage("Usage", "EF1001:Internal EF Core API usage.")]
-public sealed class SqlServerBulkOperationExecutor
+public sealed partial class SqlServerBulkOperationExecutor
    : IBulkInsertExecutor, ITempTableBulkInsertExecutor, IBulkUpdateExecutor,
      IBulkInsertOrUpdateExecutor, ITruncateTableExecutor
 {
@@ -28,12 +28,6 @@ public sealed class SqlServerBulkOperationExecutor
    private readonly IDiagnosticsLogger<SqlServerDbLoggerCategory.BulkOperation> _logger;
    private readonly ISqlGenerationHelper _sqlGenerationHelper;
    private readonly ObjectPool<StringBuilder> _stringBuilderPool;
-
-   private static class EventIds
-   {
-      public static readonly EventId Inserting = 0;
-      public static readonly EventId Inserted = 1;
-   }
 
    /// <summary>
    /// Initializes new instance of <see cref="SqlServerBulkOperationExecutor"/>.
@@ -153,14 +147,14 @@ public sealed class SqlServerBulkOperationExecutor
 
       try
       {
-         LogInserting(ctx.Options.SqlBulkCopyOptions, bulkCopy, columns);
+         LogInserting(_logger.Logger, ctx.Options.SqlBulkCopyOptions, bulkCopy.BulkCopyTimeout, bulkCopy.BatchSize, bulkCopy.EnableStreaming, bulkCopy.DestinationTableName, columns);
          var stopwatch = Stopwatch.StartNew();
 
          await bulkCopy.WriteToServerAsync(reader, cancellationToken).ConfigureAwait(false);
 
          numberOfInsertedRows = reader.RowsRead;
 
-         LogInserted(ctx.Options.SqlBulkCopyOptions, stopwatch.Elapsed, bulkCopy, columns);
+         LogInserted(_logger.Logger, (long)stopwatch.Elapsed.TotalMilliseconds, ctx.Options.SqlBulkCopyOptions, bulkCopy.BulkCopyTimeout, bulkCopy.BatchSize, bulkCopy.EnableStreaming, bulkCopy.DestinationTableName, columns);
 
          if (ctx.HasExternalProperties)
          {
@@ -250,36 +244,15 @@ public sealed class SqlServerBulkOperationExecutor
       return bulkCopy;
    }
 
-   private void LogInserting(SqlBulkCopyOptions options, SqlBulkCopy bulkCopy, string columns)
-   {
-      _logger.Logger.LogDebug(EventIds.Inserting,
-                              """
-                              Executing DbCommand [SqlBulkCopyOptions={SqlBulkCopyOptions}, BulkCopyTimeout={BulkCopyTimeout}, BatchSize={BatchSize}, EnableStreaming={EnableStreaming}]
-                              INSERT BULK {Table} ({Columns})
-                              """,
-                              options,
-                              bulkCopy.BulkCopyTimeout,
-                              bulkCopy.BatchSize,
-                              bulkCopy.EnableStreaming,
-                              bulkCopy.DestinationTableName,
-                              columns);
-   }
+   [LoggerMessage(EventId = 0,
+                  Level = LogLevel.Debug,
+                  Message = "Executing DbCommand [SqlBulkCopyOptions={SqlBulkCopyOptions}, BulkCopyTimeout={BulkCopyTimeout}, BatchSize={BatchSize}, EnableStreaming={EnableStreaming}]\nINSERT BULK {Table} ({Columns})")]
+   private static partial void LogInserting(ILogger logger, SqlBulkCopyOptions sqlBulkCopyOptions, int bulkCopyTimeout, int batchSize, bool enableStreaming, string table, string columns);
 
-   private void LogInserted(SqlBulkCopyOptions options, TimeSpan duration, SqlBulkCopy bulkCopy, string columns)
-   {
-      _logger.Logger.LogInformation(EventIds.Inserted,
-                                    """
-                                    Executed DbCommand ({Duration}ms) [SqlBulkCopyOptions={SqlBulkCopyOptions}, BulkCopyTimeout={BulkCopyTimeout}, BatchSize={BatchSize}, EnableStreaming={EnableStreaming}]
-                                    INSERT BULK {Table} ({Columns})
-                                    """,
-                                    (long)duration.TotalMilliseconds,
-                                    options,
-                                    bulkCopy.BulkCopyTimeout,
-                                    bulkCopy.BatchSize,
-                                    bulkCopy.EnableStreaming,
-                                    bulkCopy.DestinationTableName,
-                                    columns);
-   }
+   [LoggerMessage(EventId = 1,
+                  Level = LogLevel.Information,
+                  Message = "Executed DbCommand ({Duration}ms) [SqlBulkCopyOptions={SqlBulkCopyOptions}, BulkCopyTimeout={BulkCopyTimeout}, BatchSize={BatchSize}, EnableStreaming={EnableStreaming}]\nINSERT BULK {Table} ({Columns})")]
+   private static partial void LogInserted(ILogger logger, long duration, SqlBulkCopyOptions sqlBulkCopyOptions, int bulkCopyTimeout, int batchSize, bool enableStreaming, string table, string columns);
 
    /// <inheritdoc />
    public Task<ITempTableQuery<TColumn1>> BulkInsertValuesIntoTempTableAsync<TColumn1>(
@@ -725,14 +698,13 @@ public sealed class SqlServerBulkOperationExecutor
          throw new ArgumentException($"The number of target key properties ({targetKeyMembers.Count}) must match the number of source key properties ({sourceKeyMembers.Count}).");
 
       var translator = new EfCoreValueExpressionTranslator(_logger.Logger, _ctx);
-      var (sql, parameters) = translator.TranslateUpdateFromQuery(
-         sourceQuery,
-         targetKeySelector,
-         sourceKeySelector,
-         setClauseBuilder.Entries,
-         filter,
-         options?.TableName,
-         options?.Schema);
+      var (sql, parameters) = translator.TranslateUpdateFromQuery(sourceQuery,
+                                                                  targetKeySelector,
+                                                                  sourceKeySelector,
+                                                                  setClauseBuilder.Entries,
+                                                                  filter,
+                                                                  options?.TableName,
+                                                                  options?.Schema);
 
       var sqlParams = parameters.Select(kv => new SqlParameter(kv.Key, kv.Value ?? DBNull.Value));
       return await _ctx.Database.ExecuteSqlRawAsync(sql, sqlParams, cancellationToken);

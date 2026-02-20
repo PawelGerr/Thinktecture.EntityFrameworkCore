@@ -16,7 +16,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.Internal;
 /// This is an internal API. It may be changed or removed without notice.
 /// </summary>
 [SuppressMessage("Usage", "EF1001:Internal EF Core API usage.")]
-public sealed class EfCoreValueExpressionTranslator
+public sealed partial class EfCoreValueExpressionTranslator
 {
    private readonly ILogger _logger;
    private readonly DbContext _ctx;
@@ -444,7 +444,7 @@ public sealed class EfCoreValueExpressionTranslator
                                   property.IsNullable);
    }
 
-   private sealed class ClosureFlatteningVisitor(ILogger logger) : ExpressionVisitor
+   private sealed partial class ClosureFlatteningVisitor(ILogger logger) : ExpressionVisitor
    {
       protected override Expression VisitMember(MemberExpression node)
       {
@@ -466,12 +466,14 @@ public sealed class EfCoreValueExpressionTranslator
          }
          catch (TargetInvocationException ex)
          {
-            logger.LogWarning(ex,
-                              "ClosureFlatteningVisitor: Failed to evaluate member '{MemberName}' on type '{MemberDeclaringTypeName}'.",
-                              node.Member.Name, node.Member.DeclaringType?.Name);
+            LogClosureFlatteningFailed(logger, ex, node.Member.Name, node.Member.DeclaringType?.Name);
          }
 
          return node.Update(expression);
       }
+
+      [LoggerMessage(Level = LogLevel.Warning,
+                     Message = "ClosureFlatteningVisitor: Failed to evaluate member '{MemberName}' on type '{MemberDeclaringTypeName}'.")]
+      private static partial void LogClosureFlatteningFailed(ILogger logger, Exception ex, string memberName, string? memberDeclaringTypeName);
    }
 }

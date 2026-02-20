@@ -11,7 +11,7 @@ namespace Thinktecture.EntityFrameworkCore.Storage;
 /// <summary>
 /// A nested transaction.
 /// </summary>
-public abstract class NestedDbContextTransaction : IDbContextTransaction, IInfrastructure<DbTransaction>
+public abstract partial class NestedDbContextTransaction : IDbContextTransaction, IInfrastructure<DbTransaction>
 {
    private bool _isCommitted;
    private bool _isRolledBack;
@@ -164,7 +164,7 @@ public abstract class NestedDbContextTransaction : IDbContextTransaction, IInfra
       _isCommitted = true;
       NestedTransactionManager.Remove(this);
 
-      DiagnosticsLogger.Logger.LogInformation("The {TransactionType} with id '{TransactionId}' is committed.", TransactionTypeName, TransactionId);
+      LogTransactionCommitted(DiagnosticsLogger.Logger, TransactionTypeName, TransactionId);
    }
 
    /// <inheritdoc />
@@ -179,7 +179,7 @@ public abstract class NestedDbContextTransaction : IDbContextTransaction, IInfra
       _isCommitted = true;
       await NestedTransactionManager.RemoveAsync(this).ConfigureAwait(false);
 
-      DiagnosticsLogger.Logger.LogInformation("The {TransactionType} with id '{TransactionId}' is committed.", TransactionTypeName, TransactionId);
+      LogTransactionCommitted(DiagnosticsLogger.Logger, TransactionTypeName, TransactionId);
    }
 
    /// <inheritdoc />
@@ -202,7 +202,7 @@ public abstract class NestedDbContextTransaction : IDbContextTransaction, IInfra
       EnsureChildrenCompleted();
 
       _isRolledBack = true;
-      DiagnosticsLogger.Logger.LogInformation("The {TransactionType} with id '{TransactionId}' is rolled back.", TransactionTypeName, TransactionId);
+      LogTransactionRolledBack(DiagnosticsLogger.Logger, TransactionTypeName, TransactionId);
    }
 
    private void EnsureChildrenCompleted()
@@ -238,7 +238,7 @@ public abstract class NestedDbContextTransaction : IDbContextTransaction, IInfra
       if (_isDisposed)
          return;
 
-      DiagnosticsLogger.Logger.LogInformation("Disposing {TransactionType} with id '{TransactionId}'.", TransactionTypeName, TransactionId);
+      LogTransactionDisposing(DiagnosticsLogger.Logger, TransactionTypeName, TransactionId);
       Dispose(true);
 
       _isDisposed = true;
@@ -252,7 +252,7 @@ public abstract class NestedDbContextTransaction : IDbContextTransaction, IInfra
       if (_isDisposed)
          return;
 
-      DiagnosticsLogger.Logger.LogInformation("Disposing {TransactionType} with id '{TransactionId}'.", TransactionTypeName, TransactionId);
+      LogTransactionDisposing(DiagnosticsLogger.Logger, TransactionTypeName, TransactionId);
       await DisposeAsync(true).ConfigureAwait(false);
 
       _isDisposed = true;
@@ -325,4 +325,16 @@ public abstract class NestedDbContextTransaction : IDbContextTransaction, IInfra
       if (IsCompleted || _isDisposed)
          throw new InvalidOperationException($"This {TransactionTypeName} has completed; it is no longer usable.");
    }
+
+   [LoggerMessage(Level = LogLevel.Information,
+                  Message = "The {TransactionType} with id '{TransactionId}' is committed.")]
+   private static partial void LogTransactionCommitted(ILogger logger, string transactionType, Guid transactionId);
+
+   [LoggerMessage(Level = LogLevel.Information,
+                  Message = "The {TransactionType} with id '{TransactionId}' is rolled back.")]
+   private static partial void LogTransactionRolledBack(ILogger logger, string transactionType, Guid transactionId);
+
+   [LoggerMessage(Level = LogLevel.Information,
+                  Message = "Disposing {TransactionType} with id '{TransactionId}'.")]
+   private static partial void LogTransactionDisposing(ILogger logger, string transactionType, Guid transactionId);
 }

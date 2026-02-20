@@ -21,7 +21,7 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations;
 /// </summary>
 // ReSharper disable once ClassNeverInstantiated.Global
 [SuppressMessage("Usage", "EF1001:Internal EF Core API usage.")]
-public sealed class SqliteBulkOperationExecutor
+public sealed partial class SqliteBulkOperationExecutor
    : IBulkInsertExecutor, ITempTableBulkInsertExecutor, IBulkUpdateExecutor,
      IBulkInsertOrUpdateExecutor, ITruncateTableExecutor
 {
@@ -29,12 +29,6 @@ public sealed class SqliteBulkOperationExecutor
    private readonly IDiagnosticsLogger<SqliteDbLoggerCategory.BulkOperation> _logger;
    private readonly ISqlGenerationHelper _sqlGenerationHelper;
    private readonly ObjectPool<StringBuilder> _stringBuilderPool;
-
-   private static class EventIds
-   {
-      public static readonly EventId Started = 0;
-      public static readonly EventId Finished = 1;
-   }
 
    /// <summary>
    /// Initializes new instance of <see cref="SqliteBulkOperationExecutor"/>.
@@ -280,7 +274,7 @@ public sealed class SqliteBulkOperationExecutor
          throw new InvalidOperationException($"Error during bulk operation on table '{tableIdentifier}'. See inner exception for more details.", ex);
       }
 
-      LogBulkOperationStart(command.CommandText);
+      LogBulkOperationStart(_logger.Logger, command.CommandText);
       var stopwatch = Stopwatch.StartNew();
       var numberOfAffectedRows = 0;
 
@@ -301,7 +295,7 @@ public sealed class SqliteBulkOperationExecutor
       }
 
       stopwatch.Stop();
-      LogBulkOperationEnd(command.CommandText, stopwatch.Elapsed);
+      LogBulkOperationEnd(_logger.Logger, (long)stopwatch.Elapsed.TotalMilliseconds, command.CommandText);
 
       return numberOfAffectedRows;
    }
@@ -323,26 +317,13 @@ public sealed class SqliteBulkOperationExecutor
       return parameters;
    }
 
-   private void LogBulkOperationStart(string statement)
-   {
-      _logger.Logger.LogDebug(EventIds.Started,
-                              """
-                              Executing DbCommand
-                              {Statement}
-                              """,
-                              statement);
-   }
+   [LoggerMessage(EventId = 0, Level = LogLevel.Debug,
+                  Message = "Executing DbCommand\n{Statement}")]
+   private static partial void LogBulkOperationStart(ILogger logger, string statement);
 
-   private void LogBulkOperationEnd(string statement, TimeSpan duration)
-   {
-      _logger.Logger.LogInformation(EventIds.Finished,
-                                    """
-                                    Executed DbCommand ({Duration}ms)
-                                    {Statement}
-                                    """,
-                                    (long)duration.TotalMilliseconds,
-                                    statement);
-   }
+   [LoggerMessage(EventId = 1, Level = LogLevel.Information,
+                  Message = "Executed DbCommand ({Duration}ms)\n{Statement}")]
+   private static partial void LogBulkOperationEnd(ILogger logger, long duration, string statement);
 
    /// <inheritdoc />
    public Task<ITempTableQuery<TColumn1>> BulkInsertValuesIntoTempTableAsync<TColumn1>(
@@ -575,14 +556,13 @@ public sealed class SqliteBulkOperationExecutor
          throw new ArgumentException($"The number of target key properties ({targetKeyMembers.Count}) must match the number of source key properties ({sourceKeyMembers.Count}).");
 
       var translator = new EfCoreValueExpressionTranslator(_logger.Logger, _ctx);
-      var (sql, parameters) = translator.TranslateUpdateFromQuery(
-         sourceQuery,
-         targetKeySelector,
-         sourceKeySelector,
-         setClauseBuilder.Entries,
-         filter,
-         options?.TableName,
-         options?.Schema);
+      var (sql, parameters) = translator.TranslateUpdateFromQuery(sourceQuery,
+                                                                  targetKeySelector,
+                                                                  sourceKeySelector,
+                                                                  setClauseBuilder.Entries,
+                                                                  filter,
+                                                                  options?.TableName,
+                                                                  options?.Schema);
 
       var sqlParams = parameters.Select(kv => new SqliteParameter(kv.Key, kv.Value ?? DBNull.Value));
       return await _ctx.Database.ExecuteSqlRawAsync(sql, sqlParams, cancellationToken);
@@ -614,7 +594,7 @@ public sealed class SqliteBulkOperationExecutor
       if (builder.Entries.Count == 0)
          throw new ArgumentException("At least one column mapping is required.", nameof(mapPropertyCalls));
 
-      var translator = new EfCoreValueExpressionTranslator(_logger.Logger, _ctx );
+      var translator = new EfCoreValueExpressionTranslator(_logger.Logger, _ctx);
       var (sql, parameters) = translator.TranslateInsertFromQuery<TTarget, TSource>(
                                                                                     sourceQuery,
                                                                                     builder.Entries,
