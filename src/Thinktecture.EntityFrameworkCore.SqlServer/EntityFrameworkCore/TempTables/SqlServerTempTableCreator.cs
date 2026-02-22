@@ -143,7 +143,8 @@ public sealed class SqlServerTempTableCreator : ISqlServerTempTableCreator
       var columnNames = cacheKey.KeyProperties.Select(p =>
                                                       {
                                                          var storeObject = p.GetStoreObject();
-                                                         return sqlGenerationHelper.DelimitIdentifier(p.GetColumnName(storeObject));
+                                                         return _sqlGenerationHelper.DelimitIdentifier(p.GetColumnName(storeObject)
+                                                                                                       ?? throw new Exception($"The property '{p.Name}' has no column name."));
                                                       });
 
       var commaSeparatedColumns = String.Join(", ", columnNames);
@@ -153,19 +154,19 @@ public sealed class SqlServerTempTableCreator : ISqlServerTempTableCreator
          return new CachedTempTableStatement<string>(commaSeparatedColumns,
                                                      static (sqlGenerationHelper, name, commaSeparatedColumns) =>
                                                         $"""
-                                                         IF(NOT EXISTS (SELECT * FROM tempdb.INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE CONSTRAINT_TYPE = 'PRIMARY KEY' AND OBJECT_ID(TABLE_CATALOG + '..' + TABLE_NAME) = OBJECT_ID('tempdb..{name}')))
-                                                         BEGIN
-                                                            ALTER TABLE {sqlGenerationHelper.DelimitIdentifier(name)}
-                                                            ADD CONSTRAINT {sqlGenerationHelper.DelimitIdentifier($"PK_{name}_{Guid.NewGuid():N}")} PRIMARY KEY CLUSTERED ({commaSeparatedColumns});
-                                                         END
-                                                         """);
+                                                        IF(NOT EXISTS (SELECT * FROM tempdb.INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE CONSTRAINT_TYPE = 'PRIMARY KEY' AND OBJECT_ID(TABLE_CATALOG + '..' + TABLE_NAME) = OBJECT_ID('tempdb..{name}')))
+                                                        BEGIN
+                                                           ALTER TABLE {sqlGenerationHelper.DelimitIdentifier(name)}
+                                                           ADD CONSTRAINT {sqlGenerationHelper.DelimitIdentifier($"PK_{name}_{Guid.NewGuid():N}")} PRIMARY KEY CLUSTERED ({commaSeparatedColumns});
+                                                        END
+                                                        """);
       }
 
       return new CachedTempTableStatement<string>(commaSeparatedColumns, static (sqlGenerationHelper, name, commaSeparatedColumns) =>
                                                                             $"""
-                                                                             ALTER TABLE {sqlGenerationHelper.DelimitIdentifier(name)}
-                                                                             ADD CONSTRAINT {sqlGenerationHelper.DelimitIdentifier($"PK_{name}_{Guid.NewGuid():N}")} PRIMARY KEY CLUSTERED ({commaSeparatedColumns});
-                                                                             """);
+                                                                            ALTER TABLE {sqlGenerationHelper.DelimitIdentifier(name)}
+                                                                            ADD CONSTRAINT {sqlGenerationHelper.DelimitIdentifier($"PK_{name}_{Guid.NewGuid():N}")} PRIMARY KEY CLUSTERED ({commaSeparatedColumns});
+                                                                            """);
    }
 
    private string GetTempTableCreationSql(IEntityType entityType, string tableName, SqlServerTempTableCreationOptions options)
@@ -186,11 +187,11 @@ public sealed class SqlServerTempTableCreator : ISqlServerTempTableCreator
          return new CachedTempTableStatement<string>(columnDefinitions,
                                                      static (sqlGenerationHelper, name, columnDefinitions) =>
                                                         $"""
-                                                         CREATE TABLE {sqlGenerationHelper.DelimitIdentifier(name)}
-                                                         (
-                                                         {columnDefinitions}
-                                                         );
-                                                         """);
+                                                        CREATE TABLE {sqlGenerationHelper.DelimitIdentifier(name)}
+                                                        (
+                                                        {columnDefinitions}
+                                                        );
+                                                        """);
       }
 
       return new CachedTempTableStatement<string>(columnDefinitions,
@@ -199,16 +200,16 @@ public sealed class SqlServerTempTableCreator : ISqlServerTempTableCreator
                                                      var escapedTableName = sqlGenerationHelper.DelimitIdentifier(name);
 
                                                      return $"""
-                                                             IF(OBJECT_ID('tempdb..{name}') IS NOT NULL)
-                                                                TRUNCATE TABLE {escapedTableName};
-                                                             ELSE
-                                                             BEGIN
-                                                             CREATE TABLE {escapedTableName}
-                                                             (
-                                                             {columnDefinitions}
-                                                             );
-                                                             END
-                                                             """;
+                                                        IF(OBJECT_ID('tempdb..{name}') IS NOT NULL)
+                                                           TRUNCATE TABLE {escapedTableName};
+                                                        ELSE
+                                                        BEGIN
+                                                        CREATE TABLE {escapedTableName}
+                                                        (
+                                                        {columnDefinitions}
+                                                        );
+                                                        END
+                                                        """;
                                                   });
    }
 
@@ -232,7 +233,7 @@ public sealed class SqlServerTempTableCreator : ISqlServerTempTableCreator
 
             var columnType = property.GetColumnType(storeObject.Value);
             var columnName = property.GetColumnName(storeObject.Value)
-                             ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.DeclaringType.Name}'.");
+                             ?? throw new Exception($"The property '{property.Name}' has no column name.");
 
             sb.Append('\t')
               .Append(_sqlGenerationHelper.DelimitIdentifier(columnName)).Append(' ')
@@ -305,7 +306,7 @@ public sealed class SqlServerTempTableCreator : ISqlServerTempTableCreator
                                              {
                                                 var storeObject = p.GetStoreObject();
                                                 return p.GetColumnName(storeObject)
-                                                       ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{p.DeclaringType.Name}'.");
+                                                       ?? throw new Exception($"The property '{p.Name}' has no column name.");
                                              });
 
       sb.AppendLine(",");
