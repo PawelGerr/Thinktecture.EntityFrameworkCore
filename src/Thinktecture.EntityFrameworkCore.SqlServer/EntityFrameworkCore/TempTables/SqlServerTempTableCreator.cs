@@ -143,7 +143,7 @@ public sealed class SqlServerTempTableCreator : ISqlServerTempTableCreator
       var columnNames = cacheKey.KeyProperties.Select(p =>
                                                       {
                                                          var storeObject = p.GetStoreObject();
-                                                         return p.GetColumnName(storeObject);
+                                                         return sqlGenerationHelper.DelimitIdentifier(p.GetColumnName(storeObject));
                                                       });
 
       var commaSeparatedColumns = String.Join(", ", columnNames);
