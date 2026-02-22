@@ -142,8 +142,8 @@ public sealed class NpgsqlTempTableCreator : INpgsqlTempTableCreator
                                                       {
                                                          var storeObject = p.GetStoreObject();
                                                          return _sqlGenerationHelper.DelimitIdentifier(
-                                                            p.GetColumnName(storeObject)
-                                                            ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{p.DeclaringType.Name}'."));
+                                                                                                       p.GetColumnName(storeObject)
+                                                                                                       ?? throw new Exception($"The property '{p.Name}' has no column name."));
                                                       });
 
       var commaSeparatedColumns = String.Join(", ", columnNames);
@@ -153,26 +153,26 @@ public sealed class NpgsqlTempTableCreator : INpgsqlTempTableCreator
          return new CachedTempTableStatement<string>(commaSeparatedColumns,
                                                      static (sqlGenerationHelper, name, commaSeparatedColumns) =>
                                                         $"""
-                                                         DO $$
-                                                         BEGIN
-                                                            IF NOT EXISTS (
-                                                               SELECT 1 FROM pg_catalog.pg_constraint c
-                                                               JOIN pg_catalog.pg_class t ON t.oid = c.conrelid
-                                                               WHERE c.contype = 'p' AND t.relname = '{name}'
-                                                                 AND t.relnamespace = pg_my_temp_schema()
-                                                            ) THEN
-                                                               ALTER TABLE {sqlGenerationHelper.DelimitIdentifier(name)}
-                                                               ADD CONSTRAINT {sqlGenerationHelper.DelimitIdentifier($"PK_{name}_{Guid.NewGuid():N}")} PRIMARY KEY ({commaSeparatedColumns});
-                                                            END IF;
-                                                         END $$;
-                                                         """);
+                                                        DO $$
+                                                        BEGIN
+                                                           IF NOT EXISTS (
+                                                              SELECT 1 FROM pg_catalog.pg_constraint c
+                                                              JOIN pg_catalog.pg_class t ON t.oid = c.conrelid
+                                                              WHERE c.contype = 'p' AND t.relname = '{name}'
+                                                                AND t.relnamespace = pg_my_temp_schema()
+                                                           ) THEN
+                                                              ALTER TABLE {sqlGenerationHelper.DelimitIdentifier(name)}
+                                                              ADD CONSTRAINT {sqlGenerationHelper.DelimitIdentifier($"PK_{name}_{Guid.NewGuid():N}")} PRIMARY KEY ({commaSeparatedColumns});
+                                                           END IF;
+                                                        END $$;
+                                                        """);
       }
 
       return new CachedTempTableStatement<string>(commaSeparatedColumns, static (sqlGenerationHelper, name, commaSeparatedColumns) =>
                                                                             $"""
-                                                                             ALTER TABLE {sqlGenerationHelper.DelimitIdentifier(name)}
-                                                                             ADD CONSTRAINT {sqlGenerationHelper.DelimitIdentifier($"PK_{name}_{Guid.NewGuid():N}")} PRIMARY KEY ({commaSeparatedColumns});
-                                                                             """);
+                                                                            ALTER TABLE {sqlGenerationHelper.DelimitIdentifier(name)}
+                                                                            ADD CONSTRAINT {sqlGenerationHelper.DelimitIdentifier($"PK_{name}_{Guid.NewGuid():N}")} PRIMARY KEY ({commaSeparatedColumns});
+                                                                            """);
    }
 
    private string GetTempTableCreationSql(IEntityType entityType, string tableName, NpgsqlTempTableCreationOptions options)
@@ -193,11 +193,11 @@ public sealed class NpgsqlTempTableCreator : INpgsqlTempTableCreator
          return new CachedTempTableStatement<string>(columnDefinitions,
                                                      static (sqlGenerationHelper, name, columnDefinitions) =>
                                                         $"""
-                                                         CREATE TEMP TABLE {sqlGenerationHelper.DelimitIdentifier(name)}
-                                                         (
-                                                         {columnDefinitions}
-                                                         );
-                                                         """);
+                                                        CREATE TEMP TABLE {sqlGenerationHelper.DelimitIdentifier(name)}
+                                                        (
+                                                        {columnDefinitions}
+                                                        );
+                                                        """);
       }
 
       return new CachedTempTableStatement<string>(columnDefinitions,
@@ -206,12 +206,12 @@ public sealed class NpgsqlTempTableCreator : INpgsqlTempTableCreator
                                                      var escapedTableName = sqlGenerationHelper.DelimitIdentifier(name);
 
                                                      return $"""
-                                                             CREATE TEMP TABLE IF NOT EXISTS {escapedTableName}
-                                                             (
-                                                             {columnDefinitions}
-                                                             );
-                                                             TRUNCATE TABLE {escapedTableName};
-                                                             """;
+                                                        CREATE TEMP TABLE IF NOT EXISTS {escapedTableName}
+                                                        (
+                                                        {columnDefinitions}
+                                                        );
+                                                        TRUNCATE TABLE {escapedTableName};
+                                                        """;
                                                   });
    }
 
@@ -235,7 +235,7 @@ public sealed class NpgsqlTempTableCreator : INpgsqlTempTableCreator
 
             var columnType = property.GetColumnType(storeObject.Value);
             var columnName = property.GetColumnName(storeObject.Value)
-                             ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.DeclaringType.Name}'.");
+                             ?? throw new Exception($"The property '{property.Name}' has no column name.");
 
             sb.Append('\t')
               .Append(_sqlGenerationHelper.DelimitIdentifier(columnName)).Append(' ')
@@ -321,7 +321,7 @@ public sealed class NpgsqlTempTableCreator : INpgsqlTempTableCreator
                                              {
                                                 var storeObject = p.GetStoreObject();
                                                 return p.GetColumnName(storeObject)
-                                                       ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{p.DeclaringType.Name}'.");
+                                                       ?? throw new Exception($"The property '{p.Name}' has no column name.");
                                              });
 
       sb.AppendLine(",");

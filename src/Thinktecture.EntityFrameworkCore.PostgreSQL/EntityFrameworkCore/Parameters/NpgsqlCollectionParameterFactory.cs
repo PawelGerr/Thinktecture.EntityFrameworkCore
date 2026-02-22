@@ -130,14 +130,13 @@ public class NpgsqlCollectionParameterFactory : ICollectionParameterFactory
          var storeObject = StoreObjectIdentifier.Create(entityType, StoreObjectType.Table) ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{entityType.Name}'.");
          var columnType = property.GetColumnType(storeObject);
          var columnName = property.GetColumnName(storeObject) ?? throw new Exception($"The property '{property.Name}' has no column name.");
-         var escapedColumnName = sqlGenerationHelper.DelimitIdentifier(columnName);
 
          sb.Append("SELECT ");
 
          if (applyDistinct)
             sb.Append("DISTINCT ");
 
-         sb.Append("value::").Append(columnType).Append(" AS ").Append(escapedColumnName)
+         sb.Append("value::").Append(columnType).Append(" AS ").Append(sqlGenerationHelper.DelimitIdentifier(columnName))
            .Append(" FROM jsonb_array_elements_text({1}::jsonb) AS t(value)")
            .Append(" LIMIT {0}");
 
@@ -181,7 +180,6 @@ public class NpgsqlCollectionParameterFactory : ICollectionParameterFactory
             }
 
             var columnName = property.GetColumnName(storeObject) ?? throw new Exception($"The property '{property.Name}' has no column name.");
-            var escapedColumnName = _sqlGenerationHelper.DelimitIdentifier(columnName);
             var columnType = property.GetColumnType(storeObject) ?? throw new Exception($"The property '{property.Name}' has no column type.");
 
             // jsonb_to_recordset matches JSON keys to column names in the AS clause.
@@ -189,7 +187,7 @@ public class NpgsqlCollectionParameterFactory : ICollectionParameterFactory
             // and alias them to column names in the SELECT for EF Core.
             var escapedPropertyName = _sqlGenerationHelper.DelimitIdentifier(property.Name);
 
-            sb.Append(escapedPropertyName).Append(" AS ").Append(escapedColumnName);
+            sb.Append(escapedPropertyName).Append(" AS ").Append(_sqlGenerationHelper.DelimitIdentifier(columnName));
 
             recordsetClause.Append(escapedPropertyName).Append(' ').Append(columnType);
 
