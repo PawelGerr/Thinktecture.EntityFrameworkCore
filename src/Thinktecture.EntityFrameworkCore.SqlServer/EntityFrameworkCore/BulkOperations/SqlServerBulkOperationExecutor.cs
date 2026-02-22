@@ -581,7 +581,7 @@ public sealed partial class SqlServerBulkOperationExecutor
                sb.AppendLine(" AND ");
 
             var columnName = property.GetColumnName(storeObject)
-                             ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.DeclaringType.Name}'.");
+                             ?? throw new Exception($"The property '{property.Name}' has no column name.");
             var escapedColumnName = _sqlGenerationHelper.DelimitIdentifier(columnName);
 
             sb.Append("(d.").Append(escapedColumnName).Append(" = s.").Append(escapedColumnName);
@@ -609,7 +609,7 @@ public sealed partial class SqlServerBulkOperationExecutor
             }
 
             var columnName = property.GetColumnName(storeObject)
-                             ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.DeclaringType.Name}'.");
+                             ?? throw new Exception($"The property '{property.Name}' has no column name.");
             var escapedColumnName = _sqlGenerationHelper.DelimitIdentifier(columnName);
 
             sb.Append("d.").Append(escapedColumnName).Append(" = s.").Append(escapedColumnName);

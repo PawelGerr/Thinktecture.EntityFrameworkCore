@@ -100,23 +100,23 @@ public sealed class SqliteTempTableCreator : ITempTableCreator
          return new CachedTempTableStatement<string>(columnDefinitions,
                                                      static (sqlGenerationHelper, name, columnDefinitions) =>
                                                         $"""
-                                                         CREATE TEMPORARY TABLE {sqlGenerationHelper.DelimitIdentifier(name)}
-                                                         (
-                                                         {columnDefinitions}
-                                                         );
-                                                         """);
+                                                        CREATE TEMPORARY TABLE {sqlGenerationHelper.DelimitIdentifier(name)}
+                                                        (
+                                                        {columnDefinitions}
+                                                        );
+                                                        """);
       }
 
       return new CachedTempTableStatement<string>(columnDefinitions,
                                                   static (sqlGenerationHelper, name, columnDefinitions) =>
                                                      $"""
-                                                      DROP TABLE IF EXISTS {sqlGenerationHelper.DelimitIdentifier(name, "temp")};
+                                                     DROP TABLE IF EXISTS {sqlGenerationHelper.DelimitIdentifier(name, "temp")};
 
-                                                      CREATE TEMPORARY TABLE {sqlGenerationHelper.DelimitIdentifier(name)}
-                                                      (
-                                                      {columnDefinitions}
-                                                      );
-                                                      """);
+                                                     CREATE TEMPORARY TABLE {sqlGenerationHelper.DelimitIdentifier(name)}
+                                                     (
+                                                     {columnDefinitions}
+                                                     );
+                                                     """);
    }
 
    private string GetColumnsDefinitions(SqliteTempTableCreatorCacheKey options)
@@ -136,7 +136,7 @@ public sealed class SqliteTempTableCreator : ITempTableCreator
 
             storeObject ??= property.GetStoreObject();
             var columnName = property.GetColumnName(storeObject.Value)
-                             ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{property.DeclaringType.Name}'.");
+                             ?? throw new Exception($"The property '{property.Name}' has no column name.");
             var columnType = property.GetColumnType(storeObject.Value);
 
             sb.Append("\t\t")
@@ -149,9 +149,9 @@ public sealed class SqliteTempTableCreator : ITempTableCreator
                if (options.PrimaryKeys.Count != 1 || !property.Equals(options.PrimaryKeys.First()))
                {
                   throw new NotSupportedException($"""
-                                                   SQLite does not allow the property '{property.Name}' of the entity '{property.DeclaringType.Name}' to be an AUTOINCREMENT column unless this column is the PRIMARY KEY.
-                                                   Currently configured primary keys: [{String.Join(", ", options.PrimaryKeys.Select(p => p.Name))}]
-                                                   """);
+                                                  SQLite does not allow the property '{property.Name}' of the entity '{property.DeclaringType.Name}' to be an AUTOINCREMENT column unless this column is the PRIMARY KEY.
+                                                  Currently configured primary keys: [{String.Join(", ", options.PrimaryKeys.Select(p => p.Name))}]
+                                                  """);
                }
 
                sb.Append(" PRIMARY KEY AUTOINCREMENT");
@@ -203,7 +203,7 @@ public sealed class SqliteTempTableCreator : ITempTableCreator
                                              {
                                                 var storeObject = p.GetStoreObject();
                                                 return p.GetColumnName(storeObject)
-                                                       ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{p.DeclaringType.Name}'.");
+                                                       ?? throw new Exception($"The property '{p.Name}' has no column name.");
                                              });
 
       sb.AppendLine(",");
