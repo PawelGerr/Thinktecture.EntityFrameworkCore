@@ -2,6 +2,69 @@
 
 All guidance for working with this repository is in this single file.
 
+## Workflow
+
+### Alignment Before Action
+- For non-trivial tasks, do not jump straight into implementation. First summarize:
+  (1) your understanding of the problem, (2) the proposed approach, (3) key trade-offs or risks.
+  Keep this short (a few sentences, not an essay). Wait for confirmation before proceeding.
+- **Act autonomously on clear bugs**: When the bug has a clear reproduction (failing test, error
+  log, stack trace), go fix it — don't ask the user to guide each step. Still follow: write a
+  failing test first, then fix, then validate. The alignment rule above still applies for ambiguous
+  bugs where the root cause or intended behavior is unclear.
+- When the user requests a different approach after seeing an implementation:
+  briefly compare the old and new approaches — state the concrete pros and cons of each.
+  If the new approach has significant drawbacks compared to the previous one, say so clearly before implementing.
+  The user can still choose the new approach, but the decision should be informed.
+
+### Context Management
+- Offload codebase exploration and research to subagents (Explore/Plan types). The main context
+  should contain decisions and results, not the search process.
+- For multi-step implementations (e.g., feature + tests + adjustments), use subagents for isolated
+  subtasks when the main context is already large. Prefer splitting into: (1) implement the feature,
+  (2) write/adjust tests, (3) fix issues found in review.
+- When the user requests adjustments or additional tests after an implementation, assess whether
+  the main context has grown large. If so, delegate the follow-up work to a subagent with a clear
+  description of what was implemented and what needs to change.
+
+### Concurrency Awareness
+This codebase has concurrency concerns in bulk operations, temp table management, and test
+isolation. When modifying code in these areas:
+- Identify shared mutable state and how it is protected (e.g., temp table suffix leasing,
+  connection/transaction lifecycle in context factories).
+- Consider whether new code respects existing isolation boundaries (e.g., SQL Server test lock
+  tables, `DbContext` single-thread usage).
+- When adding async code, consider: cancellation propagation, `IAsyncDisposable` cleanup ordering,
+  and whether operations need to be atomic within a transaction scope.
+- Remember that `DbContext` is not thread-safe — never share instances across threads.
+
+### Self-Review Before Completion
+Before presenting work as complete:
+- Re-read the final state of all changed files (not from memory — actually re-read them).
+- Check for: unused variables, missing null checks, inconsistent naming, unhandled edge cases.
+- Simplicity check: for each new variable, ask whether it's necessary — does it name a complex
+  expression, get reused, or aid debugging? If it only holds a value used once immediately, inline it.
+  Apply the same scrutiny to wrapper methods, intermediate collections, and extra parameters.
+- Verify the changes compile (`dotnet build -c Release`).
+- Run affected tests (`dotnet test -c Release --no-build`, or a specific test project).
+- For query translation changes: verify the generated SQL matches expectations using
+  `CollectExecutedCommands()`.
+- Final gut-check: "Would a staff engineer approve this?" — if anything feels over-engineered,
+  unnecessarily clever, or under-justified, simplify before presenting.
+
+### Planning
+- Enter plan mode for tasks that touch 3+ files or require architectural decisions.
+- If an approach hits a wall (repeated failures, wrong assumptions), stop and re-plan rather than
+  pushing through. Do this immediately — do not attempt further fixes on a broken approach.
+  Re-planning means stepping back to reassess the strategy, not retrying the same idea with tweaks.
+
+### After Corrections
+- When the user corrects a mistake that reflects a project-wide pattern or convention, update the
+  relevant section of CLAUDE.md.
+- Corrections must become **concrete rules in the relevant section**, not vague lessons. For example,
+  if corrected about missing `CancellationToken` propagation, update the "EF Core Specifics" section
+  with the rule — don't append a generic note somewhere else.
+
 ## Quick Reference
 
 ```powershell
@@ -159,7 +222,7 @@ private NpgsqlBulkOperationExecutor SUT => field ??= ActDbContext.GetService<Npg
 | **Bulk Operations** | `IBulkInsertExecutor`, `IBulkUpdateExecutor`, `IBulkInsertOrUpdateExecutor` | SQL Server: `SqlBulkCopy`/MERGE; PostgreSQL: COPY protocol/INSERT ON CONFLICT; SQLite: batched INSERT/UPDATE |
 | **Bulk Update from Query** | `SqlServerBulkOperationsDbSetExtensions.BulkUpdateAsync`, `NpgsqlBulkOperationsDbSetExtensions.BulkUpdateAsync`, `SqliteBulkOperationsDbSetExtensions.BulkUpdateAsync`, `SetPropertyBuilder<TTarget, TSource>` | All three providers; SQL Server: `UPDATE t SET ... FROM target INNER JOIN (subquery) AS s ON ...`; PostgreSQL/SQLite: `UPDATE target AS t SET ... FROM (subquery) AS s WHERE ...`; fluent `Set` builder; accepts `IQueryable<TSource>` as source; optional `filter` parameter (`Expression<Func<TTarget, TSource, bool>>`) restricts which rows are updated (can reference both target and source properties) |
 | **Bulk Insert from Query** | `SqlServerBulkOperationsDbSetExtensions.BulkInsertAsync`, `NpgsqlBulkOperationsDbSetExtensions.BulkInsertAsync`, `SqliteBulkOperationsDbSetExtensions.BulkInsertAsync`, `InsertPropertyBuilder<TTarget, TSource>` | All three providers; generates `INSERT INTO target (cols) SELECT s.cols FROM (subquery) AS s`; fluent `Map` builder; accepts `IQueryable<TSource>` as source |
-| **Temp Tables** | `ITempTableCreator`, `ITempTableReference`, `ITempTableQuery<T>` | Queryable wrapper with auto-cleanup; name conflict prevention via `TempTableSuffixLeasing` |
+| **Temp Tables** | `ITempTableCreator`, `ITempTableReference`, `ITempTableQuery<T>`, `CreateTempTableAsync`, `BulkInsertIntoTempTableAsync`, `BulkInsertValuesIntoTempTableAsync` | Two workflows: all-in-one (create+insert via `BulkInsertIntoTempTableAsync`) or two-step (`CreateTempTableAsync` for empty table + insert later); auto-cleanup via `IAsyncDisposable`; name conflict prevention via `TempTableSuffixLeasing` |
 | **Window Functions** | `EF.Functions.RowNumber()`, `.Average()`, etc. | Fluent `PartitionBy()`/`OrderBy()`; all three providers |
 | **Table Hints** | `query.WithTableHints(SqlServerTableHint.NoLock)` | SQL Server only |
 | **Nested Transactions** | `NestedRelationalTransactionManager` | Root = real transaction; children = logical |
