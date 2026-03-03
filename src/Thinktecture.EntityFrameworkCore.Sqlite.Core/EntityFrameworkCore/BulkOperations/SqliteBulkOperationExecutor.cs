@@ -103,13 +103,10 @@ public sealed partial class SqliteBulkOperationExecutor
       ArgumentNullException.ThrowIfNull(entities);
       ArgumentNullException.ThrowIfNull(options);
 
-      var entityType = _ctx.Model.GetEntityType(typeof(T));
-
       if (options is not SqliteBulkInsertOptions sqliteOptions)
          sqliteOptions = new SqliteBulkInsertOptions(options);
 
-      var tableName = sqliteOptions.TableName ?? entityType.GetTableName() ?? throw new InvalidOperationException($"The entity '{entityType.Name}' has no table name.");
-      var schema = sqliteOptions.Schema ?? entityType.GetSchema();
+      var (entityType, tableName, schema) = BulkOperationModelExtensions.GetEntityType<T>(_ctx.Model, sqliteOptions.TableName, sqliteOptions.Schema);
 
       return await BulkInsertAsync(entityType,
                                    entities,
@@ -147,13 +144,10 @@ public sealed partial class SqliteBulkOperationExecutor
       ArgumentNullException.ThrowIfNull(entities);
       ArgumentNullException.ThrowIfNull(options);
 
-      var entityType = _ctx.Model.GetEntityType(typeof(T));
-
       if (options is not SqliteBulkUpdateOptions sqliteOptions)
          sqliteOptions = new SqliteBulkUpdateOptions(options);
 
-      var tableName = sqliteOptions.TableName ?? entityType.GetTableName() ?? throw new InvalidOperationException($"The entity '{entityType.Name}' has no table name.");
-      var schema = sqliteOptions.Schema ?? entityType.GetSchema();
+      var (entityType, tableName, schema) = BulkOperationModelExtensions.GetEntityType<T>(_ctx.Model, sqliteOptions.TableName, sqliteOptions.Schema);
       var ctx = new BulkUpdateContext(_ctx,
                                       _ctx.GetService<IEntityDataReaderFactory>(),
                                       (SqliteConnection)_ctx.Database.GetDbConnection(),
@@ -177,9 +171,7 @@ public sealed partial class SqliteBulkOperationExecutor
       if (!(options is ISqliteBulkInsertOrUpdateOptions sqliteOptions))
          sqliteOptions = new SqliteBulkInsertOrUpdateOptions(options);
 
-      var entityType = _ctx.Model.GetEntityType(typeof(T));
-      var tableName = sqliteOptions.TableName ?? entityType.GetTableName() ?? throw new InvalidOperationException($"The entity '{entityType.Name}' has no table name.");
-      var schema = sqliteOptions.Schema ?? entityType.GetSchema();
+      var (entityType, tableName, schema) = BulkOperationModelExtensions.GetEntityType<T>(_ctx.Model, sqliteOptions.TableName, sqliteOptions.Schema);
       var ctx = new BulkInsertOrUpdateContext(_ctx,
                                               _ctx.GetService<IEntityDataReaderFactory>(),
                                               (SqliteConnection)_ctx.Database.GetDbConnection(),

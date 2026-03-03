@@ -99,9 +99,7 @@ public sealed partial class SqlServerBulkOperationExecutor
       CancellationToken cancellationToken = default)
       where T : class
    {
-      var entityType = _ctx.Model.GetEntityType(typeof(T));
-      var tableName = options.TableName ?? entityType.GetTableName() ?? throw new InvalidOperationException($"The entity '{entityType.Name}' has no table name.");
-      var schema = options.Schema ?? entityType.GetSchema();
+      var (entityType, tableName, schema) = BulkOperationModelExtensions.GetEntityType<T>(_ctx.Model, options.TableName, options.Schema);
 
       return BulkInsertAsync(entityType, entities, schema, tableName, options, SqlServerBulkOperationContextFactoryForEntities.Instance, cancellationToken);
    }
@@ -480,9 +478,7 @@ public sealed partial class SqlServerBulkOperationExecutor
    private async Task<int> BulkUpdateAsync<T>(IEnumerable<T> entities, SqlServerBulkUpdateOptions options, CancellationToken cancellationToken)
       where T : class
    {
-      var entityType = _ctx.Model.GetEntityType(typeof(T));
-      var tableName = options.TableName ?? entityType.GetTableName() ?? throw new InvalidOperationException($"The entity '{entityType.Name}' has no table name.");
-      var schema = options.Schema ?? entityType.GetSchema();
+      var (entityType, tableName, schema) = BulkOperationModelExtensions.GetEntityType<T>(_ctx.Model, options.TableName, options.Schema);
       var propertiesForUpdate = options.PropertiesToUpdate.DeterminePropertiesForUpdate(entityType, true);
 
       if (propertiesForUpdate.Count == 0)
@@ -515,9 +511,7 @@ public sealed partial class SqlServerBulkOperationExecutor
    private async Task<int> BulkInsertOrUpdateAsync<T>(IEnumerable<T> entities, SqlServerBulkInsertOrUpdateOptions options, CancellationToken cancellationToken)
       where T : class
    {
-      var entityType = _ctx.Model.GetEntityType(typeof(T));
-      var tableName = options.TableName ?? entityType.GetTableName() ?? throw new InvalidOperationException($"The entity '{entityType.Name}' has no table name.");
-      var schema = options.Schema ?? entityType.GetSchema();
+      var (entityType, tableName, schema) = BulkOperationModelExtensions.GetEntityType<T>(_ctx.Model, options.TableName, options.Schema);
       var propertiesForInsert = options.PropertiesToInsert.DeterminePropertiesForInsert(entityType, true);
       var propertiesForUpdate = options.PropertiesToUpdate.DeterminePropertiesForInsert(entityType, true);
 

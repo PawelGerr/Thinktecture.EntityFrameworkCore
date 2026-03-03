@@ -15,13 +15,13 @@ public class BulkInsertAsync : IntegrationTestsBase
    }
 
    [Fact]
-   public async Task Should_throw_when_trying_to_insert_into_pure_temp_table_entity()
+   public async Task Should_throw_when_trying_to_insert_temp_table_entity_without_table_name()
    {
       ConfigureModel = builder => builder.ConfigureTempTable<int>();
 
       await SUT.Invoking(sut => sut.BulkInsertAsync(new List<TempTable<int>> { new(0) }, new NpgsqlBulkInsertOptions()))
-               .Should().ThrowAsync<ArgumentException>()
-               .WithMessage("The provided type 'TempTable<int>' is not part of the provided Entity Framework model. (Parameter 'type')");
+               .Should().ThrowAsync<InvalidOperationException>()
+               .WithMessage("*configured as a temp table entity*Provide the target table name*");
    }
 
    [Fact]
@@ -838,5 +838,30 @@ public class BulkInsertAsync : IntegrationTestsBase
       loadedEntity.Id.Should().Be(new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"));
       loadedEntity.JsonbColumn.Should().BeNull();
       loadedEntity.JsonColumn.Should().BeNull();
+   }
+
+   [Fact]
+   public async Task Should_insert_temp_table_entity_when_table_name_is_provided()
+   {
+      ConfigureModel = builder => builder.ConfigureTempTableEntity<TestEntityTempTable>(false, TestEntityTempTable.Configure);
+
+      var entity = new TestEntityTempTable
+                   {
+                      Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
+                      Name = "Name",
+                      RequiredName = "RequiredName",
+                      Count = 42
+                   };
+
+      var affectedRows = await SUT.BulkInsertAsync(new[] { entity }, new NpgsqlBulkInsertOptions { TableName = "TestEntities", Schema = Schema });
+
+      affectedRows.Should().Be(1);
+
+      var loadedEntities = await AssertDbContext.TestEntities.ToListAsync();
+      loadedEntities.Should().HaveCount(1);
+      loadedEntities[0].Id.Should().Be(new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"));
+      loadedEntities[0].Name.Should().Be("Name");
+      loadedEntities[0].RequiredName.Should().Be("RequiredName");
+      loadedEntities[0].Count.Should().Be(42);
    }
 }
