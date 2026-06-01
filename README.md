@@ -7,7 +7,7 @@
 [![Thinktecture.EntityFrameworkCore.Relational](https://img.shields.io/nuget/vpre/Thinktecture.EntityFrameworkCore.Relational.svg?label=Thinktecture.EntityFrameworkCore.Relational&maxAge=3600)](https://www.nuget.org/packages/Thinktecture.EntityFrameworkCore.Relational/)  
 [![Thinktecture.EntityFrameworkCore.SqlServer](https://img.shields.io/nuget/vpre/Thinktecture.EntityFrameworkCore.SqlServer.svg?label=Thinktecture.EntityFrameworkCore.SqlServer&maxAge=3600)](https://www.nuget.org/packages/Thinktecture.EntityFrameworkCore.SqlServer/)  
 [![Thinktecture.EntityFrameworkCore.SqlServer.Testing](https://img.shields.io/nuget/vpre/Thinktecture.EntityFrameworkCore.SqlServer.Testing.svg?label=Thinktecture.EntityFrameworkCore.SqlServer.Testing&maxAge=3600)](https://www.nuget.org/packages/Thinktecture.EntityFrameworkCore.SqlServer.Testing/) [DEPRECATED]  
-[![Thinktecture.EntityFrameworkCore.PostgreSQL](https://img.shields.io/nuget/vpre/Thinktecture.EntityFrameworkCore.PostgreSQL.svg?label=Thinktecture.EntityFrameworkCore.PostgreSQL&maxAge=3600)](https://www.nuget.org/packages/Thinktecture.EntityFrameworkCore.PostgreSQL/) [EXPERIMENTAL]  
+[![Thinktecture.EntityFrameworkCore.PostgreSQL](https://img.shields.io/nuget/vpre/Thinktecture.EntityFrameworkCore.PostgreSQL.svg?label=Thinktecture.EntityFrameworkCore.PostgreSQL&maxAge=3600)](https://www.nuget.org/packages/Thinktecture.EntityFrameworkCore.PostgreSQL/)  
 [![Thinktecture.EntityFrameworkCore.Sqlite.Core](https://img.shields.io/nuget/vpre/Thinktecture.EntityFrameworkCore.Sqlite.Core.svg?label=Thinktecture.EntityFrameworkCore.Sqlite.Core&maxAge=3600)](https://www.nuget.org/packages/Thinktecture.EntityFrameworkCore.Sqlite.Core/)  
 [![Thinktecture.EntityFrameworkCore.Sqlite](https://img.shields.io/nuget/vpre/Thinktecture.EntityFrameworkCore.Sqlite.svg?label=Thinktecture.EntityFrameworkCore.Sqlite&maxAge=3600)](https://www.nuget.org/packages/Thinktecture.EntityFrameworkCore.Sqlite/)  
 [![Thinktecture.EntityFrameworkCore.Sqlite.Testing](https://img.shields.io/nuget/vpre/Thinktecture.EntityFrameworkCore.Sqlite.Testing.svg?label=Thinktecture.EntityFrameworkCore.Sqlite.Testing&maxAge=3600)](https://www.nuget.org/packages/Thinktecture.EntityFrameworkCore.Sqlite.Testing/) [DEPRECATED]  
@@ -19,7 +19,7 @@ These libraries extend [Entity Framework Core](https://docs.microsoft.com/en-us/
 | Provider | Package                                        |
 |----------|------------------------------------------------|
 | SQL Server | `Thinktecture.EntityFrameworkCore.SqlServer`   |
-| PostgreSQL (Npgsql) | `Thinktecture.EntityFrameworkCore.PostgreSQL` [EXPERIMENTAL] |
+| PostgreSQL (Npgsql) | `Thinktecture.EntityFrameworkCore.PostgreSQL` |
 | SQLite | `Thinktecture.EntityFrameworkCore.Sqlite`      |
 
 ## Performance

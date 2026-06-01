@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 using Microsoft.EntityFrameworkCore.Sqlite.Query.Internal;
 using Thinktecture.EntityFrameworkCore.Internal;
+using Thinktecture.EntityFrameworkCore.Query.SqlExpressions;
 
 namespace Thinktecture.EntityFrameworkCore.Query;
 
@@ -15,6 +16,64 @@ public class ThinktectureSqliteQuerySqlGenerator : SqliteQuerySqlGenerator
    public ThinktectureSqliteQuerySqlGenerator(QuerySqlGeneratorDependencies dependencies)
       : base(dependencies)
    {
+   }
+
+   /// <inheritdoc />
+   protected override Expression VisitExtension(Expression extensionExpression)
+   {
+      return extensionExpression switch
+      {
+         WindowFunctionExpression windowFunctionExpression => VisitWindowFunction(windowFunctionExpression),
+         _ => base.VisitExtension(extensionExpression)
+      };
+   }
+
+   private Expression VisitWindowFunction(WindowFunctionExpression windowFunctionExpression)
+   {
+      Sql.Append(windowFunctionExpression.Name).Append(" (");
+
+      for (var i = 0; i < windowFunctionExpression.Arguments.Count; i++)
+      {
+         if (i != 0)
+            Sql.Append(", ");
+
+         Visit(windowFunctionExpression.Arguments[i]);
+      }
+
+      if (windowFunctionExpression.Arguments.Count == 0 && windowFunctionExpression.UseAsteriskWhenNoArguments)
+         Sql.Append("*");
+
+      Sql.Append(") OVER (");
+
+      if (windowFunctionExpression.Partitions.Count != 0)
+      {
+         Sql.Append("PARTITION BY ");
+
+         for (var i = 0; i < windowFunctionExpression.Partitions.Count; i++)
+         {
+            if (i != 0)
+               Sql.Append(", ");
+
+            Visit(windowFunctionExpression.Partitions[i]);
+         }
+      }
+
+      if (windowFunctionExpression.Orderings.Count != 0)
+      {
+         Sql.Append(" ORDER BY ");
+
+         for (var i = 0; i < windowFunctionExpression.Orderings.Count; i++)
+         {
+            if (i != 0)
+               Sql.Append(", ");
+
+            VisitOrdering(windowFunctionExpression.Orderings[i]);
+         }
+      }
+
+      Sql.Append(")");
+
+      return windowFunctionExpression;
    }
 
    /// <inheritdoc />

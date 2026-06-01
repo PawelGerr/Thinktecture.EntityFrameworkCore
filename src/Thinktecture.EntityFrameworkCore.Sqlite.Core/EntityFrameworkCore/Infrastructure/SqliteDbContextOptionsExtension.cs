@@ -9,6 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Thinktecture.EntityFrameworkCore.BulkOperations;
 using Thinktecture.EntityFrameworkCore.Query;
+using Thinktecture.EntityFrameworkCore.Query.ExpressionTranslators;
 using Thinktecture.EntityFrameworkCore.TempTables;
 
 namespace Thinktecture.EntityFrameworkCore.Infrastructure;
@@ -76,7 +77,7 @@ public sealed class SqliteDbContextOptionsExtension : DbContextOptionsExtensionB
    /// </summary>
    public bool AddCustomQuerySqlGeneratorFactory
    {
-      get => _addCustomQuerySqlGeneratorFactory || AddBulkOperationSupport;
+      get => _addCustomQuerySqlGeneratorFactory || AddBulkOperationSupport || AddWindowFunctionsSupport;
       set => _addCustomQuerySqlGeneratorFactory = value;
    }
 
@@ -106,6 +107,14 @@ public sealed class SqliteDbContextOptionsExtension : DbContextOptionsExtensionB
       services.TryAddSingleton<SqliteDbContextOptionsExtensionOptions>();
       services.AddSingleton<IBulkOperationsDbContextOptionsExtensionOptions>(provider => provider.GetRequiredService<SqliteDbContextOptionsExtensionOptions>());
       services.AddSingleton<ISingletonOptions>(provider => provider.GetRequiredService<SqliteDbContextOptionsExtensionOptions>());
+
+      services.Add<IMethodCallTranslatorPlugin, SqliteMethodCallTranslatorPlugin>(GetLifetime<IMethodCallTranslatorPlugin>());
+
+      if (AddWindowFunctionsSupport)
+      {
+         var lifetime = GetLifetime<IEvaluatableExpressionFilterPlugin>();
+         services.Add(ServiceDescriptor.Describe(typeof(IEvaluatableExpressionFilterPlugin), typeof(SqliteWindowFunctionEvaluatableExpressionFilterPlugin), lifetime));
+      }
 
       if (AddCustomQueryableMethodTranslatingExpressionVisitorFactory)
          AddWithCheck<IQueryableMethodTranslatingExpressionVisitorFactory, ThinktectureSqliteQueryableMethodTranslatingExpressionVisitorFactory, SqliteQueryableMethodTranslatingExpressionVisitorFactory>(services);

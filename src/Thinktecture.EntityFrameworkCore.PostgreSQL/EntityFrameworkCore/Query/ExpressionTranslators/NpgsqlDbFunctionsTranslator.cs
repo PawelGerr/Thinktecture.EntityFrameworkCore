@@ -63,6 +63,10 @@ public sealed class NpgsqlDbFunctionsTranslator : IMethodCallTranslator
          {
             return CreateWindowFunction(arguments);
          }
+         case nameof(NpgsqlDbFunctionsExtensions.NTile):
+         {
+            return CreateNTile(arguments);
+         }
          default:
             throw new InvalidOperationException($"Unexpected method '{method.Name}' in '{nameof(NpgsqlDbFunctionsExtensions)}'.");
       }
@@ -106,6 +110,24 @@ public sealed class NpgsqlDbFunctionsTranslator : IMethodCallTranslator
                                           functionArgs,
                                           partitionBy,
                                           orderByExpression?.Orderings);
+   }
+
+   private SqlExpression CreateNTile(IReadOnlyList<SqlExpression> arguments)
+   {
+      var bucketCount = _sqlExpressionFactory.ApplyDefaultTypeMapping(arguments[1]);
+      var orderings = arguments[^1] as WindowFunctionOrderingsExpression;
+      var partitionEnd = arguments.Count - (orderings is null ? 0 : 1);
+      var partitionBy = arguments.Skip(2).Take(partitionEnd - 2)
+                                 .Select(e => _sqlExpressionFactory.ApplyDefaultTypeMapping(e))
+                                 .ToList();
+
+      return new WindowFunctionExpression("ntile",
+                                          false,
+                                          typeof(int),
+                                          _typeMappingSource.FindMapping(typeof(int), _model),
+                                          new[] { bucketCount },
+                                          partitionBy,
+                                          orderings?.Orderings);
    }
 
    [SuppressMessage("Usage", "EF1001:Internal EF Core API usage.")]

@@ -20,12 +20,20 @@ public class ThinktectureSqlNullabilityProcessor : SqlNullabilityProcessor
    /// <inheritdoc />
    protected override SqlExpression VisitCustomSqlExpression(SqlExpression sqlExpression, bool allowOptimizedExpansion, out bool nullable)
    {
-      if (sqlExpression is INotNullableSqlExpression)
+      switch (sqlExpression)
       {
-         nullable = false;
-         return sqlExpression;
+         case INotNullableSqlExpression:
+         {
+            nullable = false;
+            return sqlExpression;
+         }
+         case WindowFunctionExpression:
+         {
+            nullable = true;
+            return sqlExpression;
+         }
+         default:
+            return base.VisitCustomSqlExpression(sqlExpression, allowOptimizedExpansion, out nullable);
       }
-
-      return base.VisitCustomSqlExpression(sqlExpression, allowOptimizedExpansion, out nullable);
    }
 }

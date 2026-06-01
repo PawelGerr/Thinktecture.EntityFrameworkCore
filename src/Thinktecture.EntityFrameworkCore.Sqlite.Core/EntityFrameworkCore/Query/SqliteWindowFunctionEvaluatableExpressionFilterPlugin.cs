@@ -6,16 +6,15 @@ namespace Thinktecture.EntityFrameworkCore.Query;
 /// <summary>
 /// Prevents evaluation of window function expressions on the client side.
 /// </summary>
-public class NpgsqlWindowFunctionEvaluatableExpressionFilterPlugin : IEvaluatableExpressionFilterPlugin
+public class SqliteWindowFunctionEvaluatableExpressionFilterPlugin : IEvaluatableExpressionFilterPlugin
 {
    /// <inheritdoc />
    public bool IsEvaluatableExpression(Expression expression)
    {
       if (expression is MethodCallExpression methodCallExpression
-          && methodCallExpression.Method.DeclaringType == typeof(NpgsqlDbFunctionsExtensions))
+          && methodCallExpression.Method.DeclaringType == typeof(SqliteDbFunctionsExtensions))
       {
-         if (methodCallExpression.Method.Name is nameof(NpgsqlDbFunctionsExtensions.WindowFunction)
-                                              or nameof(NpgsqlDbFunctionsExtensions.NTile))
+         if (methodCallExpression.Method.Name == nameof(SqliteDbFunctionsExtensions.NTile))
             return false;
       }
 

@@ -11,10 +11,11 @@ public class WindowFunctionEvaluatableExpressionFilterPlugin : IEvaluatableExpre
    /// <inheritdoc />
    public bool IsEvaluatableExpression(Expression expression)
    {
-      if (expression is MethodCallExpression methodCallExpression)
+      if (expression is MethodCallExpression methodCallExpression
+          && methodCallExpression.Method.DeclaringType == typeof(SqlServerDbFunctionsExtensions))
       {
-         if (methodCallExpression.Method.DeclaringType == typeof(SqlServerDbFunctionsExtensions)
-             && methodCallExpression.Method.Name == nameof(SqlServerDbFunctionsExtensions.WindowFunction))
+         if (methodCallExpression.Method.Name is nameof(SqlServerDbFunctionsExtensions.WindowFunction)
+                                              or nameof(SqlServerDbFunctionsExtensions.NTile))
             return false;
       }
       return true;
