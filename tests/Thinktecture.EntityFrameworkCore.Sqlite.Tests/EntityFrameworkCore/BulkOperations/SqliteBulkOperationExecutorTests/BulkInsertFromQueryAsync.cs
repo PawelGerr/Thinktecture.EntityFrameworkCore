@@ -64,6 +64,52 @@ public class BulkInsertFromQueryAsync : IntegrationTestsBase
       }
    }
 
+   private static readonly ConvertibleClass _staticConvertibleClass = new(42);
+
+   [Fact]
+   public async Task Should_insert_static_member_of_converted_type()
+   {
+      await ActDbContext.Database.ExecuteSqlRawAsync("""
+         CREATE TABLE "TestEntities_QueryInsertRedirect" (
+            "Id" TEXT NOT NULL,
+            "RequiredName" TEXT NOT NULL,
+            "ConvertibleClass" INTEGER NULL,
+            CONSTRAINT "PK_TestEntities_QueryInsertRedirect" PRIMARY KEY ("Id")
+         );
+         """);
+
+      try
+      {
+         var sourceEntities = new List<TestEntity>
+         {
+            new() { Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"), RequiredName = "Req1" }
+         };
+
+         await using var tempTable = await SUT.BulkInsertIntoTempTableAsync(sourceEntities, new SqliteTempTableBulkInsertOptions());
+
+         var sourceQuery = tempTable.Query;
+
+         var affectedRows = await ActDbContext.Set<TestEntity>().BulkInsertAsync(
+            sourceQuery,
+            builder => builder
+               .Map(e => e.Id, f => f.Id)
+               .Map(e => e.RequiredName, f => f.RequiredName)
+               .Map(e => e.ConvertibleClass, f => _staticConvertibleClass),
+            new SqliteBulkInsertFromQueryOptions { TableName = "TestEntities_QueryInsertRedirect" });
+
+         affectedRows.Should().Be(1);
+
+         var inserted = await AssertDbContext.Database
+                                             .SqlQueryRaw<int>("""SELECT "ConvertibleClass" FROM "TestEntities_QueryInsertRedirect" """)
+                                             .ToListAsync();
+         inserted.Should().BeEquivalentTo([42]);
+      }
+      finally
+      {
+         await ActDbContext.Database.ExecuteSqlRawAsync("""DROP TABLE IF EXISTS "TestEntities_QueryInsertRedirect" """);
+      }
+   }
+
    [Fact]
    public async Task Should_insert_private_field_via_ef_property()
    {

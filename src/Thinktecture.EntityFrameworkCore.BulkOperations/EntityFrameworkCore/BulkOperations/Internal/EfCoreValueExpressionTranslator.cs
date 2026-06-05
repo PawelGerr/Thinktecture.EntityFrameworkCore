@@ -94,17 +94,9 @@ public sealed partial class EfCoreValueExpressionTranslator
             throw new ArgumentException($"Update value expression must have exactly 2 parameters. Expression: {valueExpr}");
 
          var remapped = RemapTwoParameterLambda(valueExpr, targetShaper, sourceShaper);
-         var flattenedRemapped = FlattenClosures(_logger, remapped);
+         var flattenedRemapped = FlattenClosures(remapped);
 
-         var sqlValue = sqlTranslator.TranslateProjection(flattenedRemapped)
-                        ?? throw new InvalidOperationException($"Could not translate value expression: {valueExpr}");
-
-         if (sqlValue is not SqlExpression sqlExpr)
-            throw new InvalidOperationException($"Translated expression is not a SqlExpression: {sqlValue.GetType().Name}");
-
-         // Apply type mapping from target column
-         var typeMapping = targetProp.GetRelationalTypeMapping();
-         sqlExpr = sqlExprFactory.ApplyTypeMapping(sqlExpr, typeMapping);
+         var sqlExpr = TranslateValueExpression(valueExpr, flattenedRemapped, sqlTranslator, sqlExprFactory, targetProp.GetRelationalTypeMapping());
 
          setters.Add(new ColumnValueSetter(targetColumn, sqlExpr));
       }
@@ -116,7 +108,7 @@ public sealed partial class EfCoreValueExpressionTranslator
             throw new ArgumentException($"Filter expression must have exactly 2 parameters. Expression: {filter}");
 
          var remappedFilter = RemapTwoParameterLambda(filter, targetShaper, sourceShaper);
-         var flattenedFilter = FlattenClosures(_logger, remappedFilter);
+         var flattenedFilter = FlattenClosures(remappedFilter);
 
          var sqlFilter = sqlTranslator.TranslateProjection(flattenedFilter)
                          ?? throw new InvalidOperationException($"Could not translate filter expression: {filter}");
@@ -225,17 +217,9 @@ public sealed partial class EfCoreValueExpressionTranslator
             throw new ArgumentException($"Insert value expression must have exactly 1 parameter. Expression: {valueExpr}");
 
          var remapped = RemapSingleParameterLambda(valueExpr, sourceShaper);
-         var flattenedRemapped = FlattenClosures(_logger, remapped);
+         var flattenedRemapped = FlattenClosures(remapped);
 
-         var sqlValue = sqlTranslator.TranslateProjection(flattenedRemapped)
-                        ?? throw new InvalidOperationException($"Could not translate value expression: {valueExpr}");
-
-         if (sqlValue is not SqlExpression sqlExpr)
-            throw new InvalidOperationException($"Translated expression is not a SqlExpression: {sqlValue.GetType().Name}");
-
-         // Apply type mapping from target column
-         var typeMapping = targetProp.GetRelationalTypeMapping();
-         sqlExpr = sqlExprFactory.ApplyTypeMapping(sqlExpr, typeMapping);
+         var sqlExpr = TranslateValueExpression(valueExpr, flattenedRemapped, sqlTranslator, sqlExprFactory, targetProp.GetRelationalTypeMapping());
 
          valueExpressions.Add(sqlExpr);
       }
@@ -251,7 +235,9 @@ public sealed partial class EfCoreValueExpressionTranslator
          if (valExpr is SqlConstantExpression constExpr)
          {
             var paramName = $"__insert_const_{constParamIndex++}";
-            parameterValues[paramName] = constExpr.Value;
+            // The parameter value is bound as-is by the executors, so the value converter (if any) must be applied here.
+            var converter = constExpr.TypeMapping?.Converter;
+            parameterValues[paramName] = converter is null ? constExpr.Value : converter.ConvertToProvider(constExpr.Value);
             projectionExpressions.Add(new SqlParameterExpression(paramName, valExpr.Type, constExpr.TypeMapping));
          }
          else
@@ -420,9 +406,31 @@ public sealed partial class EfCoreValueExpressionTranslator
       return ReplacingExpressionVisitor.Replace(lambda.Parameters[0], sourceShaper, lambda.Body);
    }
 
-   private static Expression FlattenClosures(ILogger logger, Expression expression)
+   private Expression FlattenClosures(Expression expression)
    {
-      return new ClosureFlatteningVisitor(logger).Visit(expression);
+      return new ClosureFlatteningVisitor(_logger, _ctx.GetService<IEvaluatableExpressionFilter>(), _ctx.Model).Visit(expression);
+   }
+
+   private static SqlExpression TranslateValueExpression(
+      LambdaExpression valueExpr,
+      Expression flattenedValue,
+      RelationalSqlTranslatingExpressionVisitor sqlTranslator,
+      ISqlExpressionFactory sqlExprFactory,
+      RelationalTypeMapping targetTypeMapping)
+   {
+      // Constants of types without a built-in type mapping (e.g. properties with a value converter)
+      // cannot be translated by EF Core; create the constant with the target column's type mapping directly.
+      if (flattenedValue is ConstantExpression constant)
+         return sqlExprFactory.Constant(constant.Value, constant.Type, targetTypeMapping);
+
+      var sqlValue = sqlTranslator.TranslateProjection(flattenedValue)
+                     ?? throw new InvalidOperationException($"Could not translate value expression: {valueExpr}");
+
+      if (sqlValue is not SqlExpression sqlExpr)
+         throw new InvalidOperationException($"Translated expression is not a SqlExpression: {sqlValue.GetType().Name}");
+
+      // Apply type mapping from target column
+      return sqlExprFactory.ApplyTypeMapping(sqlExpr, targetTypeMapping);
    }
 
    private static string GetTargetTableAlias(SelectExpression selectExpression)
@@ -444,21 +452,38 @@ public sealed partial class EfCoreValueExpressionTranslator
                                   property.IsNullable);
    }
 
-   private sealed partial class ClosureFlatteningVisitor(ILogger logger) : ExpressionVisitor
+   private sealed partial class ClosureFlatteningVisitor(
+      ILogger logger,
+      IEvaluatableExpressionFilter evaluatableExpressionFilter,
+      IModel model) : ExpressionVisitor
    {
       protected override Expression VisitMember(MemberExpression node)
       {
+         // Static member access (e.g. MyType.StaticValue) — evaluate it to a constant
+         // unless EF Core translates it server-side (e.g. DateTime.Now).
+         if (node.Expression is null)
+         {
+            return evaluatableExpressionFilter.IsEvaluatableExpression(node, model)
+                      ? Evaluate(node, null) ?? node
+                      : node;
+         }
+
          var expression = Visit(node.Expression);
 
          if (expression is not ConstantExpression constant)
             return node.Update(expression);
 
+         return Evaluate(node, constant.Value) ?? node.Update(expression);
+      }
+
+      private Expression? Evaluate(MemberExpression node, object? instance)
+      {
          try
          {
             var value = node.Member switch
             {
-               FieldInfo fi => fi.GetValue(constant.Value),
-               PropertyInfo pi => pi.GetValue(constant.Value),
+               FieldInfo fi => fi.GetValue(instance),
+               PropertyInfo pi => pi.GetValue(instance),
                _ => throw new NotSupportedException($"Unsupported member type: {node.Member.GetType().Name}")
             };
 
@@ -469,7 +494,7 @@ public sealed partial class EfCoreValueExpressionTranslator
             LogClosureFlatteningFailed(logger, ex, node.Member.Name, node.Member.DeclaringType?.Name);
          }
 
-         return node.Update(expression);
+         return null;
       }
 
       [LoggerMessage(Level = LogLevel.Warning,

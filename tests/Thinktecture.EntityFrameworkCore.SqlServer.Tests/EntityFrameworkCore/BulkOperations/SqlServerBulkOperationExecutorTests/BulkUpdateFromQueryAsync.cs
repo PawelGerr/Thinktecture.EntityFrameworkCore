@@ -632,6 +632,126 @@ public class BulkUpdateFromQueryAsync : IntegrationTestsBase
       loaded.Name.Should().Be("CapturedValue");
    }
 
+   public static string StaticName => "StaticValue";
+   private static readonly ConvertibleClass _staticConvertibleClass = new(42);
+
+   [Fact]
+   public async Task Should_update_with_static_member_value()
+   {
+      var entity = new TestEntity { Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"), Name = "Original", RequiredName = "RequiredName", Count = 0 };
+      ArrangeDbContext.Add(entity);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var updatedEntities = new List<TestEntity>
+      {
+         new() { Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"), RequiredName = "RequiredName" }
+      };
+
+      await using var tempTable = await SUT.BulkInsertIntoTempTableAsync(updatedEntities, new SqlServerTempTableBulkInsertOptions());
+
+      var sourceQuery = tempTable.Query;
+
+      var affectedRows = await ActDbContext.Set<TestEntity>().BulkUpdateAsync(
+         sourceQuery,
+         e => e.Id,
+         f => f.Id,
+         builder => builder.Set(e => e.Name, (e, f) => StaticName));
+
+      affectedRows.Should().Be(1);
+
+      var loaded = await AssertDbContext.TestEntities.SingleAsync();
+      loaded.Name.Should().Be("StaticValue");
+   }
+
+   [Fact]
+   public async Task Should_update_with_static_member_of_converted_type()
+   {
+      var entity = new TestEntity { Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"), Name = "Original", RequiredName = "RequiredName", ConvertibleClass = new ConvertibleClass(1) };
+      ArrangeDbContext.Add(entity);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var updatedEntities = new List<TestEntity>
+      {
+         new() { Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"), RequiredName = "RequiredName" }
+      };
+
+      await using var tempTable = await SUT.BulkInsertIntoTempTableAsync(updatedEntities, new SqlServerTempTableBulkInsertOptions());
+
+      var sourceQuery = tempTable.Query;
+
+      var affectedRows = await ActDbContext.Set<TestEntity>().BulkUpdateAsync(
+         sourceQuery,
+         e => e.Id,
+         f => f.Id,
+         builder => builder.Set(e => e.ConvertibleClass, (e, f) => _staticConvertibleClass));
+
+      affectedRows.Should().Be(1);
+
+      var loaded = await AssertDbContext.TestEntities.SingleAsync();
+      loaded.ConvertibleClass.Should().Be(new ConvertibleClass(42));
+   }
+
+   [Fact]
+   public async Task Should_update_with_captured_variable_of_converted_type()
+   {
+      var entity = new TestEntity { Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"), Name = "Original", RequiredName = "RequiredName", ConvertibleClass = new ConvertibleClass(1) };
+      ArrangeDbContext.Add(entity);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var updatedEntities = new List<TestEntity>
+      {
+         new() { Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"), RequiredName = "RequiredName" }
+      };
+
+      await using var tempTable = await SUT.BulkInsertIntoTempTableAsync(updatedEntities, new SqlServerTempTableBulkInsertOptions());
+
+      var sourceQuery = tempTable.Query;
+
+      var newValue = new ConvertibleClass(43);
+
+      var affectedRows = await ActDbContext.Set<TestEntity>().BulkUpdateAsync(
+         sourceQuery,
+         e => e.Id,
+         f => f.Id,
+         builder => builder.Set(e => e.ConvertibleClass, (e, f) => newValue));
+
+      affectedRows.Should().Be(1);
+
+      var loaded = await AssertDbContext.TestEntities.SingleAsync();
+      loaded.ConvertibleClass.Should().Be(new ConvertibleClass(43));
+   }
+
+   [Fact]
+   public async Task Should_translate_datetime_now_server_side_instead_of_evaluating_it()
+   {
+      var entity = new TestEntity { Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"), Name = "Original", RequiredName = "RequiredName", Count = 0 };
+      ArrangeDbContext.Add(entity);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var updatedEntities = new List<TestEntity>
+      {
+         new() { Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"), RequiredName = "RequiredName" }
+      };
+
+      await using var tempTable = await SUT.BulkInsertIntoTempTableAsync(updatedEntities, new SqlServerTempTableBulkInsertOptions());
+
+      var sourceQuery = tempTable.Query;
+
+      var affectedRows = await ActDbContext.Set<TestEntity>().BulkUpdateAsync(
+         sourceQuery,
+         e => e.Id,
+         f => f.Id,
+         builder => builder.Set(e => e.Count, (e, f) => DateTime.Now.Year));
+
+      affectedRows.Should().Be(1);
+
+      // DateTime.Now must not be evaluated to a constant at translation time but be translated server-side.
+      ExecutedCommands.Last().Should().Contain("GETDATE()");
+
+      var loaded = await AssertDbContext.TestEntities.SingleAsync();
+      loaded.Count.Should().Be(DateTime.Now.Year);
+   }
+
    [Fact]
    public async Task Should_update_with_source_arithmetic_expression()
    {
