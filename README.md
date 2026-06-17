@@ -51,3 +51,13 @@ These libraries extend [Entity Framework Core](https://docs.microsoft.com/en-us/
 ## Extensibility
 * [Adding custom IRelationalTypeMappingSourcePlugin](https://github.com/PawelGerr/Thinktecture.EntityFrameworkCore/wiki/Adding-custom-IRelationalTypeMappingSourcePlugin)
 * [Adding custom IEvaluatableExpressionFilter](https://github.com/PawelGerr/Thinktecture.EntityFrameworkCore/wiki/Adding-custom-IEvaluatableExpressionFilter)
+
+## AI Coding Assistants
+
+An AI agent skill ships with the repository (under [`skills/thinktecture-entityframeworkcore`](skills/thinktecture-entityframeworkcore)) to teach AI coding agents how to consume these packages. Install it with the [`skills`](https://github.com/obra/skills) CLI:
+
+``` bash
+npx skills@latest add PawelGerr/Thinktecture.EntityFrameworkCore
+```
+
+The library is also indexed by Context7 (MCP) under the id `/pawelgerr/thinktecture.entityframeworkcore`. See [AI Coding Assistants](https://github.com/PawelGerr/Thinktecture.EntityFrameworkCore/wiki/AI-Coding-Assistants) for details.
