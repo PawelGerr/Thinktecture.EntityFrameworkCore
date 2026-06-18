@@ -246,6 +246,20 @@ private NpgsqlBulkOperationExecutor SUT => field ??= ActDbContext.GetService<Npg
 | Bulk Insert from Query | Y | Y | Y |
 | Truncate Table (dedicated) | Y | Y | Y |
 
+### PostgreSQL `max`/`min` over `uuid`
+
+PostgreSQL has no native `max(uuid)`/`min(uuid)` aggregate (`max`/`min` over a `Guid`-mapped
+`uuid` column translates but fails at execution: `function max(uuid) does not exist`). The Npgsql
+provider auto-rewrites these to `max(col::text)::uuid` / `min(col::text)::uuid` (text ordering of
+canonical uuid strings matches uuid byte ordering, so results are identical). **Always-on** (no
+feature flag) via `NpgsqlAggregateMethodCallTranslatorPlugin` →
+`NpgsqlUuidAggregateMethodCallTranslator` (`IAggregateMethodCallTranslator`), registered
+unconditionally in `NpgsqlDbContextOptionsExtension.ApplyServices`. Triggers only when the
+operand's `TypeMapping.StoreType == "uuid"` (covers `Guid` and `Guid?`; a `Guid`→`text`
+value-converter column is left untouched); returns `null` on every other path so EF falls through
+to the built-in translator. SQL Server (`uniqueidentifier`) and SQLite (Guid as text/blob) already
+support `max`/`min` and are not touched.
+
 ### Bulk Operation Details
 
 - All return `Task<int>` (affected rows including owned entities)

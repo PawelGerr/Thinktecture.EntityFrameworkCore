@@ -1,0 +1,117 @@
+using Thinktecture.TestDatabaseContext;
+
+namespace Thinktecture.Query;
+
+// ReSharper disable once InconsistentNaming
+public class MaxMinUuidAggregate : IntegrationTestsBase
+{
+   // Text-ordered ascending so the expected max/min are unambiguous (uuid::text ordering == uuid byte ordering).
+   private static readonly Guid _id1 = new("11111111-1111-1111-1111-111111111111");
+   private static readonly Guid _id2 = new("22222222-2222-2222-2222-222222222222");
+   private static readonly Guid _id3 = new("33333333-3333-3333-3333-333333333333");
+   private static readonly Guid _id4 = new("44444444-4444-4444-4444-444444444444");
+
+   public MaxMinUuidAggregate(ITestOutputHelper testOutputHelper, NpgsqlFixture npgsqlFixture)
+      : base(testOutputHelper, npgsqlFixture)
+   {
+   }
+
+   [Fact]
+   public async Task Should_translate_Max_over_uuid_grouping()
+   {
+      ArrangeDbContext.TestEntities.AddRange(
+         new TestEntity { Id = _id1, Count = 1, RequiredName = "R" },
+         new TestEntity { Id = _id2, Count = 1, RequiredName = "R" },
+         new TestEntity { Id = _id3, Count = 2, RequiredName = "R" },
+         new TestEntity { Id = _id4, Count = 2, RequiredName = "R" });
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var result = await ActDbContext.TestEntities
+                                     .GroupBy(e => e.Count)
+                                     .Select(g => new { Count = g.Key, MaxId = g.Max(e => e.Id) })
+                                     .OrderBy(x => x.Count)
+                                     .ToListAsync();
+
+      result.Should().HaveCount(2);
+      result[0].MaxId.Should().Be(_id2);
+      result[1].MaxId.Should().Be(_id4);
+
+      ExecutedCommands.Last().Should().Contain("max").And.Contain("text").And.Contain("uuid");
+   }
+
+   [Fact]
+   public async Task Should_translate_Min_over_uuid_grouping()
+   {
+      ArrangeDbContext.TestEntities.AddRange(
+         new TestEntity { Id = _id1, Count = 1, RequiredName = "R" },
+         new TestEntity { Id = _id2, Count = 1, RequiredName = "R" },
+         new TestEntity { Id = _id3, Count = 2, RequiredName = "R" },
+         new TestEntity { Id = _id4, Count = 2, RequiredName = "R" });
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var result = await ActDbContext.TestEntities
+                                     .GroupBy(e => e.Count)
+                                     .Select(g => new { Count = g.Key, MinId = g.Min(e => e.Id) })
+                                     .OrderBy(x => x.Count)
+                                     .ToListAsync();
+
+      result.Should().HaveCount(2);
+      result[0].MinId.Should().Be(_id1);
+      result[1].MinId.Should().Be(_id3);
+
+      ExecutedCommands.Last().Should().Contain("min").And.Contain("text").And.Contain("uuid");
+   }
+
+   [Fact]
+   public async Task Should_translate_Max_over_nullable_uuid()
+   {
+      // Parents (Count = 0) referenced by ParentId; excluded from the aggregated group via the Where filter.
+      ArrangeDbContext.TestEntities.AddRange(
+         new TestEntity { Id = _id1, Count = 0, RequiredName = "R" },
+         new TestEntity { Id = _id2, Count = 0, RequiredName = "R" });
+      ArrangeDbContext.TestEntities.AddRange(
+         new TestEntity { Id = _id3, Count = 7, ParentId = null, RequiredName = "R" },
+         new TestEntity { Id = _id4, Count = 7, ParentId = _id1, RequiredName = "R" },
+         new TestEntity { Id = new("55555555-5555-5555-5555-555555555555"), Count = 7, ParentId = _id2, RequiredName = "R" });
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var result = await ActDbContext.TestEntities
+                                     .Where(e => e.Count == 7)
+                                     .GroupBy(e => e.Count)
+                                     .Select(g => g.Max(e => e.ParentId))
+                                     .ToListAsync();
+
+      result.Should().ContainSingle();
+      result[0].Should().Be(_id2); // max(ParentId) over {null, _id1, _id2} == _id2, nulls ignored
+   }
+
+   [Fact]
+   public async Task Should_translate_full_ntile_groupby_max_pipeline()
+   {
+      const int rangeCount = 2;
+
+      ArrangeDbContext.TestEntities.AddRange(
+         new TestEntity { Id = _id1, RequiredName = "R" },
+         new TestEntity { Id = _id2, RequiredName = "R" },
+         new TestEntity { Id = _id3, RequiredName = "R" },
+         new TestEntity { Id = _id4, RequiredName = "R" });
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var tileEnds = await ActDbContext.TestEntities
+                                       .Select(b => new
+                                                    {
+                                                       b.Id,
+                                                       Tile = EF.Functions.NTile(rangeCount, EF.Functions.OrderBy(b.Id))
+                                                    })
+                                       .AsSubQuery()
+                                       .GroupBy(x => x.Tile)
+                                       .Select(g => new { Tile = g.Key, End = g.Max(x => x.Id) })
+                                       .OrderBy(x => x.Tile)
+                                       .ToListAsync();
+
+      // 4 rows ordered by Id, 2 buckets: bucket 1 = {_id1, _id2}, bucket 2 = {_id3, _id4}.
+      tileEnds.Should().HaveCount(rangeCount);
+      tileEnds[0].End.Should().Be(_id2);
+      tileEnds[1].End.Should().Be(_id4);
+   }
+}

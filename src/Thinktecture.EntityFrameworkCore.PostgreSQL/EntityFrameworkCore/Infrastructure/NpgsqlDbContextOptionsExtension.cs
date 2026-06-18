@@ -115,6 +115,9 @@ public sealed class NpgsqlDbContextOptionsExtension : DbContextOptionsExtensionB
 
       services.Add<IMethodCallTranslatorPlugin, NpgsqlMethodCallTranslatorPlugin>(GetLifetime<IMethodCallTranslatorPlugin>());
 
+      // Always-on: rewrites max(uuid)/min(uuid) into max(col::text)::uuid since PostgreSQL has no native uuid aggregate.
+      services.Add<IAggregateMethodCallTranslatorPlugin, NpgsqlAggregateMethodCallTranslatorPlugin>(GetLifetime<IAggregateMethodCallTranslatorPlugin>());
+
       if (AddCustomQueryableMethodTranslatingExpressionVisitorFactory)
          AddWithCheck<IQueryableMethodTranslatingExpressionVisitorFactory, ThinktectureNpgsqlQueryableMethodTranslatingExpressionVisitorFactory, NpgsqlQueryableMethodTranslatingExpressionVisitorFactory>(services);
 
