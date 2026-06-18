@@ -114,4 +114,47 @@ public class MaxMinUuidAggregate : IntegrationTestsBase
       tileEnds[0].End.Should().Be(_id2);
       tileEnds[1].End.Should().Be(_id4);
    }
+
+   [Fact]
+   public async Task Should_translate_ntile_groupby_max_with_having_to_partition_boundaries()
+   {
+      var rangeCount = 2;
+
+      ArrangeDbContext.TestEntities.AddRange(
+         new TestEntity { Id = _id1, RequiredName = "R" },
+         new TestEntity { Id = _id2, RequiredName = "R" },
+         new TestEntity { Id = _id3, RequiredName = "R" },
+         new TestEntity { Id = _id4, RequiredName = "R" });
+      await ArrangeDbContext.SaveChangesAsync();
+
+      // Equivalent of:
+      //   SELECT max(business_transaction_id::text)::uuid AS boundary
+      //   FROM (SELECT business_transaction_id, ntile(rangeCount) OVER (ORDER BY business_transaction_id) AS bucket FROM ...) t
+      //   GROUP BY bucket HAVING bucket < rangeCount ORDER BY bucket
+      var boundaries = await ActDbContext.TestEntities
+                                         .Select(b => new
+                                                      {
+                                                         b.Id,
+                                                         Bucket = EF.Functions.NTile(rangeCount, EF.Functions.OrderBy(b.Id))
+                                                      })
+                                         .AsSubQuery()
+                                         .GroupBy(x => x.Bucket)
+                                         .Where(g => g.Key < rangeCount)
+                                         .OrderBy(g => g.Key)
+                                         .Select(g => g.Max(x => x.Id))
+                                         .ToListAsync();
+
+      // HAVING bucket < 2 keeps only bucket 1 = {_id1, _id2}; its boundary (max) is _id2.
+      boundaries.Should().ContainSingle();
+      boundaries[0].Should().Be(_id2);
+
+      var sql = ExecutedCommands.Last();
+      sql.Should().Contain("ntile")                  // ntile(rangeCount) OVER (ORDER BY ...)
+         .And.Contain("OVER (")
+         .And.Contain("::text)::uuid")               // the uuid aggregate rewrite (max(col::text)::uuid)
+         .And.Contain("max(")
+         .And.Contain("GROUP BY")
+         .And.Contain("HAVING")
+         .And.Contain("ORDER BY");
+   }
 }
