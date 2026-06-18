@@ -119,6 +119,13 @@ var pgBuckets = await ctx.Products
   (`Sum`/`Average`/`Min`/`Max`) are SQL Server & PostgreSQL only. On SQLite,
   compute the aggregate with a correlated subquery or in application code, or run
   the query on SQL Server/PostgreSQL for native windowed aggregates.
+- **`Min`/`Max` over a `Guid` column just work on PostgreSQL — no workaround needed.**
+  PostgreSQL has no native `max(uuid)`/`min(uuid)`, but the provider transparently
+  rewrites it to `min(col::text)::uuid` / `max(col::text)::uuid`. This applies to
+  **both** the windowed `EF.Functions.Min`/`Max` and the regular `GroupBy().Min`/`Max`
+  over a `Guid`-mapped `uuid` column; results match `uuid` ordering. Do **not** avoid
+  `Guid` in `Min`/`Max` or hand-roll a `::text` cast — it is automatic. (SQL Server and
+  SQLite handle `Guid` `Min`/`Max` natively.)
 - `RowNumber` is `long`; `NTile` is `long` on SQL Server but `int` on
   PostgreSQL/SQLite — match your DTO property type accordingly.
 - On SQL Server, `NTile` and ordered aggregates **require** an `OrderBy` clause.

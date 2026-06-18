@@ -137,6 +137,27 @@ public sealed class NpgsqlDbFunctionsTranslator : IMethodCallTranslator
       var orderings = arguments[^1] as WindowFunctionOrderingsExpression;
       var partitionBy = arguments.Skip(2).Take(arguments.Count - (orderings is null ? 2 : 3)).Select(e => _sqlExpressionFactory.ApplyDefaultTypeMapping(e)).ToList();
 
+      // PostgreSQL has no native max(uuid)/min(uuid); rewrite to max(col::text)::uuid (text ordering of
+      // canonical uuid strings matches uuid byte ordering, so results are identical). This mirrors the
+      // regular GROUP BY aggregate handled by NpgsqlUuidAggregateMethodCallTranslator. Only max/min are
+      // valid here — sum/avg over a uuid have no meaning, so they are left untouched.
+      if ((aggregateFunction == "MAX" || aggregateFunction == "MIN") && aggregate.TypeMapping?.StoreType == "uuid")
+      {
+         var textMapping = _typeMappingSource.FindMapping(typeof(string));
+         var castToText = _sqlExpressionFactory.Convert(aggregate, typeof(string), textMapping);
+
+         var windowFunction = new WindowFunctionExpression(aggregateFunction,
+                                                           false,
+                                                           typeof(string),
+                                                           textMapping,
+                                                           new[] { castToText },
+                                                           partitionBy,
+                                                           orderings?.Orderings);
+
+         // (max(col::text) OVER (...))::uuid — reuse the original uuid mapping and CLR type (Guid or Guid?).
+         return _sqlExpressionFactory.Convert(windowFunction, aggregate.Type, aggregate.TypeMapping);
+      }
+
       return new WindowFunctionExpression(aggregateFunction,
                                           false,
                                           aggregate.Type,

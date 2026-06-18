@@ -260,6 +260,13 @@ value-converter column is left untouched); returns `null` on every other path so
 to the built-in translator. SQL Server (`uniqueidentifier`) and SQLite (Guid as text/blob) already
 support `max`/`min` and are not touched.
 
+The **windowed** `EF.Functions.Max`/`Min` over a `uuid` column (window functions feature) gets the
+same treatment: `NpgsqlDbFunctionsTranslator.CreateWindowFunctionExpression` rewrites it to
+`(max(col::text) OVER (...))::uuid` when `aggregateFunction is "MAX" or "MIN"` and the operand's
+`TypeMapping.StoreType == "uuid"`. Only `MAX`/`MIN` are rewritten (`SUM`/`AVG` over a uuid have no
+meaning and are left untouched). Without this, the windowed path emitted bare `max(uuid) OVER (...)`
+and failed at runtime with the same `function max(uuid) does not exist` error as the aggregate path.
+
 ### Bulk Operation Details
 
 - All return `Task<int>` (affected rows including owned entities)
