@@ -32,6 +32,7 @@ These libraries extend [Entity Framework Core](https://docs.microsoft.com/en-us/
 ## Features
 * [Collection Parameters (temp-tables *light*)](https://github.com/PawelGerr/Thinktecture.EntityFrameworkCore/wiki/Collection-Parameters-(temp-tables-light)) (SQL Server, PostgreSQL)
 * [Window Functions Support (RowNumber, Sum, Average, Min, Max)](https://github.com/PawelGerr/Thinktecture.EntityFrameworkCore/wiki/Window-Functions-Support-(RowNumber,-Sum,-Average,-Min,-Max)) (SQL Server, PostgreSQL, SQLite*)
+* [Bitwise Aggregates (BitOr, BitAnd, BitXor)](https://github.com/PawelGerr/Thinktecture.EntityFrameworkCore/wiki/Bitwise-Aggregates-(PostgreSQL)) (PostgreSQL)
 * [Nested (virtual) Transactions](https://github.com/PawelGerr/Thinktecture.EntityFrameworkCore/wiki/Nested-(virtual)-Transactions)
 * [Table Hints](https://github.com/PawelGerr/Thinktecture.EntityFrameworkCore/wiki/Table-Hints-(SQL-Server)) (SQL Server)
 * [Queries across multiple databases](https://github.com/PawelGerr/Thinktecture.EntityFrameworkCore/wiki/Queries-accross-multiple-databases-(SQL-Server)) (SQL Server)
@@ -44,6 +45,9 @@ These libraries extend [Entity Framework Core](https://docs.microsoft.com/en-us/
 * [Migrations: include-columns](https://github.com/PawelGerr/Thinktecture.EntityFrameworkCore/wiki/Migrations-Include-columns) (SQL Server, PostgreSQL)
 * [Migrations: identity column](https://github.com/PawelGerr/Thinktecture.EntityFrameworkCore/wiki/Migrations-Identity-column) (SQL Server, PostgreSQL)
 * [Migrations: (non-)clustered PK](https://github.com/PawelGerr/Thinktecture.EntityFrameworkCore/wiki/Migrations-(Non-)Clustered-PK-(SQL-Server)) (SQL Server)
+
+## Best Practices
+* [DbContext Lifetime and Change-Tracking](https://github.com/PawelGerr/Thinktecture.EntityFrameworkCore/wiki/DbContext-Lifetime-and-Change-Tracking)
 
 ## Integration Testing
 * [Isolation of tests](https://github.com/PawelGerr/Thinktecture.EntityFrameworkCore/wiki/Isolation-of-tests) [DEPRECATED]
