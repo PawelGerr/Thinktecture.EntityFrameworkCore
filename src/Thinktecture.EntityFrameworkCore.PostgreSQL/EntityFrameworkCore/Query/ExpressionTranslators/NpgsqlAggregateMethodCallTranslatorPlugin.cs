@@ -30,7 +30,8 @@ public sealed class NpgsqlAggregateMethodCallTranslatorPlugin : IAggregateMethod
 
       Translators =
       [
-         new NpgsqlUuidAggregateMethodCallTranslator(npgsqlSqlExpressionFactory, typeMappingSource)
+         new NpgsqlUuidAggregateMethodCallTranslator(npgsqlSqlExpressionFactory, typeMappingSource),
+         new NpgsqlBitwiseAggregateMethodCallTranslator(npgsqlSqlExpressionFactory)
       ];
    }
 }

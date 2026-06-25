@@ -136,6 +136,7 @@ Provider availability for each feature is in the matrices in §2 and §6.
 | Temp tables | `references/Temp-Tables.md` |
 | Collection parameters ("temp tables light") | `references/Collection-Parameters.md` |
 | Window functions (RowNumber/NTile/aggregates) | `references/Window-Functions.md` |
+| Aggregate functions (GROUP BY: `bit_or`/`bit_and`/`bit_xor`) | `references/Aggregate-Functions.md` |
 | Table hints (`NOLOCK`, …) | `references/Table-Hints.md` |
 | Nested (virtual) transactions | `references/Nested-Transactions.md` |
 | Truncate table | `references/Truncate-Table.md` |

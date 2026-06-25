@@ -224,6 +224,7 @@ private NpgsqlBulkOperationExecutor SUT => field ??= ActDbContext.GetService<Npg
 | **Bulk Insert from Query** | `SqlServerBulkOperationsDbSetExtensions.BulkInsertAsync`, `NpgsqlBulkOperationsDbSetExtensions.BulkInsertAsync`, `SqliteBulkOperationsDbSetExtensions.BulkInsertAsync`, `InsertPropertyBuilder<TTarget, TSource>` | All three providers; generates `INSERT INTO target (cols) SELECT s.cols FROM (subquery) AS s`; fluent `Map` builder; accepts `IQueryable<TSource>` as source |
 | **Temp Tables** | `ITempTableCreator`, `ITempTableReference`, `ITempTableQuery<T>`, `CreateTempTableAsync`, `BulkInsertIntoTempTableAsync`, `BulkInsertValuesIntoTempTableAsync` | Two workflows: all-in-one (create+insert via `BulkInsertIntoTempTableAsync`) or two-step (`CreateTempTableAsync` for empty table + insert later); auto-cleanup via `IAsyncDisposable`; name conflict prevention via `TempTableSuffixLeasing` |
 | **Window Functions** | `EF.Functions.RowNumber()`, `.NTile()`, `.Average()`, etc. | Fluent `PartitionBy()`/`OrderBy()`; all three providers. `NTile` is per-provider (SQL Server requires ORDER BY and returns `long`/bigint; PG/SQLite return `int` and ORDER BY is optional) and lives in `{Provider}DbFunctionsExtensions`. |
+| **Bitwise Aggregates** | `EF.Functions.BitOr`, `.BitAnd`, `.BitXor` | PostgreSQL only; GROUP BY aggregate over integer/`[Flags]`-enum columns; native `bit_or`/`bit_and`/`bit_xor`, no cast |
 | **Table Hints** | `query.WithTableHints(SqlServerTableHint.NoLock)` | SQL Server only |
 | **Nested Transactions** | `NestedRelationalTransactionManager` | Root = real transaction; children = logical |
 | **Collection Parameters** | `ScalarCollectionParameter<T>`, `JsonCollectionParameter`, `NpgsqlJsonCollectionParameter` | Provider-specific factories |
@@ -238,6 +239,7 @@ private NpgsqlBulkOperationExecutor SUT => field ??= ActDbContext.GetService<Npg
 | Bulk Insert-or-Update (Upsert) | Y | Y | Y |
 | Temp Tables | Y | Y | Y |
 | Window Functions | Y | Y | Y |
+| Bitwise Aggregates (`bit_or`/`bit_and`/`bit_xor`) | - | Y | - |
 | Collection Parameters | Y | Y | - |
 | Nested Transactions | Y | Y | Y |
 | Tenant Database Support | Y | - | - |
@@ -266,6 +268,21 @@ same treatment: `NpgsqlDbFunctionsTranslator.CreateWindowFunctionExpression` rew
 `TypeMapping.StoreType == "uuid"`. Only `MAX`/`MIN` are rewritten (`SUM`/`AVG` over a uuid have no
 meaning and are left untouched). Without this, the windowed path emitted bare `max(uuid) OVER (...)`
 and failed at runtime with the same `function max(uuid) does not exist` error as the aggregate path.
+
+### PostgreSQL bitwise aggregates (`bit_or`/`bit_and`/`bit_xor`)
+
+`EF.Functions.BitOr` / `BitAnd` / `BitXor` (in `NpgsqlAggregateDbFunctionsExtensions`, root
+`Thinktecture` namespace) translate to PostgreSQL's native `bit_or`/`bit_and`/`bit_xor` GROUP BY
+aggregates. Usage: `GroupBy(...).Select(g => EF.Functions.BitOr(g.Select(e => e.Col)))`. Generic
+`BitOr<T>(IEnumerable<T>)` returning `T` — supports `short`/`int`/`long`, their nullable forms, and
+`[Flags]` enums (backed by an integer type). **Always-on** (no feature flag) via
+`NpgsqlBitwiseAggregateMethodCallTranslator` (`IAggregateMethodCallTranslator`), added to
+`NpgsqlAggregateMethodCallTranslatorPlugin.Translators` alongside the uuid translator. Detection:
+`method.DeclaringType == typeof(NpgsqlAggregateDbFunctionsExtensions)` then `switch(method.Name)`.
+**No cast** — the aggregate reuses the group element selector's own `TypeMapping` and CLR return
+type, so enums/ints round-trip (PostgreSQL `bit_*` returns the input type). Built with
+`nullable: true` because `bit_*` returns `NULL` when every value in the group is `NULL` (nulls are
+otherwise ignored). GROUP BY form only — no window/`OVER` form. `bit_xor` requires PostgreSQL 14+.
 
 ### Bulk Operation Details
 
