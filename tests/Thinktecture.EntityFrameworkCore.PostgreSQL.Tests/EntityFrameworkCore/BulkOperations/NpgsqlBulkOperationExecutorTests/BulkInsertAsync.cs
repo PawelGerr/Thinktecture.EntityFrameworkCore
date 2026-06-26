@@ -90,6 +90,26 @@ public class BulkInsertAsync : IntegrationTestsBase
    }
 
    [Fact]
+   public async Task Should_insert_flags_enum()
+   {
+      await ArrangeDbContext.Database.EnsureCreatedAsync();
+      await SUT.TruncateTableAsync<TestEntityWithFlags>();
+
+      var testEntity = new TestEntityWithFlags
+                       {
+                          Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
+                          GroupId = 1,
+                          Phase = PhaseMembership.A | PhaseMembership.C
+                       };
+
+      await SUT.BulkInsertAsync(new[] { testEntity }, new NpgsqlBulkInsertOptions());
+
+      var loadedEntity = await AssertDbContext.TestEntitiesWithFlags.FirstOrDefaultAsync();
+      loadedEntity.Should().NotBeNull();
+      loadedEntity!.Phase.Should().Be(PhaseMembership.A | PhaseMembership.C);
+   }
+
+   [Fact]
    public async Task Should_insert_shadow_properties()
    {
       await ArrangeDbContext.Database.EnsureCreatedAsync();

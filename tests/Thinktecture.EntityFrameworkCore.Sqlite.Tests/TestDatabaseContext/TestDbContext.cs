@@ -28,6 +28,7 @@ public class TestDbContext : DbContext
    public DbSet<TestEntity_Owns_SeparateMany_SeparateOne> TestEntities_Own_SeparateMany_SeparateOne { get; set; }
    public DbSet<TestEntity_Owns_SeparateMany_SeparateMany> TestEntities_Own_SeparateMany_SeparateMany { get; set; }
    public DbSet<TestEntityWithComplexType> TestEntities_with_ComplexType { get; set; }
+   public DbSet<TestEntityWithFlags> TestEntitiesWithFlags { get; set; }
 #nullable enable
 
    public Action<ModelBuilder>? ConfigureModel { get; set; }
@@ -73,6 +74,7 @@ public class TestDbContext : DbContext
       TestEntity_Owns_SeparateMany_SeparateMany.Configure(modelBuilder);
       TestEntityWithComplexType.Configure(modelBuilder);
       TestEntityWithDifferentColumnNames.Configure(modelBuilder);
+      TestEntityWithFlags.Configure(modelBuilder);
 
       ConfigureModel?.Invoke(modelBuilder);
 

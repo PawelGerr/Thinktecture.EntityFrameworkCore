@@ -16,7 +16,7 @@ namespace Thinktecture.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "10.0.2");
+            modelBuilder.HasAnnotation("ProductVersion", "10.0.9");
 
             modelBuilder.Entity("Thinktecture.TestDatabaseContext.KeylessTestEntity", b =>
                 {
@@ -243,6 +243,23 @@ namespace Thinktecture.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("TestEntitiesWithDotnetDefaultValues");
+                });
+
+            modelBuilder.Entity("Thinktecture.TestDatabaseContext.TestEntityWithFlags", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("GroupId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<short>("Phase")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("TestEntitiesWithFlags");
                 });
 
             modelBuilder.Entity("Thinktecture.TestDatabaseContext.TestEntityWithShadowProperties", b =>

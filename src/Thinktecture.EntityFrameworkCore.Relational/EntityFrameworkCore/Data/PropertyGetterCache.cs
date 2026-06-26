@@ -53,7 +53,12 @@ public partial class PropertyGetterCache : IPropertyGetterCache
       }
 
       var getter = BuildGetter(property);
-      var converter = property.GetValueConverter();
+
+      // Use the property's explicit value converter if present; otherwise fall back to the converter
+      // baked into the type mapping. The latter covers conversions that EF Core applies implicitly
+      // (e.g. enums mapped to their underlying numeric type), which are not exposed via
+      // GetValueConverter() but must still be applied to obtain the provider value for bulk operations.
+      var converter = property.GetValueConverter() ?? property.GetTypeMapping().Converter;
 
       if (converter != null)
          getter = UseConverter(getter, converter);

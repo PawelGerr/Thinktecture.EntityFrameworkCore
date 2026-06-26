@@ -57,6 +57,23 @@ public class BulkInsertAsync : SchemaChangingIntegrationTestsBase
    }
 
    [Fact]
+   public async Task Should_insert_flags_enum()
+   {
+      var testEntity = new TestEntityWithFlags
+                       {
+                          Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
+                          GroupId = 1,
+                          Phase = PhaseMembership.A | PhaseMembership.C
+                       };
+
+      await SUT.BulkInsertAsync(new[] { testEntity }, new SqliteBulkInsertOptions());
+
+      var loadedEntity = await AssertDbContext.TestEntitiesWithFlags.FirstOrDefaultAsync();
+      loadedEntity.Should().NotBeNull();
+      loadedEntity!.Phase.Should().Be(PhaseMembership.A | PhaseMembership.C);
+   }
+
+   [Fact]
    public async Task Should_insert_private_property()
    {
       var testEntity = new TestEntity { Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"), RequiredName = "RequiredName" };
