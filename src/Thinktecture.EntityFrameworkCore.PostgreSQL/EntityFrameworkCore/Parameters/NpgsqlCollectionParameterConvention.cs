@@ -52,9 +52,9 @@ internal class NpgsqlCollectionParameterConvention : IModelInitializedConvention
       if (precisionAndScale is not null)
          SetScaleAndPrecision<TColumn1>(builder, precisionAndScale.Value);
 
-      builder.ToTable(typeof(ScalarCollectionParameter<TColumn1>).ShortDisplayName());
-      builder.HasNoKey();
-      builder.ExcludeTableFromMigrations(true);
+      builder.ToTable(typeof(ScalarCollectionParameter<TColumn1>).ShortDisplayName(), fromDataAnnotation: true);
+      builder.HasNoKey(fromDataAnnotation: true);
+      builder.ExcludeTableFromMigrations(true, fromDataAnnotation: true);
    }
 
    private static void SetScaleAndPrecision<TColumn1>(

@@ -63,9 +63,9 @@ public class TempTableConvention : IModelInitializedConvention
       if (precisionAndScale is not null)
          SetScaleAndPrecision<TColumn1>(builder, precisionAndScale.Value);
 
-      builder.ToTable($"#{type.ShortDisplayName()}");
-      builder.HasNoKey();
-      builder.ExcludeTableFromMigrations(true);
+      builder.ToTable($"#{type.ShortDisplayName()}", fromDataAnnotation: true);
+      builder.HasNoKey(fromDataAnnotation: true);
+      builder.ExcludeTableFromMigrations(true, fromDataAnnotation: true);
    }
 
    private static void SetScaleAndPrecision<TColumn1>(
