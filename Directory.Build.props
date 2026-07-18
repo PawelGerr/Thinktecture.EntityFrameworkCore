@@ -24,10 +24,9 @@
     <VSTestResultsDirectory>$(MSBuildThisFileDirectory)test-results/$(TargetFramework)</VSTestResultsDirectory>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(DOTNET_OUTPATHS_OUTSIDE_WORK_DIR)' != ''">
-    <BaseOutputPath>$(MSBuildThisFileDirectory)../_artifacts/Thinktecture.EntityFrameworkCore/$(MSBuildProjectName)/bin/</BaseOutputPath>
-    <BaseIntermediateOutputPath>$(MSBuildThisFileDirectory)../_artifacts/Thinktecture.EntityFrameworkCore/$(MSBuildProjectName)/obj/</BaseIntermediateOutputPath>
-    <MSBuildProjectExtensionsPath>$(BaseIntermediateOutputPath)</MSBuildProjectExtensionsPath>
+  <PropertyGroup Condition="'$(USE_DOTNET_ARTIFACTS_PATH)' != ''">
+    <UseArtifactsOutput>true</UseArtifactsOutput>
+    <ArtifactsPath>$(MSBuildThisFileDirectory)../_artifacts/Thinktecture.EntityFrameworkCore</ArtifactsPath>
   </PropertyGroup>
 
   <ItemGroup>
