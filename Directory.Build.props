@@ -24,11 +24,6 @@
     <VSTestResultsDirectory>$(MSBuildThisFileDirectory)test-results/$(TargetFramework)</VSTestResultsDirectory>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(USE_DOTNET_ARTIFACTS_PATH)' != ''">
-    <UseArtifactsOutput>true</UseArtifactsOutput>
-    <ArtifactsPath>$(MSBuildThisFileDirectory)../_artifacts/Thinktecture.EntityFrameworkCore</ArtifactsPath>
-  </PropertyGroup>
-
   <ItemGroup>
     <Using Include="Microsoft.EntityFrameworkCore" />
   </ItemGroup>
