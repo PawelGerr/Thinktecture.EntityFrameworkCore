@@ -110,6 +110,9 @@ src/                                    # Runtime packages (9 projects)
 tests/                                  # Test projects (7 projects, mirror src/)
   Thinktecture.EntityFrameworkCore.TestHelpers/          # Shared test entities & DbContext
 samples/                                # Sample apps and benchmarks
+agent-skills/                           # Git submodule PawelGerr/agent-skills; this repo owns only skills/thinktecture-entityframeworkcore/
+skills/thinktecture-entityframeworkcore/SKILL.md   # Redirect stub for old `npx skills add PawelGerr/Thinktecture.EntityFrameworkCore` installs; keep it, add nothing else
+docs/                                   # Git submodule: GitHub wiki
 ```
 
 ### Internal Provider Project Structure
@@ -542,6 +545,14 @@ After substantial changes (new features, API changes, new entities/options, chan
 - **Provider annotations:** parenthesized on sidebar entries, e.g., `(SQL Server, PostgreSQL)`
 - **Sidebar organization** (`docs/_Sidebar.md`): sections are Performance, Features, Convenience, Integration Testing, Extensibility
 - **PostgreSQL gap:** Docs predate the PostgreSQL provider — when touching any page, check for missing PostgreSQL examples
+
+### Agent Skill
+
+The agent skill `thinktecture-entityframeworkcore` lives in the `agent-skills/` submodule (repo `PawelGerr/agent-skills`, branch `main`). Its `references/*.md` pages mirror the `docs/` pages, so a change to user-facing behavior updates both.
+
+- Edit only `agent-skills/skills/thinktecture-entityframeworkcore/`, its entry in `agent-skills/.claude-plugin/marketplace.json`, and its row in `agent-skills/README.md`. Never touch `agent-skills/skills/thinktecture-runtime-extensions/`; that folder belongs to the Thinktecture.Runtime.Extensions repo.
+- Commit in `agent-skills` first (normal commit on top of `main`, never amend or force-push), then commit the updated gitlink in this repo. `push.recurseSubmodules=on-demand` pushes `agent-skills` before this repo.
+- Verify with `claude plugin validate ./agent-skills`.
 
 **Skip** for: purely internal refactoring, trivial fixes, test-only changes without infrastructure changes.
 

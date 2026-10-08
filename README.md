@@ -58,10 +58,17 @@ These libraries extend [Entity Framework Core](https://docs.microsoft.com/en-us/
 
 ## AI Coding Assistants
 
-An AI agent skill ships with the repository (under [`skills/thinktecture-entityframeworkcore`](skills/thinktecture-entityframeworkcore)) to teach AI coding agents how to consume these packages. Install it with the [`skills`](https://github.com/obra/skills) CLI:
+An AI agent skill teaches AI coding agents how to consume these packages. The skill lives in the repository [PawelGerr/agent-skills](https://github.com/PawelGerr/agent-skills) under `skills/thinktecture-entityframeworkcore`. Install it with the [`skills`](https://github.com/vercel-labs/skills) CLI:
 
 ``` bash
-npx skills@latest add PawelGerr/Thinktecture.EntityFrameworkCore
+npx skills@latest add PawelGerr/agent-skills --skill thinktecture-entityframeworkcore
+```
+
+In Claude Code, you can install the skill as a plugin instead:
+
+```
+/plugin marketplace add PawelGerr/agent-skills
+/plugin install thinktecture-entityframeworkcore@pawelgerr
 ```
 
 The library is also indexed by Context7 (MCP) under the id `/pawelgerr/thinktecture.entityframeworkcore`. See [AI Coding Assistants](https://github.com/PawelGerr/Thinktecture.EntityFrameworkCore/wiki/AI-Coding-Assistants) for details.
