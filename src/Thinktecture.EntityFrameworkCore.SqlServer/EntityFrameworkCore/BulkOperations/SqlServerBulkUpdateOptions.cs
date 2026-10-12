@@ -1,12 +1,17 @@
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Data.SqlClient;
+using Thinktecture.EntityFrameworkCore.BulkOperations.Internal;
 
 namespace Thinktecture.EntityFrameworkCore.BulkOperations;
 
 /// <summary>
 /// Bulk update options for SQL Server.
 /// </summary>
+[SuppressMessage("Usage", "EF1001:Internal EF Core API usage.")]
 public sealed class SqlServerBulkUpdateOptions : ISqlServerMergeOperationOptions, IBulkUpdateOptions
 {
+   private readonly BulkOperationTableNameOptions _tableNames;
+
    /// <inheritdoc />
    public IEntityPropertiesProvider? PropertiesToUpdate { get; set; }
 
@@ -20,10 +25,27 @@ public sealed class SqlServerBulkUpdateOptions : ISqlServerMergeOperationOptions
    public SqlServerBulkOperationTempTableOptions TempTableOptions { get; }
 
    /// <inheritdoc />
-   public string? TableName { get; set; }
+   [Obsolete("Use 'TableNameProvider' instead, for example 'IBulkOperationTableNameProvider.ForRootEntity(tableName, schema)'. Note: 'ForRootEntity' emits no schema when 'schema' is null, while 'TableName' alone keeps the schema of the EF Core model.")]
+   public string? TableName
+   {
+      get => _tableNames.TableName;
+      set => _tableNames.TableName = value;
+   }
 
    /// <inheritdoc />
-   public string? Schema { get; set; }
+   [Obsolete("Use 'TableNameProvider' instead, for example 'IBulkOperationTableNameProvider.ForRootEntity(tableName, schema)'.")]
+   public string? Schema
+   {
+      get => _tableNames.Schema;
+      set => _tableNames.Schema = value;
+   }
+
+   /// <inheritdoc />
+   public IBulkOperationTableNameProvider TableNameProvider
+   {
+      get => _tableNames.TableNameProvider;
+      set => _tableNames.TableNameProvider = value;
+   }
 
    /// <summary>
    /// Initializes new instance of <see cref="SqlServerBulkUpdateOptions"/>.
@@ -31,12 +53,14 @@ public sealed class SqlServerBulkUpdateOptions : ISqlServerMergeOperationOptions
    /// <param name="optionsToInitializeFrom">Options to initialize from.</param>
    public SqlServerBulkUpdateOptions(IBulkUpdateOptions? optionsToInitializeFrom = null)
    {
+#pragma warning disable CS0618 // TableName and Schema are obsolete but must be copied for backward compatibility.
+      _tableNames = new BulkOperationTableNameOptions(optionsToInitializeFrom?.TableName, optionsToInitializeFrom?.Schema, optionsToInitializeFrom?.TableNameProvider);
+#pragma warning restore CS0618
+
       if (optionsToInitializeFrom is not null)
       {
          PropertiesToUpdate = optionsToInitializeFrom.PropertiesToUpdate;
          KeyProperties = optionsToInitializeFrom.KeyProperties;
-         TableName = optionsToInitializeFrom.TableName;
-         Schema = optionsToInitializeFrom.Schema;
       }
 
       if (optionsToInitializeFrom is ISqlServerMergeOperationOptions mergeOptions)

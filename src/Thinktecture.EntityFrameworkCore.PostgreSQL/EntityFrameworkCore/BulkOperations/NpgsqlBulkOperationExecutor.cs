@@ -101,33 +101,34 @@ public sealed partial class NpgsqlBulkOperationExecutor
       CancellationToken cancellationToken = default)
       where T : class
    {
-      var (entityType, tableName, schema) = _ctx.Model.GetEntityType<T>(options.TableName, options.Schema);
-
-      return BulkInsertAsync(entityType, entities, schema, tableName, options, NpgsqlBulkOperationContextFactoryForEntities.Instance, cancellationToken);
-   }
-
-   private async Task<int> BulkInsertAsync<T>(
-      IEntityType entityType,
-      IEnumerable<T> entitiesOrValues,
-      string? schema,
-      string tableName,
-      IBulkInsertOptions options,
-      INpgsqlBulkOperationContextFactory bulkOperationContextFactory,
-      CancellationToken cancellationToken = default)
-   {
-      ArgumentNullException.ThrowIfNull(entitiesOrValues);
-      ArgumentNullException.ThrowIfNull(tableName);
+      ArgumentNullException.ThrowIfNull(entities);
       ArgumentNullException.ThrowIfNull(options);
 
       if (options is not NpgsqlBulkInsertOptions npgsqlOptions)
          npgsqlOptions = new NpgsqlBulkInsertOptions(options);
 
-      var properties = npgsqlOptions.PropertiesToInsert.DeterminePropertiesForInsert(entityType, null);
+      var entityType = _ctx.Model.GetEntityTypeOrTempTableEntityType<T>();
+
+      return BulkInsertAsync(entityType, entities, npgsqlOptions.TableNameProvider, npgsqlOptions, NpgsqlBulkOperationContextFactoryForEntities.Instance, cancellationToken);
+   }
+
+   private async Task<int> BulkInsertAsync<T>(
+      IEntityType entityType,
+      IEnumerable<T> entitiesOrValues,
+      IBulkOperationTableNameProvider tableNameProvider,
+      NpgsqlBulkInsertOptions options,
+      INpgsqlBulkOperationContextFactory bulkOperationContextFactory,
+      CancellationToken cancellationToken = default)
+   {
+      ArgumentNullException.ThrowIfNull(entitiesOrValues);
+
+      var properties = options.PropertiesToInsert.DeterminePropertiesForInsert(entityType, null);
       properties.EnsureNoSeparateOwnedTypesInsideCollectionOwnedType();
 
-      var ctx = bulkOperationContextFactory.CreateForBulkInsert(_ctx, npgsqlOptions, properties);
+      var tableName = tableNameProvider.GetValidTableName(entityType);
+      var ctx = bulkOperationContextFactory.CreateForBulkInsert(_ctx, options, properties);
 
-      return await BulkInsertAsync(entitiesOrValues, schema, tableName, ctx, npgsqlOptions.Freeze, cancellationToken);
+      return await BulkInsertAsync(entitiesOrValues, tableName.Schema, tableName.Name, ctx, options.Freeze, tableNameProvider, cancellationToken);
    }
 
    private async Task<int> BulkInsertAsync<T>(
@@ -136,6 +137,7 @@ public sealed partial class NpgsqlBulkOperationExecutor
       string tableName,
       INpgsqlBulkOperationContext ctx,
       bool freeze,
+      IBulkOperationTableNameProvider tableNameProvider,
       CancellationToken cancellationToken)
    {
       using var reader = ctx.CreateReader(entitiesOrValues);
@@ -195,7 +197,7 @@ public sealed partial class NpgsqlBulkOperationExecutor
       }
 
       if (readEntities is { Count: > 0 })
-         numberOfInsertedRows += await BulkInsertSeparatedOwnedEntitiesAsync(readEntities, ctx, cancellationToken);
+         numberOfInsertedRows += await BulkInsertSeparatedOwnedEntitiesAsync(readEntities, ctx, tableNameProvider, cancellationToken);
 
       return numberOfInsertedRows;
    }
@@ -203,6 +205,7 @@ public sealed partial class NpgsqlBulkOperationExecutor
    private async Task<int> BulkInsertSeparatedOwnedEntitiesAsync(
       IReadOnlyList<object> parentEntities,
       INpgsqlBulkOperationContext parentBulkOperationContext,
+      IBulkOperationTableNameProvider tableNameProvider,
       CancellationToken cancellationToken)
    {
       if (parentEntities.Count == 0)
@@ -212,14 +215,9 @@ public sealed partial class NpgsqlBulkOperationExecutor
 
       foreach (var childContext in parentBulkOperationContext.GetChildren(parentEntities))
       {
-         var childTableName = childContext.EntityType.GetTableName() ?? throw new InvalidOperationException($"The entity '{childContext.EntityType.Name}' has no table name.");
+         var tableName = tableNameProvider.GetValidTableName(childContext.EntityType);
 
-         numberOfInsertedRows += await BulkInsertAsync(childContext.Entities,
-                                                       childContext.EntityType.GetSchema(),
-                                                       childTableName,
-                                                       childContext,
-                                                       freeze: false,
-                                                       cancellationToken).ConfigureAwait(false);
+         numberOfInsertedRows += await BulkInsertAsync(childContext.Entities, tableName.Schema, tableName.Name, childContext, freeze: false, tableNameProvider, cancellationToken).ConfigureAwait(false);
       }
 
       return numberOfInsertedRows;
@@ -345,7 +343,8 @@ public sealed partial class NpgsqlBulkOperationExecutor
       try
       {
          var bulkInsertOptions = options.GetBulkInsertOptions();
-         var numberOfInsertedRows = await BulkInsertAsync(entityType, entitiesOrValues, null, tempTableReference.Name, bulkInsertOptions, bulkOperationContextFactory, cancellationToken).ConfigureAwait(false);
+         // The user options may carry a TableNameProvider. It is never applied to the temp table.
+         var numberOfInsertedRows = await BulkInsertAsync(entityType, entitiesOrValues, IBulkOperationTableNameProvider.ForRootEntity(tempTableReference.Name), bulkInsertOptions, bulkOperationContextFactory, cancellationToken).ConfigureAwait(false);
 
          if (options.MomentOfPrimaryKeyCreation == MomentOfNpgsqlPrimaryKeyCreation.AfterBulkInsert)
          {
@@ -467,7 +466,8 @@ public sealed partial class NpgsqlBulkOperationExecutor
       if (options is not NpgsqlBulkInsertOptions npgsqlOptions)
          npgsqlOptions = new NpgsqlBulkInsertOptions(options);
 
-      await BulkInsertAsync(entityType, entitiesOrValues, null, tempTable.Name, npgsqlOptions, bulkOperationContextFactory, cancellationToken).ConfigureAwait(false);
+      // The user options may carry a TableNameProvider. It is never applied to the temp table.
+      await BulkInsertAsync(entityType, entitiesOrValues, IBulkOperationTableNameProvider.ForRootEntity(tempTable.Name), npgsqlOptions, bulkOperationContextFactory, cancellationToken).ConfigureAwait(false);
    }
 
    /// <inheritdoc />
@@ -523,16 +523,18 @@ public sealed partial class NpgsqlBulkOperationExecutor
    private async Task<int> BulkUpdateAsync<T>(IEnumerable<T> entities, NpgsqlBulkUpdateOptions options, CancellationToken cancellationToken)
       where T : class
    {
-      var (entityType, tableName, schema) = BulkOperationModelExtensions.GetEntityType<T>(_ctx.Model, options.TableName, options.Schema);
+      var entityType = _ctx.Model.GetEntityTypeOrTempTableEntityType<T>();
       var propertiesForUpdate = options.PropertiesToUpdate.DeterminePropertiesForUpdate(entityType, true);
 
       if (propertiesForUpdate.Count == 0)
          throw new ArgumentException("The number of properties to update cannot be 0.");
 
+      var tableName = options.TableNameProvider.GetValidTableName(entityType);
+
       var tempTableOptions = options.GetTempTableBulkInsertOptions();
       await using var tempTable = await BulkInsertIntoTempTableAsync(entities, tempTableOptions, cancellationToken);
 
-      var updateStatement = CreateUpdateCommand(entityType, schema, tableName, tempTable.Name, propertiesForUpdate, options.KeyProperties.DetermineKeyProperties(entityType));
+      var updateStatement = CreateUpdateCommand(entityType, tableName.Schema, tableName.Name, tempTable.Name, propertiesForUpdate, options.KeyProperties.DetermineKeyProperties(entityType));
 
       return await _ctx.Database.ExecuteSqlRawAsync(updateStatement, cancellationToken);
    }
@@ -556,18 +558,20 @@ public sealed partial class NpgsqlBulkOperationExecutor
    private async Task<int> BulkInsertOrUpdateAsync<T>(IEnumerable<T> entities, NpgsqlBulkInsertOrUpdateOptions options, CancellationToken cancellationToken)
       where T : class
    {
-      var (entityType, tableName, schema) = BulkOperationModelExtensions.GetEntityType<T>(_ctx.Model, options.TableName, options.Schema);
+      var entityType = _ctx.Model.GetEntityTypeOrTempTableEntityType<T>();
       var propertiesForInsert = options.PropertiesToInsert.DeterminePropertiesForInsert(entityType, true);
       var propertiesForUpdate = options.PropertiesToUpdate.DeterminePropertiesForUpdate(entityType, true);
 
       if (propertiesForInsert.Count == 0)
          throw new ArgumentException("The number of properties to insert cannot be 0.");
 
+      var tableName = options.TableNameProvider.GetValidTableName(entityType);
+
       var tempTableOptions = options.GetTempTableBulkInsertOptions();
       await using var tempTable = await BulkInsertIntoTempTableAsync(entities, tempTableOptions, cancellationToken);
 
       var keyProperties = options.KeyProperties.DetermineKeyProperties(entityType);
-      var upsertStatement = CreateInsertOrUpdateCommand(entityType, schema, tableName, tempTable.Name, propertiesForInsert, propertiesForUpdate, keyProperties, options.ConflictDoNothing);
+      var upsertStatement = CreateInsertOrUpdateCommand(entityType, tableName.Schema, tableName.Name, tempTable.Name, propertiesForInsert, propertiesForUpdate, keyProperties, options.ConflictDoNothing);
 
       return await _ctx.Database.ExecuteSqlRawAsync(upsertStatement, cancellationToken);
    }
@@ -690,8 +694,7 @@ public sealed partial class NpgsqlBulkOperationExecutor
                                                                   sourceKeySelector,
                                                                   setClauseBuilder.Entries,
                                                                   filter,
-                                                                  options?.TableName,
-                                                                  options?.Schema);
+                                                                  options?.TableNameProvider ?? IBulkOperationTableNameProvider.Default);
 
       var sqlParams = parameters.Select(kv => (object)new NpgsqlParameter(kv.Key, kv.Value ?? DBNull.Value));
       return await _ctx.Database.ExecuteSqlRawAsync(sql, sqlParams, cancellationToken);
@@ -831,8 +834,7 @@ public sealed partial class NpgsqlBulkOperationExecutor
       var (sql, parameters) = translator.TranslateInsertFromQuery<TTarget, TSource>(
                                                                                     sourceQuery,
                                                                                     builder.Entries,
-                                                                                    options?.TableName,
-                                                                                    options?.Schema);
+                                                                                    options?.TableNameProvider ?? IBulkOperationTableNameProvider.Default);
 
       var sqlParams = parameters.Select(kv => (object)new NpgsqlParameter(kv.Key, kv.Value ?? DBNull.Value));
       return await _ctx.Database.ExecuteSqlRawAsync(sql, sqlParams, cancellationToken);

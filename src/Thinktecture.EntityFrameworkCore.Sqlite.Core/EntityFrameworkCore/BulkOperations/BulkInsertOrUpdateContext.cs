@@ -52,6 +52,10 @@ internal class BulkInsertOrUpdateContext : ISqliteBulkOperationContext
       _propertiesToUpdate = ownPropertiesToUpdate;
       _externalPropertiesToUpdate = externalPropertiesToUpdate;
 
+      // Owned types in separate tables need properties for the insert and for the update.
+      // The check runs here, before the first write, so that a wrong configuration does not lead to a partial write.
+      EnsureInsertAndUpdatePropertiesForSeparateOwnedTypes(externalPropertiesToInsert, externalPropertiesToUpdate);
+
       Properties = ownPropertiesToInsert.Union(ownPropertiesToUpdate).Union(keyProperties.Select(p => new PropertyWithNavigations(p, Array.Empty<Navigation>()))).ToList();
    }
 
@@ -68,29 +72,41 @@ internal class BulkInsertOrUpdateContext : ISqliteBulkOperationContext
 
       var childCtx = new List<ISqliteOwnedTypeBulkOperationContext>();
 
+      // The constructor ensures that every owned type has properties for the insert and for the update.
       var propertiesToUpdateData = _externalPropertiesToUpdate.GroupExternalProperties(entities).ToList();
 
       foreach (var (navigation, ownedEntities, propertiesToInsert) in _externalPropertiesToInsert.GroupExternalProperties(entities))
       {
-         var propertiesToUpdateTuple = propertiesToUpdateData.FirstOrDefault(d => d.Item1 == navigation);
-         var propertiesToUpdate = propertiesToUpdateTuple.Item3;
-
-         if (propertiesToUpdate is null || propertiesToUpdate.Count == 0)
-            throw new Exception($"The owned type property '{navigation.DeclaringEntityType.Name}.{navigation.Name}' is selected for bulk-insert-or-update but there are no properties for performing the update.");
-
-         propertiesToUpdateData.Remove(propertiesToUpdateTuple);
+         var propertiesToUpdate = propertiesToUpdateData.First(d => d.Item1 == navigation).Item3;
 
          var ownedTypeCtx = new OwnedTypeBulkInsertOrUpdateContext(_ctx, _readerFactory, Connection, propertiesToInsert, propertiesToUpdate, navigation.TargetEntityType, ownedEntities, AutoIncrementBehavior);
          childCtx.Add(ownedTypeCtx);
       }
 
-      if (propertiesToUpdateData.Count != 0)
-      {
-         var updateWithoutInsert = propertiesToUpdateData[0].Item1;
-         throw new Exception($"{propertiesToUpdateData.Count} owned type property/properties including '{updateWithoutInsert.DeclaringEntityType.Name}.{updateWithoutInsert.Name}' is selected for bulk-insert-or-update but there are no properties for performing the insert.");
-      }
-
       return childCtx;
+   }
+
+   private static void EnsureInsertAndUpdatePropertiesForSeparateOwnedTypes(
+      IReadOnlyList<PropertyWithNavigations> externalPropertiesToInsert,
+      IReadOnlyList<PropertyWithNavigations> externalPropertiesToUpdate)
+   {
+      var navigationsToInsert = externalPropertiesToInsert.Select(GetSeparateNavigation).Distinct().ToList();
+      var navigationsToUpdate = externalPropertiesToUpdate.Select(GetSeparateNavigation).Distinct().ToList();
+
+      var insertWithoutUpdate = navigationsToInsert.FirstOrDefault(n => !navigationsToUpdate.Contains(n));
+
+      if (insertWithoutUpdate is not null)
+         throw new NotSupportedException($"The owned type property '{insertWithoutUpdate.DeclaringEntityType.Name}.{insertWithoutUpdate.Name}' is selected for bulk-insert-or-update but there are no properties for performing the update.");
+
+      var updatesWithoutInsert = navigationsToUpdate.Where(n => !navigationsToInsert.Contains(n)).ToList();
+
+      if (updatesWithoutInsert.Count != 0)
+         throw new NotSupportedException($"{updatesWithoutInsert.Count} owned type property/properties including '{updatesWithoutInsert[0].DeclaringEntityType.Name}.{updatesWithoutInsert[0].Name}' is selected for bulk-insert-or-update but there are no properties for performing the insert.");
+   }
+
+   private static INavigation GetSeparateNavigation(PropertyWithNavigations property)
+   {
+      return property.DropUntilSeparateNavigation().DroppedNavigations[^1];
    }
 
    private class OwnedTypeBulkInsertOrUpdateContext : BulkInsertOrUpdateContext, ISqliteOwnedTypeBulkOperationContext

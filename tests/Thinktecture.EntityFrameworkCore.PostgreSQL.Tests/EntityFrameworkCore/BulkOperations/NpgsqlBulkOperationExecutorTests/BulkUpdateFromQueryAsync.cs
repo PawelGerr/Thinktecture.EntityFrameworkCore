@@ -3,6 +3,8 @@ using Thinktecture.TestDatabaseContext;
 
 // ReSharper disable InconsistentNaming
 
+#pragma warning disable CS0618 // TableName and Schema are obsolete; these tests cover the obsolete path on purpose.
+
 namespace Thinktecture.EntityFrameworkCore.BulkOperations.NpgsqlBulkOperationExecutorTests;
 
 // ReSharper disable once InconsistentNaming
@@ -242,6 +244,55 @@ public class BulkUpdateFromQueryAsync : IntegrationTestsBase
                .Set(e => e.Name, (e, f) => f.Name)
                .Set(e => e.Count, (e, f) => f.Count),
             options: new NpgsqlBulkUpdateFromQueryOptions { TableName = "TestEntities_QueryUpdateRedirect", Schema = Schema });
+
+         affectedRows.Should().Be(1);
+
+         var redirectedNames = await AssertDbContext.Database
+                                                   .SqlQueryRaw<string>($"""SELECT "Name" FROM "{Schema}"."TestEntities_QueryUpdateRedirect" """)
+                                                   .ToListAsync();
+         redirectedNames.Should().HaveCount(1);
+         redirectedNames[0].Should().Be("UpdatedName");
+      }
+      finally
+      {
+         await ActDbContext.Database.ExecuteSqlRawAsync($"""DROP TABLE IF EXISTS "{Schema}"."TestEntities_QueryUpdateRedirect" """);
+      }
+   }
+
+   [Fact]
+   public async Task Should_update_entities_in_table_from_ForRootEntity_provider()
+   {
+      await ActDbContext.Database.ExecuteSqlRawAsync($"""
+         CREATE TABLE "{Schema}"."TestEntities_QueryUpdateRedirect" (LIKE "{Schema}"."TestEntities" INCLUDING ALL);
+         INSERT INTO "{Schema}"."TestEntities_QueryUpdateRedirect" ("Id", "RequiredName", "Name", "Count", "NullableCount", "ConvertibleClass", "ParentId", "PropertyWithBackingField", "_privateField")
+         VALUES ('40B5CA93-5C02-48AD-B8A1-12BC13313866', 'RequiredName', NULL, 0, NULL, NULL, NULL, 0, 0);
+         """);
+
+      try
+      {
+         var updatedEntities = new List<TestEntity>
+         {
+            new()
+            {
+               Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
+               RequiredName = "RequiredName",
+               Name = "UpdatedName",
+               Count = 99
+            }
+         };
+
+         await using var tempTable = await SUT.BulkInsertIntoTempTableAsync(updatedEntities, new NpgsqlTempTableBulkInsertOptions());
+
+         var sourceQuery = tempTable.Query;
+
+         var affectedRows = await ActDbContext.Set<TestEntity>().BulkUpdateAsync(
+            sourceQuery,
+            e => e.Id,
+            f => f.Id,
+            builder => builder
+               .Set(e => e.Name, (e, f) => f.Name)
+               .Set(e => e.Count, (e, f) => f.Count),
+            options: new NpgsqlBulkUpdateFromQueryOptions { TableNameProvider = IBulkOperationTableNameProvider.ForRootEntity("TestEntities_QueryUpdateRedirect", Schema) });
 
          affectedRows.Should().Be(1);
 

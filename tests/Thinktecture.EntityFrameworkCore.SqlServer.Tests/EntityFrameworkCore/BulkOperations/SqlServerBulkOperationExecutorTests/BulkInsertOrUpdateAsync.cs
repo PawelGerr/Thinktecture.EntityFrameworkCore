@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Thinktecture.EntityFrameworkCore.TempTables;
 using Thinktecture.TestDatabaseContext;
 
+#pragma warning disable CS0618 // TableName and Schema are obsolete; these tests cover the obsolete path on purpose.
+
 namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperationExecutorTests;
 
 // ReSharper disable once InconsistentNaming
@@ -486,6 +488,58 @@ public class BulkInsertOrUpdateAsync : IntegrationTestsBase
       }
    }
 
+   [Theory]
+   [InlineData(false)]
+   [InlineData(true)]
+   public async Task Should_insert_or_update_entities_in_table_from_table_name_provider(bool useGenericOptions)
+   {
+      await ActDbContext.Database.ExecuteSqlRawAsync($"""
+         SELECT TOP 0 * INTO [{Schema}].[TestEntities_BulkUpsertRedirect] FROM [{Schema}].[TestEntities];
+         ALTER TABLE [{Schema}].[TestEntities_BulkUpsertRedirect] ADD PRIMARY KEY ([Id]);
+         INSERT INTO [{Schema}].[TestEntities_BulkUpsertRedirect] ([Id], [RequiredName], [Name], [Count], [NullableCount], [ConvertibleClass], [ParentId], [PropertyWithBackingField], [_privateField])
+         VALUES ('40B5CA93-5C02-48AD-B8A1-12BC13313866', 'RequiredName', 'OldName', 0, NULL, NULL, NULL, 0, 0);
+         """);
+
+      try
+      {
+         var existingEntity = new TestEntity
+                              {
+                                 Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
+                                 RequiredName = "RequiredName",
+                                 Name = "UpdatedName",
+                                 Count = 99
+                              };
+         var newEntity = new TestEntity
+                         {
+                            Id = new Guid("8AF163D7-D316-4B2D-A62F-6326A80C8BEE"),
+                            RequiredName = "RequiredName",
+                            Name = "NewName",
+                            Count = 1
+                         };
+         var provider = new SuffixTableNameProvider("_BulkUpsertRedirect");
+         IBulkInsertOrUpdateOptions options = useGenericOptions
+                                                 ? new GenericBulkOperationOptions { TableNameProvider = provider }
+                                                 : new SqlServerBulkInsertOrUpdateOptions { TableNameProvider = provider };
+
+         var affectedRows = await SUT.BulkInsertOrUpdateAsync(new[] { existingEntity, newEntity }, options);
+
+         affectedRows.Should().Be(2);
+
+         var loadedEntities = await AssertDbContext.TestEntities.ToListAsync();
+         loadedEntities.Should().HaveCount(0, "original table should be empty");
+
+         var redirectedNames = await AssertDbContext.Database
+                                                   .SqlQueryRaw<string>($"SELECT [Name] FROM [{Schema}].[TestEntities_BulkUpsertRedirect]")
+                                                   .ToListAsync();
+         redirectedNames.Should().BeEquivalentTo(["NewName", "UpdatedName"]);
+         provider.RequestedEntityTypes.Should().ContainSingle();
+      }
+      finally
+      {
+         await ActDbContext.Database.ExecuteSqlRawAsync($"DROP TABLE IF EXISTS [{Schema}].[TestEntities_BulkUpsertRedirect]");
+      }
+   }
+
    [Fact]
    public async Task Should_throw_when_trying_to_insert_or_update_temp_table_entity_without_table_name()
    {
@@ -538,5 +592,53 @@ public class BulkInsertOrUpdateAsync : IntegrationTestsBase
       loadedEntities[1].Id.Should().Be(new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"));
       loadedEntities[1].Name.Should().Be("UpdatedName");
       loadedEntities[1].Count.Should().Be(99);
+   }
+
+   [Fact]
+   public async Task Should_throw_on_upsert_of_inlined_owned_type()
+   {
+      ArrangeDbContext.TestEntities_Own_Inline.Add(new TestEntity_Owns_Inline { Id = new Guid("3A1B2FFF-8E11-44E5-80E5-8C7FEEDACEB3"), InlineEntity = new OwnedEntity { IntColumn = 1, StringColumn = "old" } });
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var entity = await ActDbContext.TestEntities_Own_Inline.SingleAsync();
+      entity.InlineEntity.IntColumn = 2;
+
+      await SUT.Awaiting(sut => sut.BulkInsertOrUpdateAsync([entity], new SqlServerBulkInsertOrUpdateOptions()))
+               .Should().ThrowAsync<NotSupportedException>()
+               .WithMessage("Temp tables don't support owned entities.");
+
+      (await AssertDbContext.TestEntities_Own_Inline.SingleAsync()).InlineEntity.IntColumn.Should().Be(1);
+   }
+
+   [Fact]
+   public async Task Should_throw_on_upsert_of_owned_type_in_separate_table()
+   {
+      ArrangeDbContext.TestEntities_Own_SeparateOne.Add(new TestEntity_Owns_SeparateOne { Id = new Guid("7C00ABFE-875B-4396-BE51-3E898647A264"), SeparateEntity = new OwnedEntity { IntColumn = 1, StringColumn = "old" } });
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var entity = await ActDbContext.TestEntities_Own_SeparateOne.SingleAsync();
+      entity.SeparateEntity!.IntColumn = 2;
+
+      await SUT.Awaiting(sut => sut.BulkInsertOrUpdateAsync([entity], new SqlServerBulkInsertOrUpdateOptions()))
+               .Should().ThrowAsync<NotSupportedException>()
+               .WithMessage("Temp tables don't support owned entities.");
+
+      (await AssertDbContext.TestEntities_Own_SeparateOne.SingleAsync()).SeparateEntity!.IntColumn.Should().Be(1);
+   }
+
+   [Fact]
+   public async Task Should_throw_on_upsert_of_owned_collection_in_separate_table()
+   {
+      ArrangeDbContext.TestEntities_Own_SeparateMany.Add(new TestEntity_Owns_SeparateMany { Id = new Guid("54FF93FC-6BE9-4F19-A52E-E517CA9FEAA7"), SeparateEntities = [new() { IntColumn = 1, StringColumn = "old" }] });
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var entity = await ActDbContext.TestEntities_Own_SeparateMany.SingleAsync();
+      entity.SeparateEntities[0].IntColumn = 2;
+
+      await SUT.Awaiting(sut => sut.BulkInsertOrUpdateAsync([entity], new SqlServerBulkInsertOrUpdateOptions()))
+               .Should().ThrowAsync<NotSupportedException>()
+               .WithMessage("Temp tables don't support owned entities.");
+
+      (await AssertDbContext.TestEntities_Own_SeparateMany.SingleAsync()).SeparateEntities.Single().IntColumn.Should().Be(1);
    }
 }

@@ -2,6 +2,8 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Thinktecture.EntityFrameworkCore.TempTables;
 using Thinktecture.TestDatabaseContext;
 
+#pragma warning disable CS0618 // TableName and Schema are obsolete; these tests cover the obsolete path on purpose.
+
 namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqliteBulkOperationExecutorTests;
 
 // ReSharper disable once InconsistentNaming
@@ -49,6 +51,40 @@ public class BulkUpdateTempTableEntityAsync : SchemaChangingIntegrationTestsBase
                        };
 
       var affectedRows = await SUT.BulkUpdateAsync(new[] { tempEntity }, new SqliteBulkUpdateOptions { TableName = "TestEntities" });
+
+      affectedRows.Should().Be(1);
+
+      var loadedEntities = await AssertDbContext.TestEntities.ToListAsync();
+      loadedEntities.Should().HaveCount(1);
+      loadedEntities[0].Id.Should().Be(new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"));
+      loadedEntities[0].Name.Should().Be("UpdatedName");
+      loadedEntities[0].Count.Should().Be(99);
+   }
+
+   [Fact]
+   public async Task Should_update_temp_table_entity_with_ForRootEntity_provider()
+   {
+      ConfigureModel = builder => builder.ConfigureTempTableEntity<TestEntityTempTable>(false, TestEntityTempTable.Configure);
+
+      var entity = new TestEntity
+                   {
+                      Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
+                      Name = "Name",
+                      RequiredName = "RequiredName",
+                      Count = 42
+                   };
+      ArrangeDbContext.Add(entity);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var tempEntity = new TestEntityTempTable
+                       {
+                          Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
+                          Name = "UpdatedName",
+                          RequiredName = "RequiredName",
+                          Count = 99
+                       };
+
+      var affectedRows = await SUT.BulkUpdateAsync(new[] { tempEntity }, new SqliteBulkUpdateOptions { TableNameProvider = IBulkOperationTableNameProvider.ForRootEntity("TestEntities") });
 
       affectedRows.Should().Be(1);
 

@@ -4,6 +4,8 @@ using Thinktecture.TestDatabaseContext;
 
 // ReSharper disable InconsistentNaming
 
+#pragma warning disable CS0618 // TableName and Schema are obsolete; these tests cover the obsolete path on purpose.
+
 namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqlServerBulkOperationExecutorTests;
 
 // ReSharper disable once InconsistentNaming
@@ -402,6 +404,50 @@ public class BulkUpdateAsync : IntegrationTestsBase
       }
    }
 
+   [Theory]
+   [InlineData(false)]
+   [InlineData(true)]
+   public async Task Should_update_entities_in_table_from_table_name_provider(bool useGenericOptions)
+   {
+      await ActDbContext.Database.ExecuteSqlRawAsync($"""
+         SELECT TOP 0 * INTO [{Schema}].[TestEntities_BulkUpdateRedirect] FROM [{Schema}].[TestEntities];
+         ALTER TABLE [{Schema}].[TestEntities_BulkUpdateRedirect] ADD PRIMARY KEY ([Id]);
+         INSERT INTO [{Schema}].[TestEntities_BulkUpdateRedirect] ([Id], [RequiredName], [Name], [Count], [NullableCount], [ConvertibleClass], [ParentId], [PropertyWithBackingField], [_privateField])
+         VALUES ('40B5CA93-5C02-48AD-B8A1-12BC13313866', 'RequiredName', NULL, 0, NULL, NULL, NULL, 0, 0);
+         """);
+
+      try
+      {
+         var entity = new TestEntity
+                      {
+                         Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
+                         RequiredName = "RequiredName",
+                         Name = "UpdatedName",
+                         Count = 99
+                      };
+         var provider = new SuffixTableNameProvider("_BulkUpdateRedirect");
+
+         IBulkUpdateOptions options = useGenericOptions
+                                         ? new GenericBulkOperationOptions { TableNameProvider = provider }
+                                         : new SqlServerBulkUpdateOptions { TableNameProvider = provider };
+
+         var affectedRows = await SUT.BulkUpdateAsync(new[] { entity }, options);
+
+         affectedRows.Should().Be(1);
+
+         var redirectedNames = await AssertDbContext.Database
+                                                   .SqlQueryRaw<string>($"SELECT [Name] FROM [{Schema}].[TestEntities_BulkUpdateRedirect]")
+                                                   .ToListAsync();
+         redirectedNames.Should().HaveCount(1);
+         redirectedNames[0].Should().Be("UpdatedName");
+         provider.RequestedEntityTypes.Should().ContainSingle();
+      }
+      finally
+      {
+         await ActDbContext.Database.ExecuteSqlRawAsync($"DROP TABLE IF EXISTS [{Schema}].[TestEntities_BulkUpdateRedirect]");
+      }
+   }
+
    [Fact]
    public async Task Should_throw_when_trying_to_update_temp_table_entity_without_table_name()
    {
@@ -444,5 +490,53 @@ public class BulkUpdateAsync : IntegrationTestsBase
       loadedEntities[0].Id.Should().Be(new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"));
       loadedEntities[0].Name.Should().Be("UpdatedName");
       loadedEntities[0].Count.Should().Be(99);
+   }
+
+   [Fact]
+   public async Task Should_throw_on_update_of_inlined_owned_type()
+   {
+      ArrangeDbContext.TestEntities_Own_Inline.Add(new TestEntity_Owns_Inline { Id = new Guid("3A1B2FFF-8E11-44E5-80E5-8C7FEEDACEB3"), InlineEntity = new OwnedEntity { IntColumn = 1, StringColumn = "old" } });
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var entity = await ActDbContext.TestEntities_Own_Inline.SingleAsync();
+      entity.InlineEntity.IntColumn = 2;
+
+      await SUT.Awaiting(sut => sut.BulkUpdateAsync([entity], new SqlServerBulkUpdateOptions()))
+               .Should().ThrowAsync<NotSupportedException>()
+               .WithMessage("Temp tables don't support owned entities.");
+
+      (await AssertDbContext.TestEntities_Own_Inline.SingleAsync()).InlineEntity.IntColumn.Should().Be(1);
+   }
+
+   [Fact]
+   public async Task Should_throw_on_update_of_owned_type_in_separate_table()
+   {
+      ArrangeDbContext.TestEntities_Own_SeparateOne.Add(new TestEntity_Owns_SeparateOne { Id = new Guid("7C00ABFE-875B-4396-BE51-3E898647A264"), SeparateEntity = new OwnedEntity { IntColumn = 1, StringColumn = "old" } });
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var entity = await ActDbContext.TestEntities_Own_SeparateOne.SingleAsync();
+      entity.SeparateEntity!.IntColumn = 2;
+
+      await SUT.Awaiting(sut => sut.BulkUpdateAsync([entity], new SqlServerBulkUpdateOptions()))
+               .Should().ThrowAsync<NotSupportedException>()
+               .WithMessage("Temp tables don't support owned entities.");
+
+      (await AssertDbContext.TestEntities_Own_SeparateOne.SingleAsync()).SeparateEntity!.IntColumn.Should().Be(1);
+   }
+
+   [Fact]
+   public async Task Should_throw_on_update_of_owned_collection_in_separate_table()
+   {
+      ArrangeDbContext.TestEntities_Own_SeparateMany.Add(new TestEntity_Owns_SeparateMany { Id = new Guid("54FF93FC-6BE9-4F19-A52E-E517CA9FEAA7"), SeparateEntities = [new() { IntColumn = 1, StringColumn = "old" }] });
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var entity = await ActDbContext.TestEntities_Own_SeparateMany.SingleAsync();
+      entity.SeparateEntities[0].IntColumn = 2;
+
+      await SUT.Awaiting(sut => sut.BulkUpdateAsync([entity], new SqlServerBulkUpdateOptions()))
+               .Should().ThrowAsync<NotSupportedException>()
+               .WithMessage("Temp tables don't support owned entities.");
+
+      (await AssertDbContext.TestEntities_Own_SeparateMany.SingleAsync()).SeparateEntities.Single().IntColumn.Should().Be(1);
    }
 }

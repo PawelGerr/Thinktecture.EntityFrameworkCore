@@ -106,12 +106,11 @@ public sealed partial class SqliteBulkOperationExecutor
       if (options is not SqliteBulkInsertOptions sqliteOptions)
          sqliteOptions = new SqliteBulkInsertOptions(options);
 
-      var (entityType, tableName, schema) = BulkOperationModelExtensions.GetEntityType<T>(_ctx.Model, sqliteOptions.TableName, sqliteOptions.Schema);
+      var entityType = _ctx.Model.GetEntityTypeOrTempTableEntityType<T>();
 
       return await BulkInsertAsync(entityType,
                                    entities,
-                                   schema,
-                                   tableName,
+                                   sqliteOptions.TableNameProvider,
                                    sqliteOptions,
                                    SqliteBulkOperationContextFactoryForEntities.Instance,
                                    cancellationToken);
@@ -120,8 +119,7 @@ public sealed partial class SqliteBulkOperationExecutor
    private async Task<int> BulkInsertAsync<T>(
       IEntityType entityType,
       IEnumerable<T> entitiesOrValues,
-      string? schema,
-      string tableName,
+      IBulkOperationTableNameProvider tableNameProvider,
       SqliteBulkInsertOptions options,
       ISqliteBulkOperationContextFactory bulkOperationContextFactory,
       CancellationToken cancellationToken)
@@ -129,9 +127,10 @@ public sealed partial class SqliteBulkOperationExecutor
       var properties = options.PropertiesToInsert.DeterminePropertiesForInsert(entityType, null);
       properties.EnsureNoSeparateOwnedTypesInsideCollectionOwnedType();
 
+      var tableName = tableNameProvider.GetValidTableName(entityType);
       var ctx = bulkOperationContextFactory.CreateForBulkInsert(_ctx, options, properties);
 
-      return await ExecuteBulkOperationAsync(entitiesOrValues, schema, tableName, ctx, cancellationToken);
+      return await ExecuteBulkOperationAsync(entitiesOrValues, tableName.Schema, tableName.Name, ctx, tableNameProvider, cancellationToken);
    }
 
    /// <inheritdoc />
@@ -147,15 +146,18 @@ public sealed partial class SqliteBulkOperationExecutor
       if (options is not SqliteBulkUpdateOptions sqliteOptions)
          sqliteOptions = new SqliteBulkUpdateOptions(options);
 
-      var (entityType, tableName, schema) = BulkOperationModelExtensions.GetEntityType<T>(_ctx.Model, sqliteOptions.TableName, sqliteOptions.Schema);
+      var entityType = _ctx.Model.GetEntityTypeOrTempTableEntityType<T>();
+      var propertiesToUpdate = options.PropertiesToUpdate.DeterminePropertiesForUpdate(entityType, null);
+      var tableNameProvider = sqliteOptions.TableNameProvider;
+      var tableName = tableNameProvider.GetValidTableName(entityType);
       var ctx = new BulkUpdateContext(_ctx,
                                       _ctx.GetService<IEntityDataReaderFactory>(),
                                       (SqliteConnection)_ctx.Database.GetDbConnection(),
                                       options.KeyProperties.DetermineKeyProperties(entityType),
-                                      options.PropertiesToUpdate.DeterminePropertiesForUpdate(entityType, null),
+                                      propertiesToUpdate,
                                       sqliteOptions.AutoIncrementBehavior);
 
-      return await ExecuteBulkOperationAsync(entities, schema, tableName, ctx, cancellationToken);
+      return await ExecuteBulkOperationAsync(entities, tableName.Schema, tableName.Name, ctx, tableNameProvider, cancellationToken);
    }
 
    /// <inheritdoc />
@@ -171,16 +173,20 @@ public sealed partial class SqliteBulkOperationExecutor
       if (!(options is ISqliteBulkInsertOrUpdateOptions sqliteOptions))
          sqliteOptions = new SqliteBulkInsertOrUpdateOptions(options);
 
-      var (entityType, tableName, schema) = BulkOperationModelExtensions.GetEntityType<T>(_ctx.Model, sqliteOptions.TableName, sqliteOptions.Schema);
+      var entityType = _ctx.Model.GetEntityTypeOrTempTableEntityType<T>();
+      var propertiesToInsert = sqliteOptions.PropertiesToInsert.DeterminePropertiesForInsert(entityType, null);
+      var propertiesToUpdate = sqliteOptions.PropertiesToUpdate.DeterminePropertiesForUpdate(entityType, true);
+      var tableNameProvider = sqliteOptions.TableNameProvider;
+      var tableName = tableNameProvider.GetValidTableName(entityType);
       var ctx = new BulkInsertOrUpdateContext(_ctx,
                                               _ctx.GetService<IEntityDataReaderFactory>(),
                                               (SqliteConnection)_ctx.Database.GetDbConnection(),
                                               sqliteOptions.KeyProperties.DetermineKeyProperties(entityType),
-                                              sqliteOptions.PropertiesToInsert.DeterminePropertiesForInsert(entityType, null),
-                                              sqliteOptions.PropertiesToUpdate.DeterminePropertiesForUpdate(entityType, true),
+                                              propertiesToInsert,
+                                              propertiesToUpdate,
                                               sqliteOptions.AutoIncrementBehavior);
 
-      return await ExecuteBulkOperationAsync(entities, schema, tableName, ctx, cancellationToken);
+      return await ExecuteBulkOperationAsync(entities, tableName.Schema, tableName.Name, ctx, tableNameProvider, cancellationToken);
    }
 
    private async Task<int> ExecuteBulkOperationAsync<T>(
@@ -188,6 +194,7 @@ public sealed partial class SqliteBulkOperationExecutor
       string? schema,
       string tableName,
       ISqliteBulkOperationContext bulkOperationContext,
+      IBulkOperationTableNameProvider tableNameProvider,
       CancellationToken cancellationToken)
    {
       await _ctx.Database.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
@@ -207,7 +214,7 @@ public sealed partial class SqliteBulkOperationExecutor
          if (bulkOperationContext.HasExternalProperties)
          {
             var readEntities = reader.GetReadEntities();
-            numberOfAffectedRows += await ExecuteBulkOperationForSeparatedOwnedEntitiesAsync((IReadOnlyList<object>)readEntities, bulkOperationContext, cancellationToken);
+            numberOfAffectedRows += await ExecuteBulkOperationForSeparatedOwnedEntitiesAsync((IReadOnlyList<object>)readEntities, bulkOperationContext, tableNameProvider, cancellationToken);
          }
 
          if (tx is not null)
@@ -224,6 +231,7 @@ public sealed partial class SqliteBulkOperationExecutor
    private async Task<int> ExecuteBulkOperationForSeparatedOwnedEntitiesAsync(
       IReadOnlyList<object> parentEntities,
       ISqliteBulkOperationContext parentBulkOperationContext,
+      IBulkOperationTableNameProvider tableNameProvider,
       CancellationToken cancellationToken)
    {
       if (parentEntities.Count == 0)
@@ -233,14 +241,9 @@ public sealed partial class SqliteBulkOperationExecutor
 
       foreach (var childContext in parentBulkOperationContext.GetChildren(parentEntities))
       {
-         var childTableName = childContext.EntityType.GetTableName()
-                              ?? throw new InvalidOperationException($"The entity '{childContext.EntityType.Name}' has no table name.");
+         var tableName = tableNameProvider.GetValidTableName(childContext.EntityType);
 
-         numberOfAffectedRows += await ExecuteBulkOperationAsync(childContext.Entities,
-                                                                 childContext.EntityType.GetSchema(),
-                                                                 childTableName,
-                                                                 childContext,
-                                                                 cancellationToken).ConfigureAwait(false);
+         numberOfAffectedRows += await ExecuteBulkOperationAsync(childContext.Entities, tableName.Schema, tableName.Name, childContext, tableNameProvider, cancellationToken).ConfigureAwait(false);
       }
 
       return numberOfAffectedRows;
@@ -375,7 +378,8 @@ public sealed partial class SqliteBulkOperationExecutor
       try
       {
          var bulkInsertOptions = options.GetBulkInsertOptions();
-         var numberOfInsertedRows = await BulkInsertAsync(entityType, entitiesOrValues, null, tempTableReference.Name, bulkInsertOptions, bulkOperationContextFactory, cancellationToken).ConfigureAwait(false);
+         // The user options may carry a TableNameProvider. It is never applied to the temp table.
+         var numberOfInsertedRows = await BulkInsertAsync(entityType, entitiesOrValues, IBulkOperationTableNameProvider.ForRootEntity(tempTableReference.Name), bulkInsertOptions, bulkOperationContextFactory, cancellationToken).ConfigureAwait(false);
 
          var dbSet = entityType.Name == entityTypeName
                         ? _ctx.Set<TEntity>(entityTypeName)
@@ -486,10 +490,10 @@ public sealed partial class SqliteBulkOperationExecutor
       if (options is not SqliteBulkInsertOptions sqliteOptions)
          sqliteOptions = new SqliteBulkInsertOptions(options);
 
+      // The user options may carry a TableNameProvider. It is never applied to the temp table.
       await BulkInsertAsync(entityType,
                             entitiesOrValues,
-                            null,
-                            tempTable.Name,
+                            IBulkOperationTableNameProvider.ForRootEntity(tempTable.Name),
                             sqliteOptions,
                             bulkOperationContextFactory,
                             cancellationToken)
@@ -553,8 +557,7 @@ public sealed partial class SqliteBulkOperationExecutor
                                                                   sourceKeySelector,
                                                                   setClauseBuilder.Entries,
                                                                   filter,
-                                                                  options?.TableName,
-                                                                  options?.Schema);
+                                                                  options?.TableNameProvider ?? IBulkOperationTableNameProvider.Default);
 
       var sqlParams = parameters.Select(kv => new SqliteParameter(kv.Key, kv.Value ?? DBNull.Value));
       return await _ctx.Database.ExecuteSqlRawAsync(sql, sqlParams, cancellationToken);
@@ -590,8 +593,7 @@ public sealed partial class SqliteBulkOperationExecutor
       var (sql, parameters) = translator.TranslateInsertFromQuery<TTarget, TSource>(
                                                                                     sourceQuery,
                                                                                     builder.Entries,
-                                                                                    options?.TableName,
-                                                                                    options?.Schema);
+                                                                                    options?.TableNameProvider ?? IBulkOperationTableNameProvider.Default);
 
       var sqlParams = parameters.Select(kv => new SqliteParameter(kv.Key, kv.Value ?? DBNull.Value));
       return await _ctx.Database.ExecuteSqlRawAsync(sql, sqlParams, cancellationToken);

@@ -43,8 +43,7 @@ public sealed partial class EfCoreValueExpressionTranslator
       Expression<Func<TSource, TResult?>> sourceKeySelector,
       IReadOnlyList<ISetPropertyEntry> setClauseEntries,
       LambdaExpression? filter,
-      string? tableNameOverride,
-      string? schemaOverride)
+      IBulkOperationTableNameProvider tableNameProvider)
       where TTarget : class
       where TSource : class
    {
@@ -136,32 +135,31 @@ public sealed partial class EfCoreValueExpressionTranslator
 
       var sql = command.CommandText;
 
-      // Step 9: Apply table/schema override via string replacement
-      if (tableNameOverride is not null || schemaOverride is not null)
-         sql = ApplyTableSchemaAndNameOverride(sql, tableNameOverride, schemaOverride, targetEntityType);
+      // Step 9: Apply the table name of the provider via string replacement
+      sql = ApplyTableName(sql, tableNameProvider.GetValidTableName(targetEntityType), targetEntityType);
 
       return (sql, parameterValues);
    }
 
-   private string ApplyTableSchemaAndNameOverride(
+   private string ApplyTableName(
       string sql,
-      string? tableNameOverride,
-      string? schemaOverride,
+      BulkOperationTableName tableName,
       IEntityType targetEntityType)
    {
-      var sqlGenerationHelper = _ctx.GetService<ISqlGenerationHelper>();
       var originalName = targetEntityType.GetTableName()!;
       var originalSchema = targetEntityType.GetSchema();
 
+      if (tableName.Name == originalName && tableName.Schema == originalSchema)
+         return sql;
+
+      var sqlGenerationHelper = _ctx.GetService<ISqlGenerationHelper>();
       var originalQualified = sqlGenerationHelper.DelimitIdentifier(originalName, originalSchema);
-      var overriddenQualified = sqlGenerationHelper.DelimitIdentifier(
-                                                                      tableNameOverride ?? originalName,
-                                                                      schemaOverride ?? originalSchema);
+      var overriddenQualified = sqlGenerationHelper.DelimitIdentifier(tableName.Name, tableName.Schema);
 
       var updatedSql = sql.Replace(originalQualified, overriddenQualified);
 
       if (ReferenceEquals(sql, updatedSql))
-         throw new InvalidOperationException($"Table/schema override failed: could not find '{originalQualified}' in the generated UPDATE SQL.");
+         throw new InvalidOperationException($"The table name from 'TableNameProvider' could not be applied, because the table '{originalQualified}' was not found in the generated UPDATE SQL.");
 
       return updatedSql;
    }
@@ -172,8 +170,7 @@ public sealed partial class EfCoreValueExpressionTranslator
    public (string Sql, IReadOnlyDictionary<string, object?> Parameters) TranslateInsertFromQuery<TTarget, TSource>(
       IQueryable<TSource> sourceQuery,
       IReadOnlyList<ISetPropertyEntry> entries,
-      string? tableNameOverride,
-      string? schemaOverride)
+      IBulkOperationTableNameProvider tableNameProvider)
       where TTarget : class
       where TSource : class
    {
@@ -255,11 +252,9 @@ public sealed partial class EfCoreValueExpressionTranslator
       var selectCommand = sqlGeneratorFactory.Create().GetCommand(selectExpression);
 
       // Step 8: Build INSERT INTO ... SELECT ...
-      var tableName = tableNameOverride ?? targetEntityType.GetTableName()
-                      ?? throw new InvalidOperationException($"The entity '{targetEntityType.Name}' has no table name.");
-      var schema = schemaOverride ?? targetEntityType.GetSchema();
+      var tableName = tableNameProvider.GetValidTableName(targetEntityType);
 
-      var insertSql = $"INSERT INTO {sqlGenerationHelper.DelimitIdentifier(tableName, schema)} ({string.Join(", ", targetColumns)})\n{selectCommand.CommandText}";
+      var insertSql = $"INSERT INTO {sqlGenerationHelper.DelimitIdentifier(tableName.Name, tableName.Schema)} ({string.Join(", ", targetColumns)})\n{selectCommand.CommandText}";
 
       return (insertSql, parameterValues);
    }

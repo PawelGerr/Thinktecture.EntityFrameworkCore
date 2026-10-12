@@ -1,8 +1,11 @@
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Thinktecture.EntityFrameworkCore.TempTables;
 using Thinktecture.TestDatabaseContext;
+
+#pragma warning disable CS0618 // TableName and Schema are obsolete; these tests cover the obsolete path on purpose.
 
 namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqliteBulkOperationExecutorTests;
 
@@ -765,6 +768,387 @@ public class BulkInsertAsync : SchemaChangingIntegrationTestsBase
       finally
       {
          await ActDbContext.Database.ExecuteSqlRawAsync("DROP TABLE IF EXISTS [TestEntities_BulkInsertRedirect]");
+      }
+   }
+
+   [Fact]
+   public async Task Should_insert_into_table_from_ForRootEntity_provider()
+   {
+      await ActDbContext.Database.ExecuteSqlRawAsync("""
+         CREATE TABLE "TestEntities_BulkInsertRedirect" AS SELECT * FROM "TestEntities" WHERE 0
+         """);
+
+      try
+      {
+         var testEntity = new TestEntity
+                          {
+                             Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
+                             Name = "Name",
+                             RequiredName = "RequiredName",
+                             Count = 42
+                          };
+
+         await SUT.BulkInsertAsync([testEntity], new SqliteBulkInsertOptions { TableNameProvider = IBulkOperationTableNameProvider.ForRootEntity("TestEntities_BulkInsertRedirect") });
+
+         var loadedEntities = await AssertDbContext.TestEntities.ToListAsync();
+         loadedEntities.Should().HaveCount(0, "original table should be empty");
+
+         var redirectedIds = await AssertDbContext.Database
+                                                 .SqlQueryRaw<string>("SELECT [Id] FROM [TestEntities_BulkInsertRedirect]")
+                                                 .ToListAsync();
+         redirectedIds.Should().HaveCount(1);
+      }
+      finally
+      {
+         await ActDbContext.Database.ExecuteSqlRawAsync("DROP TABLE IF EXISTS [TestEntities_BulkInsertRedirect]");
+      }
+   }
+
+   // https://github.com/PawelGerr/Thinktecture.EntityFrameworkCore/issues/76
+   // The owned entity must either be redirected together with its owner or the bulk insert must fail without writing anything.
+   [Fact]
+   public async Task Should_not_insert_separated_owned_entities_into_model_table_when_table_name_is_overridden()
+   {
+      // The table in the issue has no foreign key to the owner. Without enforcement, the foreign key of the test schema
+      // behaves the same way. With enforcement, the insert into the model table fails and the transaction hides the bug.
+      await ActDbContext.Database.OpenConnectionAsync();
+      await ActDbContext.Database.ExecuteSqlRawAsync("PRAGMA foreign_keys = OFF");
+
+      await ActDbContext.Database.ExecuteSqlRawAsync("""
+         CREATE TABLE "TestEntities_Own_SeparateOne_BulkInsertRedirect" AS SELECT * FROM "TestEntities_Own_SeparateOne" WHERE 0
+         """);
+
+      try
+      {
+         var testEntity = new TestEntity_Owns_SeparateOne
+                          {
+                             Id = new Guid("7C00ABFE-875B-4396-BE51-3E898647A264"),
+                             SeparateEntity = new OwnedEntity { IntColumn = 42, StringColumn = "value" }
+                          };
+         ActDbContext.Add(testEntity);
+
+         Exception? exception = null;
+
+         try
+         {
+            await SUT.BulkInsertAsync([testEntity], new SqliteBulkInsertOptions { TableName = "TestEntities_Own_SeparateOne_BulkInsertRedirect" });
+         }
+         catch (Exception ex)
+         {
+            exception = ex;
+         }
+
+         var ownedEntityIdsInModelTable = await AssertDbContext.Database
+                                                               .SqlQueryRaw<string>("SELECT [TestEntity_Owns_SeparateOneId] FROM [SeparateEntitiesOne]")
+                                                               .ToListAsync();
+         ownedEntityIdsInModelTable.Should().BeEmpty("the owned entity must not be written to the table of the model when the owner is redirected");
+
+         if (exception is not null)
+         {
+            var ownerIds = await AssertDbContext.Database
+                                                .SqlQueryRaw<string>("SELECT [Id] FROM [TestEntities_Own_SeparateOne_BulkInsertRedirect]")
+                                                .ToListAsync();
+            ownerIds.Should().BeEmpty($"a failed bulk insert must not leave the owner behind (exception: {exception.Message})");
+         }
+      }
+      finally
+      {
+         await ActDbContext.Database.ExecuteSqlRawAsync("DROP TABLE IF EXISTS [TestEntities_Own_SeparateOne_BulkInsertRedirect]");
+      }
+   }
+
+   [Fact]
+   public async Task Should_throw_when_table_name_is_overridden_and_owned_entities_have_separate_tables()
+   {
+      var testEntity = new TestEntity_Owns_SeparateOne
+                       {
+                          Id = new Guid("7C00ABFE-875B-4396-BE51-3E898647A264"),
+                          SeparateEntity = new OwnedEntity { IntColumn = 42, StringColumn = "value" }
+                       };
+      ActDbContext.Add(testEntity);
+
+      await SUT.Awaiting(s => s.BulkInsertAsync([testEntity], new SqliteBulkInsertOptions { TableName = "TestEntities_Own_SeparateOne" }))
+               .Should().ThrowAsync<InvalidOperationException>()
+               .WithMessage("*'TableName'*'TableNameProvider'*");
+
+      (await AssertDbContext.TestEntities_Own_SeparateOne.ToListAsync()).Should().BeEmpty();
+      (await AssertDbContext.Database.SqlQueryRaw<int>("""SELECT "IntColumn" FROM "SeparateEntitiesOne" """).ToListAsync()).Should().BeEmpty();
+   }
+
+   [Fact]
+   public async Task Should_use_table_name_provider_when_it_is_set_after_table_name()
+   {
+      var testEntity = new TestEntity
+                       {
+                          Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
+                          RequiredName = "RequiredName"
+                       };
+      var provider = new SuffixTableNameProvider("");
+
+      var options = new SqliteBulkInsertOptions
+                    {
+                       TableName = "TestEntities",
+                       TableNameProvider = provider
+                    };
+
+      options.TableNameProvider.Should().BeSameAs(provider);
+
+      await SUT.BulkInsertAsync([testEntity], options);
+
+      provider.RequestedEntityTypes.Should().ContainSingle();
+      (await AssertDbContext.TestEntities.ToListAsync()).Should().HaveCount(1);
+   }
+
+   [Fact]
+   public async Task Should_throw_when_table_name_provider_returns_empty_schema()
+   {
+      var testEntity = new TestEntity
+                       {
+                          Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
+                          RequiredName = "RequiredName"
+                       };
+
+      await SUT.Awaiting(s => s.BulkInsertAsync([testEntity], new SqliteBulkInsertOptions { TableNameProvider = new EmptySchemaTableNameProvider() }))
+               .Should().ThrowAsync<InvalidOperationException>()
+               .WithMessage("The 'TableNameProvider' returned an empty schema for the entity type '*TestEntity'. Return null to use the default schema of the database.");
+
+      (await AssertDbContext.TestEntities.ToListAsync()).Should().BeEmpty();
+   }
+
+   private sealed class EmptySchemaTableNameProvider : IBulkOperationTableNameProvider
+   {
+      public BulkOperationTableName GetTableName(IEntityType entityType)
+      {
+         return new BulkOperationTableName("TestEntities", " ");
+      }
+   }
+
+   [Theory]
+   [InlineData(false)]
+   [InlineData(true)]
+   public async Task Should_insert_root_and_owned_entity_into_tables_from_table_name_provider(bool useGenericOptions)
+   {
+      await CreateTableCopyAsync("TestEntities_Own_SeparateOne", "TestEntities_Own_SeparateOne_Redirect");
+      await CreateTableCopyAsync("SeparateEntitiesOne", "SeparateEntitiesOne_Redirect");
+
+      try
+      {
+         var testEntity = new TestEntity_Owns_SeparateOne
+                          {
+                             Id = new Guid("7C00ABFE-875B-4396-BE51-3E898647A264"),
+                             SeparateEntity = new OwnedEntity { IntColumn = 42, StringColumn = "value" }
+                          };
+         ActDbContext.Add(testEntity);
+         var provider = new SuffixTableNameProvider("_Redirect");
+         IBulkInsertOptions options = useGenericOptions
+                                         ? new GenericBulkOperationOptions { TableNameProvider = provider }
+                                         : new SqliteBulkInsertOptions { TableNameProvider = provider };
+
+         var affectedRows = await SUT.BulkInsertAsync([testEntity], options);
+
+         affectedRows.Should().Be(2);
+         (await AssertDbContext.Database.SqlQueryRaw<string>("""SELECT "Id" FROM "TestEntities_Own_SeparateOne_Redirect" """).ToListAsync())
+            .Should().HaveCount(1);
+         (await AssertDbContext.Database.SqlQueryRaw<int>("""SELECT "IntColumn" FROM "SeparateEntitiesOne_Redirect" """).ToListAsync())
+            .Should().BeEquivalentTo([42]);
+         (await AssertDbContext.TestEntities_Own_SeparateOne.ToListAsync()).Should().BeEmpty();
+         (await AssertDbContext.Database.SqlQueryRaw<int>("""SELECT "IntColumn" FROM "SeparateEntitiesOne" """).ToListAsync()).Should().BeEmpty();
+
+         provider.RequestedEntityTypes.Should().HaveCount(2);
+         provider.RequestedEntityTypes.Should().ContainSingle(t => t.FindOwnership() == null && t.ClrType == typeof(TestEntity_Owns_SeparateOne));
+         provider.RequestedEntityTypes.Should().ContainSingle(t => t.FindOwnership() != null && t.FindOwnership()!.PrincipalToDependent!.Name == "SeparateEntity");
+      }
+      finally
+      {
+         await DropTablesAsync("TestEntities_Own_SeparateOne_Redirect", "SeparateEntitiesOne_Redirect");
+      }
+   }
+
+   [Fact]
+   public async Task Should_insert_root_and_owned_entity_into_tables_from_created_table_name_provider()
+   {
+      await CreateTableCopyAsync("TestEntities_Own_SeparateOne", "TestEntities_Own_SeparateOne_Redirect");
+      await CreateTableCopyAsync("SeparateEntitiesOne", "SeparateEntitiesOne_Redirect");
+
+      try
+      {
+         var testEntity = new TestEntity_Owns_SeparateOne
+                          {
+                             Id = new Guid("7C00ABFE-875B-4396-BE51-3E898647A264"),
+                             SeparateEntity = new OwnedEntity { IntColumn = 42, StringColumn = "value" }
+                          };
+         ActDbContext.Add(testEntity);
+         var provider = IBulkOperationTableNameProvider.Create(t => new BulkOperationTableName(IBulkOperationTableNameProvider.Default.GetTableName(t).Name + "_Redirect"));
+
+         var affectedRows = await SUT.BulkInsertAsync([testEntity], new SqliteBulkInsertOptions { TableNameProvider = provider });
+
+         affectedRows.Should().Be(2);
+         (await AssertDbContext.Database.SqlQueryRaw<string>("""SELECT "Id" FROM "TestEntities_Own_SeparateOne_Redirect" """).ToListAsync())
+            .Should().HaveCount(1);
+         (await AssertDbContext.Database.SqlQueryRaw<int>("""SELECT "IntColumn" FROM "SeparateEntitiesOne_Redirect" """).ToListAsync())
+            .Should().BeEquivalentTo([42]);
+         (await AssertDbContext.TestEntities_Own_SeparateOne.ToListAsync()).Should().BeEmpty();
+         (await AssertDbContext.Database.SqlQueryRaw<int>("""SELECT "IntColumn" FROM "SeparateEntitiesOne" """).ToListAsync()).Should().BeEmpty();
+      }
+      finally
+      {
+         await DropTablesAsync("TestEntities_Own_SeparateOne_Redirect", "SeparateEntitiesOne_Redirect");
+      }
+   }
+
+   [Fact]
+   public async Task Should_insert_nested_owned_entities_into_tables_from_table_name_provider()
+   {
+      await CreateTableCopyAsync("TestEntities_Own_SeparateOne_SeparateOne", "TestEntities_Own_SeparateOne_SeparateOne_Redirect");
+      await CreateTableCopyAsync("SeparateEntitiesOne_SeparateOne", "SeparateEntitiesOne_SeparateOne_Redirect");
+      await CreateTableCopyAsync("SeparateEntitiesOne_SeparateOne_Inner", "SeparateEntitiesOne_SeparateOne_Inner_Redirect");
+
+      try
+      {
+         var testEntity = new TestEntity_Owns_SeparateOne_SeparateOne
+                          {
+                             Id = new Guid("54FF93FC-6BE9-4F19-A52E-E517CA9FEAA7"),
+                             SeparateEntity = new()
+                                              {
+                                                 IntColumn = 42,
+                                                 StringColumn = "value 1",
+                                                 SeparateEntity = new() { IntColumn = 43, StringColumn = "value 2" }
+                                              }
+                          };
+         ActDbContext.Add(testEntity);
+         var provider = new SuffixTableNameProvider("_Redirect");
+
+         var affectedRows = await SUT.BulkInsertAsync([testEntity], new SqliteBulkInsertOptions { TableNameProvider = provider });
+
+         affectedRows.Should().Be(3);
+         (await AssertDbContext.Database.SqlQueryRaw<string>("""SELECT "Id" FROM "TestEntities_Own_SeparateOne_SeparateOne_Redirect" """).ToListAsync())
+            .Should().HaveCount(1);
+         (await AssertDbContext.Database.SqlQueryRaw<int>("""SELECT "IntColumn" FROM "SeparateEntitiesOne_SeparateOne_Redirect" """).ToListAsync())
+            .Should().BeEquivalentTo([42]);
+         (await AssertDbContext.Database.SqlQueryRaw<int>("""SELECT "IntColumn" FROM "SeparateEntitiesOne_SeparateOne_Inner_Redirect" """).ToListAsync())
+            .Should().BeEquivalentTo([43]);
+         (await AssertDbContext.TestEntities_Own_SeparateOne_SeparateOne.ToListAsync()).Should().BeEmpty();
+         (await AssertDbContext.Database.SqlQueryRaw<int>("""SELECT "IntColumn" FROM "SeparateEntitiesOne_SeparateOne" """).ToListAsync()).Should().BeEmpty();
+         (await AssertDbContext.Database.SqlQueryRaw<int>("""SELECT "IntColumn" FROM "SeparateEntitiesOne_SeparateOne_Inner" """).ToListAsync()).Should().BeEmpty();
+
+         provider.RequestedEntityTypes.Should().HaveCount(3).And.OnlyHaveUniqueItems();
+      }
+      finally
+      {
+         await DropTablesAsync("TestEntities_Own_SeparateOne_SeparateOne_Redirect", "SeparateEntitiesOne_SeparateOne_Redirect", "SeparateEntitiesOne_SeparateOne_Inner_Redirect");
+      }
+   }
+
+   [Fact]
+   public async Task Should_insert_owned_collection_into_table_from_table_name_provider()
+   {
+      await CreateTableCopyAsync("TestEntities_Own_SeparateMany", "TestEntities_Own_SeparateMany_Redirect");
+      await CreateTableCopyAsync("SeparateEntitiesMany", "SeparateEntitiesMany_Redirect");
+
+      try
+      {
+         var testEntity = new TestEntity_Owns_SeparateMany
+                          {
+                             Id = new Guid("54FF93FC-6BE9-4F19-A52E-E517CA9FEAA7"),
+                             // The key of the owned collection is not generated by SQLite, so a second item would have the same key.
+                             SeparateEntities = [new() { IntColumn = 1, StringColumn = "value 1" }]
+                          };
+         ActDbContext.Add(testEntity);
+
+         var affectedRows = await SUT.BulkInsertAsync([testEntity], new SqliteBulkInsertOptions { TableNameProvider = new SuffixTableNameProvider("_Redirect") });
+
+         affectedRows.Should().Be(2);
+         (await AssertDbContext.Database.SqlQueryRaw<string>("""SELECT "Id" FROM "TestEntities_Own_SeparateMany_Redirect" """).ToListAsync())
+            .Should().HaveCount(1);
+         (await AssertDbContext.Database.SqlQueryRaw<int>("""SELECT "IntColumn" FROM "SeparateEntitiesMany_Redirect" """).ToListAsync())
+            .Should().BeEquivalentTo([1]);
+         (await AssertDbContext.TestEntities_Own_SeparateMany.ToListAsync()).Should().BeEmpty();
+         (await AssertDbContext.Database.SqlQueryRaw<int>("""SELECT "IntColumn" FROM "SeparateEntitiesMany" """).ToListAsync()).Should().BeEmpty();
+      }
+      finally
+      {
+         await DropTablesAsync("TestEntities_Own_SeparateMany_Redirect", "SeparateEntitiesMany_Redirect");
+      }
+   }
+
+   [Fact]
+   public async Task Should_insert_into_table_name_override_when_separate_owned_entities_are_excluded()
+   {
+      await CreateTableCopyAsync("TestEntities_Own_SeparateOne", "TestEntities_Own_SeparateOne_Redirect");
+
+      try
+      {
+         var testEntity = new TestEntity_Owns_SeparateOne
+                          {
+                             Id = new Guid("7C00ABFE-875B-4396-BE51-3E898647A264"),
+                             SeparateEntity = new OwnedEntity { IntColumn = 42, StringColumn = "value" }
+                          };
+         ActDbContext.Add(testEntity);
+
+         var options = new SqliteBulkInsertOptions
+                       {
+                          TableName = "TestEntities_Own_SeparateOne_Redirect",
+                          PropertiesToInsert = IEntityPropertiesProvider.Include<TestEntity_Owns_SeparateOne>(e => e.Id)
+                       };
+
+         var affectedRows = await SUT.BulkInsertAsync([testEntity], options);
+
+         affectedRows.Should().Be(1);
+         (await AssertDbContext.Database.SqlQueryRaw<string>("""SELECT "Id" FROM "TestEntities_Own_SeparateOne_Redirect" """).ToListAsync())
+            .Should().HaveCount(1);
+         (await AssertDbContext.Database.SqlQueryRaw<int>("""SELECT "IntColumn" FROM "SeparateEntitiesOne" """).ToListAsync()).Should().BeEmpty();
+      }
+      finally
+      {
+         await DropTablesAsync("TestEntities_Own_SeparateOne_Redirect");
+      }
+   }
+
+   [Fact]
+   public async Task Should_resolve_distinct_tables_for_owned_types_with_same_clr_type()
+   {
+      ConfigureModel = TestEntity_Owns_TwoSeparateOnes.Configure;
+      Configure = builder => builder.ConfigureWarnings(warningsBuilder => warningsBuilder.Ignore(RelationalEventId.PendingModelChangesWarning));
+
+      await ActDbContext.Database.ExecuteSqlRawAsync("""
+         CREATE TABLE "TestEntities_Own_TwoSeparateOnes_Redirect" ("Id" TEXT NOT NULL PRIMARY KEY, "Name" TEXT NULL);
+         CREATE TABLE "TwoSeparateOnes_First_Redirect" ("TestEntity_Owns_TwoSeparateOnesId" TEXT NOT NULL PRIMARY KEY, "StringColumn" TEXT NULL, "IntColumn" INTEGER NOT NULL);
+         CREATE TABLE "TwoSeparateOnes_Second_Redirect" ("TestEntity_Owns_TwoSeparateOnesId" TEXT NOT NULL PRIMARY KEY, "StringColumn" TEXT NULL, "IntColumn" INTEGER NOT NULL);
+         """);
+
+      var testEntity = new TestEntity_Owns_TwoSeparateOnes
+                       {
+                          Id = new Guid("7C00ABFE-875B-4396-BE51-3E898647A264"),
+                          First = new OwnedEntity { IntColumn = 1 },
+                          Second = new OwnedEntity { IntColumn = 2 }
+                       };
+      ActDbContext.Set<TestEntity_Owns_TwoSeparateOnes>().Add(testEntity);
+      var provider = new SuffixTableNameProvider("_Redirect");
+
+      var affectedRows = await SUT.BulkInsertAsync([testEntity], new SqliteBulkInsertOptions { TableNameProvider = provider });
+
+      affectedRows.Should().Be(3);
+      (await AssertDbContext.Database.SqlQueryRaw<int>("""SELECT "IntColumn" FROM "TwoSeparateOnes_First_Redirect" """).ToListAsync()).Should().BeEquivalentTo([1]);
+      (await AssertDbContext.Database.SqlQueryRaw<int>("""SELECT "IntColumn" FROM "TwoSeparateOnes_Second_Redirect" """).ToListAsync()).Should().BeEquivalentTo([2]);
+
+      provider.RequestedEntityTypes.Should().HaveCount(3).And.OnlyHaveUniqueItems();
+      var ownedTypes = provider.RequestedEntityTypes.Where(t => t.ClrType == typeof(OwnedEntity)).ToList();
+      ownedTypes.Should().HaveCount(2);
+      ownedTypes.Select(t => t.Name).Should().OnlyHaveUniqueItems();
+      ownedTypes.Select(t => t.FindOwnership()!.PrincipalToDependent!.Name).Should().BeEquivalentTo(["First", "Second"]);
+   }
+
+   // CREATE TABLE AS copies the columns only, without primary keys and foreign keys.
+   private async Task CreateTableCopyAsync(string sourceTableName, string targetTableName)
+   {
+      await ActDbContext.Database.ExecuteSqlRawAsync($"""CREATE TABLE "{targetTableName}" AS SELECT * FROM "{sourceTableName}" WHERE 0""");
+   }
+
+   private async Task DropTablesAsync(params string[] tableNames)
+   {
+      foreach (var tableName in tableNames)
+      {
+         await ActDbContext.Database.ExecuteSqlRawAsync($"""DROP TABLE IF EXISTS "{tableName}" """);
       }
    }
 

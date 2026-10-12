@@ -53,6 +53,46 @@ public class BulkUpdateFromQueryAsync : IntegrationTestsBase
    }
 
    [Fact]
+   public async Task Should_update_entities_in_table_from_ForRootEntity_provider()
+   {
+      await ActDbContext.Database.ExecuteSqlRawAsync("""
+         CREATE TABLE "TestEntities_QueryUpdateRedirect" AS SELECT * FROM "TestEntities" WHERE 0;
+         INSERT INTO "TestEntities_QueryUpdateRedirect" ("Id", "RequiredName", "Name", "Count", "PropertyWithBackingField", "_privateField")
+         VALUES ('40B5CA93-5C02-48AD-B8A1-12BC13313866', 'RequiredName', NULL, 0, 0, 0);
+         """);
+
+      try
+      {
+         var updatedEntities = new List<TestEntity>
+         {
+            new() { Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"), RequiredName = "RequiredName", Name = "UpdatedName", Count = 99 }
+         };
+
+         await using var tempTable = await SUT.BulkInsertIntoTempTableAsync(updatedEntities, new SqliteTempTableBulkInsertOptions());
+
+         var affectedRows = await ActDbContext.Set<TestEntity>().BulkUpdateAsync(
+            tempTable.Query,
+            e => e.Id,
+            f => f.Id,
+            builder => builder
+               .Set(e => e.Name, (e, f) => f.Name)
+               .Set(e => e.Count, (e, f) => f.Count),
+            options: new SqliteBulkUpdateFromQueryOptions { TableNameProvider = IBulkOperationTableNameProvider.ForRootEntity("TestEntities_QueryUpdateRedirect") });
+
+         affectedRows.Should().Be(1);
+
+         var redirectedNames = await AssertDbContext.Database
+                                                   .SqlQueryRaw<string>("""SELECT "Name" FROM "TestEntities_QueryUpdateRedirect" """)
+                                                   .ToListAsync();
+         redirectedNames.Should().BeEquivalentTo(["UpdatedName"]);
+      }
+      finally
+      {
+         await ActDbContext.Database.ExecuteSqlRawAsync("""DROP TABLE IF EXISTS "TestEntities_QueryUpdateRedirect" """);
+      }
+   }
+
+   [Fact]
    public async Task Should_update_multiple_properties()
    {
       var entity = new TestEntity { Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"), Name = "Original", RequiredName = "OrigReq", Count = 0 };

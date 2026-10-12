@@ -8,4 +8,6 @@ test-results/**
 .local-memory/**
 
 *\.sln\.DotSettings\.user
+
+.claude/worktrees/
 .claude/settings.local.json

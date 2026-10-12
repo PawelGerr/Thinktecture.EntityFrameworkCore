@@ -1,7 +1,10 @@
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Thinktecture.TestDatabaseContext;
 
 // ReSharper disable InconsistentNaming
+
+#pragma warning disable CS0618 // TableName and Schema are obsolete; these tests cover the obsolete path on purpose.
 
 namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqliteBulkOperationExecutorTests;
 
@@ -408,5 +411,84 @@ public class BulkUpdateAsync : IntegrationTestsBase
       {
          await ActDbContext.Database.ExecuteSqlRawAsync("DROP TABLE IF EXISTS [TestEntities_BulkUpdateRedirect]");
       }
+   }
+
+   [Fact]
+   public async Task Should_update_inlined_owned_type()
+   {
+      ArrangeDbContext.TestEntities_Own_Inline.Add(new TestEntity_Owns_Inline { Id = new Guid("3A1B2FFF-8E11-44E5-80E5-8C7FEEDACEB3"), InlineEntity = new OwnedEntity { IntColumn = 1, StringColumn = "old" } });
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var entity = await ActDbContext.TestEntities_Own_Inline.SingleAsync();
+      entity.InlineEntity.IntColumn = 2;
+      entity.InlineEntity.StringColumn = "new";
+
+      var affectedRows = await SUT.BulkUpdateAsync([entity], new SqliteBulkUpdateOptions());
+
+      affectedRows.Should().Be(1);
+      (await AssertDbContext.TestEntities_Own_Inline.SingleAsync()).InlineEntity.Should().BeEquivalentTo(new OwnedEntity { IntColumn = 2, StringColumn = "new" });
+   }
+
+   [Fact]
+   public async Task Should_update_owned_type_in_separate_table()
+   {
+      ArrangeDbContext.TestEntities_Own_Inline_SeparateOne.Add(new TestEntity_Owns_Inline_SeparateOne
+                                                               {
+                                                                  Id = new Guid("7C00ABFE-875B-4396-BE51-3E898647A264"),
+                                                                  InlineEntity = new OwnedEntity_Owns_SeparateOne { IntColumn = 1, SeparateEntity = new OwnedEntity { IntColumn = 10 } }
+                                                               });
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var entity = await ActDbContext.TestEntities_Own_Inline_SeparateOne.SingleAsync();
+      entity.InlineEntity.IntColumn = 2;
+      entity.InlineEntity.SeparateEntity.IntColumn = 20;
+
+      var affectedRows = await SUT.BulkUpdateAsync([entity], new SqliteBulkUpdateOptions());
+
+      affectedRows.Should().Be(2);
+      var loadedEntity = await AssertDbContext.TestEntities_Own_Inline_SeparateOne.SingleAsync();
+      loadedEntity.InlineEntity.IntColumn.Should().Be(2);
+      loadedEntity.InlineEntity.SeparateEntity.IntColumn.Should().Be(20);
+   }
+
+   [Fact]
+   public async Task Should_update_owned_collection_in_separate_table()
+   {
+      // SaveChanges fails for this owned collection in the SQLite test database (NOT NULL constraint on the owned key), so the arrange step uses bulk insert.
+      var existingEntity = new TestEntity_Owns_Inline_SeparateMany
+                           {
+                              Id = new Guid("54FF93FC-6BE9-4F19-A52E-E517CA9FEAA7"),
+                              InlineEntity = new OwnedEntity_Owns_SeparateMany { IntColumn = 1, SeparateEntities = [new() { IntColumn = 10 }, new() { IntColumn = 11 }] }
+                           };
+      ArrangeDbContext.Add(existingEntity);
+      await ArrangeDbContext.GetService<SqliteBulkOperationExecutor>().BulkInsertAsync([existingEntity], new SqliteBulkInsertOptions());
+
+      var entity = await ActDbContext.TestEntities_Own_Inline_SeparateMany.SingleAsync();
+      entity.InlineEntity.IntColumn = 2;
+      entity.InlineEntity.SeparateEntities.ForEach(e => e.IntColumn += 10);
+
+      var affectedRows = await SUT.BulkUpdateAsync([entity], new SqliteBulkUpdateOptions());
+
+      affectedRows.Should().Be(3);
+      var loadedEntity = await AssertDbContext.TestEntities_Own_Inline_SeparateMany.SingleAsync();
+      loadedEntity.InlineEntity.IntColumn.Should().Be(2);
+      loadedEntity.InlineEntity.SeparateEntities.Select(e => e.IntColumn).Should().BeEquivalentTo([20, 21]);
+   }
+
+   [Fact]
+   public async Task Should_throw_on_update_if_root_entity_has_no_column_besides_key()
+   {
+      ArrangeDbContext.TestEntities_Own_SeparateOne.Add(new TestEntity_Owns_SeparateOne { Id = new Guid("7C00ABFE-875B-4396-BE51-3E898647A264"), SeparateEntity = new OwnedEntity { IntColumn = 1, StringColumn = "old" } });
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var entity = await ActDbContext.TestEntities_Own_SeparateOne.SingleAsync();
+      entity.SeparateEntity!.IntColumn = 2;
+
+      await SUT.Awaiting(sut => sut.BulkUpdateAsync([entity], new SqliteBulkUpdateOptions()))
+               .Should().ThrowAsync<InvalidOperationException>()
+               .WithMessage("Error during bulk operation on table '\"TestEntities_Own_SeparateOne\"'.*")
+               .WithInnerException(typeof(SqliteException));
+
+      (await AssertDbContext.TestEntities_Own_SeparateOne.SingleAsync()).SeparateEntity!.IntColumn.Should().Be(1);
    }
 }

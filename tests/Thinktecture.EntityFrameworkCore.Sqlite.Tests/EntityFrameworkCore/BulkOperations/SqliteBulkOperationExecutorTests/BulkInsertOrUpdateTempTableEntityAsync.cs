@@ -2,6 +2,8 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Thinktecture.EntityFrameworkCore.TempTables;
 using Thinktecture.TestDatabaseContext;
 
+#pragma warning disable CS0618 // TableName and Schema are obsolete; these tests cover the obsolete path on purpose.
+
 namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqliteBulkOperationExecutorTests;
 
 // ReSharper disable once InconsistentNaming

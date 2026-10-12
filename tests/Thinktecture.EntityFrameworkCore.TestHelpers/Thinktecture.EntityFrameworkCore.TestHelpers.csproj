@@ -9,4 +9,8 @@
       <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />
    </ItemGroup>
 
+   <ItemGroup>
+      <ProjectReference Include="..\..\src\Thinktecture.EntityFrameworkCore.BulkOperations\Thinktecture.EntityFrameworkCore.BulkOperations.csproj" />
+   </ItemGroup>
+
 </Project>
