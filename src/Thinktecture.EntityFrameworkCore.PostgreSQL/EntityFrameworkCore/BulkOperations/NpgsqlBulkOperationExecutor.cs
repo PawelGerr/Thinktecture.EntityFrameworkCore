@@ -688,7 +688,7 @@ public sealed partial class NpgsqlBulkOperationExecutor
       if (targetKeyMembers.Count != sourceKeyMembers.Count)
          throw new ArgumentException($"The number of target key properties ({targetKeyMembers.Count}) must match the number of source key properties ({sourceKeyMembers.Count}).");
 
-      var translator = new EfCoreValueExpressionTranslator(_logger.Logger, _ctx);
+      var translator = new EfCoreValueExpressionTranslator(_ctx);
       var (sql, parameters) = translator.TranslateUpdateFromQuery(sourceQuery,
                                                                   targetKeySelector,
                                                                   sourceKeySelector,
@@ -830,7 +830,7 @@ public sealed partial class NpgsqlBulkOperationExecutor
       if (builder.Entries.Count == 0)
          throw new ArgumentException("At least one column mapping is required.", nameof(mapPropertyCalls));
 
-      var translator = new EfCoreValueExpressionTranslator(_logger.Logger, _ctx);
+      var translator = new EfCoreValueExpressionTranslator(_ctx);
       var (sql, parameters) = translator.TranslateInsertFromQuery<TTarget, TSource>(
                                                                                     sourceQuery,
                                                                                     builder.Entries,

@@ -728,4 +728,67 @@ public class BulkInsertFromQueryAsync : IntegrationTestsBase
       loaded.Boundary.Upper.Should().Be(10);
       loaded.Boundary.Lower.Should().Be(20);
    }
+
+   [Theory]
+   [InlineData(true, 0)]
+   [InlineData(false, 7)]
+   public async Task Should_insert_with_null_guarded_captured_object(bool capturedIsNull, int expectedCount)
+   {
+      await using var tempTable = await SUT.BulkInsertIntoTempTableAsync([new TestEntity { Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"), RequiredName = "RequiredName", Count = 3 }], new SqliteTempTableBulkInsertOptions());
+      TestEntity? captured = capturedIsNull ? null : new TestEntity { Count = 7 };
+
+      var affectedRows = await ActDbContext.Set<TestEntity>().BulkInsertAsync(
+         tempTable.Query,
+         builder => builder
+            .Map(e => e.Id, f => f.Id)
+            .Map(e => e.RequiredName, f => f.RequiredName)
+            .Map(e => e.PropertyWithBackingField, f => f.PropertyWithBackingField)
+            .Map(e => EF.Property<int>(e, "_privateField"), f => EF.Property<int>(f, "_privateField"))
+            .Map(e => e.Count, f => captured == null ? 0 : captured.Count));
+
+      affectedRows.Should().Be(1);
+      ExecutedCommands.Last().Should().Contain("__insert_const_0");
+      (await AssertDbContext.TestEntities.SingleAsync()).Count.Should().Be(expectedCount);
+   }
+
+   [Fact]
+   public async Task Should_insert_whole_ComplexType_from_new_expression()
+   {
+      var id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866");
+      await using var tempTable = await SUT.BulkInsertIntoTempTableAsync([new TestEntityWithComplexType(id, new BoundaryValueObject(10, 20))], new SqliteTempTableBulkInsertOptions());
+
+      var affectedRows = await ActDbContext.Set<TestEntityWithComplexType>().BulkInsertAsync(
+         tempTable.Query,
+         builder => builder
+            .Map(e => e.Id, f => f.Id)
+            .Map(e => e.Boundary, f => new BoundaryValueObject(7, 8)));
+
+      affectedRows.Should().Be(1);
+
+      var loaded = await AssertDbContext.TestEntities_with_ComplexType.SingleAsync();
+      loaded.Boundary.Upper.Should().Be(7);
+      loaded.Boundary.Lower.Should().Be(8);
+   }
+
+   [Fact]
+   public async Task Should_insert_with_window_function_without_column()
+   {
+      await using var tempTable = await SUT.BulkInsertIntoTempTableAsync([
+                                                                            new TestEntity { Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"), RequiredName = "RequiredName" },
+                                                                            new TestEntity { Id = new Guid("8AF163D7-D316-4B2D-A62F-6326A80C8BEE"), RequiredName = "RequiredName" }
+                                                                         ], new SqliteTempTableBulkInsertOptions());
+
+      var affectedRows = await ActDbContext.Set<TestEntity>().BulkInsertAsync(
+         tempTable.Query,
+         builder => builder
+            .Map(e => e.Id, f => f.Id)
+            .Map(e => e.RequiredName, f => f.RequiredName)
+            .Map(e => e.PropertyWithBackingField, f => f.PropertyWithBackingField)
+            .Map(e => EF.Property<int>(e, "_privateField"), f => EF.Property<int>(f, "_privateField"))
+            .Map(e => e.Count, f => (int)EF.Functions.RowNumber(EF.Functions.OrderBy(1))));
+
+      affectedRows.Should().Be(2);
+      ExecutedCommands.Last().Should().Contain("ROW_NUMBER() OVER");
+      (await AssertDbContext.TestEntities.Select(e => e.Count).OrderBy(c => c).ToListAsync()).Should().Equal(1, 2);
+   }
 }

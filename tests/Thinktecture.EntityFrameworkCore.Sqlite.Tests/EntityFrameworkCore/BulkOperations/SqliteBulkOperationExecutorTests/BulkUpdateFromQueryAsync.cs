@@ -1037,7 +1037,7 @@ public class BulkUpdateFromQueryAsync : IntegrationTestsBase
 
       var act = () => ActDbContext.Set<TestEntityWithComplexType>().BulkUpdateAsync(tempTable.Query, e => e.Id, f => f.Id, builder => builder.Set(e => e.Boundary, (e, f) => value!));
 
-      await act.Should().ThrowAsync<ArgumentException>().WithMessage("The member 'Lower' of 'BoundaryValueObject' cannot be read because the captured value is null.*whole complex property*");
+      await act.Should().ThrowAsync<ArgumentException>().WithMessage("The member 'Lower' of 'BoundaryValueObject' cannot be read because the captured value is null.*");
    }
 
    [Fact]
@@ -1113,9 +1113,272 @@ public class BulkUpdateFromQueryAsync : IntegrationTestsBase
       await act.Should().ThrowAsync<ArgumentException>().WithMessage("The member 'Name' of 'TestEntity' cannot be read because the captured value is null.*");
    }
 
+   [Theory]
+   [InlineData(null, 2)]
+   [InlineData(5, 1)]
+   public async Task Should_update_with_HasValue_of_captured_nullable(int? nullableInt, int expectedCount)
+   {
+      var id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866");
+      ArrangeDbContext.Add(new TestEntity { Id = id, RequiredName = "RequiredName", Count = 0 });
+      await ArrangeDbContext.SaveChangesAsync();
+
+      await using var tempTable = await SUT.BulkInsertIntoTempTableAsync([new TestEntity { Id = id, RequiredName = "RequiredName" }], new SqliteTempTableBulkInsertOptions());
+
+      var affectedRows = await ActDbContext.Set<TestEntity>().BulkUpdateAsync(tempTable.Query, e => e.Id, f => f.Id, builder => builder.Set(e => e.Count, (e, f) => nullableInt.HasValue ? 1 : 2));
+
+      affectedRows.Should().Be(1);
+      (await AssertDbContext.TestEntities.SingleAsync()).Count.Should().Be(expectedCount);
+   }
+
+   [Theory]
+   [InlineData(true, 0)]
+   [InlineData(false, 7)]
+   public async Task Should_update_with_null_guarded_captured_object(bool capturedIsNull, int expectedCount)
+   {
+      var id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866");
+      ArrangeDbContext.Add(new TestEntity { Id = id, RequiredName = "RequiredName", Count = 3 });
+      await ArrangeDbContext.SaveChangesAsync();
+
+      await using var tempTable = await SUT.BulkInsertIntoTempTableAsync([new TestEntity { Id = id, RequiredName = "RequiredName" }], new SqliteTempTableBulkInsertOptions());
+      TestEntity? captured = capturedIsNull ? null : new TestEntity { Count = 7 };
+
+      var affectedRows = await ActDbContext.Set<TestEntity>().BulkUpdateAsync(tempTable.Query, e => e.Id, f => f.Id, builder => builder.Set(e => e.Count, (e, f) => captured == null ? 0 : captured.Count));
+
+      affectedRows.Should().Be(1);
+      (await AssertDbContext.TestEntities.SingleAsync()).Count.Should().Be(expectedCount);
+   }
+
+   [Theory]
+   [InlineData(true, 2)]
+   [InlineData(false, 1)]
+   public async Task Should_filter_with_null_guarded_captured_object(bool capturedIsNull, int expectedAffectedRows)
+   {
+      var id1 = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866");
+      var id2 = new Guid("8AF163D7-D316-4B2D-A62F-6326A80C8BEE");
+      ArrangeDbContext.Add(new TestEntity { Id = id1, Name = "Original1", RequiredName = "RequiredName", Count = 1 });
+      ArrangeDbContext.Add(new TestEntity { Id = id2, Name = "Original2", RequiredName = "RequiredName", Count = 10 });
+      await ArrangeDbContext.SaveChangesAsync();
+
+      await using var tempTable = await SUT.BulkInsertIntoTempTableAsync([
+                                                                            new TestEntity { Id = id1, Name = "Updated", RequiredName = "RequiredName" },
+                                                                            new TestEntity { Id = id2, Name = "Updated", RequiredName = "RequiredName" }
+                                                                         ], new SqliteTempTableBulkInsertOptions());
+      TestEntity? captured = capturedIsNull ? null : new TestEntity { Count = 5 };
+
+      var affectedRows = await ActDbContext.Set<TestEntity>().BulkUpdateAsync(
+         tempTable.Query,
+         e => e.Id,
+         f => f.Id,
+         builder => builder.Set(e => e.Name, (e, f) => f.Name),
+         filter: (e, f) => e.Count >= (captured == null ? 0 : captured.Count));
+
+      affectedRows.Should().Be(expectedAffectedRows);
+
+      if (!capturedIsNull)
+         (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == id1)).Name.Should().Be("Original1");
+   }
+
+   [Theory]
+   [InlineData(true, 10)]
+   [InlineData(false, 15)]
+   public async Task Should_evaluate_only_captured_part_of_mixed_expression(bool capturedIsNull, int expectedCount)
+   {
+      var id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866");
+      ArrangeDbContext.Add(new TestEntity { Id = id, RequiredName = "RequiredName", Count = 0 });
+      await ArrangeDbContext.SaveChangesAsync();
+
+      await using var tempTable = await SUT.BulkInsertIntoTempTableAsync([new TestEntity { Id = id, RequiredName = "RequiredName", Count = 10 }], new SqliteTempTableBulkInsertOptions());
+      TestEntity? captured = capturedIsNull ? null : new TestEntity { Count = 5 };
+
+      var affectedRows = await ActDbContext.Set<TestEntity>().BulkUpdateAsync(tempTable.Query, e => e.Id, f => f.Id, builder => builder.Set(e => e.Count, (e, f) => f.Count + (captured == null ? 0 : captured.Count)));
+
+      affectedRows.Should().Be(1);
+      ExecutedCommands.Last().Should().NotContain("CASE");
+
+      if (!capturedIsNull)
+         ExecutedCommands.Last().Should().Contain("+ 5");
+
+      (await AssertDbContext.TestEntities.SingleAsync()).Count.Should().Be(expectedCount);
+   }
+
+   [Fact]
+   public async Task Should_update_with_method_call_on_captured_value()
+   {
+      var id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866");
+      ArrangeDbContext.Add(new TestEntity { Id = id, Name = "Original", RequiredName = "RequiredName" });
+      await ArrangeDbContext.SaveChangesAsync();
+
+      await using var tempTable = await SUT.BulkInsertIntoTempTableAsync([new TestEntity { Id = id, RequiredName = "RequiredName" }], new SqliteTempTableBulkInsertOptions());
+      var captured = new TestEntity { Name = "abc" };
+
+      var affectedRows = await ActDbContext.Set<TestEntity>().BulkUpdateAsync(tempTable.Query, e => e.Id, f => f.Id, builder => builder.Set(e => e.Name, (e, f) => captured.Name!.ToUpper()));
+
+      affectedRows.Should().Be(1);
+      ExecutedCommands.Last().Should().NotContain("upper(");
+      (await AssertDbContext.TestEntities.SingleAsync()).Name.Should().Be("ABC");
+   }
+
+   [Fact]
+   public async Task Should_throw_when_captured_nullable_value_is_null()
+   {
+      var id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866");
+      ArrangeDbContext.Add(new TestEntity { Id = id, RequiredName = "RequiredName" });
+      await ArrangeDbContext.SaveChangesAsync();
+
+      await using var tempTable = await SUT.BulkInsertIntoTempTableAsync([new TestEntity { Id = id, RequiredName = "RequiredName" }], new SqliteTempTableBulkInsertOptions());
+      int? captured = null;
+
+      var act = () => ActDbContext.Set<TestEntity>().BulkUpdateAsync(tempTable.Query, e => e.Id, f => f.Id, builder => builder.Set(e => e.Count, (e, f) => captured!.Value));
+
+      await act.Should().ThrowAsync<ArgumentException>().WithMessage("The member 'Value' of 'Nullable`1' cannot be read because the captured value is null.*");
+   }
+
+   [Fact]
+   public async Task Should_throw_when_evaluation_of_captured_value_fails()
+   {
+      var id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866");
+      ArrangeDbContext.Add(new TestEntity { Id = id, RequiredName = "RequiredName" });
+      await ArrangeDbContext.SaveChangesAsync();
+
+      await using var tempTable = await SUT.BulkInsertIntoTempTableAsync([new TestEntity { Id = id, RequiredName = "RequiredName" }], new SqliteTempTableBulkInsertOptions());
+      var captured = new ThrowingValue();
+
+      var act = () => ActDbContext.Set<TestEntity>().BulkUpdateAsync(tempTable.Query, e => e.Id, f => f.Id, builder => builder.Set(e => e.Count, (e, f) => captured.Count));
+
+      (await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("The expression '*' cannot be evaluated on the client:*"))
+         .WithInnerException<InvalidOperationException>().WithMessage("Count is not available.");
+   }
+
+   [Fact]
+   public async Task Should_update_whole_ComplexType_from_new_expression()
+   {
+      var id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866");
+      ArrangeDbContext.Add(new TestEntityWithComplexType(id, new BoundaryValueObject(1, 2)));
+      await ArrangeDbContext.SaveChangesAsync();
+
+      await using var tempTable = await SUT.BulkInsertIntoTempTableAsync([new TestEntityWithComplexType(id, new BoundaryValueObject(10, 20))], new SqliteTempTableBulkInsertOptions());
+
+      var affectedRows = await ActDbContext.Set<TestEntityWithComplexType>().BulkUpdateAsync(
+         tempTable.Query,
+         e => e.Id,
+         f => f.Id,
+         builder => builder.Set(e => e.Boundary, (e, f) => new BoundaryValueObject(7, 8)));
+
+      affectedRows.Should().Be(1);
+
+      var loaded = await AssertDbContext.TestEntities_with_ComplexType.SingleAsync();
+      loaded.Boundary.Upper.Should().Be(7);
+      loaded.Boundary.Lower.Should().Be(8);
+   }
+
+   [Theory]
+   [InlineData(true, 2)]
+   [InlineData(false, 1)]
+   public async Task Should_filter_with_null_guard_that_spans_a_column(bool capturedIsNull, int expectedAffectedRows)
+   {
+      var id1 = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866");
+      var id2 = new Guid("8AF163D7-D316-4B2D-A62F-6326A80C8BEE");
+      ArrangeDbContext.Add(new TestEntity { Id = id1, Name = "A", RequiredName = "RequiredName" });
+      ArrangeDbContext.Add(new TestEntity { Id = id2, Name = "B", RequiredName = "RequiredName" });
+      await ArrangeDbContext.SaveChangesAsync();
+
+      await using var tempTable = await SUT.BulkInsertIntoTempTableAsync([
+                                                                            new TestEntity { Id = id1, RequiredName = "RequiredName", Count = 5 },
+                                                                            new TestEntity { Id = id2, RequiredName = "RequiredName", Count = 5 }
+                                                                         ], new SqliteTempTableBulkInsertOptions());
+      TestEntity? captured = capturedIsNull ? null : new TestEntity { Name = "A" };
+
+      var affectedRows = await ActDbContext.Set<TestEntity>().BulkUpdateAsync(tempTable.Query, e => e.Id, f => f.Id, builder => builder.Set(e => e.Count, (e, f) => f.Count), filter: (e, f) => captured == null || e.Name == captured.Name);
+
+      affectedRows.Should().Be(expectedAffectedRows);
+      (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == id1)).Count.Should().Be(5);
+      (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == id2)).Count.Should().Be(capturedIsNull ? 5 : 0);
+   }
+
+   [Theory]
+   [InlineData(true, 5)]
+   [InlineData(false, 12)]
+   public async Task Should_update_with_conditional_that_spans_a_column(bool capturedIsNull, int expectedCount)
+   {
+      var id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866");
+      ArrangeDbContext.Add(new TestEntity { Id = id, RequiredName = "RequiredName" });
+      await ArrangeDbContext.SaveChangesAsync();
+
+      await using var tempTable = await SUT.BulkInsertIntoTempTableAsync([new TestEntity { Id = id, RequiredName = "RequiredName", Count = 5 }], new SqliteTempTableBulkInsertOptions());
+      TestEntity? captured = capturedIsNull ? null : new TestEntity { Count = 7 };
+
+      var affectedRows = await ActDbContext.Set<TestEntity>().BulkUpdateAsync(tempTable.Query, e => e.Id, f => f.Id, builder => builder.Set(e => e.Count, (e, f) => captured == null ? f.Count : captured.Count + f.Count));
+
+      affectedRows.Should().Be(1);
+      (await AssertDbContext.TestEntities.SingleAsync()).Count.Should().Be(expectedCount);
+   }
+
+   [Fact]
+   public async Task Should_throw_InvalidOperationException_when_evaluation_fails_with_other_exception_and_unread_null_instance()
+   {
+      var id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866");
+      ArrangeDbContext.Add(new TestEntity { Id = id, RequiredName = "RequiredName" });
+      await ArrangeDbContext.SaveChangesAsync();
+
+      await using var tempTable = await SUT.BulkInsertIntoTempTableAsync([new TestEntity { Id = id, RequiredName = "RequiredName" }], new SqliteTempTableBulkInsertOptions());
+      TestEntity? captured = null;
+
+      var act = () => ActDbContext.Set<TestEntity>().BulkUpdateAsync(tempTable.Query, e => e.Id, f => f.Id, builder => builder.Set(e => e.Count, (e, f) => captured == null ? Fail() : captured.Count));
+
+      (await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("The expression '*' cannot be evaluated on the client:*"))
+         .WithInnerException<FormatException>().WithMessage("Evaluation failed.");
+   }
+
+   [Fact]
+   public async Task Should_not_execute_captured_query_during_translation()
+   {
+      var id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866");
+      ArrangeDbContext.Add(new TestEntity { Id = id, RequiredName = "RequiredName" });
+      await ArrangeDbContext.SaveChangesAsync();
+
+      await using var tempTable = await SUT.BulkInsertIntoTempTableAsync([new TestEntity { Id = id, RequiredName = "RequiredName" }], new SqliteTempTableBulkInsertOptions());
+      var commandCountBefore = ExecutedCommands.Count;
+
+      var act = () => ActDbContext.Set<TestEntity>().BulkUpdateAsync(tempTable.Query, e => e.Id, f => f.Id, builder => builder.Set(e => e.Count, (e, f) => ActDbContext.Set<TestEntity>().Count()));
+
+      await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("Could not translate value expression:*");
+      ExecutedCommands.Skip(commandCountBefore).Should().NotContain(c => c.Contains("COUNT(*)"));
+   }
+
+   private static int Fail()
+   {
+      throw new FormatException("Evaluation failed.");
+   }
+
    private class TestKey
    {
       public Guid Id { get; set; }
       public string? Name { get; set; }
+   }
+
+   private class ThrowingValue
+   {
+      public int Count => throw new InvalidOperationException("Count is not available.");
+   }
+
+   [Fact]
+   public async Task Should_update_no_rows_when_filter_short_circuits_to_false()
+   {
+      var id1 = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866");
+      var id2 = new Guid("8AF163D7-D316-4B2D-A62F-6326A80C8BEE");
+      ArrangeDbContext.Add(new TestEntity { Id = id1, Name = "A", RequiredName = "RequiredName" });
+      ArrangeDbContext.Add(new TestEntity { Id = id2, Name = "B", RequiredName = "RequiredName" });
+      await ArrangeDbContext.SaveChangesAsync();
+
+      await using var tempTable = await SUT.BulkInsertIntoTempTableAsync([
+                                                                            new TestEntity { Id = id1, RequiredName = "RequiredName", Count = 5 },
+                                                                            new TestEntity { Id = id2, RequiredName = "RequiredName", Count = 5 }
+                                                                         ], new SqliteTempTableBulkInsertOptions());
+      TestEntity? captured = null;
+
+      var affectedRows = await ActDbContext.Set<TestEntity>().BulkUpdateAsync(tempTable.Query, e => e.Id, f => f.Id, builder => builder.Set(e => e.Count, (e, f) => f.Count), filter: (e, f) => captured != null && e.Name == captured.Name);
+
+      affectedRows.Should().Be(0);
+      (await AssertDbContext.TestEntities.Select(e => e.Count).ToListAsync()).Should().Equal(0, 0);
    }
 }

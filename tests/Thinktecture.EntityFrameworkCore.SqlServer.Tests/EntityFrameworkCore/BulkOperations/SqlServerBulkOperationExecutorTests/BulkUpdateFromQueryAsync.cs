@@ -1438,4 +1438,25 @@ public class BulkUpdateFromQueryAsync : IntegrationTestsBase
       public Guid Id { get; set; }
       public string? Name { get; set; }
    }
+
+   [Fact]
+   public async Task Should_update_no_rows_when_filter_short_circuits_to_false()
+   {
+      var id1 = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866");
+      var id2 = new Guid("8AF163D7-D316-4B2D-A62F-6326A80C8BEE");
+      ArrangeDbContext.Add(new TestEntity { Id = id1, Name = "A", RequiredName = "RequiredName" });
+      ArrangeDbContext.Add(new TestEntity { Id = id2, Name = "B", RequiredName = "RequiredName" });
+      await ArrangeDbContext.SaveChangesAsync();
+
+      await using var tempTable = await SUT.BulkInsertIntoTempTableAsync([
+                                                                            new TestEntity { Id = id1, RequiredName = "RequiredName", Count = 5 },
+                                                                            new TestEntity { Id = id2, RequiredName = "RequiredName", Count = 5 }
+                                                                         ], new SqlServerTempTableBulkInsertOptions());
+      TestEntity? captured = null;
+
+      var affectedRows = await ActDbContext.Set<TestEntity>().BulkUpdateAsync(tempTable.Query, e => e.Id, f => f.Id, builder => builder.Set(e => e.Count, (e, f) => f.Count), filter: (e, f) => captured != null && e.Name == captured.Name);
+
+      affectedRows.Should().Be(0);
+      (await AssertDbContext.TestEntities.Select(e => e.Count).ToListAsync()).Should().Equal(0, 0);
+   }
 }

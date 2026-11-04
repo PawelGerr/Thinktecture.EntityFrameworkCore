@@ -1,6 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
-using System.Reflection;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
@@ -8,7 +7,6 @@ using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.Internal;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 using Microsoft.EntityFrameworkCore.Storage;
-using Microsoft.Extensions.Logging;
 
 namespace Thinktecture.EntityFrameworkCore.BulkOperations.Internal;
 
@@ -16,21 +14,16 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.Internal;
 /// This is an internal API. It may be changed or removed without notice.
 /// </summary>
 [SuppressMessage("Usage", "EF1001:Internal EF Core API usage.")]
-public sealed partial class EfCoreValueExpressionTranslator
+public sealed class EfCoreValueExpressionTranslator
 {
-   private readonly ILogger _logger;
    private readonly DbContext _ctx;
 
    /// <summary>
    /// Initializes a new instance.
    /// </summary>
-   /// <param name="logger">Logger</param>
    /// <param name="ctx">The database context.</param>
-   public EfCoreValueExpressionTranslator(
-      ILogger logger,
-      DbContext ctx)
+   public EfCoreValueExpressionTranslator(DbContext ctx)
    {
-      _logger = logger ?? throw new ArgumentNullException(nameof(logger));
       _ctx = ctx ?? throw new ArgumentNullException(nameof(ctx));
    }
 
@@ -116,7 +109,11 @@ public sealed partial class EfCoreValueExpressionTranslator
          var sqlFilter = sqlTranslator.TranslateProjection(flattenedFilter)
                          ?? throw new InvalidOperationException($"Could not translate filter expression: {filter}");
 
-         if (sqlFilter is SqlExpression filterExpr)
+         // A filter that is false on the client becomes a bare constant, which SQL Server does not accept as a condition.
+         // ApplyPredicate ignores a constant true.
+         if (sqlFilter is SqlConstantExpression { Value: false })
+            selectExpression.ApplyPredicate(sqlExprFactory.Equal(sqlExprFactory.Constant(1), sqlExprFactory.Constant(0)));
+         else if (sqlFilter is SqlExpression filterExpr)
             selectExpression.ApplyPredicate(filterExpr);
       }
 
@@ -411,7 +408,10 @@ public sealed partial class EfCoreValueExpressionTranslator
 
    private Expression FlattenClosures(Expression expression)
    {
-      return new ClosureFlatteningVisitor(_logger, _ctx.GetService<IEvaluatableExpressionFilter>(), _ctx.Model).Visit(expression);
+      var finder = new EvaluatableSubtreeFinder(_ctx.GetService<IEvaluatableExpressionFilter>(), _ctx.Model);
+      finder.Visit(expression);
+
+      return new ClosureFlatteningVisitor(finder.EvaluatableNodes).Visit(expression);
    }
 
    private static SqlExpression TranslateValueExpression(
@@ -455,56 +455,176 @@ public sealed partial class EfCoreValueExpressionTranslator
                                   property.IsNullable);
    }
 
-   private sealed partial class ClosureFlatteningVisitor(
-      ILogger logger,
+   /// <summary>
+   /// Pass 1: marks every node whose whole subtree can be evaluated on the client.
+   /// </summary>
+   private sealed class EvaluatableSubtreeFinder(
       IEvaluatableExpressionFilter evaluatableExpressionFilter,
       IModel model) : ExpressionVisitor
    {
-      protected override Expression VisitMember(MemberExpression node)
+      public HashSet<Expression> EvaluatableNodes { get; } = new(ReferenceEqualityComparer.Instance);
+
+      private bool _childrenEvaluatable = true;
+
+      [return: NotNullIfNotNull(nameof(node))]
+      public override Expression? Visit(Expression? node)
       {
-         // Static member access (e.g. MyType.StaticValue) — evaluate it to a constant
-         // unless EF Core translates it server-side (e.g. DateTime.Now).
-         if (node.Expression is null)
-         {
-            return evaluatableExpressionFilter.IsEvaluatableExpression(node, model)
-                      ? Evaluate(node, null) ?? node
-                      : node;
-         }
+         if (node is null)
+            return null;
 
-         var expression = Visit(node.Expression);
+         var parentChildrenEvaluatable = _childrenEvaluatable;
+         _childrenEvaluatable = true;
 
-         if (expression is not ConstantExpression constant)
-            return node.Update(expression);
+         base.Visit(node);
 
-         if (constant.Value is null)
-            throw new ArgumentException($"The member '{node.Member.Name}' of '{node.Member.DeclaringType?.Name}' cannot be read because the captured value is null. Provide a non-null value; for a whole complex property, set the members one by one instead. Expression: {node}");
+         // Extension nodes are the entity shapers that replace the lambda parameters, so they belong to the server side.
+         // EF.Functions methods have no client implementation, and evaluating a query would execute it during translation.
+         var nodeEvaluatable = _childrenEvaluatable
+                               && node is not ParameterExpression
+                               && node is not LambdaExpression
+                               && node.NodeType != ExpressionType.Extension
+                               && !IsDbFunctionsCall(node)
+                               && !typeof(IQueryable).IsAssignableFrom(node.Type)
+                               && evaluatableExpressionFilter.IsEvaluatableExpression(node, model);
 
-         return Evaluate(node, constant.Value) ?? node.Update(expression);
+         if (nodeEvaluatable)
+            EvaluatableNodes.Add(node);
+
+         _childrenEvaluatable = parentChildrenEvaluatable && nodeEvaluatable;
+
+         return node;
       }
 
-      private Expression? Evaluate(MemberExpression node, object? instance)
+      private static bool IsDbFunctionsCall(Expression node)
+      {
+         return node is MethodCallExpression call
+                && call.Method.GetParameters() is [{ ParameterType: var firstParameterType }, ..]
+                && firstParameterType == typeof(DbFunctions);
+      }
+   }
+
+   /// <summary>
+   /// Pass 2: replaces every maximal evaluatable subtree with a constant.
+   /// </summary>
+   private sealed class ClosureFlatteningVisitor(HashSet<Expression> evaluatableNodes) : ExpressionVisitor
+   {
+      [return: NotNullIfNotNull(nameof(node))]
+      public override Expression? Visit(Expression? node)
+      {
+         if (node is null)
+            return null;
+
+         if (!evaluatableNodes.Contains(node))
+            return base.Visit(node);
+
+         return node is ConstantExpression ? node : Evaluate(node);
+      }
+
+      // Like EF Core's funcletizer, a client-evaluatable test selects the branch, so a null guard protects a branch that contains a column.
+      protected override Expression VisitConditional(ConditionalExpression node)
+      {
+         if (!evaluatableNodes.Contains(node.Test))
+            return base.VisitConditional(node);
+
+         var test = (bool)Evaluate(node.Test).Value!;
+
+         return ConvertIfNeeded(Visit(test ? node.IfTrue : node.IfFalse), node.Type);
+      }
+
+      protected override Expression VisitBinary(BinaryExpression node)
+      {
+         if (node.NodeType is not (ExpressionType.AndAlso or ExpressionType.OrElse) || node.Method is not null || !evaluatableNodes.Contains(node.Left))
+            return base.VisitBinary(node);
+
+         var left = Evaluate(node.Left);
+
+         // A lifted operator with a null left operand needs the right operand to decide the result.
+         if (left.Value is not bool leftValue)
+            return node.Update(left, node.Conversion, Visit(node.Right));
+
+         var isShortCircuit = leftValue == (node.NodeType == ExpressionType.OrElse);
+
+         return isShortCircuit
+                   ? Expression.Constant(leftValue, node.Type)
+                   : ConvertIfNeeded(Visit(node.Right), node.Type);
+      }
+
+      private static Expression ConvertIfNeeded(Expression expression, Type type)
+      {
+         return expression.Type == type ? expression : Expression.Convert(expression, type);
+      }
+
+      private static ConstantExpression Evaluate(Expression node)
       {
          try
          {
-            var value = node.Member switch
+            return Expression.Constant(EvaluateValue(node), node.Type);
+         }
+         catch (Exception ex)
+         {
+            // Reading Nullable<T>.Value of a null value throws InvalidOperationException, not NullReferenceException.
+            var member = ex switch
             {
-               FieldInfo fi => fi.GetValue(instance),
-               PropertyInfo pi => pi.GetValue(instance),
-               _ => throw new NotSupportedException($"Unsupported member type: {node.Member.GetType().Name}")
+               NullReferenceException => FindMemberOfNullInstance(node, nullableValueOnly: false),
+               InvalidOperationException => FindMemberOfNullInstance(node, nullableValueOnly: true),
+               _ => null
             };
 
-            return Expression.Constant(value, node.Type);
+            if (member is not null)
+               throw new ArgumentException($"The member '{member.Member.Name}' of '{member.Member.DeclaringType?.Name}' cannot be read because the captured value is null. Provide a non-null value. Expression: {node}", ex);
+
+            if (ex is NullReferenceException)
+               throw new ArgumentException($"The expression cannot be evaluated because a captured value is null. Expression: {node}", ex);
+
+            throw new InvalidOperationException($"The expression '{node}' cannot be evaluated on the client: {ex.Message}", ex);
          }
-         catch (TargetInvocationException ex)
+      }
+
+      private static object? EvaluateValue(Expression node)
+      {
+         return Expression.Lambda<Func<object?>>(Expression.Convert(node, typeof(object))).Compile(preferInterpretation: true)();
+      }
+
+      private static MemberExpression? FindMemberOfNullInstance(Expression node, bool nullableValueOnly)
+      {
+         var collector = new InstanceMemberCollector();
+         collector.Visit(node);
+
+         foreach (var member in collector.Members)
          {
-            LogClosureFlatteningFailed(logger, ex, node.Member.Name, node.Member.DeclaringType?.Name);
+            if (nullableValueOnly && (member.Member.Name != nameof(Nullable<>.Value) || Nullable.GetUnderlyingType(member.Expression!.Type) is null))
+               continue;
+
+            try
+            {
+               if (EvaluateValue(member.Expression!) is null)
+                  return member;
+            }
+            catch (Exception)
+            {
+               // An instance that throws is not the null instance.
+            }
          }
 
          return null;
       }
 
-      [LoggerMessage(Level = LogLevel.Warning,
-                     Message = "ClosureFlatteningVisitor: Failed to evaluate member '{MemberName}' on type '{MemberDeclaringTypeName}'.")]
-      private static partial void LogClosureFlatteningFailed(ILogger logger, Exception ex, string memberName, string? memberDeclaringTypeName);
+      /// <summary>
+      /// Collects the instance member accesses in post-order, so the innermost member comes first.
+      /// </summary>
+      private sealed class InstanceMemberCollector : ExpressionVisitor
+      {
+         public List<MemberExpression> Members { get; } = [];
+
+         protected override Expression VisitMember(MemberExpression node)
+         {
+            var result = base.VisitMember(node);
+
+            if (node.Expression is not null)
+               Members.Add(node);
+
+            return result;
+         }
+      }
    }
 }
