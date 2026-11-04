@@ -222,7 +222,7 @@ public sealed class NpgsqlTempTableCreator : INpgsqlTempTableCreator
       try
       {
          StoreObjectIdentifier? storeObject = null;
-         IEntityType? designTimeEntityType = null;
+         IModel? designTimeModel = null;
 
          var isFirst = true;
 
@@ -243,11 +243,9 @@ public sealed class NpgsqlTempTableCreator : INpgsqlTempTableCreator
 
             if (_stringColumnTypes.Any(t => columnType.StartsWith(t, StringComparison.OrdinalIgnoreCase)))
             {
-               designTimeEntityType ??= _ctx.GetService<IDesignTimeModel>().Model
-                                            .GetEntityType(property.DeclaringType.Name);
+               designTimeModel ??= _ctx.GetService<IDesignTimeModel>().Model;
 
-               var collation = designTimeEntityType.GetProperty(property.Name)
-                                                   .GetCollation(storeObject.Value);
+               var collation = GetDesignTimeProperty(designTimeModel, property).GetCollation(storeObject.Value);
 
                if (!String.IsNullOrWhiteSpace(collation))
                {
@@ -352,5 +350,22 @@ public sealed class NpgsqlTempTableCreator : INpgsqlTempTableCreator
          else if (npgsqlStrategy == NpgsqlValueGenerationStrategy.IdentityAlwaysColumn)
             sb.Append(" GENERATED ALWAYS AS IDENTITY");
       }
+   }
+
+   // Collation is only available in the design-time model; a property of a complex type is found through its complex property chain.
+   private static IReadOnlyProperty GetDesignTimeProperty(IModel designTimeModel, IProperty property)
+   {
+      return GetDesignTimeType(designTimeModel, property.DeclaringType).GetProperty(property.Name);
+   }
+
+   private static IReadOnlyTypeBase GetDesignTimeType(IModel designTimeModel, ITypeBase type)
+   {
+      if (type is not IComplexType complexType)
+         return designTimeModel.GetEntityType(type.Name);
+
+      var complexProperty = complexType.ComplexProperty;
+
+      return GetDesignTimeType(designTimeModel, complexProperty.DeclaringType).FindComplexProperty(complexProperty.Name)?.ComplexType
+             ?? throw new InvalidOperationException($"The complex property '{complexProperty.Name}' was not found in the design-time model.");
    }
 }

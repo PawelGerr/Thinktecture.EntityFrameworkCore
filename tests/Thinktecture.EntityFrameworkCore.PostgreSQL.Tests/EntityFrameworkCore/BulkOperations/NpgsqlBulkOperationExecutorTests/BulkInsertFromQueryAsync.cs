@@ -505,4 +505,115 @@ public class BulkInsertFromQueryAsync : IntegrationTestsBase
          await ActDbContext.Database.ExecuteSqlRawAsync($"""DROP TABLE IF EXISTS "{Schema}"."TestEntities_QueryInsertRedirect" """);
       }
    }
+
+   [Fact]
+   public async Task Should_insert_struct_ComplexType_members_from_temp_table()
+   {
+      ConfigureModel = TempTableWithStructComplexType.Configure;
+
+      await using var tempTable = await SUT.BulkInsertIntoTempTableAsync([CreateStructComplexTypeSource()], new NpgsqlTempTableBulkInsertOptions());
+
+      var affectedRows = await ActDbContext.TestEntitiesWithStructComplexType.BulkInsertAsync(
+         tempTable.Query,
+         builder => builder
+            .Map(e => e.Id, s => s.Id)
+            .Map(e => e.MessageTimestamp, s => s.MessageTimestamp)
+            .Map(e => e.EffectiveMessage.ReceivedAt, s => s.EffectiveMessage.ReceivedAt)
+            .Map(e => e.EffectiveMessage.MessageTimestamp, s => s.EffectiveMessage.MessageTimestamp));
+
+      affectedRows.Should().Be(1);
+      ExecutedCommands.Last().Should().Contain("(id, message_timestamp, effective_received_at, effective_message_timestamp)");
+
+      var loaded = await AssertDbContext.TestEntitiesWithStructComplexType.SingleAsync();
+      loaded.EffectiveMessage.Should().Be(new TimestampPair(100, 200));
+   }
+
+   [Fact]
+   public async Task Should_insert_whole_struct_ComplexType_from_temp_table()
+   {
+      ConfigureModel = TempTableWithStructComplexType.Configure;
+
+      await using var tempTable = await SUT.BulkInsertIntoTempTableAsync([CreateStructComplexTypeSource()], new NpgsqlTempTableBulkInsertOptions());
+
+      var affectedRows = await ActDbContext.TestEntitiesWithStructComplexType.BulkInsertAsync(
+         tempTable.Query,
+         builder => builder
+            .Map(e => e.Id, s => s.Id)
+            .Map(e => e.MessageTimestamp, s => s.MessageTimestamp)
+            .Map(e => e.EffectiveMessage, s => s.EffectiveMessage));
+
+      affectedRows.Should().Be(1);
+      ExecutedCommands.Last().Should().Contain("(id, message_timestamp, effective_message_timestamp, effective_received_at)");
+
+      var loaded = await AssertDbContext.TestEntitiesWithStructComplexType.SingleAsync();
+      loaded.EffectiveMessage.Should().Be(new TimestampPair(100, 200));
+   }
+
+   [Fact]
+   public async Task Should_skip_generated_member_when_mapping_whole_ComplexType()
+   {
+      ConfigureModel = builder => builder.Entity<TestEntityWithComplexType>().ComplexProperty(e => e.Boundary, c => c.Property(b => b.Lower).ValueGeneratedOnAddOrUpdate());
+      await ActDbContext.Database.ExecuteSqlRawAsync($"""CREATE TABLE "{Schema}"."TestEntities_with_ComplexType_Generated" (LIKE "{Schema}"."TestEntities_with_ComplexType" INCLUDING ALL); ALTER TABLE "{Schema}"."TestEntities_with_ComplexType_Generated" ALTER COLUMN "Boundary_Lower" SET DEFAULT 0;""");
+
+      try
+      {
+         await ActDbContext.Database.ExecuteSqlRawAsync($"""INSERT INTO "{Schema}"."TestEntities_with_ComplexType" ("Id", "Boundary_Upper", "Boundary_Lower") VALUES ('40B5CA93-5C02-48AD-B8A1-12BC13313866', 1, 2)""");
+
+         var affectedRows = await ActDbContext.Set<TestEntityWithComplexType>().BulkInsertAsync(
+            ActDbContext.Set<TestEntityWithComplexType>(),
+            builder => builder
+               .Map(e => e.Id, f => f.Id)
+               .Map(e => e.Boundary, f => f.Boundary),
+            new NpgsqlBulkInsertFromQueryOptions { TableNameProvider = IBulkOperationTableNameProvider.ForRootEntity("TestEntities_with_ComplexType_Generated", Schema) });
+
+         affectedRows.Should().Be(1);
+         ExecutedCommands.Last().Should().NotContain("Boundary_Lower");
+         var lower = await AssertDbContext.Database.SqlQueryRaw<int>($"""SELECT "Boundary_Lower" AS "Value" FROM "{Schema}"."TestEntities_with_ComplexType_Generated" """).ToListAsync();
+         lower.Should().Equal(0);
+      }
+      finally
+      {
+         await ActDbContext.Database.ExecuteSqlRawAsync($"""DROP TABLE IF EXISTS "{Schema}"."TestEntities_with_ComplexType_Generated" """);
+      }
+   }
+
+   [Fact]
+   public async Task Should_throw_for_member_of_nullable_class_ComplexType()
+   {
+      ConfigureModel = TestEntityWithNullableClassComplexType.Configure;
+
+      var act = () => ActDbContext.Set<TestEntityWithNullableClassComplexType>().BulkInsertAsync(ActDbContext.Set<TestEntityWithNullableClassComplexType>(), builder => builder.Map(e => e.Id, f => f.Id).Map(e => e.OptionalBoundary!.Upper, f => f.OptionalBoundary!.Upper));
+
+      await act.Should().ThrowAsync<NotSupportedException>().WithMessage("The member 'OptionalBoundary' of '*' is a nullable complex property.*");
+      ExecutedCommands.Should().NotContain(c => c.Contains("INSERT"));
+   }
+
+   [Fact]
+   public async Task Should_throw_when_every_member_of_whole_ComplexType_is_generated_and_another_column_is_mapped()
+   {
+      ConfigureModel = builder => builder.Entity<TestEntityWithComplexType>().ComplexProperty(e => e.Boundary, c =>
+                                                                                              {
+                                                                                                 c.Property(b => b.Upper).ValueGeneratedOnAddOrUpdate();
+                                                                                                 c.Property(b => b.Lower).ValueGeneratedOnAddOrUpdate();
+                                                                                              });
+
+      var act = () => ActDbContext.Set<TestEntityWithComplexType>().BulkInsertAsync(
+         ActDbContext.Set<TestEntityWithComplexType>(),
+         builder => builder
+            .Map(e => e.Id, f => f.Id)
+            .Map(e => e.Boundary, f => f.Boundary));
+
+      await act.Should().ThrowAsync<ArgumentException>().WithMessage("*every member*generated*Expression: e => e.Boundary");
+      ExecutedCommands.Should().NotContain(c => c.Contains("INSERT"));
+   }
+
+   private static TempTableWithStructComplexType CreateStructComplexTypeSource()
+   {
+      return new TempTableWithStructComplexType
+             {
+                Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
+                MessageTimestamp = 10,
+                EffectiveMessage = new TimestampPair(100, 200)
+             };
+   }
 }

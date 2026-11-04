@@ -75,14 +75,18 @@ public sealed partial class EfCoreValueExpressionTranslator
       // Step 5: Translate SET entries
       var setters = new List<ColumnValueSetter>();
       var targetTableAlias = GetTargetTableAlias(selectExpression);
+      var targetProperties = new HashSet<IProperty>();
 
-      foreach (var entry in setClauseEntries)
+      foreach (var entry in BulkUpdateFromQueryHelper.ExpandComplexProperties(targetEntityType, setClauseEntries))
       {
          // Resolve target column
          var targetAccess = BulkUpdateFromQueryHelper.ExtractPropertyAccess(entry.TargetPropertySelector);
          var targetProp = BulkUpdateFromQueryHelper.ResolveProperty(targetEntityType, targetAccess);
          var targetColumnName = targetProp.GetColumnName(targetStoreObject)
                                 ?? throw new InvalidOperationException($"Could not get column name for property '{targetProp.Name}' on entity type '{targetEntityType.Name}'.");
+
+         if (!targetProperties.Add(targetProp))
+            throw new ArgumentException($"The target column '{targetColumnName}' is set more than once. Expression: {entry.TargetPropertySelector}");
 
          var targetColumn = CreateColumnExpression(targetProp, targetColumnName, targetTableAlias);
 
@@ -196,14 +200,18 @@ public sealed partial class EfCoreValueExpressionTranslator
       var sqlGenerationHelper = _ctx.GetService<ISqlGenerationHelper>();
       var targetColumns = new List<string>();
       var valueExpressions = new List<SqlExpression>();
+      var targetProperties = new HashSet<IProperty>();
 
-      foreach (var entry in entries)
+      foreach (var entry in BulkUpdateFromQueryHelper.ExpandComplexProperties(targetEntityType, entries))
       {
          // Resolve target column name
          var targetAccess = BulkUpdateFromQueryHelper.ExtractPropertyAccess(entry.TargetPropertySelector);
          var targetProp = BulkUpdateFromQueryHelper.ResolveProperty(targetEntityType, targetAccess);
          var targetColumnName = targetProp.GetColumnName(targetStoreObject)
                                 ?? throw new InvalidOperationException($"Could not get column name for property '{targetProp.Name}' on entity type '{targetEntityType.Name}'.");
+
+         if (!targetProperties.Add(targetProp))
+            throw new ArgumentException($"The target column '{targetColumnName}' is mapped more than once. Expression: {entry.TargetPropertySelector}");
 
          targetColumns.Add(sqlGenerationHelper.DelimitIdentifier(targetColumnName));
 
@@ -467,6 +475,9 @@ public sealed partial class EfCoreValueExpressionTranslator
 
          if (expression is not ConstantExpression constant)
             return node.Update(expression);
+
+         if (constant.Value is null)
+            throw new ArgumentException($"The member '{node.Member.Name}' of '{node.Member.DeclaringType?.Name}' cannot be read because the captured value is null. Provide a non-null value; for a whole complex property, set the members one by one instead. Expression: {node}");
 
          return Evaluate(node, constant.Value) ?? node.Update(expression);
       }

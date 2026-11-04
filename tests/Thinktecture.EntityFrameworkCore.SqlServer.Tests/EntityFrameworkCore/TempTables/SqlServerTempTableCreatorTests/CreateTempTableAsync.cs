@@ -714,6 +714,38 @@ public class CreateTempTableAsync : IntegrationTestsBase
    }
 
    [Fact]
+   public async Task Should_honor_collation_of_string_members_of_complex_type()
+   {
+      ConfigureModel = builder => TempTableWithStringComplexType.Configure(builder, "Japanese_CI_AS");
+
+      var entityType = ActDbContext.GetTempTableEntityType<TempTableWithStringComplexType>();
+      await using var tempTable = await SUT.CreateTempTableAsync(entityType, _optionsWithNonUniqueName);
+
+      var columns = AssertDbContext.GetTempTableColumns<TempTableWithStringComplexType>().ToList();
+      columns.Should().HaveCount(3);
+
+      ValidateColumn(columns[0], nameof(TempTableWithStringComplexType.Id), "uniqueidentifier", false);
+      ValidateColumn(columns[1], "Texts_WithCollation", "nvarchar", false, collation: "Japanese_CI_AS");
+      ValidateColumn(columns[2], "Texts_WithoutCollation", "nvarchar", false);
+   }
+
+   [Fact]
+   public async Task Should_honor_collation_of_string_members_of_nested_complex_type()
+   {
+      ConfigureModel = builder => TempTableWithNestedStringComplexType.Configure(builder, "Japanese_CI_AS");
+
+      var entityType = ActDbContext.GetTempTableEntityType<TempTableWithNestedStringComplexType>();
+      await using var tempTable = await SUT.CreateTempTableAsync(entityType, _optionsWithNonUniqueName);
+
+      var columns = AssertDbContext.GetTempTableColumns<TempTableWithNestedStringComplexType>().ToList();
+      columns.Should().HaveCount(3);
+
+      ValidateColumn(columns[0], nameof(TempTableWithNestedStringComplexType.Id), "uniqueidentifier", false);
+      ValidateColumn(columns[1], "Envelope_Texts_WithCollation", "nvarchar", false, collation: "Japanese_CI_AS");
+      ValidateColumn(columns[2], "Envelope_Texts_WithoutCollation", "nvarchar", false);
+   }
+
+   [Fact]
    public async Task Should_create_temp_table_for_entity_with_complex_type()
    {
       var testEntity = ActDbContext.GetTempTableEntityType<TestEntityWithComplexType>();

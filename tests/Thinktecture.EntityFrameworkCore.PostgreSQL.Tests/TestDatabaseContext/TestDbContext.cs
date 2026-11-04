@@ -33,6 +33,8 @@ public class TestDbContext : DbContext, IDbDefaultSchema
    public DbSet<TestEntityWithComplexType> TestEntities_with_ComplexType { get; set; }
    public DbSet<TestEntityWithJsonColumns> TestEntitiesWithJsonColumns { get; set; }
    public DbSet<TestEntityWithFlags> TestEntitiesWithFlags { get; set; }
+   public DbSet<TestEntityWithStructComplexType> TestEntitiesWithStructComplexType { get; set; }
+   public DbSet<TestEntityWithConvertedComplexType> TestEntitiesWithConvertedComplexType { get; set; }
    // ReSharper restore UnusedAutoPropertyAccessor.Global
 #nullable enable
 
@@ -94,6 +96,8 @@ public class TestDbContext : DbContext, IDbDefaultSchema
       TestEntityWithJsonColumns.Configure(modelBuilder);
       TestEntityWithDifferentColumnNames.Configure(modelBuilder);
       TestEntityWithFlags.Configure(modelBuilder);
+      TestEntityWithStructComplexType.Configure(modelBuilder);
+      TestEntityWithConvertedComplexType.Configure(modelBuilder);
 
       ConfigureModel?.Invoke(modelBuilder);
 

@@ -703,6 +703,45 @@ public class BulkInsertAsync : IntegrationTestsBase
    }
 
    [Fact]
+   public async Task Should_insert_entity_with_struct_ComplexType()
+   {
+      var testEntity = new TestEntityWithStructComplexType
+                       {
+                          Id = new Guid("54FF93FC-6BE9-4F19-A52E-E517CA9FEAA7"),
+                          MessageTimestamp = 10,
+                          EffectiveMessage = new TimestampPair(100, 200),
+                          Name = "Name"
+                       };
+
+      await SUT.BulkInsertAsync([testEntity], new NpgsqlBulkInsertOptions());
+
+      var loadedEntities = await AssertDbContext.TestEntitiesWithStructComplexType.ToListAsync();
+      loadedEntities.Should().BeEquivalentTo([testEntity]);
+
+      // The COPY command is not a DbCommand, so the configured column names are verified by reading them directly.
+      var columnSum = await AssertDbContext.Database
+                                          .SqlQueryRaw<long>($"""SELECT "effective_received_at" + "effective_message_timestamp" AS "Value" FROM "{Schema}"."TestEntitiesWithStructComplexType" """)
+                                          .SingleAsync();
+      columnSum.Should().Be(300);
+   }
+
+   [Fact]
+   public async Task Should_insert_entity_with_value_converted_members_of_struct_ComplexType()
+   {
+      var testEntity = new TestEntityWithConvertedComplexType
+                       {
+                          Id = new Guid("54FF93FC-6BE9-4F19-A52E-E517CA9FEAA7"),
+                          MessageTimestamp = 10,
+                          EffectiveMessage = new ConvertedTimestampPair(new TimestampValue(100), new TimestampValue(200))
+                       };
+
+      await SUT.BulkInsertAsync([testEntity], new NpgsqlBulkInsertOptions());
+
+      var loadedEntities = await AssertDbContext.TestEntitiesWithConvertedComplexType.ToListAsync();
+      loadedEntities.Should().BeEquivalentTo([testEntity]);
+   }
+
+   [Fact]
    public async Task Should_insert_entities_with_freeze()
    {
       await using var transaction = await ActDbContext.Database.BeginTransactionAsync();

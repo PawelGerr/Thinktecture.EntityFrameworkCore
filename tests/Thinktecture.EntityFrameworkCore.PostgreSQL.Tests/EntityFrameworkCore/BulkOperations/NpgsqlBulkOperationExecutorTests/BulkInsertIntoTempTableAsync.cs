@@ -408,6 +408,77 @@ public class BulkInsertIntoTempTableAsync : IntegrationTestsBase
    }
 
    [Fact]
+   public async Task Should_insert_temp_table_entity_with_struct_ComplexType()
+   {
+      ConfigureModel = TempTableWithStructComplexType.Configure;
+
+      var entity = new TempTableWithStructComplexType
+                   {
+                      Id = new Guid("54FF93FC-6BE9-4F19-A52E-E517CA9FEAA7"),
+                      MessageTimestamp = 10,
+                      EffectiveMessage = new TimestampPair(100, 200)
+                   };
+
+      await using var tempTable = await SUT.BulkInsertIntoTempTableAsync([entity], new NpgsqlTempTableBulkInsertOptions());
+
+      var loadedEntities = await tempTable.Query.ToListAsync();
+      loadedEntities.Should().BeEquivalentTo([entity]);
+
+      var columns = await ActDbContext.GetTempTableColumns(tempTable.Name).ToListAsync();
+      columns.Select(c => c.ColumnName).Should().BeEquivalentTo("id", "message_timestamp", "effective_received_at", "effective_message_timestamp");
+
+      foreach (var column in columns.Where(c => c.ColumnName!.StartsWith("effective_", StringComparison.Ordinal)))
+      {
+         column.IsNullable.Should().BeFalse();
+         column.DataType.Should().Be("bigint");
+      }
+   }
+
+   [Fact]
+   public async Task Should_project_struct_ComplexType_members_from_temp_table()
+   {
+      ConfigureModel = TempTableWithStructComplexType.Configure;
+
+      var entity = new TempTableWithStructComplexType
+                   {
+                      Id = new Guid("54FF93FC-6BE9-4F19-A52E-E517CA9FEAA7"),
+                      MessageTimestamp = 10,
+                      EffectiveMessage = new TimestampPair(100, 200)
+                   };
+
+      await using var tempTable = await SUT.BulkInsertIntoTempTableAsync([entity], new NpgsqlTempTableBulkInsertOptions());
+
+      var projected = await tempTable.Query.Select(e => new { e.Id, e.EffectiveMessage.ReceivedAt }).ToListAsync();
+      projected.Should().BeEquivalentTo([new { entity.Id, ReceivedAt = 100L }]);
+   }
+
+   [Fact]
+   public async Task Should_insert_temp_table_entity_with_value_converted_members_of_struct_ComplexType()
+   {
+      ConfigureModel = TempTableWithConvertedComplexType.Configure;
+
+      var entity = new TempTableWithConvertedComplexType
+                   {
+                      Id = new Guid("54FF93FC-6BE9-4F19-A52E-E517CA9FEAA7"),
+                      MessageTimestamp = 10,
+                      EffectiveMessage = new ConvertedTimestampPair(new TimestampValue(100), new TimestampValue(200))
+                   };
+
+      await using var tempTable = await SUT.BulkInsertIntoTempTableAsync([entity], new NpgsqlTempTableBulkInsertOptions());
+
+      var loadedEntities = await tempTable.Query.ToListAsync();
+      loadedEntities.Should().BeEquivalentTo([entity]);
+
+      var columns = await ActDbContext.GetTempTableColumns(tempTable.Name).ToListAsync();
+
+      foreach (var column in columns.Where(c => c.ColumnName!.StartsWith("effective_", StringComparison.Ordinal)))
+      {
+         column.IsNullable.Should().BeFalse();
+         column.DataType.Should().Be("bigint");
+      }
+   }
+
+   [Fact]
    public async Task Should_return_number_of_inserted_rows_for_entities()
    {
       ConfigureModel = builder => builder.ConfigureTempTableEntity<CustomTempTable>();

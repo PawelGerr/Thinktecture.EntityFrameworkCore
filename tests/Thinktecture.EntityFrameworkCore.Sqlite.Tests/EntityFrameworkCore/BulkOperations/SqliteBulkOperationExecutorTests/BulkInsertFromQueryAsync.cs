@@ -373,6 +373,16 @@ public class BulkInsertFromQueryAsync : IntegrationTestsBase
    }
 
    [Fact]
+   public async Task Should_throw_when_target_column_is_mapped_twice()
+   {
+      await using var tempTable = await SUT.BulkInsertIntoTempTableAsync([new TestEntity { Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"), RequiredName = "RequiredName" }], new SqliteTempTableBulkInsertOptions());
+
+      var act = () => ActDbContext.Set<TestEntity>().BulkInsertAsync(tempTable.Query, builder => builder.Map(e => e.Id, f => f.Id).Map(e => e.RequiredName, f => f.RequiredName).Map(e => e.Id, f => f.Id));
+
+      await act.Should().ThrowAsync<ArgumentException>().WithMessage("The target column 'Id' is mapped more than once.*");
+   }
+
+   [Fact]
    public async Task Should_return_correct_affected_row_count()
    {
       await ActDbContext.Database.ExecuteSqlRawAsync("""
@@ -510,6 +520,52 @@ public class BulkInsertFromQueryAsync : IntegrationTestsBase
    }
 
    [Fact]
+   public async Task Should_insert_with_captured_null_variable()
+   {
+      await ActDbContext.Database.ExecuteSqlRawAsync("""
+         CREATE TABLE "TestEntities_QueryInsertRedirect" (
+            "Id" TEXT NOT NULL,
+            "RequiredName" TEXT NOT NULL,
+            "Name" TEXT NULL,
+            "Count" INTEGER NOT NULL,
+            CONSTRAINT "PK_TestEntities_QueryInsertRedirect" PRIMARY KEY ("Id")
+         );
+         """);
+
+      try
+      {
+         var sourceEntities = new List<TestEntity>
+         {
+            new() { Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"), Name = "Name1", RequiredName = "Req1", Count = 10 }
+         };
+
+         await using var tempTable = await SUT.BulkInsertIntoTempTableAsync(sourceEntities, new SqliteTempTableBulkInsertOptions());
+
+         string? name = null;
+
+         var affectedRows = await ActDbContext.Set<TestEntity>().BulkInsertAsync(
+            tempTable.Query,
+            builder => builder
+               .Map(e => e.Id, f => f.Id)
+               .Map(e => e.RequiredName, f => f.RequiredName)
+               .Map(e => e.Name, f => name)
+               .Map(e => e.Count, f => f.Count),
+            new SqliteBulkInsertFromQueryOptions { TableNameProvider = IBulkOperationTableNameProvider.ForRootEntity("TestEntities_QueryInsertRedirect") });
+
+         affectedRows.Should().Be(1);
+
+         var names = await AssertDbContext.Database
+                                         .SqlQueryRaw<string?>("""SELECT "Name" AS "Value" FROM "TestEntities_QueryInsertRedirect" """)
+                                         .ToListAsync();
+         names.Should().ContainSingle().Which.Should().BeNull();
+      }
+      finally
+      {
+         await ActDbContext.Database.ExecuteSqlRawAsync("""DROP TABLE IF EXISTS "TestEntities_QueryInsertRedirect" """);
+      }
+   }
+
+   [Fact]
    public async Task Should_insert_with_arithmetic_expression()
    {
       var entity = new TestEntity { Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"), Name = "OrigName", RequiredName = "ReqName", Count = 7 };
@@ -598,5 +654,78 @@ public class BulkInsertFromQueryAsync : IntegrationTestsBase
       {
          await ActDbContext.Database.ExecuteSqlRawAsync("""DROP TABLE IF EXISTS "TestEntities_QueryInsertRedirect" """);
       }
+   }
+
+   [Fact]
+   public async Task Should_throw_when_captured_whole_ComplexType_value_is_null()
+   {
+      await using var tempTable = await SUT.BulkInsertIntoTempTableAsync([new TestEntityWithComplexType(new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"), new BoundaryValueObject(10, 20))], new SqliteTempTableBulkInsertOptions());
+      BoundaryValueObject? value = null;
+
+      var act = () => ActDbContext.Set<TestEntityWithComplexType>().BulkInsertAsync(tempTable.Query, builder => builder.Map(e => e.Id, f => f.Id).Map(e => e.Boundary, f => value!));
+
+      await act.Should().ThrowAsync<ArgumentException>().WithMessage("*cannot be read because the captured value is null.*");
+   }
+
+   [Fact]
+   public async Task Should_insert_ComplexType_members_from_temp_table()
+   {
+      var id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866");
+      await using var tempTable = await SUT.BulkInsertIntoTempTableAsync([new TestEntityWithComplexType(id, new BoundaryValueObject(10, 20))], new SqliteTempTableBulkInsertOptions());
+
+      var affectedRows = await ActDbContext.Set<TestEntityWithComplexType>().BulkInsertAsync(
+         tempTable.Query,
+         builder => builder
+            .Map(e => e.Id, f => f.Id)
+            .Map(e => e.Boundary.Upper, f => f.Boundary.Upper)
+            .Map(e => e.Boundary.Lower, f => f.Boundary.Lower));
+
+      affectedRows.Should().Be(1);
+      ExecutedCommands.Last().Should().Contain("(\"Id\", \"Boundary_Upper\", \"Boundary_Lower\")");
+
+      var loaded = await AssertDbContext.TestEntities_with_ComplexType.SingleAsync();
+      loaded.Boundary.Upper.Should().Be(10);
+      loaded.Boundary.Lower.Should().Be(20);
+   }
+
+   [Fact]
+   public async Task Should_insert_whole_ComplexType_from_captured_variable()
+   {
+      var id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866");
+      await using var tempTable = await SUT.BulkInsertIntoTempTableAsync([new TestEntityWithComplexType(id, new BoundaryValueObject(10, 20))], new SqliteTempTableBulkInsertOptions());
+
+      var value = new BoundaryValueObject(7, 8);
+
+      var affectedRows = await ActDbContext.Set<TestEntityWithComplexType>().BulkInsertAsync(
+         tempTable.Query,
+         builder => builder
+            .Map(e => e.Id, f => f.Id)
+            .Map(e => e.Boundary, f => value));
+
+      affectedRows.Should().Be(1);
+
+      var loaded = await AssertDbContext.TestEntities_with_ComplexType.SingleAsync();
+      loaded.Boundary.Upper.Should().Be(7);
+      loaded.Boundary.Lower.Should().Be(8);
+   }
+
+   [Fact]
+   public async Task Should_insert_whole_ComplexType_from_temp_table()
+   {
+      var id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866");
+      await using var tempTable = await SUT.BulkInsertIntoTempTableAsync([new TestEntityWithComplexType(id, new BoundaryValueObject(10, 20))], new SqliteTempTableBulkInsertOptions());
+
+      var affectedRows = await ActDbContext.Set<TestEntityWithComplexType>().BulkInsertAsync(
+         tempTable.Query,
+         builder => builder
+            .Map(e => e.Id, f => f.Id)
+            .Map(e => e.Boundary, f => f.Boundary));
+
+      affectedRows.Should().Be(1);
+      ExecutedCommands.Last().Should().Contain("(\"Id\", \"Boundary_Lower\", \"Boundary_Upper\")");
+
+      var loaded = await AssertDbContext.TestEntities_with_ComplexType.SingleAsync();
+      loaded.Boundary.Upper.Should().Be(10);
+      loaded.Boundary.Lower.Should().Be(20);
    }
 }

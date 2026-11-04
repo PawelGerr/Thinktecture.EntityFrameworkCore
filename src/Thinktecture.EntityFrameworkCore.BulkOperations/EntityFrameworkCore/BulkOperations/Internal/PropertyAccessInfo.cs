@@ -20,14 +20,22 @@ public readonly struct PropertyAccessInfo
    public string PropertyName { get; }
 
    /// <summary>
-   /// Initializes a new instance from a direct member access.
+   /// The complex properties between the entity and <see cref="Member"/>, starting at the entity,
+   /// e.g. <c>[Boundary]</c> for <c>e => e.Boundary.Upper</c>. Empty for a property of the entity itself.
    /// </summary>
-   public PropertyAccessInfo(MemberInfo member)
+   public IReadOnlyList<MemberInfo> ComplexPath { get; }
+
+   /// <summary>
+   /// Initializes a new instance from a direct member access through complex properties.
+   /// </summary>
+   public PropertyAccessInfo(MemberInfo member, IReadOnlyList<MemberInfo> complexPath)
    {
       ArgumentNullException.ThrowIfNull(member);
+      ArgumentNullException.ThrowIfNull(complexPath);
 
       Member = member;
       PropertyName = member.Name;
+      ComplexPath = complexPath;
    }
 
    /// <summary>
@@ -39,5 +47,6 @@ public readonly struct PropertyAccessInfo
 
       Member = null;
       PropertyName = propertyName;
+      ComplexPath = Array.Empty<MemberInfo>();
    }
 }

@@ -553,4 +553,45 @@ public class BulkInsertFromQueryAsync : IntegrationTestsBase
          await ActDbContext.Database.ExecuteSqlRawAsync($"""DROP TABLE IF EXISTS [{Schema}].[TestEntities_QueryInsertRedirect]""");
       }
    }
+
+   [Fact]
+   public async Task Should_insert_ComplexType_members_from_temp_table()
+   {
+      var id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866");
+      await using var tempTable = await SUT.BulkInsertIntoTempTableAsync([new TestEntityWithComplexType(id, new BoundaryValueObject(10, 20))], new SqlServerTempTableBulkInsertOptions());
+
+      var affectedRows = await ActDbContext.Set<TestEntityWithComplexType>().BulkInsertAsync(
+         tempTable.Query,
+         builder => builder
+            .Map(e => e.Id, f => f.Id)
+            .Map(e => e.Boundary.Upper, f => f.Boundary.Upper)
+            .Map(e => e.Boundary.Lower, f => f.Boundary.Lower));
+
+      affectedRows.Should().Be(1);
+      ExecutedCommands.Last().Should().Contain("([Id], [Boundary_Upper], [Boundary_Lower])");
+
+      var loaded = await AssertDbContext.TestEntities_with_ComplexType.SingleAsync();
+      loaded.Boundary.Upper.Should().Be(10);
+      loaded.Boundary.Lower.Should().Be(20);
+   }
+
+   [Fact]
+   public async Task Should_insert_whole_ComplexType_from_temp_table()
+   {
+      var id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866");
+      await using var tempTable = await SUT.BulkInsertIntoTempTableAsync([new TestEntityWithComplexType(id, new BoundaryValueObject(10, 20))], new SqlServerTempTableBulkInsertOptions());
+
+      var affectedRows = await ActDbContext.Set<TestEntityWithComplexType>().BulkInsertAsync(
+         tempTable.Query,
+         builder => builder
+            .Map(e => e.Id, f => f.Id)
+            .Map(e => e.Boundary, f => f.Boundary));
+
+      affectedRows.Should().Be(1);
+      ExecutedCommands.Last().Should().Contain("([Id], [Boundary_Lower], [Boundary_Upper])");
+
+      var loaded = await AssertDbContext.TestEntities_with_ComplexType.SingleAsync();
+      loaded.Boundary.Upper.Should().Be(10);
+      loaded.Boundary.Lower.Should().Be(20);
+   }
 }

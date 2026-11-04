@@ -40,7 +40,12 @@ public class IntegrationTestsBase : SqlServerDbContextIntegrationTests<TestDbCon
              && entityType.ClrType != typeof(MyParameter)
              && entityType.ClrType != typeof(TestTemporalTableEntity)
              && entityType.ClrType != typeof(TempSourceWithMappedColumns)
-             && entityType.ClrType != typeof(TestEntityTempTable);
+             && entityType.ClrType != typeof(TestEntityTempTable)
+             && entityType.ClrType != typeof(TempTableWithStringComplexType)
+             && entityType.ClrType != typeof(TestEntityWithNestedStructComplexType)
+             && entityType.ClrType != typeof(TestEntityWithConvertedComplexType)
+             && entityType.ClrType != typeof(TempTableWithConvertedComplexType)
+             && entityType.ClrType != typeof(TempTableWithNestedStringComplexType);
    }
 
    protected IntegrationTestsBase(string connectionString, ITestOutputHelper testOutputHelper, ITestIsolationOptions isolationOptions)

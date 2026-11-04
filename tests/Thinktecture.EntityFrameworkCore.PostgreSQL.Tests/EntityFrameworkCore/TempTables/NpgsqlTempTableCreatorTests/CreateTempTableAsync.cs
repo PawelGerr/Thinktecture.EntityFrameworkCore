@@ -170,6 +170,38 @@ public class CreateTempTableAsync : IntegrationTestsBase
    }
 
    [Fact]
+   public async Task Should_create_temp_table_with_string_members_of_complex_type()
+   {
+      ConfigureModel = builder => TempTableWithStringComplexType.Configure(builder, "C");
+
+      await using var tempTable = await SUT.CreateTempTableAsync(ActDbContext.GetTempTableEntityType<TempTableWithStringComplexType>(), _optionsWithNonUniqueName);
+
+      var columns = AssertDbContext.GetTempTableColumns<TempTableWithStringComplexType>().ToList();
+      columns.Should().HaveCount(3);
+
+      ValidateColumn(columns[0], nameof(TempTableWithStringComplexType.Id), "uuid", false);
+      ValidateColumn(columns[1], "Texts_WithCollation", "text", false, collation: "C");
+      ValidateColumn(columns[2], "Texts_WithoutCollation", "text", false);
+      columns[2].CollationName.Should().Be("default");
+   }
+
+   [Fact]
+   public async Task Should_create_temp_table_with_string_members_of_nested_complex_type()
+   {
+      ConfigureModel = builder => TempTableWithNestedStringComplexType.Configure(builder, "C");
+
+      await using var tempTable = await SUT.CreateTempTableAsync(ActDbContext.GetTempTableEntityType<TempTableWithNestedStringComplexType>(), _optionsWithNonUniqueName);
+
+      var columns = AssertDbContext.GetTempTableColumns<TempTableWithNestedStringComplexType>().ToList();
+      columns.Should().HaveCount(3);
+
+      ValidateColumn(columns[0], nameof(TempTableWithNestedStringComplexType.Id), "uuid", false);
+      ValidateColumn(columns[1], "Envelope_Texts_WithCollation", "text", false, collation: "C");
+      ValidateColumn(columns[2], "Envelope_Texts_WithoutCollation", "text", false);
+      columns[2].CollationName.Should().Be("default");
+   }
+
+   [Fact]
    public async Task Should_create_temp_table_with_string_with_collation_in_custom_schema()
    {
       await ArrangeDbContext.Database.ExecuteSqlRawAsync($"""

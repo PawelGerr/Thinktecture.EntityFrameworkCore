@@ -1202,6 +1202,237 @@ public class BulkUpdateFromQueryAsync : IntegrationTestsBase
       loaded_2.Count.Should().Be(0);
    }
 
+   [Fact]
+   public async Task Should_update_ComplexType_members_from_temp_table()
+   {
+      var id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866");
+      ArrangeDbContext.Add(new TestEntityWithComplexType(id, new BoundaryValueObject(1, 2)));
+      await ArrangeDbContext.SaveChangesAsync();
+
+      await using var tempTable = await SUT.BulkInsertIntoTempTableAsync([new TestEntityWithComplexType(id, new BoundaryValueObject(10, 20))], new SqlServerTempTableBulkInsertOptions());
+
+      var affectedRows = await ActDbContext.Set<TestEntityWithComplexType>().BulkUpdateAsync(
+         tempTable.Query,
+         e => e.Id,
+         f => f.Id,
+         builder => builder.Set(e => e.Boundary.Upper, (e, f) => f.Boundary.Upper));
+
+      affectedRows.Should().Be(1);
+
+      var loaded = await AssertDbContext.TestEntities_with_ComplexType.SingleAsync();
+      loaded.Boundary.Upper.Should().Be(10);
+      loaded.Boundary.Lower.Should().Be(2);
+   }
+
+   [Fact]
+   public async Task Should_update_whole_ComplexType_from_temp_table()
+   {
+      var id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866");
+      ArrangeDbContext.Add(new TestEntityWithComplexType(id, new BoundaryValueObject(1, 2)));
+      await ArrangeDbContext.SaveChangesAsync();
+
+      await using var tempTable = await SUT.BulkInsertIntoTempTableAsync([new TestEntityWithComplexType(id, new BoundaryValueObject(10, 20))], new SqlServerTempTableBulkInsertOptions());
+
+      var affectedRows = await ActDbContext.Set<TestEntityWithComplexType>().BulkUpdateAsync(
+         tempTable.Query,
+         e => e.Id,
+         f => f.Id,
+         builder => builder.Set(e => e.Boundary, (e, f) => f.Boundary));
+
+      affectedRows.Should().Be(1);
+
+      var loaded = await AssertDbContext.TestEntities_with_ComplexType.SingleAsync();
+      loaded.Boundary.Upper.Should().Be(10);
+      loaded.Boundary.Lower.Should().Be(20);
+   }
+
+   [Fact]
+   public async Task Should_throw_when_EF_Property_is_called_on_complex_property()
+   {
+      var id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866");
+      await using var tempTable = await SUT.BulkInsertIntoTempTableAsync([new TestEntityWithComplexType(id, new BoundaryValueObject(10, 20))], new SqlServerTempTableBulkInsertOptions());
+
+      var act = () => ActDbContext.Set<TestEntityWithComplexType>().BulkUpdateAsync(tempTable.Query, e => e.Id, f => f.Id, builder => builder.Set(e => EF.Property<int>(e.Boundary, "Upper"), (e, f) => f.Boundary.Upper));
+
+      await act.Should().ThrowAsync<NotSupportedException>().WithMessage("EF.Property is supported only on the lambda parameter, not through a complex property, a navigation or another expression.*");
+   }
+
+   [Fact]
+   public async Task Should_throw_when_whole_ComplexType_and_member_are_both_set()
+   {
+      var id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866");
+      await using var tempTable = await SUT.BulkInsertIntoTempTableAsync([new TestEntityWithComplexType(id, new BoundaryValueObject(10, 20))], new SqlServerTempTableBulkInsertOptions());
+
+      var act = () => ActDbContext.Set<TestEntityWithComplexType>().BulkUpdateAsync(tempTable.Query, e => e.Id, f => f.Id, builder => builder.Set(e => e.Boundary, (e, f) => f.Boundary).Set(e => e.Boundary.Upper, (e, f) => 42));
+
+      await act.Should().ThrowAsync<ArgumentException>().WithMessage("The target column 'Boundary_Upper' is set more than once.*");
+   }
+
+   [Fact]
+   public async Task Should_update_whole_ComplexType_from_captured_variable()
+   {
+      var id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866");
+      ArrangeDbContext.Add(new TestEntityWithComplexType(id, new BoundaryValueObject(1, 2)));
+      await ArrangeDbContext.SaveChangesAsync();
+
+      await using var tempTable = await SUT.BulkInsertIntoTempTableAsync([new TestEntityWithComplexType(id, new BoundaryValueObject(10, 20))], new SqlServerTempTableBulkInsertOptions());
+
+      var value = new BoundaryValueObject(7, 8);
+
+      var affectedRows = await ActDbContext.Set<TestEntityWithComplexType>().BulkUpdateAsync(
+         tempTable.Query,
+         e => e.Id,
+         f => f.Id,
+         builder => builder.Set(e => e.Boundary, (e, f) => value));
+
+      affectedRows.Should().Be(1);
+      var sql = ExecutedCommands.Last();
+      sql.Should().Contain("[Boundary_Upper] = 7");
+      sql.Should().Contain("[Boundary_Lower] = 8");
+
+      var loaded = await AssertDbContext.TestEntities_with_ComplexType.SingleAsync();
+      loaded.Boundary.Upper.Should().Be(7);
+      loaded.Boundary.Lower.Should().Be(8);
+   }
+
+   [Fact]
+   public async Task Should_update_whole_nested_struct_ComplexType()
+   {
+      var id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866");
+      ConfigureModel = TestEntityWithNestedStructComplexType.Configure;
+      await CreateNestedStructComplexTypeTableAsync();
+
+      try
+      {
+         ArrangeDbContext.Add(new TestEntityWithNestedStructComplexType { Id = id, Envelope = new MessageEnvelope { Key = new TimestampPair(1, 2), Sequence = 3 } });
+         await ArrangeDbContext.SaveChangesAsync();
+
+         var source = new TestEntityWithNestedStructComplexType { Id = id, Envelope = new MessageEnvelope { Key = new TimestampPair(100, 200), Sequence = 300 } };
+         await using var tempTable = await SUT.BulkInsertIntoTempTableAsync([source], new SqlServerTempTableBulkInsertOptions());
+
+         var affectedRows = await ActDbContext.Set<TestEntityWithNestedStructComplexType>().BulkUpdateAsync(
+            tempTable.Query,
+            e => e.Id,
+            s => s.Id,
+            builder => builder.Set(e => e.Envelope, (e, s) => s.Envelope));
+
+         affectedRows.Should().Be(1);
+
+         var loaded = await AssertDbContext.Set<TestEntityWithNestedStructComplexType>().SingleAsync();
+         loaded.Envelope.Should().Be(new MessageEnvelope { Key = new TimestampPair(100, 200), Sequence = 300 });
+      }
+      finally
+      {
+         await DropNestedStructComplexTypeTableAsync();
+      }
+   }
+
+   [Fact]
+   public async Task Should_update_nested_struct_ComplexType_member()
+   {
+      var id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866");
+      ConfigureModel = TestEntityWithNestedStructComplexType.Configure;
+      await CreateNestedStructComplexTypeTableAsync();
+
+      try
+      {
+         ArrangeDbContext.Add(new TestEntityWithNestedStructComplexType { Id = id, Envelope = new MessageEnvelope { Key = new TimestampPair(1, 2), Sequence = 3 } });
+         await ArrangeDbContext.SaveChangesAsync();
+
+         var source = new TestEntityWithNestedStructComplexType { Id = id, Envelope = new MessageEnvelope { Key = new TimestampPair(100, 200), Sequence = 300 } };
+         await using var tempTable = await SUT.BulkInsertIntoTempTableAsync([source], new SqlServerTempTableBulkInsertOptions());
+
+         var affectedRows = await ActDbContext.Set<TestEntityWithNestedStructComplexType>().BulkUpdateAsync(
+            tempTable.Query,
+            e => e.Id,
+            s => s.Id,
+            builder => builder.Set(e => e.Envelope.Key.ReceivedAt, (e, s) => s.Envelope.Key.ReceivedAt));
+
+         affectedRows.Should().Be(1);
+
+         var loaded = await AssertDbContext.Set<TestEntityWithNestedStructComplexType>().SingleAsync();
+         loaded.Envelope.Should().Be(new MessageEnvelope { Key = new TimestampPair(100, 2), Sequence = 3 });
+      }
+      finally
+      {
+         await DropNestedStructComplexTypeTableAsync();
+      }
+   }
+
+   [Fact]
+   public async Task Should_update_whole_ComplexType_with_value_converted_members_from_captured_variable()
+   {
+      var id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866");
+      ConfigureModel = builder =>
+                       {
+                          TestEntityWithConvertedComplexType.Configure(builder);
+                          TempTableWithConvertedComplexType.Configure(builder);
+                       };
+
+      // The SQL Server context has no DbSet for this entity, so EF uses the CLR type name as the table name.
+      await ActDbContext.Database.ExecuteSqlRawAsync($"""
+         CREATE TABLE [{Schema}].[TestEntityWithConvertedComplexType] (
+            [id] uniqueidentifier NOT NULL,
+            [message_timestamp] bigint NOT NULL,
+            [effective_received_at] bigint NOT NULL,
+            [effective_message_timestamp] bigint NOT NULL,
+            PRIMARY KEY ([id], [message_timestamp])
+         );
+         """);
+
+      try
+      {
+         ArrangeDbContext.Set<TestEntityWithConvertedComplexType>().AddRange(
+            new TestEntityWithConvertedComplexType { Id = id, MessageTimestamp = 10, EffectiveMessage = new ConvertedTimestampPair(new TimestampValue(1), new TimestampValue(2)) },
+            new TestEntityWithConvertedComplexType { Id = id, MessageTimestamp = 11, EffectiveMessage = new ConvertedTimestampPair(new TimestampValue(3), new TimestampValue(4)) });
+         await ArrangeDbContext.SaveChangesAsync();
+
+         var source = new TempTableWithConvertedComplexType { Id = id, MessageTimestamp = 10, EffectiveMessage = new ConvertedTimestampPair(new TimestampValue(100), new TimestampValue(200)) };
+         await using var tempTable = await SUT.BulkInsertIntoTempTableAsync([source], new SqlServerTempTableBulkInsertOptions());
+
+         var value = new ConvertedTimestampPair(new TimestampValue(7), new TimestampValue(8));
+
+         var affectedRows = await ActDbContext.Set<TestEntityWithConvertedComplexType>().BulkUpdateAsync(
+            tempTable.Query,
+            e => new { e.Id, e.MessageTimestamp },
+            s => new { s.Id, s.MessageTimestamp },
+            builder => builder.Set(e => e.EffectiveMessage, (e, s) => value));
+
+         affectedRows.Should().Be(1);
+         var sql = ExecutedCommands.Last();
+         sql.Should().Contain("[effective_received_at] = CAST(7 AS bigint)");
+         sql.Should().Contain("[effective_message_timestamp] = CAST(8 AS bigint)");
+
+         var loaded = await AssertDbContext.Set<TestEntityWithConvertedComplexType>().OrderBy(e => e.MessageTimestamp).ToListAsync();
+         loaded.Should().BeEquivalentTo(
+         [
+            new TestEntityWithConvertedComplexType { Id = id, MessageTimestamp = 10, EffectiveMessage = value },
+            new TestEntityWithConvertedComplexType { Id = id, MessageTimestamp = 11, EffectiveMessage = new ConvertedTimestampPair(new TimestampValue(3), new TimestampValue(4)) }
+         ]);
+      }
+      finally
+      {
+         await ActDbContext.Database.ExecuteSqlRawAsync($"""DROP TABLE IF EXISTS [{Schema}].[TestEntityWithConvertedComplexType]""");
+      }
+   }
+
+   private async Task CreateNestedStructComplexTypeTableAsync()
+   {
+      await ActDbContext.Database.ExecuteSqlRawAsync($"""
+         CREATE TABLE [{Schema}].[{TestEntityWithNestedStructComplexType.TableName}] (
+            [id] uniqueidentifier NOT NULL PRIMARY KEY,
+            [sequence] bigint NOT NULL,
+            [received_at] bigint NOT NULL,
+            [message_timestamp] bigint NOT NULL
+         );
+         """);
+   }
+
+   private async Task DropNestedStructComplexTypeTableAsync()
+   {
+      await ActDbContext.Database.ExecuteSqlRawAsync($"""DROP TABLE IF EXISTS [{Schema}].[{TestEntityWithNestedStructComplexType.TableName}]""");
+   }
+
    private class TestKey
    {
       public Guid Id { get; set; }

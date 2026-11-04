@@ -220,7 +220,7 @@ public sealed class SqlServerTempTableCreator : ISqlServerTempTableCreator
       try
       {
          StoreObjectIdentifier? storeObject = null;
-         IEntityType? designTimeEntityType = null;
+         IModel? designTimeModel = null;
 
          var isFirst = true;
 
@@ -241,12 +241,9 @@ public sealed class SqlServerTempTableCreator : ISqlServerTempTableCreator
 
             if (_stringColumnTypes.Any(t => columnType.StartsWith(t, StringComparison.OrdinalIgnoreCase)))
             {
-               // Collation information is not available from the runtime model, so we need to fetch it from the design time model
-               designTimeEntityType ??= _ctx.GetService<IDesignTimeModel>().Model
-                                            .GetEntityType(property.DeclaringType.Name);
+               designTimeModel ??= _ctx.GetService<IDesignTimeModel>().Model;
 
-               var collation = designTimeEntityType.GetProperty(property.Name)
-                                                   .GetCollation(storeObject.Value);
+               var collation = GetDesignTimeProperty(designTimeModel, property).GetCollation(storeObject.Value);
 
                if (options.UseDefaultDatabaseCollation && String.IsNullOrWhiteSpace(collation))
                   collation = "database_default";
@@ -329,5 +326,22 @@ public sealed class SqlServerTempTableCreator : ISqlServerTempTableCreator
    private static bool IsIdentityColumn(IProperty property)
    {
       return SqlServerValueGenerationStrategy.IdentityColumn.Equals(property.FindAnnotation(SqlServerAnnotationNames.ValueGenerationStrategy)?.Value);
+   }
+
+   // Collation is only available in the design-time model; a property of a complex type is found through its complex property chain.
+   private static IReadOnlyProperty GetDesignTimeProperty(IModel designTimeModel, IProperty property)
+   {
+      return GetDesignTimeType(designTimeModel, property.DeclaringType).GetProperty(property.Name);
+   }
+
+   private static IReadOnlyTypeBase GetDesignTimeType(IModel designTimeModel, ITypeBase type)
+   {
+      if (type is not IComplexType complexType)
+         return designTimeModel.GetEntityType(type.Name);
+
+      var complexProperty = complexType.ComplexProperty;
+
+      return GetDesignTimeType(designTimeModel, complexProperty.DeclaringType).FindComplexProperty(complexProperty.Name)?.ComplexType
+             ?? throw new InvalidOperationException($"The complex property '{complexProperty.Name}' was not found in the design-time model.");
    }
 }
