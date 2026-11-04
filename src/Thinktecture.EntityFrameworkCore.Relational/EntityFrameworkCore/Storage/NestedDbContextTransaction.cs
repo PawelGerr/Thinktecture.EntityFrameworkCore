@@ -93,6 +93,11 @@ public abstract partial class NestedDbContextTransaction : IDbContextTransaction
       var underlyingTransaction = GetUnderlyingTransaction();
       var currentIsolationLevel = underlyingTransaction.IsolationLevel;
 
+      // Some providers (for example MySqlConnector) report Unspecified for a transaction that runs with the default of the server.
+      // The default of MySQL and MariaDB is REPEATABLE READ.
+      if (currentIsolationLevel == IsolationLevel.Unspecified)
+         currentIsolationLevel = IsolationLevel.RepeatableRead;
+
       switch (isolationLevel)
       {
          case IsolationLevel.Unspecified:
