@@ -24,7 +24,7 @@ public class SqliteBulkUpdateOptions : IBulkUpdateOptions
    public SqliteAutoIncrementBehavior AutoIncrementBehavior { get; set; }
 
    /// <inheritdoc />
-   [Obsolete("Use 'TableNameProvider' instead, for example 'IBulkOperationTableNameProvider.ForRootEntity(tableName, schema)'. Note: 'ForRootEntity' emits no schema when 'schema' is null, while 'TableName' alone keeps the schema of the EF Core model.")]
+   [Obsolete("Use 'TableNameProvider' instead: 'IBulkOperationTableNameProvider.ForRootEntityWithDefaultSchema(tableName)' when only 'TableName' is set, or 'IBulkOperationTableNameProvider.ForRootEntity(tableName, schema)' when 'Schema' is set as well.")]
    public string? TableName
    {
       get => _tableNames.TableName;
@@ -32,7 +32,7 @@ public class SqliteBulkUpdateOptions : IBulkUpdateOptions
    }
 
    /// <inheritdoc />
-   [Obsolete("Use 'TableNameProvider' instead, for example 'IBulkOperationTableNameProvider.ForRootEntity(tableName, schema)'.")]
+   [Obsolete("Use 'TableNameProvider' instead: 'IBulkOperationTableNameProvider.ForRootEntityWithDefaultName(schema)' when only 'Schema' is set, or 'IBulkOperationTableNameProvider.ForRootEntity(tableName, schema)' when 'TableName' is set as well.")]
    public string? Schema
    {
       get => _tableNames.Schema;

@@ -866,6 +866,77 @@ public class BulkInsertAsync : IntegrationTestsBase
       }
    }
 
+   [Fact]
+   public async Task Should_insert_into_table_from_ForRootEntityWithDefaultSchema_provider()
+   {
+      await ActDbContext.Database.ExecuteSqlRawAsync($"""
+         CREATE TABLE "{Schema}"."TestEntities_BulkInsertRedirect" (LIKE "{Schema}"."TestEntities" INCLUDING ALL)
+         """);
+
+      try
+      {
+         var testEntity = new TestEntity
+                          {
+                             Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
+                             Name = "Name",
+                             RequiredName = "RequiredName",
+                             Count = 42
+                          };
+
+         await SUT.BulkInsertAsync([testEntity], new NpgsqlBulkInsertOptions { TableNameProvider = IBulkOperationTableNameProvider.ForRootEntityWithDefaultSchema("TestEntities_BulkInsertRedirect") });
+
+         var loadedEntities = await AssertDbContext.TestEntities.ToListAsync();
+         loadedEntities.Should().HaveCount(0, "original table should be empty");
+
+         var redirectedIds = await AssertDbContext.Database
+                                                 .SqlQueryRaw<Guid>($"""SELECT "Id" FROM "{Schema}"."TestEntities_BulkInsertRedirect" """)
+                                                 .ToListAsync();
+         redirectedIds.Should().HaveCount(1);
+         redirectedIds[0].Should().Be(new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"));
+      }
+      finally
+      {
+         await ActDbContext.Database.ExecuteSqlRawAsync($"""DROP TABLE IF EXISTS "{Schema}"."TestEntities_BulkInsertRedirect" """);
+      }
+   }
+
+   [Fact]
+   public async Task Should_insert_into_table_from_ForRootEntityWithDefaultName_provider()
+   {
+      var redirectSchema = $"{Schema}_BulkInsertRedirect";
+
+      await ActDbContext.Database.ExecuteSqlRawAsync($"""
+         CREATE SCHEMA "{redirectSchema}";
+         CREATE TABLE "{redirectSchema}"."TestEntities" (LIKE "{Schema}"."TestEntities" INCLUDING ALL);
+         """);
+
+      try
+      {
+         var testEntity = new TestEntity
+                          {
+                             Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
+                             Name = "Name",
+                             RequiredName = "RequiredName",
+                             Count = 42
+                          };
+
+         await SUT.BulkInsertAsync([testEntity], new NpgsqlBulkInsertOptions { TableNameProvider = IBulkOperationTableNameProvider.ForRootEntityWithDefaultName(redirectSchema) });
+
+         var loadedEntities = await AssertDbContext.TestEntities.ToListAsync();
+         loadedEntities.Should().HaveCount(0, "original table should be empty");
+
+         var redirectedIds = await AssertDbContext.Database
+                                                 .SqlQueryRaw<Guid>($"""SELECT "Id" FROM "{redirectSchema}"."TestEntities" """)
+                                                 .ToListAsync();
+         redirectedIds.Should().HaveCount(1);
+         redirectedIds[0].Should().Be(new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"));
+      }
+      finally
+      {
+         await ActDbContext.Database.ExecuteSqlRawAsync($"""DROP SCHEMA IF EXISTS "{redirectSchema}" CASCADE""");
+      }
+   }
+
    // https://github.com/PawelGerr/Thinktecture.EntityFrameworkCore/issues/76
    // The owned entity must not be written to the table of the model. The bulk insert fails when it reaches the owned type,
    // and the owner row stays because the library adds no transaction.

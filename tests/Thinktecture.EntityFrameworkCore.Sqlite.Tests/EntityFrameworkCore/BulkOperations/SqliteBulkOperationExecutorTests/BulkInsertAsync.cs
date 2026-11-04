@@ -804,6 +804,39 @@ public class BulkInsertAsync : SchemaChangingIntegrationTestsBase
       }
    }
 
+   [Fact]
+   public async Task Should_insert_into_table_from_ForRootEntityWithDefaultSchema_provider()
+   {
+      await ActDbContext.Database.ExecuteSqlRawAsync("""
+         CREATE TABLE "TestEntities_BulkInsertRedirect" AS SELECT * FROM "TestEntities" WHERE 0
+         """);
+
+      try
+      {
+         var testEntity = new TestEntity
+                          {
+                             Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
+                             Name = "Name",
+                             RequiredName = "RequiredName",
+                             Count = 42
+                          };
+
+         await SUT.BulkInsertAsync([testEntity], new SqliteBulkInsertOptions { TableNameProvider = IBulkOperationTableNameProvider.ForRootEntityWithDefaultSchema("TestEntities_BulkInsertRedirect") });
+
+         var loadedEntities = await AssertDbContext.TestEntities.ToListAsync();
+         loadedEntities.Should().HaveCount(0, "original table should be empty");
+
+         var redirectedIds = await AssertDbContext.Database
+                                                 .SqlQueryRaw<string>("SELECT [Id] FROM [TestEntities_BulkInsertRedirect]")
+                                                 .ToListAsync();
+         redirectedIds.Should().HaveCount(1);
+      }
+      finally
+      {
+         await ActDbContext.Database.ExecuteSqlRawAsync("DROP TABLE IF EXISTS [TestEntities_BulkInsertRedirect]");
+      }
+   }
+
    // https://github.com/PawelGerr/Thinktecture.EntityFrameworkCore/issues/76
    // The owned entity must either be redirected together with its owner or the bulk insert must fail without writing anything.
    [Fact]

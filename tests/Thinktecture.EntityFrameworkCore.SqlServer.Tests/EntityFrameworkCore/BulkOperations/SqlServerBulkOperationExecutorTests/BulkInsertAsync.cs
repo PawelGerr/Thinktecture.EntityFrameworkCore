@@ -844,6 +844,83 @@ public class BulkInsertAsync : IntegrationTestsBase
       }
    }
 
+   [Fact]
+   public async Task Should_insert_into_table_from_ForRootEntityWithDefaultSchema_provider()
+   {
+      await ActDbContext.Database.ExecuteSqlRawAsync($"""
+         SELECT TOP 0 * INTO [{Schema}].[TestEntities_BulkInsertRedirect] FROM [{Schema}].[TestEntities];
+         ALTER TABLE [{Schema}].[TestEntities_BulkInsertRedirect] ADD PRIMARY KEY ([Id]);
+         """);
+
+      try
+      {
+         var testEntity = new TestEntity
+                          {
+                             Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
+                             Name = "Name",
+                             RequiredName = "RequiredName",
+                             Count = 42
+                          };
+
+         await SUT.BulkInsertAsync([testEntity], new SqlServerBulkInsertOptions { TableNameProvider = IBulkOperationTableNameProvider.ForRootEntityWithDefaultSchema("TestEntities_BulkInsertRedirect") });
+
+         var loadedEntities = await AssertDbContext.TestEntities.ToListAsync();
+         loadedEntities.Should().HaveCount(0, "original table should be empty");
+
+         var redirectedEntities = await AssertDbContext.Database
+                                                      .SqlQueryRaw<Guid>($"SELECT [Id] FROM [{Schema}].[TestEntities_BulkInsertRedirect]")
+                                                      .ToListAsync();
+         redirectedEntities.Should().HaveCount(1);
+         redirectedEntities[0].Should().Be(new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"));
+      }
+      finally
+      {
+         await ActDbContext.Database.ExecuteSqlRawAsync($"DROP TABLE IF EXISTS [{Schema}].[TestEntities_BulkInsertRedirect]");
+      }
+   }
+
+   [Fact]
+   public async Task Should_insert_into_table_from_ForRootEntityWithDefaultName_provider()
+   {
+      var redirectSchema = $"{Schema}_BulkInsertRedirect";
+
+      await ActDbContext.Database.ExecuteSqlRawAsync($"CREATE SCHEMA [{redirectSchema}]");
+
+      try
+      {
+         await ActDbContext.Database.ExecuteSqlRawAsync($"""
+            SELECT TOP 0 * INTO [{redirectSchema}].[TestEntities] FROM [{Schema}].[TestEntities];
+            ALTER TABLE [{redirectSchema}].[TestEntities] ADD PRIMARY KEY ([Id]);
+            """);
+
+         var testEntity = new TestEntity
+                          {
+                             Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"),
+                             Name = "Name",
+                             RequiredName = "RequiredName",
+                             Count = 42
+                          };
+
+         await SUT.BulkInsertAsync([testEntity], new SqlServerBulkInsertOptions { TableNameProvider = IBulkOperationTableNameProvider.ForRootEntityWithDefaultName(redirectSchema) });
+
+         var loadedEntities = await AssertDbContext.TestEntities.ToListAsync();
+         loadedEntities.Should().HaveCount(0, "original table should be empty");
+
+         var redirectedEntities = await AssertDbContext.Database
+                                                      .SqlQueryRaw<Guid>($"SELECT [Id] FROM [{redirectSchema}].[TestEntities]")
+                                                      .ToListAsync();
+         redirectedEntities.Should().HaveCount(1);
+         redirectedEntities[0].Should().Be(new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"));
+      }
+      finally
+      {
+         await ActDbContext.Database.ExecuteSqlRawAsync($"""
+            DROP TABLE IF EXISTS [{redirectSchema}].[TestEntities];
+            DROP SCHEMA IF EXISTS [{redirectSchema}];
+            """);
+      }
+   }
+
    // https://github.com/PawelGerr/Thinktecture.EntityFrameworkCore/issues/76
    [Fact]
    public async Task Should_not_insert_separated_owned_entities_into_model_table_when_table_name_is_overridden()

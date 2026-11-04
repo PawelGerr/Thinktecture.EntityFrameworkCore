@@ -45,7 +45,7 @@ public sealed class BulkOperationTableNameOptions
    {
       // A provider that was built from the names is cached until a name changes.
       // When both names are null, 'Default' is cached.
-      get => _tableNameProvider ??= ObsoleteRootEntityTableNameProvider.FromOptions(TableName, Schema) ?? IBulkOperationTableNameProvider.Default;
+      get => _tableNameProvider ??= RootEntityTableNameProviderBase.FromObsoleteOptions(TableName, Schema) ?? IBulkOperationTableNameProvider.Default;
       set
       {
          ArgumentNullException.ThrowIfNull(value);

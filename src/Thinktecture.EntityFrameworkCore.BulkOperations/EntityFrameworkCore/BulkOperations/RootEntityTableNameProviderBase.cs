@@ -7,6 +7,24 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations;
 /// </summary>
 internal abstract class RootEntityTableNameProviderBase : IBulkOperationTableNameProvider
 {
+   /// <summary>
+   /// Builds the provider of the obsolete options 'TableName' and 'Schema'. A <c>null</c> part keeps the value of the EF Core model.
+   /// The parts are not validated, so that the executor reports an empty part.
+   /// </summary>
+   /// <param name="tableName">Name of the target table.</param>
+   /// <param name="schema">Schema of the target table.</param>
+   /// <returns>A provider for the root entity type only, or <c>null</c> when both parts are <c>null</c>.</returns>
+   public static IBulkOperationTableNameProvider? FromObsoleteOptions(string? tableName, string? schema)
+   {
+      return (tableName, schema) switch
+      {
+         (null, null) => null,
+         (not null, null) => new RootEntityWithDefaultSchemaTableNameProvider(tableName, throwForTempTableEntity: false),
+         (null, not null) => new RootEntityWithDefaultNameTableNameProvider(schema),
+         _ => new RootEntityTableNameProvider(tableName, schema)
+      };
+   }
+
    public BulkOperationTableName GetTableName(IEntityType entityType)
    {
       ArgumentNullException.ThrowIfNull(entityType);
@@ -14,7 +32,7 @@ internal abstract class RootEntityTableNameProviderBase : IBulkOperationTableNam
       var ownership = entityType.FindOwnership();
 
       if (ownership is not null)
-         throw new InvalidOperationException($"The options 'TableName', 'Schema' and 'IBulkOperationTableNameProvider.ForRootEntity' override the table of the root entity only, but the owned type '{ownership.PrincipalEntityType.Name}.{ownership.PrincipalToDependent?.Name}' is mapped to the separate table '{entityType.GetTableName()}'. Use a 'TableNameProvider' that returns the table name of the entity and of every owned type that is mapped to a separate table.");
+         throw new InvalidOperationException($"The options 'TableName' and 'Schema' and the factories 'IBulkOperationTableNameProvider.ForRootEntity', 'ForRootEntityWithDefaultSchema' and 'ForRootEntityWithDefaultName' override the table of the root entity only, but the owned type '{ownership.PrincipalEntityType.Name}.{ownership.PrincipalToDependent?.Name}' is mapped to the separate table '{entityType.GetTableName()}'. Use a 'TableNameProvider' that returns the table name of the entity and of every owned type that is mapped to a separate table.");
 
       return GetRootTableName(entityType);
    }

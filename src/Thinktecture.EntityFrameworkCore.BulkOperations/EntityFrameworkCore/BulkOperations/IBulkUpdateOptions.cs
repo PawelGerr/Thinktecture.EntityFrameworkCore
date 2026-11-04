@@ -23,7 +23,7 @@ public interface IBulkUpdateOptions
    /// Rows of the root table may already be written at that point. Atomicity is the responsibility of the caller's transaction.
    /// Use <see cref="TableNameProvider"/> instead.
    /// </summary>
-   [Obsolete("Use 'TableNameProvider' instead, for example 'IBulkOperationTableNameProvider.ForRootEntity(tableName, schema)'. Note: 'ForRootEntity' emits no schema when 'schema' is null, while 'TableName' alone keeps the schema of the EF Core model.")]
+   [Obsolete("Use 'TableNameProvider' instead: 'IBulkOperationTableNameProvider.ForRootEntityWithDefaultSchema(tableName)' when only 'TableName' is set, or 'IBulkOperationTableNameProvider.ForRootEntity(tableName, schema)' when 'Schema' is set as well.")]
    string? TableName { get; }
 
    /// <summary>
@@ -32,7 +32,7 @@ public interface IBulkUpdateOptions
    /// Rows of the root table may already be written at that point. Atomicity is the responsibility of the caller's transaction.
    /// Use <see cref="TableNameProvider"/> instead.
    /// </summary>
-   [Obsolete("Use 'TableNameProvider' instead, for example 'IBulkOperationTableNameProvider.ForRootEntity(tableName, schema)'.")]
+   [Obsolete("Use 'TableNameProvider' instead: 'IBulkOperationTableNameProvider.ForRootEntityWithDefaultName(schema)' when only 'Schema' is set, or 'IBulkOperationTableNameProvider.ForRootEntity(tableName, schema)' when 'TableName' is set as well.")]
    string? Schema { get; }
 
    /// <summary>
@@ -44,6 +44,6 @@ public interface IBulkUpdateOptions
    /// Implementations that do not override this member get a provider built from <see cref="TableName"/> and <see cref="Schema"/>, or <see cref="IBulkOperationTableNameProvider.Default"/> when both are <c>null</c>.
    /// </summary>
 #pragma warning disable CS0618 // Implementations that do not override 'TableNameProvider' get a provider built from the obsolete 'TableName' and 'Schema'.
-   IBulkOperationTableNameProvider TableNameProvider => ObsoleteRootEntityTableNameProvider.FromOptions(TableName, Schema) ?? IBulkOperationTableNameProvider.Default;
+   IBulkOperationTableNameProvider TableNameProvider => RootEntityTableNameProviderBase.FromObsoleteOptions(TableName, Schema) ?? IBulkOperationTableNameProvider.Default;
 #pragma warning restore CS0618
 }

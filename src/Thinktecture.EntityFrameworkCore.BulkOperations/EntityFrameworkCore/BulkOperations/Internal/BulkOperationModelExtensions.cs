@@ -21,4 +21,16 @@ public static class BulkOperationModelExtensions
              ?? model.FindEntityType(EntityNameProvider.GetTempTableName(typeof(T)))
              ?? throw new EntityTypeNotFoundException(typeof(T));
    }
+
+   /// <summary>
+   /// Returns whether the entity type is a temp table entity (<c>ConfigureTempTableEntity</c>), which has no regular table.
+   /// </summary>
+   /// <param name="entityType">Entity type to check.</param>
+   /// <returns><c>true</c> if <paramref name="entityType"/> is a temp table entity; otherwise <c>false</c>.</returns>
+   internal static bool IsTempTableEntityType(this IEntityType entityType)
+   {
+      ArgumentNullException.ThrowIfNull(entityType);
+
+      return entityType.Name == EntityNameProvider.GetTempTableName(entityType.ClrType);
+   }
 }

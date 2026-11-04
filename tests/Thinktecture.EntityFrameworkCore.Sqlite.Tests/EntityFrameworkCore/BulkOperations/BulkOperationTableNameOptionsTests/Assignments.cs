@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Thinktecture.EntityFrameworkCore.BulkOperations.Internal;
 using Thinktecture.TestDatabaseContext;
 
@@ -16,10 +17,40 @@ public class Assignments : SchemaChangingIntegrationTestsBase
    [Fact]
    public void Should_build_provider_from_table_name_and_keep_model_schema()
    {
+      ConfigureModel = builder => builder.HasDefaultSchema("s");
+      Configure = builder => builder.ConfigureWarnings(warningsBuilder => warningsBuilder.Ignore(RelationalEventId.PendingModelChangesWarning));
+
       var entityType = ActDbContext.GetEntityType<TestEntity>();
 
       new SqliteBulkInsertOptions { TableName = "X" }.TableNameProvider.GetTableName(entityType)
-                                                     .Should().Be(new BulkOperationTableName("X", entityType.GetSchema()));
+                                                     .Should().Be(new BulkOperationTableName("X", "s"));
+   }
+
+   [Fact]
+   public void Should_build_provider_from_table_name_for_temp_table_entity()
+   {
+      ConfigureModel = builder =>
+                       {
+                          builder.HasDefaultSchema("s");
+                          builder.ConfigureTempTableEntity<TestEntityTempTable>(false, TestEntityTempTable.Configure);
+                       };
+      Configure = builder => builder.ConfigureWarnings(warningsBuilder => warningsBuilder.Ignore(RelationalEventId.PendingModelChangesWarning));
+
+      var entityType = ActDbContext.GetTempTableEntityType<TestEntityTempTable>();
+
+      new SqliteBulkInsertOptions { TableName = "X" }.TableNameProvider.GetTableName(entityType)
+                                                     .Should().Be(new BulkOperationTableName("X", "s"));
+   }
+
+   [Fact]
+   public void Should_build_provider_from_table_name_and_schema_for_temp_table_entity()
+   {
+      ConfigureModel = builder => builder.ConfigureTempTableEntity<TestEntityTempTable>(false, TestEntityTempTable.Configure);
+
+      var entityType = ActDbContext.GetTempTableEntityType<TestEntityTempTable>();
+
+      new SqliteBulkInsertOptions { TableName = "X", Schema = "s" }.TableNameProvider.GetTableName(entityType)
+                                                                   .Should().Be(new BulkOperationTableName("X", "s"));
    }
 
    [Fact]
