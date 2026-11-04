@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Testcontainers.MySql" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Thinktecture.EntityFrameworkCore.MySql\Thinktecture.EntityFrameworkCore.MySql.csproj" />
+    <ProjectReference Include="..\..\src\Thinktecture.EntityFrameworkCore.Testing\Thinktecture.EntityFrameworkCore.Testing.csproj" />
+    <ProjectReference Include="..\Thinktecture.EntityFrameworkCore.TestHelpers\Thinktecture.EntityFrameworkCore.TestHelpers.csproj" />
+  </ItemGroup>
+
+</Project>

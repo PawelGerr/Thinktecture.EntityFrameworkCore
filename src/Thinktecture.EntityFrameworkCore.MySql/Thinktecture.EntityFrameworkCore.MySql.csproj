@@ -1,0 +1,11 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <PackageReference Include="Microting.EntityFrameworkCore.MySql" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Thinktecture.EntityFrameworkCore.BulkOperations\Thinktecture.EntityFrameworkCore.BulkOperations.csproj" />
+  </ItemGroup>
+
+</Project>
