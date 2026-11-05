@@ -109,6 +109,7 @@ public sealed class EfCoreValueExpressionTranslator
 
          // A filter that is false on the client becomes a bare constant, which SQL Server does not accept as a condition.
          // ApplyPredicate ignores a constant true.
+         // The SQL Server processor would convert the constant as well; "1 = 0" keeps the SQL the same on every provider.
          if (sqlFilter is SqlConstantExpression { Value: false })
             selectExpression.ApplyPredicate(sqlExprFactory.Equal(sqlExprFactory.Constant(1), sqlExprFactory.Constant(0)));
          else if (sqlFilter is SqlExpression filterExpr)
@@ -130,14 +131,14 @@ public sealed class EfCoreValueExpressionTranslator
 
       // Step 8: Render SQL
       var sqlGeneratorFactory = _ctx.GetService<IQuerySqlGeneratorFactory>();
-      var command = sqlGeneratorFactory.Create().GetCommand(updateExpression);
+      var command = sqlGeneratorFactory.Create().GetCommand(ProcessParameters(updateExpression, parameterValues));
 
       var sql = command.CommandText;
 
       // Step 9: Apply the table name of the provider via string replacement
       sql = ApplyTableName(sql, tableNameProvider.GetValidTableName(targetEntityType), targetEntityType);
 
-      return (sql, parameterValues);
+      return (sql, GetReferencedParameters(command, parameterValues));
    }
 
    private string ApplyTableName(
@@ -250,14 +251,31 @@ public sealed class EfCoreValueExpressionTranslator
 
       // Step 7: Render SELECT SQL
       var sqlGeneratorFactory = _ctx.GetService<IQuerySqlGeneratorFactory>();
-      var selectCommand = sqlGeneratorFactory.Create().GetCommand(selectExpression);
+      var selectCommand = sqlGeneratorFactory.Create().GetCommand(ProcessParameters(selectExpression, parameterValues));
 
       // Step 8: Build INSERT INTO ... SELECT ...
       var tableName = tableNameProvider.GetValidTableName(targetEntityType);
 
       var insertSql = $"INSERT INTO {sqlGenerationHelper.DelimitIdentifier(tableName.Name, tableName.Schema)} ({string.Join(", ", targetColumns)})\n{selectCommand.CommandText}";
 
-      return (insertSql, parameterValues);
+      return (insertSql, GetReferencedParameters(selectCommand, parameterValues));
+   }
+
+   // EF Core runs this processor before SQL generation. Without it, a comparison with null is rendered as "= NULL".
+   private Expression ProcessParameters(Expression expression, Dictionary<string, object?> parameterValues)
+   {
+      var relationalOptions = RelationalOptionsExtension.Extract(_ctx.GetService<IDbContextOptions>());
+      var processor = _ctx.GetService<IRelationalParameterBasedSqlProcessorFactory>()
+                          .Create(new RelationalParameterBasedSqlProcessorParameters(relationalOptions.UseRelationalNulls, relationalOptions.ParameterizedCollectionMode));
+
+      return processor.Process(expression, new ParametersCacheDecorator(parameterValues));
+   }
+
+   // The processor replaces a null parameter by a NULL literal and expands a collection parameter into one parameter per element.
+   // Therefore the dictionary contains entries that the SQL does not reference. The executors bind every entry, and a list value cannot be bound.
+   private static Dictionary<string, object?> GetReferencedParameters(IRelationalCommand command, Dictionary<string, object?> parameterValues)
+   {
+      return command.Parameters.ToDictionary(p => p.InvariantName, p => parameterValues[p.InvariantName]);
    }
 
    private (ShapedQueryExpression ShapedQuery, QueryCompilationContext CompilationContext, QueryableMethodTranslatingExpressionVisitor MethodTranslator)

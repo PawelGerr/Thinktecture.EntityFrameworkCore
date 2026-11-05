@@ -676,4 +676,129 @@ public class BulkInsertFromQueryAsync : IntegrationTestsBase
                 EffectiveMessage = new TimestampPair(100, 200)
              };
    }
+
+   [Fact]
+   public async Task Should_insert_rows_When_source_query_compares_column_with_null()
+   {
+      var nullName = new TestEntity { Id = new Guid("5D1C7A3E-0F2B-4E6A-9C1D-2B7F3E4A0020"), Name = null, RequiredName = "RequiredName" };
+      var withName = new TestEntity { Id = new Guid("5D1C7A3E-0F2B-4E6A-9C1D-2B7F3E4A0021"), Name = "x", RequiredName = "RequiredName" };
+      ArrangeDbContext.AddRange(nullName, withName);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var affectedRows = await ActDbContext.TestEntitiesWithNullableComplexTypes.BulkInsertAsync(
+         ActDbContext.TestEntities.Where(s => s.Name == null),
+         builder => builder.Map(e => e.Id, s => s.Id)
+                           .Map(e => e.Outer.Z, s => s.Name == null ? 1 : 2));
+
+      affectedRows.Should().Be(1);
+      ExecutedCommands.Last().Should().Contain("IS NULL").And.NotContain("= NULL");
+      var inserted = await AssertDbContext.TestEntitiesWithNullableComplexTypes.SingleAsync();
+      inserted.Id.Should().Be(nullName.Id);
+      inserted.Outer.Z.Should().Be(1);
+   }
+
+   [Fact]
+   public async Task Should_insert_rows_When_source_query_compares_column_with_not_null()
+   {
+      var nullName = new TestEntity { Id = new Guid("5D1C7A3E-0F2B-4E6A-9C1D-2B7F3E4A0022"), Name = null, RequiredName = "RequiredName" };
+      var withName = new TestEntity { Id = new Guid("5D1C7A3E-0F2B-4E6A-9C1D-2B7F3E4A0023"), Name = "x", RequiredName = "RequiredName" };
+      ArrangeDbContext.AddRange(nullName, withName);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var affectedRows = await ActDbContext.TestEntitiesWithNullableComplexTypes.BulkInsertAsync(
+         ActDbContext.TestEntities.Where(s => s.Name != null),
+         builder => builder.Map(e => e.Id, s => s.Id)
+                           .Map(e => e.Outer.Z, s => 1));
+
+      affectedRows.Should().Be(1);
+      ExecutedCommands.Last().Should().Contain("IS NOT NULL").And.NotContain("<> NULL");
+      var inserted = await AssertDbContext.TestEntitiesWithNullableComplexTypes.SingleAsync();
+      inserted.Id.Should().Be(withName.Id);
+      inserted.Outer.Z.Should().Be(1);
+   }
+
+   [Fact]
+   public async Task Should_insert_rows_When_source_query_compares_column_with_captured_null()
+   {
+      var nullName = new TestEntity { Id = new Guid("5D1C7A3E-0F2B-4E6A-9C1D-2B7F3E4A0024"), Name = null, RequiredName = "RequiredName" };
+      var withName = new TestEntity { Id = new Guid("5D1C7A3E-0F2B-4E6A-9C1D-2B7F3E4A0025"), Name = "x", RequiredName = "RequiredName" };
+      ArrangeDbContext.AddRange(nullName, withName);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      string? captured = null;
+
+      var affectedRows = await ActDbContext.TestEntitiesWithNullableComplexTypes.BulkInsertAsync(
+         ActDbContext.TestEntities.Where(s => s.Name == captured),
+         builder => builder.Map(e => e.Id, s => s.Id)
+                           .Map(e => e.Outer.Z, s => 1));
+
+      affectedRows.Should().Be(1);
+      ExecutedCommands.Last().Should().Contain("IS NULL").And.NotContain("= NULL");
+      var inserted = await AssertDbContext.TestEntitiesWithNullableComplexTypes.SingleAsync();
+      inserted.Id.Should().Be(nullName.Id);
+      inserted.Outer.Z.Should().Be(1);
+   }
+
+   [Fact]
+   public async Task Should_insert_rows_When_source_query_uses_collection_parameter()
+   {
+      var nullName = new TestEntity { Id = new Guid("5D1C7A3E-0F2B-4E6A-9C1D-2B7F3E4A0026"), Name = null, RequiredName = "RequiredName" };
+      var withName = new TestEntity { Id = new Guid("5D1C7A3E-0F2B-4E6A-9C1D-2B7F3E4A0027"), Name = "x", RequiredName = "RequiredName" };
+      ArrangeDbContext.AddRange(nullName, withName);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var ids = new List<Guid> { nullName.Id };
+
+      var affectedRows = await ActDbContext.TestEntitiesWithNullableComplexTypes.BulkInsertAsync(
+         ActDbContext.TestEntities.Where(s => ids.Contains(s.Id)),
+         builder => builder.Map(e => e.Id, s => s.Id)
+                           .Map(e => e.Outer.Z, s => 1));
+
+      affectedRows.Should().Be(1);
+      var inserted = await AssertDbContext.TestEntitiesWithNullableComplexTypes.SingleAsync();
+      inserted.Id.Should().Be(nullName.Id);
+      inserted.Outer.Z.Should().Be(1);
+   }
+
+   [Fact]
+   public async Task Should_insert_rows_When_source_query_filters_nullable_ComplexType()
+   {
+      var withValues = TestEntityWithNullableComplexTypes.CreateWithValues(new Guid("5D1C7A3E-0F2B-4E6A-9C1D-2B7F3E4A0030"));
+      var withNulls = TestEntityWithNullableComplexTypes.CreateWithNulls(new Guid("5D1C7A3E-0F2B-4E6A-9C1D-2B7F3E4A0031"));
+      ArrangeDbContext.AddRange(withValues, withNulls);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var newId = new Guid("5D1C7A3E-0F2B-4E6A-9C1D-2B7F3E4A0032");
+
+      var affectedRows = await ActDbContext.TestEntitiesWithNullableComplexTypes.BulkInsertAsync(
+         ActDbContext.TestEntitiesWithNullableComplexTypes.Where(s => s.OptionalBoundary != null),
+         builder => builder.Map(e => e.Id, s => newId)
+                           .Map(e => e.OptionalBoundary, s => s.OptionalBoundary)
+                           .Map(e => e.Outer, s => s.Outer));
+
+      affectedRows.Should().Be(1);
+      ExecutedCommands.Last().Should().Contain("IS NOT NULL");
+      (await AssertDbContext.TestEntitiesWithNullableComplexTypes.SingleAsync(e => e.Id == newId)).OptionalBoundary.Should().BeEquivalentTo(new BoundaryValueObject(2, 5));
+   }
+
+   [Fact]
+   public async Task Should_map_whole_nullable_ComplexType_from_coalesce_with_column_left_operand()
+   {
+      var sourceWithNulls = TestEntityWithNullableComplexTypes.CreateWithNulls(new Guid("AB6D3F7E-4C9C-4DAF-9B79-BF6EAF5C0020"));
+      var sourceWithValues = TestEntityWithNullableComplexTypes.CreateWithValues(new Guid("AB6D3F7E-4C9C-4DAF-9B79-BF6EAF5C0021"));
+      await using var tempTable = await SUT.BulkInsertIntoTempTableAsync([sourceWithNulls, sourceWithValues], new NpgsqlTempTableBulkInsertOptions());
+
+      var boundary = new BoundaryValueObject(3, 9);
+
+      var affectedRows = await ActDbContext.TestEntitiesWithNullableComplexTypes.BulkInsertAsync(
+         tempTable.Query,
+         builder => builder.Map(e => e.Id, s => s.Id)
+                           .Map(e => e.Outer, s => s.Outer)
+                           .Map(e => e.OptionalBoundary, s => s.OptionalBoundary ?? boundary));
+
+      affectedRows.Should().Be(2);
+      ExecutedCommands.Last().Should().Contain("IS NULL").And.NotContain("= NULL");
+      (await AssertDbContext.TestEntitiesWithNullableComplexTypes.SingleAsync(e => e.Id == sourceWithNulls.Id)).OptionalBoundary.Should().BeEquivalentTo(new BoundaryValueObject(3, 9));
+      (await AssertDbContext.TestEntitiesWithNullableComplexTypes.SingleAsync(e => e.Id == sourceWithValues.Id)).OptionalBoundary.Should().BeEquivalentTo(new BoundaryValueObject(2, 5));
+   }
 }

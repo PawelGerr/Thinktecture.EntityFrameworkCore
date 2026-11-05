@@ -1851,4 +1851,163 @@ public class BulkUpdateFromQueryAsync : IntegrationTestsBase
       affectedRows.Should().Be(0);
       (await AssertDbContext.TestEntities.Select(e => e.Count).ToListAsync()).Should().Equal(0, 0);
    }
+
+   [Fact]
+   public async Task Should_update_rows_When_source_query_compares_column_with_null()
+   {
+      var nullName = new TestEntity { Id = new Guid("5D1C7A3E-0F2B-4E6A-9C1D-2B7F3E4A0001"), Name = null, RequiredName = "RequiredName" };
+      var withName = new TestEntity { Id = new Guid("5D1C7A3E-0F2B-4E6A-9C1D-2B7F3E4A0002"), Name = "x", RequiredName = "RequiredName" };
+      ArrangeDbContext.AddRange(nullName, withName);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var affectedRows = await ActDbContext.TestEntities.BulkUpdateAsync(
+         ActDbContext.TestEntities.Where(s => s.Name == null), e => e.Id, s => s.Id,
+         builder => builder.Set(e => e.Count, (e, s) => 1));
+
+      affectedRows.Should().Be(1);
+      ExecutedCommands.Last().Should().Contain("IS NULL").And.NotContain("= NULL");
+      (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == nullName.Id)).Count.Should().Be(1);
+      (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == withName.Id)).Count.Should().Be(0);
+   }
+
+   [Fact]
+   public async Task Should_update_rows_When_source_query_compares_column_with_not_null()
+   {
+      var nullName = new TestEntity { Id = new Guid("5D1C7A3E-0F2B-4E6A-9C1D-2B7F3E4A0003"), Name = null, RequiredName = "RequiredName" };
+      var withName = new TestEntity { Id = new Guid("5D1C7A3E-0F2B-4E6A-9C1D-2B7F3E4A0004"), Name = "x", RequiredName = "RequiredName" };
+      ArrangeDbContext.AddRange(nullName, withName);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var affectedRows = await ActDbContext.TestEntities.BulkUpdateAsync(
+         ActDbContext.TestEntities.Where(s => s.Name != null), e => e.Id, s => s.Id,
+         builder => builder.Set(e => e.Count, (e, s) => 1));
+
+      affectedRows.Should().Be(1);
+      ExecutedCommands.Last().Should().Contain("IS NOT NULL").And.NotContain("<> NULL");
+      (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == nullName.Id)).Count.Should().Be(0);
+      (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == withName.Id)).Count.Should().Be(1);
+   }
+
+   [Fact]
+   public async Task Should_update_rows_When_filter_compares_column_with_null()
+   {
+      var nullName = new TestEntity { Id = new Guid("5D1C7A3E-0F2B-4E6A-9C1D-2B7F3E4A0005"), Name = null, RequiredName = "RequiredName" };
+      var withName = new TestEntity { Id = new Guid("5D1C7A3E-0F2B-4E6A-9C1D-2B7F3E4A0006"), Name = "x", RequiredName = "RequiredName" };
+      ArrangeDbContext.AddRange(nullName, withName);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var affectedRows = await ActDbContext.TestEntities.BulkUpdateAsync(
+         ActDbContext.TestEntities, e => e.Id, s => s.Id,
+         builder => builder.Set(e => e.Count, (e, s) => 1),
+         filter: (e, s) => s.Name == null);
+
+      affectedRows.Should().Be(1);
+      ExecutedCommands.Last().Should().Contain("IS NULL").And.NotContain("= NULL");
+      (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == nullName.Id)).Count.Should().Be(1);
+      (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == withName.Id)).Count.Should().Be(0);
+   }
+
+   [Fact]
+   public async Task Should_set_value_from_conditional_When_test_compares_column_with_null()
+   {
+      var nullName = new TestEntity { Id = new Guid("5D1C7A3E-0F2B-4E6A-9C1D-2B7F3E4A0007"), Name = null, RequiredName = "RequiredName" };
+      var withName = new TestEntity { Id = new Guid("5D1C7A3E-0F2B-4E6A-9C1D-2B7F3E4A0008"), Name = "x", RequiredName = "RequiredName" };
+      ArrangeDbContext.AddRange(nullName, withName);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var affectedRows = await ActDbContext.TestEntities.BulkUpdateAsync(
+         ActDbContext.TestEntities, e => e.Id, s => s.Id,
+         builder => builder.Set(e => e.Count, (e, s) => s.Name == null ? 1 : 2));
+
+      affectedRows.Should().Be(2);
+      ExecutedCommands.Last().Should().Contain("IS NULL").And.NotContain("= NULL");
+      (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == nullName.Id)).Count.Should().Be(1);
+      (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == withName.Id)).Count.Should().Be(2);
+   }
+
+   [Fact]
+   public async Task Should_update_rows_When_source_query_compares_column_with_captured_null()
+   {
+      var nullName = new TestEntity { Id = new Guid("5D1C7A3E-0F2B-4E6A-9C1D-2B7F3E4A0009"), Name = null, RequiredName = "RequiredName" };
+      var withName = new TestEntity { Id = new Guid("5D1C7A3E-0F2B-4E6A-9C1D-2B7F3E4A000A"), Name = "x", RequiredName = "RequiredName" };
+      ArrangeDbContext.AddRange(nullName, withName);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      string? captured = null;
+
+      var affectedRows = await ActDbContext.TestEntities.BulkUpdateAsync(
+         ActDbContext.TestEntities.Where(s => s.Name == captured), e => e.Id, s => s.Id,
+         builder => builder.Set(e => e.Count, (e, s) => 1));
+
+      affectedRows.Should().Be(1);
+      ExecutedCommands.Last().Should().Contain("IS NULL").And.NotContain("= NULL");
+      (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == nullName.Id)).Count.Should().Be(1);
+      (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == withName.Id)).Count.Should().Be(0);
+   }
+
+   [Fact]
+   public async Task Should_update_rows_When_source_query_uses_collection_parameter()
+   {
+      var nullName = new TestEntity { Id = new Guid("5D1C7A3E-0F2B-4E6A-9C1D-2B7F3E4A000B"), Name = null, RequiredName = "RequiredName" };
+      var withName = new TestEntity { Id = new Guid("5D1C7A3E-0F2B-4E6A-9C1D-2B7F3E4A000C"), Name = "x", RequiredName = "RequiredName" };
+      ArrangeDbContext.AddRange(nullName, withName);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var ids = new List<Guid> { nullName.Id };
+
+      var affectedRows = await ActDbContext.TestEntities.BulkUpdateAsync(
+         ActDbContext.TestEntities.Where(s => ids.Contains(s.Id)), e => e.Id, s => s.Id,
+         builder => builder.Set(e => e.Count, (e, s) => 1));
+
+      affectedRows.Should().Be(1);
+      (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == nullName.Id)).Count.Should().Be(1);
+      (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == withName.Id)).Count.Should().Be(0);
+   }
+
+   [Fact]
+   public async Task Should_update_rows_When_source_query_filters_nullable_ComplexType()
+   {
+      var withValues = TestEntityWithNullableComplexTypes.CreateWithValues(new Guid("5D1C7A3E-0F2B-4E6A-9C1D-2B7F3E4A0010"));
+      var withNulls = TestEntityWithNullableComplexTypes.CreateWithNulls(new Guid("5D1C7A3E-0F2B-4E6A-9C1D-2B7F3E4A0011"));
+      ArrangeDbContext.AddRange(withValues, withNulls);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var affectedRows = await ActDbContext.TestEntitiesWithNullableComplexTypes.BulkUpdateAsync(
+         ActDbContext.TestEntitiesWithNullableComplexTypes.Where(s => s.OptionalBoundary != null), e => e.Id, s => s.Id,
+         builder => builder.Set(e => e.Outer.Z, (e, s) => 5));
+
+      affectedRows.Should().Be(1);
+      ExecutedCommands.Last().Should().Contain("IS NOT NULL");
+      (await AssertDbContext.TestEntitiesWithNullableComplexTypes.SingleAsync(e => e.Id == withValues.Id)).Outer.Z.Should().Be(5);
+      (await AssertDbContext.TestEntitiesWithNullableComplexTypes.SingleAsync(e => e.Id == withNulls.Id)).Outer.Z.Should().Be(1);
+   }
+
+   [Fact]
+   public async Task Should_set_whole_nullable_ComplexTypes_from_coalesce_with_column_left_operand()
+   {
+      var rowA = TestEntityWithNullableComplexTypes.CreateWithValues(new Guid("9A5C2E6D-3B8B-4C9F-8A68-AE5D9F4B0027"));
+      var rowB = TestEntityWithNullableComplexTypes.CreateWithValues(new Guid("9A5C2E6D-3B8B-4C9F-8A68-AE5D9F4B0028"));
+      ArrangeDbContext.AddRange(rowA, rowB);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var sourceA = TestEntityWithNullableComplexTypes.CreateWithNulls(rowA.Id);
+      var sourceB = TestEntityWithNullableComplexTypes.CreateWithValues(rowB.Id);
+      sourceB.OptionalBoundary = new BoundaryValueObject(3, 9);
+      sourceB.Tagged = new TaggedValues { X = 9, Text = "s" };
+      await using var tempTable = await SUT.BulkInsertIntoTempTableAsync([sourceA, sourceB], new NpgsqlTempTableBulkInsertOptions());
+
+      var affectedRows = await ActDbContext.TestEntitiesWithNullableComplexTypes.BulkUpdateAsync(
+         tempTable.Query, e => e.Id, s => s.Id,
+         builder => builder.Set(e => e.OptionalBoundary, (e, s) => s.OptionalBoundary ?? e.OptionalBoundary)
+                           .Set(e => e.Tagged, (e, s) => s.Tagged ?? e.Tagged));
+
+      affectedRows.Should().Be(2);
+      ExecutedCommands.Last().Should().Contain("Tagged_Discriminator").And.Contain("IS NULL").And.NotContain("= NULL");
+      var loadedA = await AssertDbContext.TestEntitiesWithNullableComplexTypes.SingleAsync(e => e.Id == rowA.Id);
+      loadedA.OptionalBoundary.Should().BeEquivalentTo(new BoundaryValueObject(2, 5));
+      loadedA.Tagged.Should().BeEquivalentTo(new TaggedValues { X = 7, Text = "t" });
+      var loadedB = await AssertDbContext.TestEntitiesWithNullableComplexTypes.SingleAsync(e => e.Id == rowB.Id);
+      loadedB.OptionalBoundary.Should().BeEquivalentTo(new BoundaryValueObject(3, 9));
+      loadedB.Tagged.Should().BeEquivalentTo(new TaggedValues { X = 9, Text = "s" });
+   }
 }

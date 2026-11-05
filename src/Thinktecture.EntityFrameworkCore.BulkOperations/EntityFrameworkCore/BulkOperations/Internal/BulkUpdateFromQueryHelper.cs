@@ -201,9 +201,6 @@ public static class BulkUpdateFromQueryHelper
       return instance switch
       {
          ConditionalExpression c => MakeConditional(c.Test, BuildPerBranch(c.IfTrue, buildLeaf), BuildPerBranch(c.IfFalse, buildLeaf)),
-         // A column as left operand would need a server null test on a complex value, which the value translation does not support.
-         BinaryExpression { NodeType: ExpressionType.Coalesce } c when !IsClientEvaluated(c.Left)
-            => throw new NotSupportedException($"The null-coalescing operator (??) is supported for a complex value only when its left operand is evaluated on the client, for example a captured variable. Use a conditional with a client-evaluated test, or update the rows in a separate statement. Expression: {c}"),
          // `a ?? b` is `a == null ? b : a`
          BinaryExpression { NodeType: ExpressionType.Coalesce } c => MakeConditional(Expression.Equal(c.Left, Expression.Constant(null, c.Left.Type)),
                                                                                      BuildPerBranch(c.Right, buildLeaf),
