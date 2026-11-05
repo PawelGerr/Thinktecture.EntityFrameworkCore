@@ -775,6 +775,18 @@ public class BulkInsertAsync : IntegrationTestsBase
    }
 
    [Fact]
+   public async Task Should_round_trip_nullable_ComplexTypes_through_SaveChanges()
+   {
+      var withValues = TestEntityWithNullableComplexTypes.CreateWithValues(new Guid("8B6B7C9E-2C2C-4C9B-9C6D-3F3A2E1D0C01"));
+      var withNulls = TestEntityWithNullableComplexTypes.CreateWithNulls(new Guid("8B6B7C9E-2C2C-4C9B-9C6D-3F3A2E1D0C02"));
+      ArrangeDbContext.AddRange(withValues, withNulls);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var loaded = await AssertDbContext.TestEntitiesWithNullableComplexTypes.ToListAsync();
+      loaded.Should().BeEquivalentTo([withValues, withNulls]);
+   }
+
+   [Fact]
    public async Task Should_insert_into_table_name_override()
    {
       await ActDbContext.Database.ExecuteSqlRawAsync($"""
@@ -1276,5 +1288,17 @@ public class BulkInsertAsync : IntegrationTestsBase
    {
       await SUT.Invoking(sut => sut.BulkInsertAsync(new List<TestEntityTempTable> { new() }, new SqlServerBulkInsertOptions()))
                .Should().ThrowAsync<EntityTypeNotFoundException>();
+   }
+
+   [Fact]
+   public async Task Should_insert_nullable_ComplexTypes_with_null_and_non_null_values()
+   {
+      var withValues = TestEntityWithNullableComplexTypes.CreateWithValues(new Guid("5D2F1B3A-0E5E-4F6C-9F35-7B2A6C1E0001"));
+      var withNulls = TestEntityWithNullableComplexTypes.CreateWithNulls(new Guid("5D2F1B3A-0E5E-4F6C-9F35-7B2A6C1E0002"));
+
+      await SUT.BulkInsertAsync([withValues, withNulls], new SqlServerBulkInsertOptions());
+
+      var loaded = await AssertDbContext.TestEntitiesWithNullableComplexTypes.ToListAsync();
+      loaded.Should().BeEquivalentTo([withValues, withNulls]);
    }
 }

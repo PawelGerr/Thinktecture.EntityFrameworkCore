@@ -252,7 +252,7 @@ public sealed class SqlServerTempTableCreator : ISqlServerTempTableCreator
                   sb.Append(" COLLATE ").Append(collation);
             }
 
-            sb.Append(property.IsNullable ? " NULL" : " NOT NULL");
+            sb.Append(property.IsColumnNullable(storeObject.Value) ? " NULL" : " NOT NULL");
 
             if (IsIdentityColumn(property))
                sb.Append(" IDENTITY");

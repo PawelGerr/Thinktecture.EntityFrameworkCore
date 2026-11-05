@@ -72,9 +72,7 @@ public sealed class EfCoreValueExpressionTranslator
 
       foreach (var entry in BulkUpdateFromQueryHelper.ExpandComplexProperties(targetEntityType, setClauseEntries))
       {
-         // Resolve target column
-         var targetAccess = BulkUpdateFromQueryHelper.ExtractPropertyAccess(entry.TargetPropertySelector);
-         var targetProp = BulkUpdateFromQueryHelper.ResolveProperty(targetEntityType, targetAccess);
+         var targetProp = entry.TargetProperty;
          var targetColumnName = targetProp.GetColumnName(targetStoreObject)
                                 ?? throw new InvalidOperationException($"Could not get column name for property '{targetProp.Name}' on entity type '{targetEntityType.Name}'.");
 
@@ -201,9 +199,7 @@ public sealed class EfCoreValueExpressionTranslator
 
       foreach (var entry in BulkUpdateFromQueryHelper.ExpandComplexProperties(targetEntityType, entries))
       {
-         // Resolve target column name
-         var targetAccess = BulkUpdateFromQueryHelper.ExtractPropertyAccess(entry.TargetPropertySelector);
-         var targetProp = BulkUpdateFromQueryHelper.ResolveProperty(targetEntityType, targetAccess);
+         var targetProp = entry.TargetProperty;
          var targetColumnName = targetProp.GetColumnName(targetStoreObject)
                                 ?? throw new InvalidOperationException($"Could not get column name for property '{targetProp.Name}' on entity type '{targetEntityType.Name}'.");
 
@@ -452,7 +448,7 @@ public sealed class EfCoreValueExpressionTranslator
                                   tableAlias,
                                   property.ClrType,
                                   typeMapping,
-                                  property.IsNullable);
+                                  property.IsColumnNullable());
    }
 
    /// <summary>

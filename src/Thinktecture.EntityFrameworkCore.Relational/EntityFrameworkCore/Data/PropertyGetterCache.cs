@@ -109,6 +109,9 @@ public partial class PropertyGetterCache : IPropertyGetterCache
 
    private static Func<DbContext, object, object?> BuildGetter(IProperty property)
    {
+      if (property.DeclaringType is IComplexType complexType)
+         return BuildComplexTypeMemberGetter(property, complexType);
+
       if (property.IsShadowProperty())
       {
          var shadowPropGetter = CreateShadowPropertyGetter(property);
@@ -121,6 +124,24 @@ public partial class PropertyGetterCache : IPropertyGetterCache
          throw new ArgumentException($"The property '{property.Name}' of entity '{property.DeclaringType.Name}' has no property getter.");
 
       return (_, entity) => getter.GetClrValueUsingContainingEntity(entity);
+   }
+
+   private static Func<DbContext, object, object?> BuildComplexTypeMemberGetter(IProperty property, IComplexType complexType)
+   {
+      // The container getter returns null when any complex property along the chain is null.
+      // EF Core's member getter would return the default value of the member instead.
+      var containerGetter = complexType.ComplexProperty.GetGetter();
+
+      if (property == complexType.FindDiscriminatorProperty())
+      {
+         // The discriminator is a shadow property without a CLR member. SaveChanges writes the configured discriminator value for a non-null container.
+         var discriminatorValue = complexType.GetDiscriminatorValue();
+         return (_, entity) => containerGetter.GetClrValueUsingContainingEntity(entity) is null ? null : discriminatorValue;
+      }
+
+      var memberGetter = property.GetGetter();
+
+      return (_, entity) => containerGetter.GetClrValueUsingContainingEntity(entity) is { } container ? memberGetter.GetClrValue(container) : null;
    }
 
    private static Func<DbContext, object, object?> UseConverter(Func<DbContext, object, object?> getter, ValueConverter converter)

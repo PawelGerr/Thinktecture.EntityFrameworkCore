@@ -1459,4 +1459,67 @@ public class BulkUpdateFromQueryAsync : IntegrationTestsBase
       affectedRows.Should().Be(0);
       (await AssertDbContext.TestEntities.Select(e => e.Count).ToListAsync()).Should().Equal(0, 0);
    }
+
+   [Fact]
+   public async Task Should_set_whole_nullable_ComplexTypes_from_source_columns()
+   {
+      var toValues = TestEntityWithNullableComplexTypes.CreateWithNulls(new Guid("9A5C2E6D-3B8B-4C9F-8A68-AE5D9F4B0001"));
+      var toNulls = TestEntityWithNullableComplexTypes.CreateWithValues(new Guid("9A5C2E6D-3B8B-4C9F-8A68-AE5D9F4B0002"));
+      ArrangeDbContext.AddRange(toValues, toNulls);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var sourceRows = new[] { TestEntityWithNullableComplexTypes.CreateWithValues(toValues.Id), TestEntityWithNullableComplexTypes.CreateWithNulls(toNulls.Id) };
+      await using var tempTable = await SUT.BulkInsertIntoTempTableAsync(sourceRows, new SqlServerTempTableBulkInsertOptions());
+
+      var affectedRows = await ActDbContext.TestEntitiesWithNullableComplexTypes.BulkUpdateAsync(
+         tempTable.Query, e => e.Id, s => s.Id,
+         builder => builder.Set(e => e.OptionalBoundary, (e, s) => s.OptionalBoundary)
+                           .Set(e => e.OptionalPair, (e, s) => s.OptionalPair)
+                           .Set(e => e.Tagged, (e, s) => s.Tagged)
+                           .Set(e => e.Outer, (e, s) => s.Outer)
+                           .Set(e => e.OptionalOuter, (e, s) => s.OptionalOuter)
+                           .Set(e => e.OptionalConverted, (e, s) => s.OptionalConverted));
+
+      affectedRows.Should().Be(2);
+      (await AssertDbContext.TestEntitiesWithNullableComplexTypes.ToListAsync()).Should().BeEquivalentTo(sourceRows);
+
+      var sql = ExecutedCommands.Last(c => c.Contains("UPDATE"));
+      sql.Should().Contain("[Tagged_Discriminator] = ").And.NotContain("CASE");
+   }
+
+   [Fact]
+   public async Task Should_set_whole_nullable_ComplexTypes_from_captured_values_and_nulls()
+   {
+      var entity = TestEntityWithNullableComplexTypes.CreateWithValues(new Guid("9A5C2E6D-3B8B-4C9F-8A68-AE5D9F4B0003"));
+      entity.OptionalBoundary = null;
+      entity.Tagged = null;
+      entity.OptionalConverted = null;
+      ArrangeDbContext.Add(entity);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var boundary = new BoundaryValueObject(2, 5);
+      TimestampPair? pair = null;
+      var tagged = new TaggedValues { X = 7, Text = "t" };
+      var outer = new OuterWithOptionalInner { Z = 1, Inner = null };
+      OptionalOuter? optionalOuter = null;
+      ConvertedTimestampPair? converted = new ConvertedTimestampPair(new TimestampValue(1), new TimestampValue(2));
+
+      var affectedRows = await ActDbContext.TestEntitiesWithNullableComplexTypes.BulkUpdateAsync(
+         ActDbContext.TestEntitiesWithNullableComplexTypes, e => e.Id, s => s.Id,
+         builder => builder.Set(e => e.OptionalBoundary, (e, s) => boundary)
+                           .Set(e => e.OptionalPair, (e, s) => pair)
+                           .Set(e => e.Tagged, (e, s) => tagged)
+                           .Set(e => e.Outer, (e, s) => outer)
+                           .Set(e => e.OptionalOuter, (e, s) => optionalOuter)
+                           .Set(e => e.OptionalConverted, (e, s) => converted));
+
+      affectedRows.Should().Be(1);
+      var loaded = await AssertDbContext.TestEntitiesWithNullableComplexTypes.SingleAsync();
+      loaded.OptionalBoundary.Should().BeEquivalentTo(new BoundaryValueObject(2, 5));
+      loaded.OptionalPair.Should().BeNull();
+      loaded.Tagged.Should().BeEquivalentTo(new TaggedValues { X = 7, Text = "t" });
+      loaded.Outer.Should().BeEquivalentTo(new OuterWithOptionalInner { Z = 1, Inner = null });
+      loaded.OptionalOuter.Should().BeNull();
+      loaded.OptionalConverted.Should().Be(new ConvertedTimestampPair(new TimestampValue(1), new TimestampValue(2)));
+   }
 }

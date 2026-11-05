@@ -60,19 +60,28 @@ public static class BulkUpdateFromQueryHelper
    }
 
    /// <summary>
-   /// Replaces every entry whose target selects a whole complex property (e.g. <c>e => e.ComplexProperty</c>)
-   /// with one entry per member of the complex type, recursively for nested complex types.
+   /// Resolves the target property of every entry. An entry whose target selects a whole complex property (e.g. <c>e => e.ComplexProperty</c>)
+   /// is replaced by one entry per member of the complex type, recursively for nested complex types, including the discriminator.
    /// The value selector of such an entry is extended by the same member access.
-   /// Other entries are returned unchanged.
+   /// A conditional or coalesce value is split per branch, so the member access is applied to each branch.
    /// </summary>
-   public static IReadOnlyList<ISetPropertyEntry> ExpandComplexProperties(IEntityType entityType, IReadOnlyList<ISetPropertyEntry> entries)
+   public static IReadOnlyList<ResolvedSetPropertyEntry> ExpandComplexProperties(IEntityType entityType, IReadOnlyList<ISetPropertyEntry> entries)
    {
-      var expandedEntries = new List<ISetPropertyEntry>(entries.Count);
+      var expandedEntries = new List<ResolvedSetPropertyEntry>(entries.Count);
 
       foreach (var entry in entries)
       {
+         var access = ExtractPropertyAccess(entry.TargetPropertySelector);
+         var complexProperty = access.Member is null ? null : ResolveDeclaringType(entityType, access).FindComplexProperty(access.Member);
+
+         if (complexProperty is null)
+         {
+            expandedEntries.Add(new ResolvedSetPropertyEntry(ResolveProperty(entityType, access), entry.TargetPropertySelector, entry.ValueSelector));
+            continue;
+         }
+
          var countBefore = expandedEntries.Count;
-         AddExpandedEntries(entityType, entry, expandedEntries);
+         AddMemberEntries(complexProperty, entry.ValueSelector, entry.TargetPropertySelector, isNullableChain: false, expandedEntries);
 
          if (expandedEntries.Count == countBefore)
             throw new ArgumentException($"No column can be written, because every member of the selected complex properties is generated (PropertySaveBehavior.Ignore). Expression: {entry.TargetPropertySelector}");
@@ -81,39 +90,44 @@ public static class BulkUpdateFromQueryHelper
       return expandedEntries;
    }
 
-   private static void AddExpandedEntries(IEntityType entityType, ISetPropertyEntry entry, List<ISetPropertyEntry> expandedEntries)
+   private static void AddMemberEntries(
+      IComplexProperty complexProperty,
+      LambdaExpression valueSelector,
+      LambdaExpression targetSelector,
+      bool isNullableChain,
+      List<ResolvedSetPropertyEntry> expandedEntries)
    {
-      var access = ExtractPropertyAccess(entry.TargetPropertySelector);
-      var complexProperty = access.Member is null ? null : ResolveDeclaringType(entityType, access).FindComplexProperty(access.Member);
-
-      if (complexProperty is null)
-      {
-         expandedEntries.Add(entry);
-         return;
-      }
-
       if (complexProperty.IsCollection)
-         throw new NotSupportedException($"The complex collection '{complexProperty.Name}' is not supported. Expression: {entry.TargetPropertySelector}");
-
-      if (complexProperty.IsNullable)
-         throw new NotSupportedException($"The nullable complex property '{complexProperty.Name}' cannot be set as a whole. Expression: {entry.TargetPropertySelector}");
+         throw new NotSupportedException($"The complex collection '{complexProperty.Name}' is not supported. Expression: {targetSelector}");
 
       var complexType = complexProperty.ComplexType;
+      var guardNull = isNullableChain || complexProperty.IsNullable;
+      var discriminator = complexType.FindDiscriminatorProperty();
 
-      foreach (var member in complexType.GetProperties().Concat<IPropertyBase>(complexType.GetComplexProperties()))
+      foreach (var property in complexType.GetProperties())
       {
          // Skip members that EF Core never writes, e.g. computed columns (same rule as IEntityPropertiesProvider.InsertAndUpdateFilter).
-         if (member is IProperty property && property.GetBeforeSaveBehavior() == PropertySaveBehavior.Ignore)
+         if (property.GetBeforeSaveBehavior() == PropertySaveBehavior.Ignore)
             continue;
 
-         var memberInfo = (MemberInfo?)member.PropertyInfo ?? member.FieldInfo
-                          ?? throw new NotSupportedException($"The shadow property '{member.Name}' of the complex property '{complexProperty.Name}' cannot be set through the whole complex property. Expression: {entry.TargetPropertySelector}");
+         var memberValue = property == discriminator
+                              ? BuildDiscriminatorValue(valueSelector, property, complexType)
+                              : AppendMemberAccess(valueSelector, GetMemberInfo(property, complexProperty, targetSelector), guardNull);
 
-         var memberEntry = new SetPropertyEntry(AppendMemberAccess(entry.TargetPropertySelector, memberInfo, entry.TargetPropertySelector),
-                                                AppendMemberAccess(entry.ValueSelector, memberInfo, entry.TargetPropertySelector));
-
-         AddExpandedEntries(entityType, memberEntry, expandedEntries);
+         expandedEntries.Add(new ResolvedSetPropertyEntry(property, targetSelector, memberValue));
       }
+
+      foreach (var nestedProperty in complexType.GetComplexProperties())
+      {
+         var nestedValueSelector = AppendMemberAccess(valueSelector, GetMemberInfo(nestedProperty, complexProperty, targetSelector), guardNull);
+         AddMemberEntries(nestedProperty, nestedValueSelector, targetSelector, guardNull, expandedEntries);
+      }
+   }
+
+   private static MemberInfo GetMemberInfo(IPropertyBase member, IComplexProperty complexProperty, LambdaExpression targetSelector)
+   {
+      return (MemberInfo?)member.PropertyInfo ?? member.FieldInfo
+             ?? throw new NotSupportedException($"The shadow property '{member.Name}' of the complex property '{complexProperty.Name}' cannot be set through the whole complex property. Expression: {targetSelector}");
    }
 
    private static ITypeBase ResolveDeclaringType(IEntityType entityType, PropertyAccessInfo access)
@@ -134,18 +148,126 @@ public static class BulkUpdateFromQueryHelper
       return type;
    }
 
-   private static LambdaExpression AppendMemberAccess(LambdaExpression lambda, MemberInfo member, LambdaExpression targetSelector)
+   private static LambdaExpression AppendMemberAccess(LambdaExpression lambda, MemberInfo member, bool guardNull)
+   {
+      var body = BuildPerBranch(GetComplexValue(lambda, member.DeclaringType!), instance => BuildMemberAccess(instance, member, guardNull));
+      return Expression.Lambda(body, lambda.Parameters);
+   }
+
+   private static Expression BuildMemberAccess(Expression instance, MemberInfo member, bool guardNull)
+   {
+      var memberAccess = Expression.MakeMemberAccess(UnwrapNullable(instance), member);
+
+      // ClosureFlatteningVisitor compiles a client-evaluated value as a whole, so this guard follows C# semantics and never dereferences null.
+      // A source column keeps the plain member access, because EF Core translates it to the column without a null check.
+      if (guardNull && IsClientEvaluated(instance) && !IsNonNullableValueType(instance.Type))
+      {
+         var nullableType = MakeNullable(memberAccess.Type);
+         return Expression.Condition(Expression.Equal(instance, Expression.Constant(null, instance.Type)),
+                                     Expression.Default(nullableType),
+                                     Expression.Convert(memberAccess, nullableType));
+      }
+
+      return memberAccess;
+   }
+
+   private static LambdaExpression BuildDiscriminatorValue(LambdaExpression valueSelector, IProperty discriminator, IComplexType complexType)
+   {
+      var body = BuildPerBranch(GetComplexValue(valueSelector, complexType.ClrType), instance => BuildDiscriminator(instance, discriminator, complexType));
+      return Expression.Lambda(body, valueSelector.Parameters);
+   }
+
+   private static Expression BuildDiscriminator(Expression instance, IProperty discriminator, IComplexType complexType)
+   {
+      if (!IsClientEvaluated(instance))
+         return Expression.Call(typeof(EF), nameof(EF.Property), [discriminator.ClrType], UnwrapNullable(instance), Expression.Constant(discriminator.Name));
+
+      var nullableType = MakeNullable(discriminator.ClrType);
+      var discriminatorValue = Expression.Constant(complexType.GetDiscriminatorValue(), nullableType);
+
+      return IsNonNullableValueType(instance.Type)
+                ? discriminatorValue
+                : Expression.Condition(Expression.Equal(instance, Expression.Constant(null, instance.Type)),
+                                       Expression.Constant(null, nullableType),
+                                       discriminatorValue);
+   }
+
+   /// <summary>
+   /// Splits a conditional or coalesce over complex values per branch, so every leaf is a source or target column, a client value or a discriminator constant.
+   /// A client-evaluated test selects the branch in ClosureFlatteningVisitor; a server test becomes one CASE per member column.
+   /// </summary>
+   private static Expression BuildPerBranch(Expression instance, Func<Expression, Expression> buildLeaf)
+   {
+      return instance switch
+      {
+         ConditionalExpression c => MakeConditional(c.Test, BuildPerBranch(c.IfTrue, buildLeaf), BuildPerBranch(c.IfFalse, buildLeaf)),
+         // A column as left operand would need a server null test on a complex value, which the value translation does not support.
+         BinaryExpression { NodeType: ExpressionType.Coalesce } c when !IsClientEvaluated(c.Left)
+            => throw new NotSupportedException($"The null-coalescing operator (??) is supported for a complex value only when its left operand is evaluated on the client, for example a captured variable. Use a conditional with a client-evaluated test, or update the rows in a separate statement. Expression: {c}"),
+         // `a ?? b` is `a == null ? b : a`
+         BinaryExpression { NodeType: ExpressionType.Coalesce } c => MakeConditional(Expression.Equal(c.Left, Expression.Constant(null, c.Left.Type)),
+                                                                                     BuildPerBranch(c.Right, buildLeaf),
+                                                                                     BuildPerBranch(c.Left, buildLeaf)),
+         _ => buildLeaf(instance)
+      };
+   }
+
+   private static Expression MakeConditional(Expression test, Expression ifTrue, Expression ifFalse)
+   {
+      // A guarded client leaf is nullable, a column leaf is not; lift both to the nullable type.
+      var type = ifTrue.Type == ifFalse.Type ? ifTrue.Type : MakeNullable(ifTrue.Type);
+      return Expression.Condition(test, ConvertIfNeeded(ifTrue, type), ConvertIfNeeded(ifFalse, type));
+   }
+
+   private static Expression ConvertIfNeeded(Expression expression, Type type)
+   {
+      return expression.Type == type ? expression : Expression.Convert(expression, type);
+   }
+
+   private static Expression GetComplexValue(LambdaExpression lambda, Type complexClrType)
    {
       var instance = lambda.Body;
 
       // A selector typed as 'object' boxes the complex value; drop only that conversion, not a real one.
-      if (instance is UnaryExpression { NodeType: ExpressionType.Convert } convert && member.DeclaringType!.IsAssignableFrom(convert.Operand.Type))
+      if (instance is UnaryExpression { NodeType: ExpressionType.Convert } convert
+          && complexClrType.IsAssignableFrom(Nullable.GetUnderlyingType(convert.Operand.Type) ?? convert.Operand.Type))
          instance = convert.Operand;
 
-      if (Nullable.GetUnderlyingType(instance.Type) is { } underlyingType)
-         throw new NotSupportedException($"The value of the whole complex property must not be of the nullable type '{underlyingType.Name}?'. Use a non-nullable value. Expression: {targetSelector}");
+      return instance;
+   }
 
-      return Expression.Lambda(Expression.MakeMemberAccess(instance, member), lambda.Parameters);
+   private static Expression UnwrapNullable(Expression instance)
+   {
+      return Nullable.GetUnderlyingType(instance.Type) is null ? instance : Expression.Property(instance, nameof(Nullable<int>.Value));
+   }
+
+   private static bool IsNonNullableValueType(Type type)
+   {
+      return type.IsValueType && Nullable.GetUnderlyingType(type) is null;
+   }
+
+   private static Type MakeNullable(Type type)
+   {
+      return IsNonNullableValueType(type) ? typeof(Nullable<>).MakeGenericType(type) : type;
+   }
+
+   private static bool IsClientEvaluated(Expression expression)
+   {
+      var finder = new ParameterFinder();
+      finder.Visit(expression);
+
+      return !finder.HasParameter;
+   }
+
+   private sealed class ParameterFinder : ExpressionVisitor
+   {
+      public bool HasParameter { get; private set; }
+
+      protected override Expression VisitParameter(ParameterExpression node)
+      {
+         HasParameter = true;
+         return node;
+      }
    }
 
    [return: NotNullIfNotNull(nameof(expression))]

@@ -663,4 +663,27 @@ public class BulkInsertOrUpdateAsync : IntegrationTestsBase
 
       (await AssertDbContext.TestEntities_Own_SeparateMany.SingleAsync()).SeparateEntities.Single().IntColumn.Should().Be(1);
    }
+
+   [Fact]
+   public async Task Should_insert_and_update_nullable_ComplexTypes_with_null_and_non_null_values()
+   {
+      var toNulls = TestEntityWithNullableComplexTypes.CreateWithValues(new Guid("6E3A0C4B-1F6F-4A7D-8E46-8C3B7D2F0001"));
+      var toValues = TestEntityWithNullableComplexTypes.CreateWithNulls(new Guid("6E3A0C4B-1F6F-4A7D-8E46-8C3B7D2F0002"));
+      ArrangeDbContext.AddRange(toNulls, toValues);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var entities = new[]
+                     {
+                        TestEntityWithNullableComplexTypes.CreateWithNulls(toNulls.Id),
+                        TestEntityWithNullableComplexTypes.CreateWithValues(toValues.Id),
+                        TestEntityWithNullableComplexTypes.CreateWithValues(new Guid("6E3A0C4B-1F6F-4A7D-8E46-8C3B7D2F0003")),
+                        TestEntityWithNullableComplexTypes.CreateWithNulls(new Guid("6E3A0C4B-1F6F-4A7D-8E46-8C3B7D2F0004"))
+                     };
+
+      var affectedRows = await SUT.BulkInsertOrUpdateAsync(entities, new NpgsqlBulkInsertOrUpdateOptions());
+
+      affectedRows.Should().Be(4);
+      var loaded = await AssertDbContext.TestEntitiesWithNullableComplexTypes.ToListAsync();
+      loaded.Should().BeEquivalentTo(entities);
+   }
 }

@@ -1582,21 +1582,225 @@ public class BulkUpdateFromQueryAsync : IntegrationTestsBase
    }
 
    [Fact]
-   public async Task Should_throw_for_whole_nullable_ComplexType()
+   public async Task Should_set_whole_nullable_ComplexTypes_from_source_columns()
    {
-      ConfigureModel = TestEntityWithNullableStructComplexType.Configure;
+      var toValues = TestEntityWithNullableComplexTypes.CreateWithNulls(new Guid("9A5C2E6D-3B8B-4C9F-8A68-AE5D9F4B0001"));
+      var toNulls = TestEntityWithNullableComplexTypes.CreateWithValues(new Guid("9A5C2E6D-3B8B-4C9F-8A68-AE5D9F4B0002"));
+      ArrangeDbContext.AddRange(toValues, toNulls);
+      await ArrangeDbContext.SaveChangesAsync();
 
-      var act = () => ActDbContext.Set<TestEntityWithNullableStructComplexType>().BulkUpdateAsync(ActDbContext.Set<TestEntityWithNullableStructComplexType>(), e => e.Id, s => s.Id, builder => builder.Set(e => e.EffectiveMessage, (e, s) => s.EffectiveMessage));
+      var sourceRows = new[] { TestEntityWithNullableComplexTypes.CreateWithValues(toValues.Id), TestEntityWithNullableComplexTypes.CreateWithNulls(toNulls.Id) };
+      await using var tempTable = await SUT.BulkInsertIntoTempTableAsync(sourceRows, new NpgsqlTempTableBulkInsertOptions());
 
-      await act.Should().ThrowAsync<NotSupportedException>().WithMessage("The nullable complex property 'EffectiveMessage' cannot be set as a whole.*");
+      var affectedRows = await ActDbContext.TestEntitiesWithNullableComplexTypes.BulkUpdateAsync(
+         tempTable.Query, e => e.Id, s => s.Id,
+         builder => builder.Set(e => e.OptionalBoundary, (e, s) => s.OptionalBoundary)
+                           .Set(e => e.OptionalPair, (e, s) => s.OptionalPair)
+                           .Set(e => e.Tagged, (e, s) => s.Tagged)
+                           .Set(e => e.Outer, (e, s) => s.Outer)
+                           .Set(e => e.OptionalOuter, (e, s) => s.OptionalOuter)
+                           .Set(e => e.OptionalConverted, (e, s) => s.OptionalConverted));
+
+      affectedRows.Should().Be(2);
+      var loaded = await AssertDbContext.TestEntitiesWithNullableComplexTypes.ToListAsync();
+      loaded.Should().BeEquivalentTo(sourceRows);
+
+      var sql = ExecutedCommands.Last(c => c.Contains("UPDATE"));
+      sql.Should().Contain("\"Tagged_Discriminator\" = ").And.NotContain("CASE");
+   }
+
+   [Fact]
+   public async Task Should_set_whole_nullable_ComplexTypes_from_captured_values()
+   {
+      var entity = TestEntityWithNullableComplexTypes.CreateWithNulls(new Guid("9A5C2E6D-3B8B-4C9F-8A68-AE5D9F4B0003"));
+      ArrangeDbContext.Add(entity);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var expected = TestEntityWithNullableComplexTypes.CreateWithValues(entity.Id);
+      var boundary = expected.OptionalBoundary;
+      var pair = expected.OptionalPair;
+      var tagged = expected.Tagged;
+      var outer = expected.Outer;
+      var optionalOuter = expected.OptionalOuter;
+      var converted = expected.OptionalConverted;
+
+      var affectedRows = await ActDbContext.TestEntitiesWithNullableComplexTypes.BulkUpdateAsync(
+         ActDbContext.TestEntitiesWithNullableComplexTypes, e => e.Id, s => s.Id,
+         builder => builder.Set(e => e.OptionalBoundary, (e, s) => boundary)
+                           .Set(e => e.OptionalPair, (e, s) => pair)
+                           .Set(e => e.Tagged, (e, s) => tagged)
+                           .Set(e => e.Outer, (e, s) => outer)
+                           .Set(e => e.OptionalOuter, (e, s) => optionalOuter)
+                           .Set(e => e.OptionalConverted, (e, s) => converted));
+
+      affectedRows.Should().Be(1);
+      (await AssertDbContext.TestEntitiesWithNullableComplexTypes.SingleAsync()).Should().BeEquivalentTo(expected);
+   }
+
+   [Fact]
+   public async Task Should_set_whole_nullable_ComplexTypes_from_captured_nulls()
+   {
+      var entity = TestEntityWithNullableComplexTypes.CreateWithValues(new Guid("9A5C2E6D-3B8B-4C9F-8A68-AE5D9F4B0004"));
+      ArrangeDbContext.Add(entity);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      BoundaryValueObject? boundary = null;
+      TimestampPair? pair = null;
+      TaggedValues? tagged = null;
+      var outer = new OuterWithOptionalInner { Z = 1, Inner = null };
+      OptionalOuter? optionalOuter = null;
+      ConvertedTimestampPair? converted = null;
+
+      var affectedRows = await ActDbContext.TestEntitiesWithNullableComplexTypes.BulkUpdateAsync(
+         ActDbContext.TestEntitiesWithNullableComplexTypes, e => e.Id, s => s.Id,
+         builder => builder.Set(e => e.OptionalBoundary, (e, s) => boundary)
+                           .Set(e => e.OptionalPair, (e, s) => pair)
+                           .Set(e => e.Tagged, (e, s) => tagged)
+                           .Set(e => e.Outer, (e, s) => outer)
+                           .Set(e => e.OptionalOuter, (e, s) => optionalOuter)
+                           .Set(e => e.OptionalConverted, (e, s) => converted));
+
+      affectedRows.Should().Be(1);
+      (await AssertDbContext.TestEntitiesWithNullableComplexTypes.SingleAsync()).Should().BeEquivalentTo(TestEntityWithNullableComplexTypes.CreateWithNulls(entity.Id));
+   }
+
+   [Fact]
+   public async Task Should_set_whole_nullable_ComplexTypes_from_new_expression()
+   {
+      var entity = TestEntityWithNullableComplexTypes.CreateWithNulls(new Guid("9A5C2E6D-3B8B-4C9F-8A68-AE5D9F4B0005"));
+      ArrangeDbContext.Add(entity);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var affectedRows = await ActDbContext.TestEntitiesWithNullableComplexTypes.BulkUpdateAsync(
+         ActDbContext.TestEntitiesWithNullableComplexTypes, e => e.Id, s => s.Id,
+         builder => builder.Set(e => e.OptionalOuter, (e, s) => new OptionalOuter { Y = 3, Inner = new InnerValue { V = 33 } })
+                           .Set(e => e.Tagged, (e, s) => new TaggedValues { X = 7, Text = "t" }));
+
+      affectedRows.Should().Be(1);
+      var loaded = await AssertDbContext.TestEntitiesWithNullableComplexTypes.SingleAsync();
+      loaded.OptionalOuter.Should().BeEquivalentTo(new OptionalOuter { Y = 3, Inner = new InnerValue { V = 33 } });
+      loaded.Tagged.Should().BeEquivalentTo(new TaggedValues { X = 7, Text = "t" });
+   }
+
+   [Fact]
+   public async Task Should_set_whole_ComplexTypes_from_server_conditional()
+   {
+      var rowA = TestEntityWithNullableComplexTypes.CreateWithNulls(new Guid("9A5C2E6D-3B8B-4C9F-8A68-AE5D9F4B0020"));
+      var rowB = TestEntityWithNullableComplexTypes.CreateWithValues(new Guid("9A5C2E6D-3B8B-4C9F-8A68-AE5D9F4B0021"));
+      ArrangeDbContext.AddRange(rowA, rowB);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var sourceA = TestEntityWithNullableComplexTypes.CreateWithValues(rowA.Id);
+      var sourceB = TestEntityWithNullableComplexTypes.CreateWithNulls(rowB.Id);
+      sourceB.Outer.Z = 0;
+      await using var tempTable = await SUT.BulkInsertIntoTempTableAsync([sourceA, sourceB], new NpgsqlTempTableBulkInsertOptions());
+
+      var affectedRows = await ActDbContext.TestEntitiesWithNullableComplexTypes.BulkUpdateAsync(
+         tempTable.Query, e => e.Id, s => s.Id,
+         builder => builder.Set(e => e.Tagged, (e, s) => s.Outer.Z > 0 ? s.Tagged : e.Tagged)
+                           .Set(e => e.OptionalPair, (e, s) => s.Outer.Z > 0 ? s.OptionalPair : e.OptionalPair));
+
+      affectedRows.Should().Be(2);
+      var loadedA = await AssertDbContext.TestEntitiesWithNullableComplexTypes.SingleAsync(e => e.Id == rowA.Id);
+      loadedA.Tagged.Should().BeEquivalentTo(sourceA.Tagged);
+      loadedA.OptionalPair.Should().Be(sourceA.OptionalPair);
+      (await AssertDbContext.TestEntitiesWithNullableComplexTypes.SingleAsync(e => e.Id == rowB.Id)).Should().BeEquivalentTo(rowB);
+
+      var sql = ExecutedCommands.Last(c => c.Contains("UPDATE"));
+      sql.Should().Contain("\"Tagged_Discriminator\" = CASE")
+         .And.Contain("\"Tagged_X\" = CASE")
+         .And.Contain("\"OptionalPair_ReceivedAt\" = CASE");
+   }
+
+   [Fact]
+   public async Task Should_set_whole_ComplexTypes_from_client_conditional_with_non_null_captured_value()
+   {
+      var entity = TestEntityWithNullableComplexTypes.CreateWithNulls(new Guid("9A5C2E6D-3B8B-4C9F-8A68-AE5D9F4B0022"));
+      ArrangeDbContext.Add(entity);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      TaggedValues? tagged = new TaggedValues { X = 7, Text = "t" };
+      TimestampPair? pair = new TimestampPair(100, 200);
+      OuterWithOptionalInner? outer = new OuterWithOptionalInner { Z = 1, Inner = new InnerValue { V = 11 } };
+
+      var affectedRows = await ActDbContext.TestEntitiesWithNullableComplexTypes.BulkUpdateAsync(
+         ActDbContext.TestEntitiesWithNullableComplexTypes, e => e.Id, s => s.Id,
+         builder => builder.Set(e => e.Tagged, (e, s) => tagged == null ? s.Tagged : tagged)
+                           .Set(e => e.OptionalPair, (e, s) => pair == null ? s.OptionalPair : pair)
+                           .Set(e => e.Outer, (e, s) => outer == null ? s.Outer : outer));
+
+      affectedRows.Should().Be(1);
+      var loaded = await AssertDbContext.TestEntitiesWithNullableComplexTypes.SingleAsync();
+      loaded.Tagged.Should().BeEquivalentTo(new TaggedValues { X = 7, Text = "t" });
+      loaded.OptionalPair.Should().Be(new TimestampPair(100, 200));
+      loaded.Outer.Should().BeEquivalentTo(new OuterWithOptionalInner { Z = 1, Inner = new InnerValue { V = 11 } });
+
+      var sql = ExecutedCommands.Last(c => c.Contains("UPDATE"));
+      sql.Should().NotContain("CASE").And.Contain("\"Tagged_Discriminator\" = ");
+   }
+
+   [Fact]
+   public async Task Should_set_whole_struct_ComplexType_from_captured_nullable_value()
+   {
+      ConfigureModel = TempTableWithStructComplexType.Configure;
+      await ArrangeStructComplexTypeEntitiesAsync();
+
+      await using var tempTable = await SUT.BulkInsertIntoTempTableAsync([CreateStructComplexTypeSource()], new NpgsqlTempTableBulkInsertOptions());
+
+      TimestampPair? value = new TimestampPair(7, 8);
+
+      var affectedRows = await ActDbContext.TestEntitiesWithStructComplexType.BulkUpdateAsync(
+         tempTable.Query,
+         e => new { e.Id, e.MessageTimestamp },
+         s => new { s.Id, s.MessageTimestamp },
+         builder => builder.Set(e => e.EffectiveMessage, (e, s) => value));
+
+      affectedRows.Should().Be(1);
+
+      await AssertStructComplexTypeEntitiesAsync(new TimestampPair(7, 8), "Original");
+   }
+
+   [Fact]
+   public async Task Should_throw_for_captured_null_nullable_value_of_required_struct_ComplexType()
+   {
+      TimestampPair? value = null;
+
+      var act = () => ActDbContext.TestEntitiesWithStructComplexType.BulkUpdateAsync(
+         ActDbContext.TestEntitiesWithStructComplexType,
+         e => e.Id,
+         s => s.Id,
+         builder => builder.Set(e => e.EffectiveMessage, (e, s) => value));
+
+      await act.Should().ThrowAsync<ArgumentException>().WithMessage("The member 'Value' of '*' cannot be read because the captured value is null.*");
+      ExecutedCommands.Should().NotContain(c => c.Contains("UPDATE"));
+   }
+
+   [Fact]
+   public async Task Should_set_whole_nullable_struct_ComplexTypes_when_selectors_are_converted_to_object()
+   {
+      var entity = TestEntityWithNullableComplexTypes.CreateWithValues(new Guid("9A5C2E6D-3B8B-4C9F-8A68-AE5D9F4B0006"));
+      ArrangeDbContext.Add(entity);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      TimestampPair? pair = new TimestampPair(7, 8);
+      ConvertedTimestampPair? converted = null;
+
+      // Boxing the nullable struct adds a Convert node to both selectors.
+      var affectedRows = await ActDbContext.TestEntitiesWithNullableComplexTypes.BulkUpdateAsync(
+         ActDbContext.TestEntitiesWithNullableComplexTypes, e => e.Id, s => s.Id,
+         builder => builder.Set<object?>(e => e.OptionalPair, (e, s) => pair)
+                           .Set<object?>(e => e.OptionalConverted, (e, s) => converted));
+
+      affectedRows.Should().Be(1);
+      var loaded = await AssertDbContext.TestEntitiesWithNullableComplexTypes.SingleAsync();
+      loaded.OptionalPair.Should().Be(new TimestampPair(7, 8));
+      loaded.OptionalConverted.Should().BeNull();
    }
 
    [Fact]
    public async Task Should_throw_for_member_of_nullable_class_ComplexType()
    {
-      ConfigureModel = TestEntityWithNullableClassComplexType.Configure;
-
-      var act = () => ActDbContext.Set<TestEntityWithNullableClassComplexType>().BulkUpdateAsync(ActDbContext.Set<TestEntityWithNullableClassComplexType>(), e => e.Id, s => s.Id, builder => builder.Set(e => e.OptionalBoundary!.Upper, (e, s) => s.OptionalBoundary!.Upper));
+      var act = () => ActDbContext.TestEntitiesWithNullableComplexTypes.BulkUpdateAsync(ActDbContext.TestEntitiesWithNullableComplexTypes, e => e.Id, s => s.Id, builder => builder.Set(e => e.OptionalBoundary!.Upper, (e, s) => s.OptionalBoundary!.Upper));
 
       await act.Should().ThrowAsync<NotSupportedException>().WithMessage("The member 'OptionalBoundary' of '*' is a nullable complex property.*");
       ExecutedCommands.Should().NotContain(c => c.Contains("UPDATE"));
@@ -1605,26 +1809,9 @@ public class BulkUpdateFromQueryAsync : IntegrationTestsBase
    [Fact]
    public async Task Should_throw_for_member_of_nullable_struct_ComplexType()
    {
-      ConfigureModel = TestEntityWithNullableStructComplexType.Configure;
+      var act = () => ActDbContext.TestEntitiesWithNullableComplexTypes.BulkUpdateAsync(ActDbContext.TestEntitiesWithNullableComplexTypes, e => e.Id, s => s.Id, builder => builder.Set(e => e.OptionalPair!.Value.ReceivedAt, (e, s) => s.OptionalPair!.Value.ReceivedAt));
 
-      var act = () => ActDbContext.Set<TestEntityWithNullableStructComplexType>().BulkUpdateAsync(ActDbContext.Set<TestEntityWithNullableStructComplexType>(), e => e.Id, s => s.Id, builder => builder.Set(e => e.EffectiveMessage!.Value.ReceivedAt, (e, s) => s.EffectiveMessage!.Value.ReceivedAt));
-
-      await act.Should().ThrowAsync<NotSupportedException>().WithMessage("The member 'EffectiveMessage' of '*' is a nullable complex property.*");
-      ExecutedCommands.Should().NotContain(c => c.Contains("UPDATE"));
-   }
-
-   [Fact]
-   public async Task Should_throw_when_whole_struct_ComplexType_value_is_nullable()
-   {
-      TimestampPair? value = new TimestampPair(7, 8);
-
-      var act = () => ActDbContext.TestEntitiesWithStructComplexType.BulkUpdateAsync(
-         ActDbContext.TestEntitiesWithStructComplexType,
-         e => e.Id,
-         s => s.Id,
-         builder => builder.Set(e => e.EffectiveMessage, (e, s) => value));
-
-      await act.Should().ThrowAsync<NotSupportedException>().WithMessage("The value of the whole complex property must not be of the nullable type*TimestampPair*e.EffectiveMessage*");
+      await act.Should().ThrowAsync<NotSupportedException>().WithMessage("The member 'OptionalPair' of '*' is a nullable complex property.*");
       ExecutedCommands.Should().NotContain(c => c.Contains("UPDATE"));
    }
 

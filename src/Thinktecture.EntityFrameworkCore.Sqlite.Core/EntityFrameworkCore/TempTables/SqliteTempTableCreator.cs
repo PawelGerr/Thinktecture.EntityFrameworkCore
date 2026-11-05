@@ -142,7 +142,7 @@ public sealed class SqliteTempTableCreator : ITempTableCreator
             sb.Append("\t\t")
               .Append(_sqlGenerationHelper.DelimitIdentifier(columnName)).Append(' ')
               .Append(columnType)
-              .Append(property.IsNullable ? " NULL" : " NOT NULL");
+              .Append(property.IsColumnNullable(storeObject.Value) ? " NULL" : " NOT NULL");
 
             if (property.IsAutoIncrement())
             {

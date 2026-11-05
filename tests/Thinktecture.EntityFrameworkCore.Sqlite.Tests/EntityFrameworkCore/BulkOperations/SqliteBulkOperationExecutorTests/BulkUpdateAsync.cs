@@ -491,4 +491,21 @@ public class BulkUpdateAsync : IntegrationTestsBase
 
       (await AssertDbContext.TestEntities_Own_SeparateOne.SingleAsync()).SeparateEntity!.IntColumn.Should().Be(1);
    }
+
+   [Fact]
+   public async Task Should_update_nullable_ComplexTypes_to_null_and_to_values()
+   {
+      var toNulls = TestEntityWithNullableComplexTypes.CreateWithValues(new Guid("6E3A0C4B-1F6F-4A7D-8E46-8C3B7D2F0001"));
+      var toValues = TestEntityWithNullableComplexTypes.CreateWithNulls(new Guid("6E3A0C4B-1F6F-4A7D-8E46-8C3B7D2F0002"));
+      ArrangeDbContext.AddRange(toNulls, toValues);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var updated = new[] { TestEntityWithNullableComplexTypes.CreateWithNulls(toNulls.Id), TestEntityWithNullableComplexTypes.CreateWithValues(toValues.Id) };
+
+      var affectedRows = await SUT.BulkUpdateAsync(updated, new SqliteBulkUpdateOptions());
+
+      affectedRows.Should().Be(2);
+      var loaded = await AssertDbContext.TestEntitiesWithNullableComplexTypes.ToListAsync();
+      loaded.Should().BeEquivalentTo(updated);
+   }
 }

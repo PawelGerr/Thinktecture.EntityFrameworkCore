@@ -293,4 +293,16 @@ public class BulkInsertIntoTempTableAsync : IntegrationTestsBase
 
       query.NumberOfInsertedRows.Should().Be(1);
    }
+
+   [Fact]
+   public async Task Should_insert_and_read_back_nullable_ComplexTypes_from_temp_table()
+   {
+      var withValues = TestEntityWithNullableComplexTypes.CreateWithValues(new Guid("7F4B1D5C-2A7A-4B8E-9F57-9D4C8E3A0001"));
+      var withNulls = TestEntityWithNullableComplexTypes.CreateWithNulls(new Guid("7F4B1D5C-2A7A-4B8E-9F57-9D4C8E3A0002"));
+
+      await using var tempTable = await ActDbContext.BulkInsertIntoTempTableAsync([withValues, withNulls]);
+
+      var loaded = await tempTable.Query.ToListAsync();
+      loaded.Should().BeEquivalentTo([withValues, withNulls]);
+   }
 }

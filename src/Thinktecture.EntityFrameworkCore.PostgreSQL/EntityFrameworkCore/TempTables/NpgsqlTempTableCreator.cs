@@ -269,7 +269,7 @@ public sealed class NpgsqlTempTableCreator : INpgsqlTempTableCreator
                }
             }
 
-            sb.Append(property.IsNullable ? " NULL" : " NOT NULL");
+            sb.Append(property.IsColumnNullable(storeObject.Value) ? " NULL" : " NOT NULL");
 
             AppendIdentity(sb, property);
 

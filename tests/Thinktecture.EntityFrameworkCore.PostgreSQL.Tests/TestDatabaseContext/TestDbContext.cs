@@ -35,6 +35,7 @@ public class TestDbContext : DbContext, IDbDefaultSchema
    public DbSet<TestEntityWithFlags> TestEntitiesWithFlags { get; set; }
    public DbSet<TestEntityWithStructComplexType> TestEntitiesWithStructComplexType { get; set; }
    public DbSet<TestEntityWithConvertedComplexType> TestEntitiesWithConvertedComplexType { get; set; }
+   public DbSet<TestEntityWithNullableComplexTypes> TestEntitiesWithNullableComplexTypes { get; set; }
    // ReSharper restore UnusedAutoPropertyAccessor.Global
 #nullable enable
 
@@ -98,6 +99,7 @@ public class TestDbContext : DbContext, IDbDefaultSchema
       TestEntityWithFlags.Configure(modelBuilder);
       TestEntityWithStructComplexType.Configure(modelBuilder);
       TestEntityWithConvertedComplexType.Configure(modelBuilder);
+      TestEntityWithNullableComplexTypes.Configure(modelBuilder);
 
       ConfigureModel?.Invoke(modelBuilder);
 

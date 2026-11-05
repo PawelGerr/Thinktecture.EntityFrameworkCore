@@ -769,6 +769,35 @@ public class CreateTempTableAsync : IntegrationTestsBase
       return TestCtxProviderBuilder.CreateOptionsBuilder(connection, Schema).Options;
    }
 
+   [Fact]
+   public async Task Should_create_nullable_columns_for_members_of_nullable_ComplexTypes()
+   {
+      var entityType = ActDbContext.GetTempTableEntityType<TestEntityWithNullableComplexTypes>();
+
+      await using var tempTable = await SUT.CreateTempTableAsync(entityType, _optionsWithNonUniqueName);
+
+      var columns = AssertDbContext.GetTempTableColumns<TestEntityWithNullableComplexTypes>().ToList();
+      columns.Should().HaveCount(14);
+
+      foreach (var name in new[]
+               {
+                  "OptionalBoundary_Upper", "OptionalBoundary_Lower", "OptionalPair_ReceivedAt", "OptionalPair_MessageTimestamp",
+                  "Tagged_Discriminator", "Tagged_X", "Tagged_Text", "Outer_Inner_V",
+                  "OptionalOuter_Y", "OptionalOuter_Inner_V", "OptionalConverted_ReceivedAt", "OptionalConverted_MessageTimestamp"
+               })
+      {
+         IsNullable(columns, name).Should().BeTrue(name);
+      }
+
+      IsNullable(columns, "Id").Should().BeFalse();
+      IsNullable(columns, "Outer_Z").Should().BeFalse();
+   }
+
+   private static bool IsNullable(List<InformationSchemaColumn> columns, string name)
+   {
+      return columns.Single(c => c.COLUMN_NAME == name).IS_NULLABLE == "YES";
+   }
+
    private static void ValidateColumn(
       InformationSchemaColumn column,
       string name,

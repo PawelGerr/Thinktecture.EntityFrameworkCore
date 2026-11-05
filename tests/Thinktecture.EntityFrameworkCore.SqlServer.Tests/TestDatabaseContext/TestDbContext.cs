@@ -36,6 +36,7 @@ public class TestDbContext : DbContext, IDbDefaultSchema
    public DbSet<TestEntity_Owns_SeparateMany_SeparateMany> TestEntities_Own_SeparateMany_SeparateMany { get; set; }
    public DbSet<TestEntityWithComplexType> TestEntities_with_ComplexType { get; set; }
    public DbSet<TestEntityWithFlags> TestEntitiesWithFlags { get; set; }
+   public DbSet<TestEntityWithNullableComplexTypes> TestEntitiesWithNullableComplexTypes { get; set; }
    public IQueryable<TestViewEntity> TestView => Set<TestViewEntity>();
    // ReSharper restore UnusedAutoPropertyAccessor.Global
 #nullable enable
@@ -106,6 +107,7 @@ public class TestDbContext : DbContext, IDbDefaultSchema
       TestEntityWithComplexType.Configure(modelBuilder);
       TestEntityWithDifferentColumnNames.Configure(modelBuilder);
       TestEntityWithFlags.Configure(modelBuilder);
+      TestEntityWithNullableComplexTypes.Configure(modelBuilder);
 
       ConfigureModel?.Invoke(modelBuilder);
 

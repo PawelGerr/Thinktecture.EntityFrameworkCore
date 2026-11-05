@@ -580,9 +580,7 @@ public class BulkInsertFromQueryAsync : IntegrationTestsBase
    [Fact]
    public async Task Should_throw_for_member_of_nullable_class_ComplexType()
    {
-      ConfigureModel = TestEntityWithNullableClassComplexType.Configure;
-
-      var act = () => ActDbContext.Set<TestEntityWithNullableClassComplexType>().BulkInsertAsync(ActDbContext.Set<TestEntityWithNullableClassComplexType>(), builder => builder.Map(e => e.Id, f => f.Id).Map(e => e.OptionalBoundary!.Upper, f => f.OptionalBoundary!.Upper));
+      var act = () => ActDbContext.TestEntitiesWithNullableComplexTypes.BulkInsertAsync(ActDbContext.TestEntitiesWithNullableComplexTypes, builder => builder.Map(e => e.Id, f => f.Id).Map(e => e.OptionalBoundary!.Upper, f => f.OptionalBoundary!.Upper));
 
       await act.Should().ThrowAsync<NotSupportedException>().WithMessage("The member 'OptionalBoundary' of '*' is a nullable complex property.*");
       ExecutedCommands.Should().NotContain(c => c.Contains("INSERT"));
@@ -605,6 +603,68 @@ public class BulkInsertFromQueryAsync : IntegrationTestsBase
 
       await act.Should().ThrowAsync<ArgumentException>().WithMessage("*every member*generated*Expression: e => e.Boundary");
       ExecutedCommands.Should().NotContain(c => c.Contains("INSERT"));
+   }
+
+   [Fact]
+   public async Task Should_map_whole_nullable_ComplexTypes_from_source_columns()
+   {
+      var sourceRows = new[]
+                       {
+                          TestEntityWithNullableComplexTypes.CreateWithValues(new Guid("AB6D3F7E-4C9C-4DAF-9B79-BF6EAF5C0001")),
+                          TestEntityWithNullableComplexTypes.CreateWithNulls(new Guid("AB6D3F7E-4C9C-4DAF-9B79-BF6EAF5C0002"))
+                       };
+      await using var tempTable = await SUT.BulkInsertIntoTempTableAsync(sourceRows, new NpgsqlTempTableBulkInsertOptions());
+
+      var affectedRows = await ActDbContext.TestEntitiesWithNullableComplexTypes.BulkInsertAsync(
+         tempTable.Query,
+         builder => builder.Map(e => e.Id, s => s.Id)
+                           .Map(e => e.OptionalBoundary, s => s.OptionalBoundary)
+                           .Map(e => e.OptionalPair, s => s.OptionalPair)
+                           .Map(e => e.Tagged, s => s.Tagged)
+                           .Map(e => e.Outer, s => s.Outer)
+                           .Map(e => e.OptionalOuter, s => s.OptionalOuter)
+                           .Map(e => e.OptionalConverted, s => s.OptionalConverted));
+
+      affectedRows.Should().Be(2);
+      (await AssertDbContext.TestEntitiesWithNullableComplexTypes.ToListAsync()).Should().BeEquivalentTo(sourceRows);
+   }
+
+   [Fact]
+   public async Task Should_map_whole_nullable_ComplexTypes_from_captured_values_and_nulls()
+   {
+      ArrangeDbContext.Add(new TestEntity { Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"), RequiredName = "RequiredName" });
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var id = new Guid("AB6D3F7E-4C9C-4DAF-9B79-BF6EAF5C0004");
+      var boundary = new BoundaryValueObject(2, 5);
+      TimestampPair? pair = null;
+      var tagged = new TaggedValues { X = 7, Text = "t" };
+      var outer = new OuterWithOptionalInner { Z = 1, Inner = null };
+      OptionalOuter? optionalOuter = null;
+      ConvertedTimestampPair? converted = new ConvertedTimestampPair(new TimestampValue(1), new TimestampValue(2));
+
+      var affectedRows = await ActDbContext.TestEntitiesWithNullableComplexTypes.BulkInsertAsync(
+         ActDbContext.TestEntities,
+         builder => builder.Map(e => e.Id, s => id)
+                           .Map(e => e.OptionalBoundary, s => boundary)
+                           .Map(e => e.OptionalPair, s => pair)
+                           .Map(e => e.Tagged, s => tagged)
+                           .Map(e => e.Outer, s => outer)
+                           .Map(e => e.OptionalOuter, s => optionalOuter)
+                           .Map(e => e.OptionalConverted, s => converted));
+
+      affectedRows.Should().Be(1);
+      (await AssertDbContext.TestEntitiesWithNullableComplexTypes.SingleAsync()).Should().BeEquivalentTo(
+         new TestEntityWithNullableComplexTypes
+         {
+            Id = id,
+            OptionalBoundary = new BoundaryValueObject(2, 5),
+            OptionalPair = null,
+            Tagged = new TaggedValues { X = 7, Text = "t" },
+            Outer = new OuterWithOptionalInner { Z = 1, Inner = null },
+            OptionalOuter = null,
+            OptionalConverted = new ConvertedTimestampPair(new TimestampValue(1), new TimestampValue(2))
+         });
    }
 
    private static TempTableWithStructComplexType CreateStructComplexTypeSource()

@@ -262,6 +262,87 @@ namespace Thinktecture.Migrations
                     b.ToTable("TestEntitiesWithFlags");
                 });
 
+            modelBuilder.Entity("Thinktecture.TestDatabaseContext.TestEntityWithNullableComplexTypes", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "OptionalBoundary", "Thinktecture.TestDatabaseContext.TestEntityWithNullableComplexTypes.OptionalBoundary#BoundaryValueObject", b1 =>
+                        {
+                            b1.Property<int>("Lower")
+                                .HasColumnType("INTEGER");
+
+                            b1.Property<int>("Upper")
+                                .HasColumnType("INTEGER");
+                        });
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "OptionalConverted", "Thinktecture.TestDatabaseContext.TestEntityWithNullableComplexTypes.OptionalConverted#ConvertedTimestampPair", b1 =>
+                        {
+                            b1.Property<long>("MessageTimestamp")
+                                .HasColumnType("INTEGER");
+
+                            b1.Property<long>("ReceivedAt")
+                                .HasColumnType("INTEGER");
+                        });
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "OptionalOuter", "Thinktecture.TestDatabaseContext.TestEntityWithNullableComplexTypes.OptionalOuter#OptionalOuter", b1 =>
+                        {
+                            b1.Property<int>("Y")
+                                .HasColumnType("INTEGER");
+
+                            b1.ComplexProperty(typeof(Dictionary<string, object>), "Inner", "Thinktecture.TestDatabaseContext.TestEntityWithNullableComplexTypes.OptionalOuter#OptionalOuter.Inner#InnerValue", b2 =>
+                                {
+                                    b2.IsRequired();
+
+                                    b2.Property<int>("V")
+                                        .HasColumnType("INTEGER");
+                                });
+                        });
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "OptionalPair", "Thinktecture.TestDatabaseContext.TestEntityWithNullableComplexTypes.OptionalPair#TimestampPair", b1 =>
+                        {
+                            b1.Property<long>("MessageTimestamp")
+                                .HasColumnType("INTEGER");
+
+                            b1.Property<long>("ReceivedAt")
+                                .HasColumnType("INTEGER");
+                        });
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "Outer", "Thinktecture.TestDatabaseContext.TestEntityWithNullableComplexTypes.Outer#OuterWithOptionalInner", b1 =>
+                        {
+                            b1.IsRequired();
+
+                            b1.Property<int>("Z")
+                                .HasColumnType("INTEGER");
+
+                            b1.ComplexProperty(typeof(Dictionary<string, object>), "Inner", "Thinktecture.TestDatabaseContext.TestEntityWithNullableComplexTypes.Outer#OuterWithOptionalInner.Inner#InnerValue", b2 =>
+                                {
+                                    b2.Property<int>("V")
+                                        .HasColumnType("INTEGER");
+                                });
+                        });
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "Tagged", "Thinktecture.TestDatabaseContext.TestEntityWithNullableComplexTypes.Tagged#TaggedValues", b1 =>
+                        {
+                            b1.Property<string>("Discriminator")
+                                .IsRequired()
+                                .HasColumnType("TEXT");
+
+                            b1.Property<string>("Text")
+                                .HasColumnType("TEXT");
+
+                            b1.Property<int?>("X")
+                                .HasColumnType("INTEGER");
+
+                            b1.HasDiscriminator<string>("Discriminator").HasValue("TaggedValues");
+                        });
+
+                    b.HasKey("Id");
+
+                    b.ToTable("TestEntitiesWithNullableComplexTypes", (string)null);
+                });
+
             modelBuilder.Entity("Thinktecture.TestDatabaseContext.TestEntityWithShadowProperties", b =>
                 {
                     b.Property<Guid>("Id")

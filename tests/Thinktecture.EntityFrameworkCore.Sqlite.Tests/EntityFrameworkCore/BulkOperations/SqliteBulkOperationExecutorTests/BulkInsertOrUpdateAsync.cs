@@ -663,4 +663,27 @@ public class BulkInsertOrUpdateAsync : IntegrationTestsBase
       // The caller transaction is still open, so a root row written before the exception would be visible here.
       (await ActDbContext.Database.SqlQueryRaw<int>("""SELECT COUNT(*) AS "Value" FROM "TestEntities_Own_SeparateOne" """).SingleAsync()).Should().Be(0);
    }
+
+   [Fact]
+   public async Task Should_insert_and_update_nullable_ComplexTypes_with_null_and_non_null_values()
+   {
+      var toNulls = TestEntityWithNullableComplexTypes.CreateWithValues(new Guid("6E3A0C4B-1F6F-4A7D-8E46-8C3B7D2F0001"));
+      var toValues = TestEntityWithNullableComplexTypes.CreateWithNulls(new Guid("6E3A0C4B-1F6F-4A7D-8E46-8C3B7D2F0002"));
+      ArrangeDbContext.AddRange(toNulls, toValues);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var entities = new[]
+                     {
+                        TestEntityWithNullableComplexTypes.CreateWithNulls(toNulls.Id),
+                        TestEntityWithNullableComplexTypes.CreateWithValues(toValues.Id),
+                        TestEntityWithNullableComplexTypes.CreateWithValues(new Guid("6E3A0C4B-1F6F-4A7D-8E46-8C3B7D2F0003")),
+                        TestEntityWithNullableComplexTypes.CreateWithNulls(new Guid("6E3A0C4B-1F6F-4A7D-8E46-8C3B7D2F0004"))
+                     };
+
+      var affectedRows = await SUT.BulkInsertOrUpdateAsync(entities, new SqliteBulkInsertOrUpdateOptions());
+
+      affectedRows.Should().Be(4);
+      var loaded = await AssertDbContext.TestEntitiesWithNullableComplexTypes.ToListAsync();
+      loaded.Should().BeEquivalentTo(entities);
+   }
 }
