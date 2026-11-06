@@ -80,10 +80,12 @@ dotnet test tests/Thinktecture.EntityFrameworkCore.SqlServer.Tests/ -c Release  
 | Language | C# 14.0, nullable enabled, implicit usings |
 | EF Core | 10.0.2 (`Microsoft.EntityFrameworkCore.*`) |
 | PostgreSQL | Npgsql.EntityFrameworkCore.PostgreSQL 10.0.0 |
+| MySQL | Microting.EntityFrameworkCore.MySql 10.0.12 |
 | Testing | xUnit 2.9.3 + AwesomeAssertions 9.3.0 + NSubstitute 5.3.0 |
 | Logging | Serilog.Extensions.Logging 10.0.0 + Serilog.Sinks.XUnit 3.0.19 |
 | SQL Server tests | Testcontainers.MsSql 4.10.0 (Docker) or configured connection string |
 | PostgreSQL tests | Testcontainers.PostgreSql 4.10.0 (Docker) or configured connection string |
+| MySQL tests | Testcontainers.MySql (Docker, always) |
 | Root namespace | `Thinktecture` (set in Directory.Build.props) |
 | Package versions | Centralized in `Directory.Packages.props` (no versions in `.csproj`) |
 
@@ -103,6 +105,7 @@ src/                                    # Runtime packages (9 projects)
   Thinktecture.EntityFrameworkCore.SqlServer/            # SQL Server implementation
   Thinktecture.EntityFrameworkCore.SqlServer.Testing/    # SQL Server test utilities
   Thinktecture.EntityFrameworkCore.PostgreSQL/           # PostgreSQL implementation (Npgsql)
+  Thinktecture.EntityFrameworkCore.MySql/                # MySQL/MariaDB implementation (Microting)
   Thinktecture.EntityFrameworkCore.Sqlite.Core/          # SQLite foundation
   Thinktecture.EntityFrameworkCore.Sqlite/               # SQLite full package
   Thinktecture.EntityFrameworkCore.Sqlite.Testing/       # SQLite test utilities
@@ -140,6 +143,7 @@ Relational (foundation)
   └─ BulkOperations (abstractions)
        ├─ SqlServer (SQL Server impl) → SqlServer.Testing
        ├─ PostgreSQL (PostgreSQL/Npgsql impl)
+       ├─ MySql (MySQL/MariaDB impl)
        └─ Sqlite.Core → Sqlite → Sqlite.Testing
 Testing (shared test infrastructure, used by *.Testing packages)
 ```
@@ -227,34 +231,57 @@ private NpgsqlBulkOperationExecutor SUT => field ??= ActDbContext.GetService<Npg
 
 | Feature | Key Types | Notes |
 |---------|-----------|-------|
-| **Bulk Operations** | `IBulkInsertExecutor`, `IBulkUpdateExecutor`, `IBulkInsertOrUpdateExecutor` | SQL Server: `SqlBulkCopy`/MERGE; PostgreSQL: COPY protocol/INSERT ON CONFLICT; SQLite: batched INSERT/UPDATE |
+| **Bulk Operations** | `IBulkInsertExecutor`, `IBulkUpdateExecutor`, `IBulkInsertOrUpdateExecutor` | SQL Server: `SqlBulkCopy`/MERGE; PostgreSQL: COPY protocol/INSERT ON CONFLICT; MySQL: multi-row INSERT/ON DUPLICATE KEY UPDATE; SQLite: batched INSERT/UPDATE |
 | **Bulk Update from Query** | `SqlServerBulkOperationsDbSetExtensions.BulkUpdateAsync`, `NpgsqlBulkOperationsDbSetExtensions.BulkUpdateAsync`, `SqliteBulkOperationsDbSetExtensions.BulkUpdateAsync`, `SetPropertyBuilder<TTarget, TSource>` | All three providers; SQL Server: `UPDATE t SET ... FROM target INNER JOIN (subquery) AS s ON ...`; PostgreSQL/SQLite: `UPDATE target AS t SET ... FROM (subquery) AS s WHERE ...`; fluent `Set` builder; accepts `IQueryable<TSource>` as source; optional `filter` parameter (`Expression<Func<TTarget, TSource, bool>>`) restricts which rows are updated (can reference both target and source properties) |
 | **Bulk Insert from Query** | `SqlServerBulkOperationsDbSetExtensions.BulkInsertAsync`, `NpgsqlBulkOperationsDbSetExtensions.BulkInsertAsync`, `SqliteBulkOperationsDbSetExtensions.BulkInsertAsync`, `InsertPropertyBuilder<TTarget, TSource>` | All three providers; generates `INSERT INTO target (cols) SELECT s.cols FROM (subquery) AS s`; fluent `Map` builder; accepts `IQueryable<TSource>` as source |
 | **Temp Tables** | `ITempTableCreator`, `ITempTableReference`, `ITempTableQuery<T>`, `CreateTempTableAsync`, `BulkInsertIntoTempTableAsync`, `BulkInsertValuesIntoTempTableAsync` | Two workflows: all-in-one (create+insert via `BulkInsertIntoTempTableAsync`) or two-step (`CreateTempTableAsync` for empty table + insert later); auto-cleanup via `IAsyncDisposable`; name conflict prevention via `TempTableSuffixLeasing` |
 | **Window Functions** | `EF.Functions.RowNumber()`, `.NTile()`, `.Average()`, etc. | Fluent `PartitionBy()`/`OrderBy()`; all three providers. `NTile` is per-provider (SQL Server requires ORDER BY and returns `long`/bigint; PG/SQLite return `int` and ORDER BY is optional) and lives in `{Provider}DbFunctionsExtensions`. |
-| **Bitwise Aggregates** | `EF.Functions.BitOr`, `.BitAnd`, `.BitXor` | PostgreSQL only; GROUP BY aggregate over integer/`[Flags]`-enum columns; native `bit_or`/`bit_and`/`bit_xor`, no cast |
+| **Bitwise Aggregates** | `EF.Functions.BitOr`, `.BitAnd`, `.BitXor` | PostgreSQL (native, no cast) and MySQL (`CAST(BIT_xx(x) AS SIGNED)`, NULL for empty group); GROUP BY aggregate over integer/`[Flags]`-enum columns |
 | **Table Hints** | `query.WithTableHints(SqlServerTableHint.NoLock)` | SQL Server only |
 | **Nested Transactions** | `NestedRelationalTransactionManager` | Root = real transaction; children = logical |
-| **Collection Parameters** | `ScalarCollectionParameter<T>`, `JsonCollectionParameter`, `NpgsqlJsonCollectionParameter` | Provider-specific factories |
+| **Collection Parameters** | `ScalarCollectionParameter<T>`, `JsonCollectionParameter`, `NpgsqlJsonCollectionParameter` | Provider-specific factories (MySQL: `MySqlCollectionParameterFactory` via `JSON_TABLE`) |
 | **Tenant Databases** | `ITenantDatabaseProvider` | Per-tenant DB names; cache-key aware |
 
 ### Provider Feature Matrix
 
-| Feature | SQL Server | PostgreSQL | SQLite |
-|---------|:---:|:---:|:---:|
-| Bulk Insert | Y | Y | Y |
-| Bulk Update | Y | Y | Y |
-| Bulk Insert-or-Update (Upsert) | Y | Y | Y |
-| Temp Tables | Y | Y | Y |
-| Window Functions | Y | Y | Y |
-| Bitwise Aggregates (`bit_or`/`bit_and`/`bit_xor`) | - | Y | - |
-| Collection Parameters | Y | Y | - |
-| Nested Transactions | Y | Y | Y |
-| Tenant Database Support | Y | - | - |
-| Table Hints | Y | - | - |
-| Bulk Update from Query | Y | Y | Y |
-| Bulk Insert from Query | Y | Y | Y |
-| Truncate Table (dedicated) | Y | Y | Y |
+| Feature | SQL Server | PostgreSQL | MySQL | SQLite |
+|---------|:---:|:---:|:---:|:---:|
+| Bulk Insert | Y | Y | Y | Y |
+| Bulk Update | Y | Y | Y | Y |
+| Bulk Insert-or-Update (Upsert) | Y | Y | Y | Y |
+| Temp Tables | Y | Y | Y | Y |
+| Window Functions | Y | Y | Y | Y |
+| Bitwise Aggregates (`bit_or`/`bit_and`/`bit_xor`) | - | Y | Y | - |
+| Collection Parameters | Y | Y | Y | - |
+| Nested Transactions | Y | Y | Y | Y |
+| Tenant Database Support | Y | - | - | - |
+| Table Hints | Y | - | - | - |
+| Bulk Update from Query | Y | Y | Y | Y |
+| Bulk Insert from Query | Y | Y | Y | Y |
+| Truncate Table (dedicated) | Y | Y | Y | Y |
+
+### MySQL specifics
+
+
+
+- Package `Thinktecture.EntityFrameworkCore.MySql` (Microting.EntityFrameworkCore.MySql). Registration via `AddBulkOperationSupport()`, `AddWindowFunctionsSupport()`, `AddCollectionParameterSupport()` on `MySqlDbContextOptionsBuilder`; `MySqlDbContextOptionsExtension.Validate` rejects window functions below MySQL 8.0/MariaDB 10.2 and collection parameters (`JSON_TABLE`) below MySQL 8.0.4/MariaDB 10.6.
+
+- **Bulk insert**: parameterized multi-row `INSERT` (`BatchSize`, default 500, capped by the 65,535 parameter limit; `CommandTimeout`). Parameters are created through the provider-type mapping of each column. `MySqlBulkInsertOptions.UseBulkCopy` opts into `MySqlBulkCopy`/`LOAD DATA LOCAL INFILE`; the connection needs `AllowLoadLocalInfile=true`, the server needs `local_infile=ON`, and the input is buffered into a `DataTable`. Without an outer transaction the executor opens its own, so a failing batch leaves nothing behind; inside a `TransactionScope` no own transaction is started. `UseBulkCopy` fails on warnings (e.g. dropped duplicate keys). Owned types in separate tables are supported for insert (the owner entities must be tracked); update and upsert reject them.
+
+- **Upsert**: `INSERT ... ON DUPLICATE KEY UPDATE col = IF(keys <=> VALUES(keys), VALUES(col), col)`. MySQL fires the clause on any unique index, so the update is guarded by `KeyProperties`; key columns are never updated and a row colliding on a different unique index is skipped. Key properties must be part of the inserted properties. The primary key is never updated by default. MySQL 8.0.19+ uses the row alias (`AS new_row`) instead of the deprecated `VALUES(col)`; MariaDB keeps `VALUES(col)`. The return value is the number of processed input rows (MySQL reports 1/2/0 per row).
+
+- **Bulk update**: stages the rows in a temp table and runs one `UPDATE target INNER JOIN temp ... SET` statement (same transaction rule as insert); inside a `TransactionScope` it updates row by row because MySQL XA rejects temp tables. Throws `ArgumentException` when no non-key property is left to update. Staging tables of regular entities have no `AUTO_INCREMENT`.
+
+- **Truncate**: `TRUNCATE TABLE`, or `DELETE FROM` when a transaction (including an ambient `TransactionScope`) is active (TRUNCATE commits implicitly) or the table is referenced by a foreign key (error 1701).
+
+- **Temp tables**: connection-scoped `CREATE TEMPORARY TABLE`; string columns carry the charset/collation of the model (design-time model) to avoid error 1267 in joins. MySQL cannot reference a temp table twice in one statement (error 1137: self-join, `EXISTS`, `UNION`).
+
+- **Collection parameters**: `JSON_TABLE` reads JSON numbers as DOUBLE and rejects the .NET `TimeSpan`/`DateTime` formats, so `decimal`, `TimeSpan` and `DateTime` are serialized as MySQL-parsable strings (`MySqlCollectionParameterFactory`). Complex-object JSON paths honor `PropertyNamingPolicy` and `[JsonPropertyName]`.
+- **Window functions**: `Sum/Average/Max/Min` each have 10 overloads (1-5 partition columns, with or without ordering); `NTile` supports 0-5 partition columns. No space between function name and `(` (`COUNT(*) OVER`); `ROW_NUMBER()` is wrapped in `CAST(... AS signed)` because MySQL returns BIGINT UNSIGNED.
+
+- **Bitwise aggregates**: `EF.Functions.BitOr/BitAnd/BitXor` (`MySqlAggregateDbFunctionsExtensions`) emit `CAST(BIT_xx(x) AS SIGNED)` and return `NULL` for an empty group; `DISTINCT` is dropped for OR/AND and rejected for XOR.
+
+- **Tests**: `tests/Thinktecture.EntityFrameworkCore.MySql.Tests` always uses Testcontainers (pinned `mysql:8.4` image, Docker required; the EF server version is `MySqlContainerFixture.ServerVersion`), collection `MySqlTests`.
 
 ### PostgreSQL `max`/`min` over `uuid`
 
@@ -426,6 +453,7 @@ Key patterns (read templates for full code):
 | `BulkOperations.Tests` | Bulk ops abstractions | SQLite (in-memory) |
 | `SqlServer.Tests` | SQL Server features | SQL Server (Testcontainers or configured) |
 | `PostgreSQL.Tests` | PostgreSQL features | PostgreSQL (Testcontainers or configured) |
+| `MySql.Tests` | MySQL features | MySQL Testcontainers |
 | `Sqlite.Tests` | SQLite features | SQLite (in-memory) |
 | `Testing.Tests` | Testing infrastructure | Varies |
 | `TestHelpers` | Shared entities & DbContext (not a test project) | N/A |
@@ -435,10 +463,12 @@ Key patterns (read templates for full code):
 - Test methods: `Should_DoSomething` or `Should_DoSomething_When_Condition`
 - `[Fact]` for single cases, `[Theory]` + `[InlineData]` for parameterized
 - Always `async Task` return (not `void`)
+- New provider suites must mirror the directory structure, test isolation, and feature-equivalent coverage of mature provider suites. Do not copy behavior that is explicitly provider-specific.
 
 ### AAA Pattern with Three DbContexts
 
 All integration tests use `ArrangeDbContext` (setup), `ActDbContext` (execute), `AssertDbContext` (verify) — same database, independent change trackers, provided by `TestCtxProvider`.
+MySQL tests use the same three-context pattern through `MySqlIntegrationTestsBase` and capture executed SQL with `CommandCapturingInterceptor`.
 
 ### Provider-Specific Test Templates
 
