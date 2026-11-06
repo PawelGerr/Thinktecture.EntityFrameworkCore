@@ -30,7 +30,7 @@ public sealed class EfCoreValueExpressionTranslator
    /// <summary>
    /// Translates a bulk update from query into SQL using EF Core's expression translation pipeline.
    /// </summary>
-   public (string Sql, IReadOnlyDictionary<string, object?> Parameters) TranslateUpdateFromQuery<TTarget, TSource, TResult>(
+   public (IRelationalCommand Command, IReadOnlyDictionary<string, object?> ParameterValues) TranslateUpdateFromQuery<TTarget, TSource, TResult>(
       IQueryable<TSource> sourceQuery,
       Expression<Func<TTarget, TResult?>> targetKeySelector,
       Expression<Func<TSource, TResult?>> sourceKeySelector,
@@ -131,14 +131,12 @@ public sealed class EfCoreValueExpressionTranslator
 
       // Step 8: Render SQL
       var sqlGeneratorFactory = _ctx.GetService<IQuerySqlGeneratorFactory>();
-      var command = sqlGeneratorFactory.Create().GetCommand(ProcessParameters(updateExpression, parameterValues));
-
-      var sql = command.CommandText;
+      var command = sqlGeneratorFactory.Create().GetCommand(ProcessParameters(Postprocess(updateExpression, compilationContext), parameterValues));
 
       // Step 9: Apply the table name of the provider via string replacement
-      sql = ApplyTableName(sql, tableNameProvider.GetValidTableName(targetEntityType), targetEntityType);
+      var sql = ApplyTableName(command.CommandText, tableNameProvider.GetValidTableName(targetEntityType), targetEntityType);
 
-      return (sql, GetReferencedParameters(command, parameterValues));
+      return (CreateCommand(sql, command.Parameters), parameterValues);
    }
 
    private string ApplyTableName(
@@ -167,7 +165,7 @@ public sealed class EfCoreValueExpressionTranslator
    /// <summary>
    /// Translates a bulk insert from query into SQL using EF Core's expression translation pipeline.
    /// </summary>
-   public (string Sql, IReadOnlyDictionary<string, object?> Parameters) TranslateInsertFromQuery<TTarget, TSource>(
+   public (IRelationalCommand Command, IReadOnlyDictionary<string, object?> ParameterValues) TranslateInsertFromQuery<TTarget, TSource>(
       IQueryable<TSource> sourceQuery,
       IReadOnlyList<ISetPropertyEntry> entries,
       IBulkOperationTableNameProvider tableNameProvider)
@@ -234,9 +232,7 @@ public sealed class EfCoreValueExpressionTranslator
          if (valExpr is SqlConstantExpression constExpr)
          {
             var paramName = $"__insert_const_{constParamIndex++}";
-            // The parameter value is bound as-is by the executors, so the value converter (if any) must be applied here.
-            var converter = constExpr.TypeMapping?.Converter;
-            parameterValues[paramName] = converter is null ? constExpr.Value : converter.ConvertToProvider(constExpr.Value);
+            parameterValues[paramName] = constExpr.Value;
             projectionExpressions.Add(new SqlParameterExpression(paramName, valExpr.Type, constExpr.TypeMapping));
          }
          else
@@ -251,14 +247,60 @@ public sealed class EfCoreValueExpressionTranslator
 
       // Step 7: Render SELECT SQL
       var sqlGeneratorFactory = _ctx.GetService<IQuerySqlGeneratorFactory>();
-      var selectCommand = sqlGeneratorFactory.Create().GetCommand(ProcessParameters(selectExpression, parameterValues));
+      var selectCommand = sqlGeneratorFactory.Create().GetCommand(ProcessParameters(Postprocess(selectExpression, compilationContext), parameterValues));
 
       // Step 8: Build INSERT INTO ... SELECT ...
       var tableName = tableNameProvider.GetValidTableName(targetEntityType);
 
       var insertSql = $"INSERT INTO {sqlGenerationHelper.DelimitIdentifier(tableName.Name, tableName.Schema)} ({string.Join(", ", targetColumns)})\n{selectCommand.CommandText}";
 
-      return (insertSql, GetReferencedParameters(selectCommand, parameterValues));
+      return (CreateCommand(insertSql, selectCommand.Parameters), parameterValues);
+   }
+
+   // The parameters of the rendered command carry EF Core's type mappings (value converters, JSON collections, FromSql arguments).
+   private IRelationalCommand CreateCommand(string sql, IReadOnlyList<IRelationalParameter> parameters)
+   {
+      var builder = _ctx.GetService<IRelationalCommandBuilderFactory>().Create().Append(sql);
+
+      foreach (var parameter in parameters)
+      {
+         builder.AddParameter(parameter);
+      }
+
+      return builder.Build();
+   }
+
+   /// <summary>
+   /// Executes a command built by this translator. Same as <c>ExecuteSqlRawAsync</c>, but with the parameters of EF Core.
+   /// </summary>
+   /// <param name="command">The command returned by a <c>Translate*FromQuery</c> method.</param>
+   /// <param name="parameterValues">The parameter values returned with the command.</param>
+   /// <param name="cancellationToken">Cancellation token.</param>
+   /// <returns>The number of affected rows.</returns>
+   public async Task<int> ExecuteNonQueryAsync(IRelationalCommand command, IReadOnlyDictionary<string, object?> parameterValues, CancellationToken cancellationToken = default)
+   {
+      ArgumentNullException.ThrowIfNull(command);
+      ArgumentNullException.ThrowIfNull(parameterValues);
+
+      var dependencies = (IRelationalDatabaseFacadeDependencies)((IDatabaseFacadeDependenciesAccessor)_ctx.Database).Dependencies;
+      var criticalSection = dependencies.CoreOptions.AreThreadSafetyChecksEnabled ? dependencies.ConcurrencyDetector.EnterCriticalSection() : (ConcurrencyDetectorCriticalSectionDisposer?)null;
+
+      try
+      {
+         var parameterObject = new RelationalCommandParameterObject(dependencies.RelationalConnection, parameterValues, null, _ctx, dependencies.CommandLogger, CommandSource.ExecuteSqlRaw);
+
+         return await command.ExecuteNonQueryAsync(parameterObject, cancellationToken).ConfigureAwait(false);
+      }
+      finally
+      {
+         criticalSection?.Dispose();
+      }
+   }
+
+   // EF Core runs the postprocessor after the translation: type mapping inference, pruning, simplification and provider passes such as the OPENJSON parameter mapping of SQL Server.
+   private Expression Postprocess(Expression expression, QueryCompilationContext compilationContext)
+   {
+      return _ctx.GetService<IQueryTranslationPostprocessorFactory>().Create(compilationContext).Process(expression);
    }
 
    // EF Core runs this processor before SQL generation. Without it, a comparison with null is rendered as "= NULL".
@@ -269,13 +311,6 @@ public sealed class EfCoreValueExpressionTranslator
                           .Create(new RelationalParameterBasedSqlProcessorParameters(relationalOptions.UseRelationalNulls, relationalOptions.ParameterizedCollectionMode));
 
       return processor.Process(expression, new ParametersCacheDecorator(parameterValues));
-   }
-
-   // The processor replaces a null parameter by a NULL literal and expands a collection parameter into one parameter per element.
-   // Therefore the dictionary contains entries that the SQL does not reference. The executors bind every entry, and a list value cannot be bound.
-   private static Dictionary<string, object?> GetReferencedParameters(IRelationalCommand command, Dictionary<string, object?> parameterValues)
-   {
-      return command.Parameters.ToDictionary(p => p.InvariantName, p => parameterValues[p.InvariantName]);
    }
 
    private (ShapedQueryExpression ShapedQuery, QueryCompilationContext CompilationContext, QueryableMethodTranslatingExpressionVisitor MethodTranslator)

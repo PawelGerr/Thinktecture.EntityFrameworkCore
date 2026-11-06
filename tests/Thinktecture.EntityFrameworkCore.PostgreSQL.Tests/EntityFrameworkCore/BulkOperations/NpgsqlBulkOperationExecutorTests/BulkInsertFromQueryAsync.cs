@@ -801,4 +801,27 @@ public class BulkInsertFromQueryAsync : IntegrationTestsBase
       (await AssertDbContext.TestEntitiesWithNullableComplexTypes.SingleAsync(e => e.Id == sourceWithNulls.Id)).OptionalBoundary.Should().BeEquivalentTo(new BoundaryValueObject(3, 9));
       (await AssertDbContext.TestEntitiesWithNullableComplexTypes.SingleAsync(e => e.Id == sourceWithValues.Id)).OptionalBoundary.Should().BeEquivalentTo(new BoundaryValueObject(2, 5));
    }
+
+   [Fact]
+   public async Task Should_insert_value_converted_captured_value()
+   {
+      var source = new TestEntity { Id = new Guid("7A000000-0000-0000-0000-000000000005"), RequiredName = "RequiredName" };
+      ArrangeDbContext.Add(source);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var captured = new ConvertibleClass(7);
+      var newId = new Guid("7A000000-0000-0000-0000-000000000006");
+
+      var affectedRows = await ActDbContext.TestEntities.BulkInsertAsync(
+         ActDbContext.TestEntities.Where(s => s.Id == source.Id),
+         builder => builder.Map(e => e.Id, s => newId)
+                           .Map(e => e.RequiredName, s => s.RequiredName)
+                           .Map(e => e.Count, s => s.Count)
+                           .Map(e => e.PropertyWithBackingField, s => s.PropertyWithBackingField)
+                           .Map(e => EF.Property<int>(e, "_privateField"), s => EF.Property<int>(s, "_privateField"))
+                           .Map(e => e.ConvertibleClass, s => captured));
+
+      affectedRows.Should().Be(1);
+      (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == newId)).ConvertibleClass!.Key.Should().Be(7);
+   }
 }

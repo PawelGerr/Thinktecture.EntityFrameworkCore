@@ -1681,4 +1681,135 @@ public class BulkUpdateFromQueryAsync : IntegrationTestsBase
       loadedB.OptionalBoundary.Should().BeEquivalentTo(new BoundaryValueObject(3, 9));
       loadedB.Tagged.Should().BeEquivalentTo(new TaggedValues { X = 9, Text = "s" });
    }
+
+   [Fact]
+   public async Task Should_update_rows_When_source_query_compares_value_converted_property_with_captured_value()
+   {
+      var match = new TestEntity { Id = new Guid("7A000000-0000-0000-0000-000000000001"), RequiredName = "RequiredName", ConvertibleClass = new ConvertibleClass(5) };
+      var other = new TestEntity { Id = new Guid("7A000000-0000-0000-0000-000000000002"), RequiredName = "RequiredName", ConvertibleClass = new ConvertibleClass(6) };
+      ArrangeDbContext.AddRange(match, other);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var captured = new ConvertibleClass(5);
+
+      var affectedRows = await ActDbContext.TestEntities.BulkUpdateAsync(
+         ActDbContext.TestEntities.Where(s => s.ConvertibleClass == captured), e => e.Id, s => s.Id,
+         builder => builder.Set(e => e.Count, (e, s) => 1));
+
+      affectedRows.Should().Be(1);
+      (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == match.Id)).Count.Should().Be(1);
+      (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == other.Id)).Count.Should().Be(0);
+   }
+
+   [Fact]
+   public async Task Should_update_rows_When_source_query_is_FromSql_with_argument()
+   {
+      var match = new TestEntity { Id = new Guid("7A000000-0000-0000-0000-000000000003"), RequiredName = "RequiredName", Name = "x" };
+      var other = new TestEntity { Id = new Guid("7A000000-0000-0000-0000-000000000004"), RequiredName = "RequiredName", Name = "y" };
+      ArrangeDbContext.AddRange(match, other);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var name = "x";
+
+      var affectedRows = await ActDbContext.TestEntities.BulkUpdateAsync(
+         ActDbContext.TestEntities.FromSqlRaw($"SELECT * FROM [{Schema}].[TestEntities] WHERE [Name] = {{0}}", name), e => e.Id, s => s.Id,
+         builder => builder.Set(e => e.Count, (e, s) => 1));
+
+      affectedRows.Should().Be(1);
+      (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == match.Id)).Count.Should().Be(1);
+      (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == other.Id)).Count.Should().Be(0);
+   }
+
+   [Fact]
+   public async Task Should_update_rows_When_collection_parameter_is_sent_as_json()
+   {
+      var match = new TestEntity { Id = new Guid("7A000000-0000-0000-0000-000000000007"), RequiredName = "RequiredName" };
+      var other = new TestEntity { Id = new Guid("7A000000-0000-0000-0000-000000000008"), RequiredName = "RequiredName" };
+      ArrangeDbContext.AddRange(match, other);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var ids = new List<Guid> { match.Id };
+
+      var affectedRows = await ActDbContext.TestEntities.BulkUpdateAsync(
+         ActDbContext.TestEntities.Where(s => EF.Parameter(ids).Contains(s.Id)), e => e.Id, s => s.Id,
+         builder => builder.Set(e => e.Count, (e, s) => 1));
+
+      ExecutedCommands.Last().Should().Contain("OPENJSON");
+      affectedRows.Should().Be(1);
+      (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == match.Id)).Count.Should().Be(1);
+      (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == other.Id)).Count.Should().Be(0);
+   }
+
+   [Fact]
+   public async Task Should_update_rows_When_collection_parameter_exceeds_parameter_limit()
+   {
+      var match = new TestEntity { Id = new Guid("7A000000-0000-0000-0000-000000000009"), RequiredName = "RequiredName" };
+      var other = new TestEntity { Id = new Guid("7A000000-0000-0000-0000-00000000000A"), RequiredName = "RequiredName" };
+      ArrangeDbContext.AddRange(match, other);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var ids = Enumerable.Range(0, 2200).Select(_ => Guid.NewGuid()).Append(match.Id).ToList();
+
+      var affectedRows = await ActDbContext.TestEntities.BulkUpdateAsync(
+         ActDbContext.TestEntities.Where(s => ids.Contains(s.Id)), e => e.Id, s => s.Id,
+         builder => builder.Set(e => e.Count, (e, s) => 1));
+
+      ExecutedCommands.Last().Should().Contain("OPENJSON");
+      affectedRows.Should().Be(1);
+      (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == match.Id)).Count.Should().Be(1);
+      (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == other.Id)).Count.Should().Be(0);
+   }
+
+   [Fact]
+   public async Task Should_update_rows_When_parameterized_collection_mode_is_Parameter()
+   {
+      var configure = Configure;
+      Configure = optionsBuilder =>
+                  {
+                     configure?.Invoke(optionsBuilder);
+                     new SqlServerDbContextOptionsBuilder(optionsBuilder).UseParameterizedCollectionMode(ParameterTranslationMode.Parameter);
+                  };
+
+      var match = new TestEntity { Id = new Guid("7A000000-0000-0000-0000-00000000000B"), RequiredName = "RequiredName" };
+      var other = new TestEntity { Id = new Guid("7A000000-0000-0000-0000-00000000000C"), RequiredName = "RequiredName" };
+      ArrangeDbContext.AddRange(match, other);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var ids = new List<Guid> { match.Id };
+
+      var affectedRows = await ActDbContext.TestEntities.BulkUpdateAsync(
+         ActDbContext.TestEntities.Where(s => ids.Contains(s.Id)), e => e.Id, s => s.Id,
+         builder => builder.Set(e => e.Count, (e, s) => 1));
+
+      ExecutedCommands.Last().Should().Contain("OPENJSON");
+      affectedRows.Should().Be(1);
+      (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == match.Id)).Count.Should().Be(1);
+      (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == other.Id)).Count.Should().Be(0);
+   }
+
+   [Fact]
+   public async Task Should_update_rows_When_source_query_uses_table_hints_and_window_function()
+   {
+      var first = new TestEntity { Id = new Guid("7A000000-0000-0000-0000-00000000000D"), RequiredName = "RequiredName" };
+      var second = new TestEntity { Id = new Guid("7A000000-0000-0000-0000-00000000000E"), RequiredName = "RequiredName" };
+      ArrangeDbContext.AddRange(first, second);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var sourceQuery = ActDbContext.TestEntities
+                                    .WithTableHints(SqlServerTableHint.NoLock)
+                                    .Select(s => new { s.Id, Rn = EF.Functions.RowNumber(EF.Functions.OrderBy(s.Id)) })
+                                    .AsSubQuery()
+                                    .Where(x => x.Rn == 1);
+
+      var affectedRows = await ActDbContext.TestEntities.BulkUpdateAsync(
+         sourceQuery, e => e.Id, s => s.Id,
+         builder => builder.Set(e => e.Count, (e, s) => (int)s.Rn + 10));
+
+      var lastCommand = ExecutedCommands.Last();
+      lastCommand.Should().Contain("NOLOCK");
+      lastCommand.Should().Contain("ROW_NUMBER");
+      affectedRows.Should().Be(1);
+      (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == first.Id)).Count.Should().Be(11);
+      (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == second.Id)).Count.Should().Be(0);
+   }
 }

@@ -697,15 +697,14 @@ public sealed partial class SqlServerBulkOperationExecutor
          throw new ArgumentException($"The number of target key properties ({targetKeyMembers.Count}) must match the number of source key properties ({sourceKeyMembers.Count}).");
 
       var translator = new EfCoreValueExpressionTranslator(_ctx);
-      var (sql, parameters) = translator.TranslateUpdateFromQuery(sourceQuery,
-                                                                  targetKeySelector,
-                                                                  sourceKeySelector,
-                                                                  setClauseBuilder.Entries,
-                                                                  filter,
-                                                                  options?.TableNameProvider ?? IBulkOperationTableNameProvider.Default);
+      var (command, parameterValues) = translator.TranslateUpdateFromQuery(sourceQuery,
+                                                                           targetKeySelector,
+                                                                           sourceKeySelector,
+                                                                           setClauseBuilder.Entries,
+                                                                           filter,
+                                                                           options?.TableNameProvider ?? IBulkOperationTableNameProvider.Default);
 
-      var sqlParams = parameters.Select(kv => new SqlParameter(kv.Key, kv.Value ?? DBNull.Value));
-      return await _ctx.Database.ExecuteSqlRawAsync(sql, sqlParams, cancellationToken);
+      return await translator.ExecuteNonQueryAsync(command, parameterValues, cancellationToken);
    }
 
    /// <summary>
@@ -735,12 +734,11 @@ public sealed partial class SqlServerBulkOperationExecutor
          throw new ArgumentException("At least one column mapping is required.", nameof(mapPropertyCalls));
 
       var translator = new EfCoreValueExpressionTranslator(_ctx);
-      var (sql, parameters) = translator.TranslateInsertFromQuery<TTarget, TSource>(
-                                                                                    sourceQuery,
-                                                                                    builder.Entries,
-                                                                                    options?.TableNameProvider ?? IBulkOperationTableNameProvider.Default);
+      var (command, parameterValues) = translator.TranslateInsertFromQuery<TTarget, TSource>(
+                                                                                                      sourceQuery,
+                                                                                                      builder.Entries,
+                                                                                                      options?.TableNameProvider ?? IBulkOperationTableNameProvider.Default);
 
-      var sqlParams = parameters.Select(kv => new SqlParameter(kv.Key, kv.Value ?? DBNull.Value));
-      return await _ctx.Database.ExecuteSqlRawAsync(sql, sqlParams, cancellationToken);
+      return await translator.ExecuteNonQueryAsync(command, parameterValues, cancellationToken);
    }
 }
