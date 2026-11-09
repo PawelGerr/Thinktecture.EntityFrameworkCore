@@ -1102,5 +1102,55 @@ public class BulkInsertFromQueryAsync : IntegrationTestsBase
       inserted.PropertyWithBackingField.Should().Be(7);
    }
 
+   [Fact]
+   public async Task Should_insert_value_converted_property_from_server_conditional_over_captured_values()
+   {
+      var source = new TestEntity { Id = new Guid("7C000000-0000-0000-0000-000000000005"), RequiredName = "RequiredName", Count = 20 };
+      ArrangeDbContext.Add(source);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var newId = new Guid("7C000000-0000-0000-0000-000000000006");
+      var highValue = new ConvertibleClass(2);
+
+      var affectedRows = await ActDbContext.TestEntities.BulkInsertAsync(
+         ActDbContext.TestEntities.Where(s => s.Id == source.Id),
+         builder => builder.Map(e => e.Id, s => newId)
+                           .Map(e => e.RequiredName, s => s.RequiredName)
+                           .Map(e => e.Count, s => s.Count)
+                           .Map(e => e.PropertyWithBackingField, s => s.PropertyWithBackingField)
+                           .Map(e => EF.Property<int>(e, "_privateField"), s => EF.Property<int>(s, "_privateField"))
+                           .Map(e => e.ConvertibleClass, s => s.Count > 15 ? highValue : new ConvertibleClass(1)));
+
+      affectedRows.Should().Be(1);
+      ExecutedCommands.Last().Should().Contain("THEN 2").And.Contain("ELSE 1");
+      (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == newId)).ConvertibleClass!.Key.Should().Be(2);
+   }
+
+   [Fact]
+   public async Task Should_insert_value_converted_int_property_from_server_conditional_over_constants()
+   {
+      ConfigureModel = builder => builder.Entity<TestEntity>().Property(e => e.Count).HasConversion(v => v * 100, v => v / 100);
+
+      var source = new TestEntity { Id = new Guid("8D000000-0000-0000-0000-000000000003"), RequiredName = "RequiredName", NullableCount = 20 };
+      ArrangeDbContext.Add(source);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var newId = new Guid("8D000000-0000-0000-0000-000000000004");
+
+      var affectedRows = await ActDbContext.TestEntities.BulkInsertAsync(
+         ActDbContext.TestEntities.Where(s => s.Id == source.Id),
+         builder => builder.Map(e => e.Id, s => newId)
+                           .Map(e => e.RequiredName, s => s.RequiredName)
+                           .Map(e => e.Count, s => s.NullableCount > 15 ? 2 : 1)
+                           .Map(e => e.PropertyWithBackingField, s => s.PropertyWithBackingField)
+                           .Map(e => EF.Property<int>(e, "_privateField"), s => EF.Property<int>(s, "_privateField")));
+
+      affectedRows.Should().Be(1);
+      ExecutedCommands.Last().Should().Contain("THEN 200").And.Contain("ELSE 100");
+
+      var stored = await AssertDbContext.Database.SqlQueryRaw<int>($"SELECT [Count] AS [Value] FROM [{Schema}].[TestEntities] WHERE [Id] = '8D000000-0000-0000-0000-000000000004'").SingleAsync();
+      stored.Should().Be(200);
+   }
+
    private sealed record CapturedItem(Guid Id, bool Active);
 }

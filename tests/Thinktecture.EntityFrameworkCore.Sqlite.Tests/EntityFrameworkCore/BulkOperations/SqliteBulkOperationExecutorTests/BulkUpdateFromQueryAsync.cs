@@ -2151,5 +2151,53 @@ public class BulkUpdateFromQueryAsync : IntegrationTestsBase
       (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == entity.Id)).Count.Should().Be(expectedAffectedRows);
    }
 
+   [Fact]
+   public async Task Should_update_value_converted_property_from_server_conditional_over_captured_values()
+   {
+      var low = new TestEntity { Id = new Guid("8C000000-0000-0000-0000-000000000001"), RequiredName = "RequiredName", Count = 10 };
+      var high = new TestEntity { Id = new Guid("8C000000-0000-0000-0000-000000000002"), RequiredName = "RequiredName", Count = 20 };
+      ArrangeDbContext.AddRange(low, high);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var highValue = new ConvertibleClass(2);
+
+      var affectedRows = await ActDbContext.TestEntities.BulkUpdateAsync(
+         ActDbContext.TestEntities,
+         e => e.Id,
+         s => s.Id,
+         builder => builder.Set(e => e.ConvertibleClass, (e, s) => s.Count > 15 ? highValue : new ConvertibleClass(1)));
+
+      affectedRows.Should().Be(2);
+      ExecutedCommands.Last().Should().Contain("THEN 2").And.Contain("ELSE 1");
+
+      var stored = await AssertDbContext.Database.SqlQueryRaw<int>("""SELECT "ConvertibleClass" AS "Value" FROM "TestEntities" ORDER BY "Count" """).ToListAsync();
+      stored.Should().Equal(1, 2);
+   }
+
+   [Fact]
+   public async Task Should_set_whole_nullable_ComplexType_with_value_converted_members_from_server_conditional_over_captured_values()
+   {
+      var withValues = TestEntityWithNullableComplexTypes.CreateWithValues(new Guid("8C000000-0000-0000-0000-000000000003"));
+      var withNulls = TestEntityWithNullableComplexTypes.CreateWithNulls(new Guid("8C000000-0000-0000-0000-000000000004"));
+      ArrangeDbContext.AddRange(withValues, withNulls);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var forValues = new ConvertedTimestampPair(new TimestampValue(11), new TimestampValue(12));
+      var forNulls = new ConvertedTimestampPair(new TimestampValue(21), new TimestampValue(22));
+
+      var affectedRows = await ActDbContext.TestEntitiesWithNullableComplexTypes.BulkUpdateAsync(
+         ActDbContext.TestEntitiesWithNullableComplexTypes,
+         e => e.Id,
+         s => s.Id,
+         builder => builder.Set(e => e.OptionalConverted, (e, s) => s.OptionalBoundary != null ? forValues : forNulls));
+
+      affectedRows.Should().Be(2);
+      ExecutedCommands.Last().Should().Contain("THEN 11").And.Contain("ELSE 21").And.Contain("THEN 12").And.Contain("ELSE 22");
+
+      var loaded = await AssertDbContext.TestEntitiesWithNullableComplexTypes.OrderBy(e => e.Id).ToListAsync();
+      loaded[0].OptionalConverted.Should().Be(forValues);
+      loaded[1].OptionalConverted.Should().Be(forNulls);
+   }
+
    private sealed record CapturedItem(Guid Id, bool Active);
 }

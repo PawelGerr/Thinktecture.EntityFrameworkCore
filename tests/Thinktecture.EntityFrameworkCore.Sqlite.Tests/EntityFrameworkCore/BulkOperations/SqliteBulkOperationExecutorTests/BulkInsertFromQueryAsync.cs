@@ -1330,5 +1330,29 @@ public class BulkInsertFromQueryAsync : IntegrationTestsBase
       inserted.PropertyWithBackingField.Should().Be(7);
    }
 
+   [Fact]
+   public async Task Should_insert_value_converted_property_from_server_conditional_over_captured_values()
+   {
+      var source = new TestEntity { Id = new Guid("7C000000-0000-0000-0000-000000000005"), RequiredName = "RequiredName", Count = 20 };
+      ArrangeDbContext.Add(source);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var newId = new Guid("7C000000-0000-0000-0000-000000000006");
+      var highValue = new ConvertibleClass(2);
+
+      var affectedRows = await ActDbContext.TestEntities.BulkInsertAsync(
+         ActDbContext.TestEntities.Where(s => s.Id == source.Id),
+         builder => builder.Map(e => e.Id, s => newId)
+                           .Map(e => e.RequiredName, s => s.RequiredName)
+                           .Map(e => e.Count, s => s.Count)
+                           .Map(e => e.PropertyWithBackingField, s => s.PropertyWithBackingField)
+                           .Map(e => EF.Property<int>(e, "_privateField"), s => EF.Property<int>(s, "_privateField"))
+                           .Map(e => e.ConvertibleClass, s => s.Count > 15 ? highValue : new ConvertibleClass(1)));
+
+      affectedRows.Should().Be(1);
+      ExecutedCommands.Last().Should().Contain("THEN 2").And.Contain("ELSE 1");
+      (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == newId)).ConvertibleClass!.Key.Should().Be(2);
+   }
+
    private sealed record CapturedItem(Guid Id, bool Active);
 }

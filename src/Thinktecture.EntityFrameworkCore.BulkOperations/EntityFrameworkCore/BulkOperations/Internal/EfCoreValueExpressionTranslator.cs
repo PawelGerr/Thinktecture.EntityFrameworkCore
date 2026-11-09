@@ -480,7 +480,9 @@ public sealed class EfCoreValueExpressionTranslator
       if (flattenedValue is ConstantExpression constant)
          return sqlExprFactory.Constant(constant.Value, constant.Type, targetTypeMapping);
 
-      var sqlValue = sqlTranslator.TranslateProjection(flattenedValue)
+      // The default type mapping would fix the mapping of a CASE whose branches are all client values before the target mapping is applied,
+      // and ApplyTypeMapping does not replace an existing mapping, so the value converter of the target column would be ignored.
+      var sqlValue = sqlTranslator.TranslateProjection(flattenedValue, applyDefaultTypeMapping: false)
                      ?? throw new InvalidOperationException($"Could not translate value expression: {valueExpr}");
 
       if (sqlValue is not SqlExpression sqlExpr)
