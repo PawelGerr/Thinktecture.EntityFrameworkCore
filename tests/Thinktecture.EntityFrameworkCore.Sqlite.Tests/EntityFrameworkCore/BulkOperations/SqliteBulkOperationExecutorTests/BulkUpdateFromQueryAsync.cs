@@ -1874,4 +1874,129 @@ public class BulkUpdateFromQueryAsync : IntegrationTestsBase
          await ActDbContext.Database.ExecuteSqlRawAsync("""DROP TABLE IF EXISTS "TestEntities_QueryUpdateRedirect" """);
       }
    }
+
+   [Theory]
+   [InlineData(false, 1)]
+   [InlineData(true, 0)]
+   public async Task Should_update_rows_When_filter_projects_captured_collection_with_lambda(bool emptyCollection, int expectedAffectedRows)
+   {
+      var match = new TestEntity { Id = new Guid("8B000000-0000-0000-0000-0000000000A0"), RequiredName = "RequiredName" };
+      var other = new TestEntity { Id = new Guid("8B000000-0000-0000-0000-0000000000A1"), RequiredName = "RequiredName" };
+      ArrangeDbContext.AddRange(match, other);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var items = emptyCollection ? new List<CapturedItem>() : new List<CapturedItem> { new(match.Id, true), new(Guid.NewGuid(), false) };
+
+      var affectedRows = await ActDbContext.TestEntities.BulkUpdateAsync(
+         ActDbContext.TestEntities,
+         e => e.Id,
+         s => s.Id,
+         builder => builder.Set(e => e.Count, (e, s) => 1),
+         filter: (e, s) => items.Select(i => i.Id).Contains(s.Id));
+
+      affectedRows.Should().Be(expectedAffectedRows);
+
+      if (!emptyCollection)
+         ExecutedCommands.Last().Should().Contain(" IN (");
+
+      (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == match.Id)).Count.Should().Be(emptyCollection ? 0 : 1);
+      (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == other.Id)).Count.Should().Be(0);
+   }
+
+   [Fact]
+   public async Task Should_set_whole_nullable_ComplexTypes_from_captured_collection_with_lambda()
+   {
+      var entity = TestEntityWithNullableComplexTypes.CreateWithValues(new Guid("8C000000-0000-0000-0000-00000000000C"));
+      ArrangeDbContext.Add(entity);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var boundaries = new List<BoundaryValueObject> { new(1, 2) };
+      var tagged = new List<TaggedValues> { new() { X = 8, Text = "u" } };
+
+      var affectedRows = await ActDbContext.TestEntitiesWithNullableComplexTypes.BulkUpdateAsync(
+         ActDbContext.TestEntitiesWithNullableComplexTypes,
+         e => e.Id,
+         s => s.Id,
+         builder => builder.Set(e => e.OptionalBoundary, (e, s) => boundaries.FirstOrDefault(b => b.Upper == 99))
+                           .Set(e => e.Tagged, (e, s) => tagged.FirstOrDefault(t => t.X == 8)));
+
+      affectedRows.Should().Be(1);
+      ExecutedCommands.Last().Should().Contain("\"OptionalBoundary_Upper\" = NULL").And.Contain("\"Tagged_X\" = 8");
+
+      var loaded = await AssertDbContext.TestEntitiesWithNullableComplexTypes.SingleAsync();
+      loaded.OptionalBoundary.Should().BeNull();
+      loaded.Tagged.Should().BeEquivalentTo(new TaggedValues { X = 8, Text = "u" });
+   }
+
+   [Fact]
+   public async Task Should_update_rows_When_value_is_count_of_captured_collection_filtered_with_lambda()
+   {
+      var entity = new TestEntity { Id = new Guid("8B000000-0000-0000-0000-0000000000A2"), RequiredName = "RequiredName" };
+      ArrangeDbContext.Add(entity);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var items = new List<CapturedItem> { new(Guid.NewGuid(), true), new(Guid.NewGuid(), false), new(Guid.NewGuid(), true) };
+
+      var affectedRows = await ActDbContext.TestEntities.BulkUpdateAsync(
+         ActDbContext.TestEntities,
+         e => e.Id,
+         s => s.Id,
+         builder => builder.Set(e => e.Count, (e, s) => items.Where(i => items.Any(j => j.Id == i.Id && j.Active)).Count()));
+
+      affectedRows.Should().Be(1);
+      ExecutedCommands.Last().Should().Contain("\"Count\" = 2");
+      (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == entity.Id)).Count.Should().Be(2);
+   }
+
+   [Theory]
+   [InlineData(true, 101)]
+   [InlineData(false, 0)]
+   public async Task Should_update_rows_When_conditional_test_is_Any_over_captured_collection_with_lambda(bool itemMatches, int expectedCount)
+   {
+      var entity = new TestEntity { Id = new Guid("8B000000-0000-0000-0000-0000000000A3"), RequiredName = "RequiredName", Count = 1 };
+      ArrangeDbContext.Add(entity);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var probe = Guid.NewGuid();
+      var items = new List<CapturedItem> { new(itemMatches ? probe : Guid.NewGuid(), true) };
+
+      await ActDbContext.TestEntities.BulkUpdateAsync(
+         ActDbContext.TestEntities,
+         e => e.Id,
+         s => s.Id,
+         builder => builder.Set(e => e.Count, (e, s) => items.Any(i => i.Id == probe) ? s.Count + 100 : 0));
+
+      if (itemMatches)
+      {
+         ExecutedCommands.Last().Should().Contain("+ 100");
+      }
+      else
+      {
+         ExecutedCommands.Last().Should().Contain("\"Count\" = 0");
+         ExecutedCommands.Last().Should().NotContain("+ 100");
+      }
+
+      (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == entity.Id)).Count.Should().Be(expectedCount);
+   }
+
+   [Fact]
+   public async Task Should_throw_When_lambda_over_captured_collection_uses_source_parameter()
+   {
+      var entity = new TestEntity { Id = new Guid("8B000000-0000-0000-0000-0000000000A4"), RequiredName = "RequiredName" };
+      ArrangeDbContext.Add(entity);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var items = new List<CapturedItem> { new(Guid.NewGuid(), true) };
+
+      Func<Task> act = () => ActDbContext.TestEntities.BulkUpdateAsync(
+         ActDbContext.TestEntities,
+         e => e.Id,
+         s => s.Id,
+         builder => builder.Set(e => e.Count, (e, s) => items.Where(i => i.Id == s.Id).Count()));
+
+      var exception = await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("The LINQ expression 'i => *could not be translated*");
+      exception.Which.Message.Should().NotContain("unbound variable");
+   }
+
+   private sealed record CapturedItem(Guid Id, bool Active);
 }

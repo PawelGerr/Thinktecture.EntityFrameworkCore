@@ -514,7 +514,15 @@ public sealed class EfCoreValueExpressionTranslator
    {
       public HashSet<Expression> EvaluatableNodes { get; } = new(ReferenceEqualityComparer.Instance);
 
+      // The parameters of the lambdas that are in scope, e.g. "i" in "items.Where(i => i.Active)", with the nesting depth of their lambda.
+      // Such a lambda is evaluatable when its body is evaluatable (the rule of EF Core's funcletizer for Select); the outer lambda parameters
+      // are already replaced by the entity shapers. A subtree that uses a parameter of an enclosing lambda is only evaluated
+      // as part of that lambda, because the parameter is unbound outside of it ("items.Where(i => i.Id == s.Id)").
+      private readonly Dictionary<ParameterExpression, int> _lambdaParameters = [];
+      private int _lambdaDepth;
+
       private bool _childrenEvaluatable = true;
+      private int _childrenMinParameterDepth = int.MaxValue;
 
       [return: NotNullIfNotNull(nameof(node))]
       public override Expression? Visit(Expression? node)
@@ -523,26 +531,58 @@ public sealed class EfCoreValueExpressionTranslator
             return null;
 
          var parentChildrenEvaluatable = _childrenEvaluatable;
+         var parentMinParameterDepth = _childrenMinParameterDepth;
          _childrenEvaluatable = true;
+         _childrenMinParameterDepth = int.MaxValue;
 
          base.Visit(node);
 
          // Extension nodes are the entity shapers that replace the lambda parameters, so they belong to the server side.
          // EF.Functions methods have no client implementation, and evaluating a query would execute it during translation.
          var nodeEvaluatable = _childrenEvaluatable
-                               && node is not ParameterExpression
-                               && node is not LambdaExpression
+                               && (node is not ParameterExpression parameter || _lambdaParameters.ContainsKey(parameter))
                                && node.NodeType != ExpressionType.Extension
                                && !IsDbFunctionsCall(node)
                                && !typeof(IQueryable).IsAssignableFrom(node.Type)
                                && evaluatableExpressionFilter.IsEvaluatableExpression(node, model);
 
-         if (nodeEvaluatable)
+         var minParameterDepth = node switch
+         {
+            ParameterExpression p when _lambdaParameters.TryGetValue(p, out var depth) => depth,
+            // The lambda binds its own parameters (the deepest ones); only parameters of enclosing lambdas stay unbound.
+            LambdaExpression when _childrenMinParameterDepth > _lambdaDepth => int.MaxValue,
+            _ => _childrenMinParameterDepth
+         };
+
+         // A lambda is evaluated only as part of its method call, never alone, so a lambda of a server-side call stays a lambda.
+         if (nodeEvaluatable && minParameterDepth == int.MaxValue && node is not LambdaExpression && node.NodeType != ExpressionType.Quote)
             EvaluatableNodes.Add(node);
 
          _childrenEvaluatable = parentChildrenEvaluatable && nodeEvaluatable;
+         _childrenMinParameterDepth = Math.Min(parentMinParameterDepth, minParameterDepth);
 
          return node;
+      }
+
+      protected override Expression VisitLambda<T>(Expression<T> node)
+      {
+         _lambdaDepth++;
+
+         foreach (var parameter in node.Parameters)
+         {
+            _lambdaParameters[parameter] = _lambdaDepth;
+         }
+
+         var result = base.VisitLambda(node);
+
+         foreach (var parameter in node.Parameters)
+         {
+            _lambdaParameters.Remove(parameter);
+         }
+
+         _lambdaDepth--;
+
+         return result;
       }
 
       private static bool IsDbFunctionsCall(Expression node)

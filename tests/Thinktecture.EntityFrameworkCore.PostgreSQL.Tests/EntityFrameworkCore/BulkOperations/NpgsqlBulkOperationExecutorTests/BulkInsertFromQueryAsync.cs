@@ -991,4 +991,82 @@ public class BulkInsertFromQueryAsync : IntegrationTestsBase
       inserted.GetPrivateField().Should().Be(5);
       inserted.NullableCount.Should().Be(5);
    }
+
+   [Fact]
+   public async Task Should_insert_When_value_is_count_of_captured_collection_filtered_with_lambda()
+   {
+      var sourceId = new Guid("8B000000-0000-0000-0000-0000000000B0");
+      var newId = new Guid("8B000000-0000-0000-0000-0000000000B1");
+      ArrangeDbContext.Add(new TestEntity { Id = sourceId, RequiredName = "Req", Count = 7 });
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var items = new List<CapturedItem> { new(Guid.NewGuid(), true), new(Guid.NewGuid(), false), new(Guid.NewGuid(), true) };
+
+      var affectedRows = await ActDbContext.TestEntities.BulkInsertAsync(
+         ActDbContext.TestEntities.Where(e => e.Id == sourceId),
+         builder => builder.Map(e => e.Id, s => newId)
+                           .Map(e => e.RequiredName, s => s.RequiredName)
+                           .Map(e => e.Count, s => items.Where(i => i.Active).Count())
+                           .Map(e => e.PropertyWithBackingField, s => s.Count)
+                           .Map(e => EF.Property<int>(e, "_privateField"), s => s.Count));
+
+      affectedRows.Should().Be(1);
+      ExecutedCommands.Last().Should().Contain("__insert_const_1");
+
+      var inserted = await AssertDbContext.TestEntities.SingleAsync(e => e.Id == newId);
+      inserted.Count.Should().Be(2);
+      inserted.PropertyWithBackingField.Should().Be(7);
+   }
+
+   [Fact]
+   public async Task Should_map_whole_nullable_ComplexTypes_from_captured_collection_with_lambda()
+   {
+      var source = TestEntityWithNullableComplexTypes.CreateWithNulls(new Guid("7C000000-0000-0000-0000-00000000000D"));
+      ArrangeDbContext.Add(source);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var newId = new Guid("7C000000-0000-0000-0000-00000000000E");
+      var boundaries = new List<BoundaryValueObject> { new(1, 2) };
+      var tagged = new List<TaggedValues> { new() { X = 8, Text = "u" } };
+
+      var affectedRows = await ActDbContext.TestEntitiesWithNullableComplexTypes.BulkInsertAsync(
+         ActDbContext.TestEntitiesWithNullableComplexTypes,
+         builder => builder.Map(e => e.Id, s => newId)
+                           .Map(e => e.Outer, s => s.Outer)
+                           .Map(e => e.OptionalBoundary, s => boundaries.FirstOrDefault(b => b.Upper == 99))
+                           .Map(e => e.Tagged, s => tagged.FirstOrDefault(t => t.X == 8)));
+
+      affectedRows.Should().Be(1);
+
+      var loaded = await AssertDbContext.TestEntitiesWithNullableComplexTypes.SingleAsync(e => e.Id == newId);
+      loaded.OptionalBoundary.Should().BeNull();
+      loaded.Tagged.Should().BeEquivalentTo(new TaggedValues { X = 8, Text = "u" });
+   }
+
+   [Fact]
+   public async Task Should_insert_When_value_uses_captured_collection_with_lambda_in_server_conditional()
+   {
+      var sourceId = new Guid("8B000000-0000-0000-0000-0000000000B2");
+      var newId = new Guid("8B000000-0000-0000-0000-0000000000B3");
+      ArrangeDbContext.Add(new TestEntity { Id = sourceId, RequiredName = "Req", Count = 7 });
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var items = new List<CapturedItem> { new(sourceId, true), new(Guid.NewGuid(), false) };
+
+      var affectedRows = await ActDbContext.TestEntities.BulkInsertAsync(
+         ActDbContext.TestEntities.Where(e => e.Id == sourceId),
+         builder => builder.Map(e => e.Id, s => newId)
+                           .Map(e => e.RequiredName, s => s.RequiredName)
+                           .Map(e => e.Count, s => items.Select(i => i.Id).Contains(s.Id) ? 1 : 0)
+                           .Map(e => e.PropertyWithBackingField, s => s.Count)
+                           .Map(e => EF.Property<int>(e, "_privateField"), s => s.Count));
+
+      affectedRows.Should().Be(1);
+      ExecutedCommands.Last().Should().Contain("CASE");
+      ExecutedCommands.Last().Should().Contain(" IN (");
+
+      (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == newId)).Count.Should().Be(1);
+   }
+
+   private sealed record CapturedItem(Guid Id, bool Active);
 }

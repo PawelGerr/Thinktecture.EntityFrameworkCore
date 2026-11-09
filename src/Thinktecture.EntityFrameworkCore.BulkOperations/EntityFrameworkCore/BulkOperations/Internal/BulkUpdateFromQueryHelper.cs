@@ -256,13 +256,23 @@ public static class BulkUpdateFromQueryHelper
       return !finder.HasParameter;
    }
 
+   // A parameter of a lambda inside the expression (e.g. "x" in "items.FirstOrDefault(x => x.Lower == 1)") is bound by that lambda
+   // and does not make the expression a server value; only the parameters of the value selector itself do.
    private sealed class ParameterFinder : ExpressionVisitor
    {
+      private readonly HashSet<ParameterExpression> _boundParameters = [];
+
       public bool HasParameter { get; private set; }
+
+      protected override Expression VisitLambda<T>(Expression<T> node)
+      {
+         _boundParameters.UnionWith(node.Parameters);
+         return base.VisitLambda(node);
+      }
 
       protected override Expression VisitParameter(ParameterExpression node)
       {
-         HasParameter = true;
+         HasParameter |= !_boundParameters.Contains(node);
          return node;
       }
    }
