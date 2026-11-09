@@ -824,4 +824,171 @@ public class BulkInsertFromQueryAsync : IntegrationTestsBase
       affectedRows.Should().Be(1);
       (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == newId)).ConvertibleClass!.Key.Should().Be(7);
    }
+
+   [Fact]
+   public async Task Should_insert_When_same_source_column_is_mapped_to_several_target_columns()
+   {
+      var source = new TestEntity { Id = new Guid("7B000000-0000-0000-0000-000000000001"), RequiredName = "Req", Count = 7 };
+      ArrangeDbContext.Add(source);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var newId = new Guid("7B000000-0000-0000-0000-000000000002");
+
+      var affectedRows = await ActDbContext.TestEntities.BulkInsertAsync(
+         ActDbContext.TestEntities.Where(e => e.Id == source.Id),
+         builder => builder.Map(e => e.Id, s => newId)
+                           .Map(e => e.RequiredName, s => s.RequiredName)
+                           .Map(e => e.Count, s => s.Count)
+                           .Map(e => e.PropertyWithBackingField, s => s.Count)
+                           .Map(e => EF.Property<int>(e, "_privateField"), s => s.Count));
+
+      affectedRows.Should().Be(1);
+      ExecutedCommands.Last().Should().Contain("t.\"Count\", t.\"Count\", t.\"Count\"");
+
+      var inserted = await AssertDbContext.TestEntities.SingleAsync(e => e.Id == newId);
+      inserted.RequiredName.Should().Be("Req");
+      inserted.Count.Should().Be(7);
+      inserted.PropertyWithBackingField.Should().Be(7);
+      inserted.GetPrivateField().Should().Be(7);
+   }
+
+   [Fact]
+   public async Task Should_insert_When_same_arithmetic_expression_is_mapped_to_several_target_columns()
+   {
+      var source = new TestEntity { Id = new Guid("7B000000-0000-0000-0000-000000000003"), RequiredName = "Req", Count = 7 };
+      ArrangeDbContext.Add(source);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var newId = new Guid("7B000000-0000-0000-0000-000000000004");
+
+      var affectedRows = await ActDbContext.TestEntities.BulkInsertAsync(
+         ActDbContext.TestEntities.Where(e => e.Id == source.Id),
+         builder => builder.Map(e => e.Id, s => newId)
+                           .Map(e => e.RequiredName, s => s.RequiredName)
+                           .Map(e => e.Count, s => s.Count * 2 + 1)
+                           .Map(e => e.PropertyWithBackingField, s => s.Count * 2 + 1)
+                           .Map(e => EF.Property<int>(e, "_privateField"), s => s.Count));
+
+      affectedRows.Should().Be(1);
+      ExecutedCommands.Last().Should().Contain("t.\"Count\" * 2 + 1, t.\"Count\" * 2 + 1");
+
+      var inserted = await AssertDbContext.TestEntities.SingleAsync(e => e.Id == newId);
+      inserted.Count.Should().Be(15);
+      inserted.PropertyWithBackingField.Should().Be(15);
+      inserted.GetPrivateField().Should().Be(7);
+   }
+
+   [Fact]
+   public async Task Should_map_whole_nullable_ComplexType_from_server_conditional_with_equal_member_values()
+   {
+      var sourceWithPositiveCount = new TestEntity { Id = new Guid("7B000000-0000-0000-0000-000000000005"), RequiredName = "Req", Count = 1 };
+      var sourceWithZeroCount = new TestEntity { Id = new Guid("7B000000-0000-0000-0000-000000000006"), RequiredName = "Req", Count = 0 };
+      ArrangeDbContext.AddRange(sourceWithPositiveCount, sourceWithZeroCount);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var boundary = new BoundaryValueObject(3, 3);
+      var outer = new OuterWithOptionalInner { Z = 1, Inner = null };
+
+      var affectedRows = await ActDbContext.TestEntitiesWithNullableComplexTypes.BulkInsertAsync(
+         ActDbContext.TestEntities.Where(e => e.Id == sourceWithPositiveCount.Id || e.Id == sourceWithZeroCount.Id),
+         builder => builder.Map(e => e.Id, s => s.Id)
+                           .Map(e => e.Outer, s => outer)
+                           .Map(e => e.OptionalBoundary, s => s.Count > 0 ? boundary : null));
+
+      affectedRows.Should().Be(2);
+      System.Text.RegularExpressions.Regex.Matches(ExecutedCommands.Last(), @"CASE\s+WHEN").Count.Should().Be(2);
+
+      var withBoundary = await AssertDbContext.TestEntitiesWithNullableComplexTypes.SingleAsync(e => e.Id == sourceWithPositiveCount.Id);
+      withBoundary.OptionalBoundary.Should().BeEquivalentTo(new BoundaryValueObject(3, 3));
+      withBoundary.Outer.Z.Should().Be(1);
+      withBoundary.Outer.Inner.Should().BeNull();
+
+      var withoutBoundary = await AssertDbContext.TestEntitiesWithNullableComplexTypes.SingleAsync(e => e.Id == sourceWithZeroCount.Id);
+      withoutBoundary.OptionalBoundary.Should().BeNull();
+      withoutBoundary.Outer.Z.Should().Be(1);
+      withoutBoundary.Outer.Inner.Should().BeNull();
+   }
+
+   [Fact]
+   public async Task Should_insert_When_same_source_column_is_mapped_twice_and_source_is_ordered_and_paged()
+   {
+      ArrangeDbContext.AddRange(
+         new TestEntity { Id = new Guid("7B000000-0000-0000-0000-000000000007"), RequiredName = "Req", Count = 1 },
+         new TestEntity { Id = new Guid("7B000000-0000-0000-0000-000000000008"), RequiredName = "Req", Count = 2 },
+         new TestEntity { Id = new Guid("7B000000-0000-0000-0000-000000000009"), RequiredName = "Req", Count = 3 });
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var newId = new Guid("7B000000-0000-0000-0000-00000000000A");
+
+      var affectedRows = await ActDbContext.TestEntities.BulkInsertAsync(
+         ActDbContext.TestEntities.OrderBy(e => e.Count).Skip(1).Take(1),
+         builder => builder.Map(e => e.Id, s => newId)
+                           .Map(e => e.RequiredName, s => s.RequiredName)
+                           .Map(e => e.Count, s => s.Count)
+                           .Map(e => e.PropertyWithBackingField, s => s.Count)
+                           .Map(e => EF.Property<int>(e, "_privateField"), s => s.Count));
+
+      affectedRows.Should().Be(1);
+      ExecutedCommands.Last().Should().Contain("t.\"Count\", t.\"Count\", t.\"Count\"").And.Contain("ORDER BY").And.Contain("LIMIT @").And.Contain("OFFSET @");
+
+      var inserted = await AssertDbContext.TestEntities.SingleAsync(e => e.Id == newId);
+      inserted.Count.Should().Be(2);
+      inserted.PropertyWithBackingField.Should().Be(2);
+      inserted.GetPrivateField().Should().Be(2);
+   }
+
+   [Fact]
+   public async Task Should_insert_When_same_source_column_is_mapped_twice_and_source_is_distinct_projection()
+   {
+      ArrangeDbContext.AddRange(
+         new TestEntity { Id = new Guid("7B000000-0000-0000-0000-00000000000B"), RequiredName = "Req", Count = 4 },
+         new TestEntity { Id = new Guid("7B000000-0000-0000-0000-00000000000C"), RequiredName = "Req", Count = 4 });
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var newId = new Guid("7B000000-0000-0000-0000-00000000000D");
+
+      var affectedRows = await ActDbContext.TestEntities.BulkInsertAsync(
+         ActDbContext.TestEntities.Select(e => new { e.RequiredName, e.Count }).Distinct(),
+         builder => builder.Map(e => e.Id, s => newId)
+                           .Map(e => e.RequiredName, s => s.RequiredName)
+                           .Map(e => e.Count, s => s.Count)
+                           .Map(e => e.PropertyWithBackingField, s => s.Count)
+                           .Map(e => EF.Property<int>(e, "_privateField"), s => s.Count));
+
+      affectedRows.Should().Be(1);
+      ExecutedCommands.Last().Should().Contain("SELECT DISTINCT").And.Contain("t.\"Count\", t.\"Count\", t.\"Count\"");
+
+      var inserted = await AssertDbContext.TestEntities.SingleAsync(e => e.Id == newId);
+      inserted.Count.Should().Be(4);
+      inserted.PropertyWithBackingField.Should().Be(4);
+      inserted.GetPrivateField().Should().Be(4);
+   }
+
+   [Fact]
+   public async Task Should_insert_When_same_source_column_and_equal_constants_are_mapped_to_several_target_columns()
+   {
+      var source = new TestEntity { Id = new Guid("7B000000-0000-0000-0000-00000000000E"), RequiredName = "Req", Count = 7 };
+      ArrangeDbContext.Add(source);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var newId = new Guid("7B000000-0000-0000-0000-00000000000F");
+
+      var affectedRows = await ActDbContext.TestEntities.BulkInsertAsync(
+         ActDbContext.TestEntities.Where(e => e.Id == source.Id),
+         builder => builder.Map(e => e.Id, s => newId)
+                           .Map(e => e.RequiredName, s => s.RequiredName)
+                           .Map(e => e.Count, s => s.Count)
+                           .Map(e => e.PropertyWithBackingField, s => s.Count)
+                           .Map(e => EF.Property<int>(e, "_privateField"), s => 5)
+                           .Map(e => e.NullableCount, s => 5));
+
+      affectedRows.Should().Be(1);
+      ExecutedCommands.Last().Should().Contain("t.\"Count\", t.\"Count\", @__insert_const_1, @__insert_const_2");
+
+      var inserted = await AssertDbContext.TestEntities.SingleAsync(e => e.Id == newId);
+      inserted.Count.Should().Be(7);
+      inserted.PropertyWithBackingField.Should().Be(7);
+      inserted.GetPrivateField().Should().Be(5);
+      inserted.NullableCount.Should().Be(5);
+   }
 }

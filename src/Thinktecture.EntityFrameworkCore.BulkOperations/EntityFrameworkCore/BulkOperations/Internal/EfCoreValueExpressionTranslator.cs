@@ -221,9 +221,9 @@ public sealed class EfCoreValueExpressionTranslator
          valueExpressions.Add(sqlExpr);
       }
 
-      // Step 5: Convert SqlConstantExpressions to SqlParameterExpressions with unique names
-      // to prevent SelectExpression.ApplyProjection() from deduplicating identical constants
-      // (e.g., two columns both mapped to 0 would otherwise collapse into a single projection).
+      // Step 5: Bind every value that is a single constant as a parameter. The parameter's type mapping applies the value converter
+      // when the parameter is bound, the SQL text does not depend on the value, and a null value becomes a NULL literal
+      // through the parameter-based SQL processor.
       var projectionExpressions = new List<SqlExpression>(valueExpressions.Count);
       var constParamIndex = 0;
 
@@ -241,13 +241,28 @@ public sealed class EfCoreValueExpressionTranslator
          }
       }
 
-      // Step 6: Replace projections in SelectExpression with our value expressions
+      // Step 6: Replace projections in SelectExpression with our value expressions.
       selectExpression.ReplaceProjection(projectionExpressions.Cast<Expression>().ToList());
       selectExpression.ApplyProjection();
 
+      // ApplyProjection merges equal expressions into one projection (SelectExpression.AddToProjection compares by Equals).
+      // INSERT ... SELECT needs one SELECT item per target column, so the merged projection is repeated for every column that uses it.
+      var projectionPerColumn = projectionExpressions
+                                .Select(valueExpression => selectExpression.Projection.FirstOrDefault(p => p.Expression.Equals(valueExpression))
+                                                           ?? throw new InvalidOperationException($"The value expression '{valueExpression.Print()}' was not found in the projection after 'ApplyProjection'."))
+                                .ToList();
+      var insertSelect = selectExpression.Update(selectExpression.Tables,
+                                                 selectExpression.Predicate,
+                                                 selectExpression.GroupBy,
+                                                 selectExpression.Having,
+                                                 projectionPerColumn,
+                                                 selectExpression.Orderings,
+                                                 selectExpression.Offset,
+                                                 selectExpression.Limit);
+
       // Step 7: Render SELECT SQL
       var sqlGeneratorFactory = _ctx.GetService<IQuerySqlGeneratorFactory>();
-      var selectCommand = sqlGeneratorFactory.Create().GetCommand(ProcessParameters(Postprocess(selectExpression, compilationContext), parameterValues));
+      var selectCommand = sqlGeneratorFactory.Create().GetCommand(ProcessParameters(Postprocess(insertSelect, compilationContext), parameterValues));
 
       // Step 8: Build INSERT INTO ... SELECT ...
       var tableName = tableNameProvider.GetValidTableName(targetEntityType);
