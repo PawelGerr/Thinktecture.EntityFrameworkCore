@@ -128,20 +128,27 @@ public partial class PropertyGetterCache : IPropertyGetterCache
 
    private static Func<DbContext, object, object?> BuildComplexTypeMemberGetter(IProperty property, IComplexType complexType)
    {
-      // The container getter returns null when any complex property along the chain is null.
-      // EF Core's member getter would return the default value of the member instead.
-      var containerGetter = complexType.ComplexProperty.GetGetter();
+      var containerGetter = BuildComplexPropertyGetter(complexType.ComplexProperty);
 
       if (property == complexType.FindDiscriminatorProperty())
       {
          // The discriminator is a shadow property without a CLR member. SaveChanges writes the configured discriminator value for a non-null container.
          var discriminatorValue = complexType.GetDiscriminatorValue();
-         return (_, entity) => containerGetter.GetClrValueUsingContainingEntity(entity) is null ? null : discriminatorValue;
+         return (_, entity) => containerGetter(entity) is null ? null : discriminatorValue;
       }
 
       var memberGetter = property.GetGetter();
 
-      return (_, entity) => containerGetter.GetClrValueUsingContainingEntity(entity) is { } container ? memberGetter.GetClrValue(container) : null;
+      return (_, entity) => containerGetter(entity) is { } container ? memberGetter.GetClrValue(container) : null;
+   }
+
+   private static Func<object, object?> BuildComplexPropertyGetter(IComplexProperty complexProperty)
+   {
+      // Each level is read on its own, because EF Core's chain getter (GetClrValueUsingContainingEntity) returns default(T), not null,
+      // for a struct complex type when an outer container is null.
+      var parentGetter = complexProperty.DeclaringType is IComplexType parentType ? BuildComplexPropertyGetter(parentType.ComplexProperty) : null;
+
+      return Combine(parentGetter, complexProperty.GetGetter().GetClrValue);
    }
 
    private static Func<DbContext, object, object?> UseConverter(Func<DbContext, object, object?> getter, ValueConverter converter)

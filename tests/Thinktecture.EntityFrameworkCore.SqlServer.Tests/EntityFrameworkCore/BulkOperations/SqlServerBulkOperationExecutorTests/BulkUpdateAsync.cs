@@ -556,4 +556,24 @@ public class BulkUpdateAsync : IntegrationTestsBase
       var loaded = await AssertDbContext.TestEntitiesWithNullableComplexTypes.ToListAsync();
       loaded.Should().BeEquivalentTo(updated);
    }
+
+   [Fact]
+   public async Task Should_update_struct_members_of_null_ComplexType_to_null()
+   {
+      var toNulls = TestEntityWithStructsInOptionalComplexType.CreateWithValues(new Guid("9C1E2D3F-4A5B-4C6D-8E9F-0A1B2C3D0021"));
+      var toValues = TestEntityWithStructsInOptionalComplexType.CreateWithNulls(new Guid("9C1E2D3F-4A5B-4C6D-8E9F-0A1B2C3D0022"));
+      ArrangeDbContext.AddRange(toNulls, toValues);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var updated = new[] { TestEntityWithStructsInOptionalComplexType.CreateWithNulls(toNulls.Id), TestEntityWithStructsInOptionalComplexType.CreateWithValues(toValues.Id) };
+
+      var affectedRows = await SUT.BulkUpdateAsync(updated, new SqlServerBulkUpdateOptions());
+
+      affectedRows.Should().Be(2);
+      var loaded = await AssertDbContext.TestEntitiesWithStructsInOptionalComplexType.ToListAsync();
+      loaded.Should().BeEquivalentTo(updated);
+
+      var structColumns = await TestEntityWithStructsInOptionalComplexType.QueryStructColumns(AssertDbContext, $"\"{Schema}\".\"TestEntitiesWithStructsInOptionalComplexType\"").ToListAsync();
+      structColumns.Should().BeEquivalentTo(updated.Select(TestEntityWithStructsInOptionalComplexType.StructColumns.From));
+   }
 }

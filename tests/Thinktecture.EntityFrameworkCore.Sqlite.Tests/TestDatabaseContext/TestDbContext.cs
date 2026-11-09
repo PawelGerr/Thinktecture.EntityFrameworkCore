@@ -30,6 +30,7 @@ public class TestDbContext : DbContext
    public DbSet<TestEntityWithComplexType> TestEntities_with_ComplexType { get; set; }
    public DbSet<TestEntityWithFlags> TestEntitiesWithFlags { get; set; }
    public DbSet<TestEntityWithNullableComplexTypes> TestEntitiesWithNullableComplexTypes { get; set; }
+   public DbSet<TestEntityWithStructsInOptionalComplexType> TestEntitiesWithStructsInOptionalComplexType { get; set; }
 #nullable enable
 
    public Action<ModelBuilder>? ConfigureModel { get; set; }
@@ -77,6 +78,7 @@ public class TestDbContext : DbContext
       TestEntityWithDifferentColumnNames.Configure(modelBuilder);
       TestEntityWithFlags.Configure(modelBuilder);
       TestEntityWithNullableComplexTypes.Configure(modelBuilder);
+      TestEntityWithStructsInOptionalComplexType.Configure(modelBuilder);
 
       ConfigureModel?.Invoke(modelBuilder);
 

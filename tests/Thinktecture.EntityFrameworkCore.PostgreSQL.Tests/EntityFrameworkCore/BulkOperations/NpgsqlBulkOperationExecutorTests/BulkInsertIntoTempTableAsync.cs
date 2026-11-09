@@ -647,6 +647,21 @@ public class BulkInsertIntoTempTableAsync : IntegrationTestsBase
       values.Should().BeEquivalentTo([value]);
    }
 
+   [Fact]
+   public async Task Should_insert_null_for_struct_members_of_null_ComplexType_into_temp_table()
+   {
+      var withValues = TestEntityWithStructsInOptionalComplexType.CreateWithValues(new Guid("9C1E2D3F-4A5B-4C6D-8E9F-0A1B2C3D0041"));
+      var withNulls = TestEntityWithStructsInOptionalComplexType.CreateWithNulls(new Guid("9C1E2D3F-4A5B-4C6D-8E9F-0A1B2C3D0042"));
+
+      await using var tempTable = await SUT.BulkInsertIntoTempTableAsync([withValues, withNulls], new NpgsqlTempTableBulkInsertOptions());
+
+      var loaded = await tempTable.Query.ToListAsync();
+      loaded.Should().BeEquivalentTo([withValues, withNulls]);
+
+      var structColumns = await TestEntityWithStructsInOptionalComplexType.QueryStructColumns(ActDbContext, $"\"{tempTable.Name}\"").ToListAsync();
+      structColumns.Should().BeEquivalentTo(new[] { withValues, withNulls }.Select(TestEntityWithStructsInOptionalComplexType.StructColumns.From));
+   }
+
    public readonly record struct Timestamp(long Value);
 
    public sealed class TimestampConverter() : ValueConverter<Timestamp, long>(v => v.Value, v => new Timestamp(v));

@@ -793,6 +793,31 @@ public class CreateTempTableAsync : IntegrationTestsBase
       IsNullable(columns, "Outer_Z").Should().BeFalse();
    }
 
+   [Fact]
+   public async Task Should_create_nullable_columns_for_struct_members_of_nullable_ComplexType()
+   {
+      var entityType = ActDbContext.GetTempTableEntityType<TestEntityWithStructsInOptionalComplexType>();
+
+      await using var tempTable = await SUT.CreateTempTableAsync(entityType, _optionsWithNonUniqueName);
+
+      var columns = AssertDbContext.GetTempTableColumns<TestEntityWithStructsInOptionalComplexType>().ToList();
+      columns.Should().HaveCount(10);
+
+      foreach (var name in new[]
+               {
+                  "OptionalOuter_Y", "OptionalOuter_Pair_ReceivedAt", "OptionalOuter_Pair_MessageTimestamp",
+                  "OptionalOuter_TaggedStruct_Discriminator", "OptionalOuter_TaggedStruct_X",
+                  "OptionalOuter_OptionalPair_ReceivedAt", "OptionalOuter_OptionalPair_MessageTimestamp"
+               })
+      {
+         IsNullable(columns, name).Should().BeTrue(name);
+      }
+
+      IsNullable(columns, "Id").Should().BeFalse();
+      IsNullable(columns, "RequiredPair_ReceivedAt").Should().BeFalse();
+      IsNullable(columns, "RequiredPair_MessageTimestamp").Should().BeFalse();
+   }
+
    private static bool IsNullable(List<InformationSchemaColumn> columns, string name)
    {
       return columns.Single(c => c.COLUMN_NAME == name).IS_NULLABLE == "YES";

@@ -1338,4 +1338,34 @@ public class BulkInsertAsync : IntegrationTestsBase
       var loaded = await AssertDbContext.TestEntitiesWithNullableComplexTypes.ToListAsync();
       loaded.Should().BeEquivalentTo([withValues, withNulls]);
    }
+
+   [Fact]
+   public async Task Should_round_trip_nested_struct_ComplexTypes_through_SaveChanges()
+   {
+      var withValues = TestEntityWithStructsInOptionalComplexType.CreateWithValues(new Guid("9C1E2D3F-4A5B-4C6D-8E9F-0A1B2C3D0001"));
+      var withNulls = TestEntityWithStructsInOptionalComplexType.CreateWithNulls(new Guid("9C1E2D3F-4A5B-4C6D-8E9F-0A1B2C3D0002"));
+      ArrangeDbContext.AddRange(withValues, withNulls);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var loaded = await AssertDbContext.TestEntitiesWithStructsInOptionalComplexType.ToListAsync();
+      loaded.Should().BeEquivalentTo([withValues, withNulls]);
+
+      var structColumns = await TestEntityWithStructsInOptionalComplexType.QueryStructColumns(AssertDbContext, $"\"{Schema}\".\"TestEntitiesWithStructsInOptionalComplexType\"").ToListAsync();
+      structColumns.Should().BeEquivalentTo(new[] { withValues, withNulls }.Select(TestEntityWithStructsInOptionalComplexType.StructColumns.From));
+   }
+
+   [Fact]
+   public async Task Should_insert_null_for_struct_members_of_null_ComplexType()
+   {
+      var withValues = TestEntityWithStructsInOptionalComplexType.CreateWithValues(new Guid("9C1E2D3F-4A5B-4C6D-8E9F-0A1B2C3D0011"));
+      var withNulls = TestEntityWithStructsInOptionalComplexType.CreateWithNulls(new Guid("9C1E2D3F-4A5B-4C6D-8E9F-0A1B2C3D0012"));
+
+      await SUT.BulkInsertAsync([withValues, withNulls], new NpgsqlBulkInsertOptions());
+
+      var loaded = await AssertDbContext.TestEntitiesWithStructsInOptionalComplexType.ToListAsync();
+      loaded.Should().BeEquivalentTo([withValues, withNulls]);
+
+      var structColumns = await TestEntityWithStructsInOptionalComplexType.QueryStructColumns(AssertDbContext, $"\"{Schema}\".\"TestEntitiesWithStructsInOptionalComplexType\"").ToListAsync();
+      structColumns.Should().BeEquivalentTo(new[] { withValues, withNulls }.Select(TestEntityWithStructsInOptionalComplexType.StructColumns.From));
+   }
 }

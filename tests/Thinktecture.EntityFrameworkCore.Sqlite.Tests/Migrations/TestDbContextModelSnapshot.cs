@@ -396,6 +396,68 @@ namespace Thinktecture.Migrations
                     b.ToTable("TestEntitiesWithDefaultValues");
                 });
 
+            modelBuilder.Entity("Thinktecture.TestDatabaseContext.TestEntityWithStructsInOptionalComplexType", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "OptionalOuter", "Thinktecture.TestDatabaseContext.TestEntityWithStructsInOptionalComplexType.OptionalOuter#OuterWithStructs", b1 =>
+                        {
+                            b1.Property<int>("Y")
+                                .HasColumnType("INTEGER");
+
+                            b1.ComplexProperty(typeof(Dictionary<string, object>), "OptionalPair", "Thinktecture.TestDatabaseContext.TestEntityWithStructsInOptionalComplexType.OptionalOuter#OuterWithStructs.OptionalPair#TimestampPair", b2 =>
+                                {
+                                    b2.Property<long>("MessageTimestamp")
+                                        .HasColumnType("INTEGER");
+
+                                    b2.Property<long>("ReceivedAt")
+                                        .HasColumnType("INTEGER");
+                                });
+
+                            b1.ComplexProperty(typeof(Dictionary<string, object>), "Pair", "Thinktecture.TestDatabaseContext.TestEntityWithStructsInOptionalComplexType.OptionalOuter#OuterWithStructs.Pair#TimestampPair", b2 =>
+                                {
+                                    b2.IsRequired();
+
+                                    b2.Property<long>("MessageTimestamp")
+                                        .HasColumnType("INTEGER");
+
+                                    b2.Property<long>("ReceivedAt")
+                                        .HasColumnType("INTEGER");
+                                });
+
+                            b1.ComplexProperty(typeof(Dictionary<string, object>), "TaggedStruct", "Thinktecture.TestDatabaseContext.TestEntityWithStructsInOptionalComplexType.OptionalOuter#OuterWithStructs.TaggedStruct#TaggedStruct", b2 =>
+                                {
+                                    b2.IsRequired();
+
+                                    b2.Property<string>("Discriminator")
+                                        .IsRequired()
+                                        .HasColumnType("TEXT");
+
+                                    b2.Property<int?>("X")
+                                        .HasColumnType("INTEGER");
+
+                                    b2.HasDiscriminator<string>("Discriminator").HasValue("TaggedStruct");
+                                });
+                        });
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "RequiredPair", "Thinktecture.TestDatabaseContext.TestEntityWithStructsInOptionalComplexType.RequiredPair#TimestampPair", b1 =>
+                        {
+                            b1.IsRequired();
+
+                            b1.Property<long>("MessageTimestamp")
+                                .HasColumnType("INTEGER");
+
+                            b1.Property<long>("ReceivedAt")
+                                .HasColumnType("INTEGER");
+                        });
+
+                    b.HasKey("Id");
+
+                    b.ToTable("TestEntitiesWithStructsInOptionalComplexType", (string)null);
+                });
+
             modelBuilder.Entity("Thinktecture.TestDatabaseContext.TestEntity_Owns_Inline", b =>
                 {
                     b.Property<Guid>("Id")

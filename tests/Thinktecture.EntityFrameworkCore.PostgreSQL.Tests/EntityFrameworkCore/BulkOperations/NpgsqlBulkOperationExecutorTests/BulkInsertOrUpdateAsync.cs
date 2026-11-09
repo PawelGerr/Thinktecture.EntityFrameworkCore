@@ -686,4 +686,30 @@ public class BulkInsertOrUpdateAsync : IntegrationTestsBase
       var loaded = await AssertDbContext.TestEntitiesWithNullableComplexTypes.ToListAsync();
       loaded.Should().BeEquivalentTo(entities);
    }
+
+   [Fact]
+   public async Task Should_insert_and_update_struct_members_of_null_ComplexType_as_null()
+   {
+      var toNulls = TestEntityWithStructsInOptionalComplexType.CreateWithValues(new Guid("9C1E2D3F-4A5B-4C6D-8E9F-0A1B2C3D0031"));
+      var toValues = TestEntityWithStructsInOptionalComplexType.CreateWithNulls(new Guid("9C1E2D3F-4A5B-4C6D-8E9F-0A1B2C3D0032"));
+      ArrangeDbContext.AddRange(toNulls, toValues);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var entities = new[]
+                     {
+                        TestEntityWithStructsInOptionalComplexType.CreateWithNulls(toNulls.Id),
+                        TestEntityWithStructsInOptionalComplexType.CreateWithValues(toValues.Id),
+                        TestEntityWithStructsInOptionalComplexType.CreateWithValues(new Guid("9C1E2D3F-4A5B-4C6D-8E9F-0A1B2C3D0033")),
+                        TestEntityWithStructsInOptionalComplexType.CreateWithNulls(new Guid("9C1E2D3F-4A5B-4C6D-8E9F-0A1B2C3D0034"))
+                     };
+
+      var affectedRows = await SUT.BulkInsertOrUpdateAsync(entities, new NpgsqlBulkInsertOrUpdateOptions());
+
+      affectedRows.Should().Be(4);
+      var loaded = await AssertDbContext.TestEntitiesWithStructsInOptionalComplexType.ToListAsync();
+      loaded.Should().BeEquivalentTo(entities);
+
+      var structColumns = await TestEntityWithStructsInOptionalComplexType.QueryStructColumns(AssertDbContext, $"\"{Schema}\".\"TestEntitiesWithStructsInOptionalComplexType\"").ToListAsync();
+      structColumns.Should().BeEquivalentTo(entities.Select(TestEntityWithStructsInOptionalComplexType.StructColumns.From));
+   }
 }
