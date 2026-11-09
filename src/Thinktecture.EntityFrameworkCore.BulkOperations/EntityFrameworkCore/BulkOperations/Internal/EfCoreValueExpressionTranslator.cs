@@ -173,6 +173,11 @@ public sealed class EfCoreValueExpressionTranslator
       // Step 2: Extract source entity shaper
       var sourceShaper = ExtractSingleEntityShaper<TSource>(shapedQuery.ShaperExpression);
 
+      // The value expressions replace the projection, which is the DISTINCT key of the source. EF Core pushes a DISTINCT query into a subquery
+      // before it changes the projection (TranslateSelect), so the row set of the source stays the same.
+      if (selectExpression.IsDistinct)
+         selectExpression.PushdownIntoSubquery();
+
       // Step 3: Create SQL translator
       var sqlTranslatorFactory = _ctx.GetService<IRelationalSqlTranslatingExpressionVisitorFactory>();
       var sqlTranslator = sqlTranslatorFactory.Create(compilationContext, methodTranslator);

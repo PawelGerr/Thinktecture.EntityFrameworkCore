@@ -956,7 +956,7 @@ public class BulkInsertFromQueryAsync : IntegrationTestsBase
                            .Map(e => EF.Property<int>(e, "_privateField"), s => s.Count));
 
       affectedRows.Should().Be(1);
-      ExecutedCommands.Last().Should().Contain("SELECT DISTINCT").And.Contain("t.\"Count\", t.\"Count\", t.\"Count\"");
+      ExecutedCommands.Last().Should().Contain("SELECT DISTINCT").And.Contain("t0.\"Count\", t0.\"Count\", t0.\"Count\"");
 
       var inserted = await AssertDbContext.TestEntities.SingleAsync(e => e.Id == newId);
       inserted.Count.Should().Be(4);
@@ -1170,6 +1170,26 @@ public class BulkInsertFromQueryAsync : IntegrationTestsBase
 
       var stored = await AssertDbContext.Database.SqlQueryRaw<int>($"""SELECT "Count" AS "Value" FROM "{Schema}"."TestEntities" WHERE "Id" = '8D000000-0000-0000-0000-000000000004' """).SingleAsync();
       stored.Should().Be(200);
+   }
+
+   [Fact]
+   public async Task Should_insert_all_distinct_rows_When_source_is_distinct_projection_and_not_every_column_is_mapped()
+   {
+      ArrangeDbContext.AddRange(
+         new TestEntity { Id = new Guid("7C000000-0000-0000-0000-000000000007"), RequiredName = "A", Count = 1 },
+         new TestEntity { Id = new Guid("7C000000-0000-0000-0000-000000000008"), RequiredName = "A", Count = 2 },
+         new TestEntity { Id = new Guid("7C000000-0000-0000-0000-000000000009"), RequiredName = "B", Count = 1 });
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var affectedRows = await ActDbContext.TestEntitiesWithAutoIncrement.BulkInsertAsync(
+         ActDbContext.TestEntities.Select(e => new { e.RequiredName, e.Count }).Distinct(),
+         builder => builder.Map(e => e.Name, s => s.RequiredName));
+
+      affectedRows.Should().Be(3);
+      ExecutedCommands.Last().Should().Contain("FROM (").And.Contain("SELECT DISTINCT");
+
+      var names = await AssertDbContext.TestEntitiesWithAutoIncrement.Select(e => e.Name).OrderBy(n => n).ToListAsync();
+      names.Should().Equal("A", "A", "B");
    }
 
    private sealed record CapturedItem(Guid Id, bool Active);
