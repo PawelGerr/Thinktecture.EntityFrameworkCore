@@ -10,6 +10,7 @@ namespace Thinktecture.EntityFrameworkCore.Data;
 public sealed class ValueDataReader<TValue> : IEntityDataReader<TValue>
 {
    private readonly IEnumerator<TValue> _enumerator;
+   private readonly Func<object?, object?>? _convertToProvider;
 
    /// <inheritdoc />
    public IReadOnlyList<PropertyWithNavigations> Properties { get; }
@@ -37,6 +38,10 @@ public sealed class ValueDataReader<TValue> : IEntityDataReader<TValue>
          throw new ArgumentException("The properties collection of a value reader must have exactly 1 property.", nameof(properties));
 
       _enumerator = values.GetEnumerator();
+
+      // Same rule as PropertyGetterCache.BuildPropertyGetter: the explicit converter first, then the converter of the type mapping (e.g. an enum mapped to its underlying number).
+      var property = properties[0].Property;
+      _convertToProvider = (property.GetValueConverter() ?? property.GetTypeMapping().Converter)?.ConvertToProvider;
    }
 
    /// <inheritdoc />
@@ -59,7 +64,9 @@ public sealed class ValueDataReader<TValue> : IEntityDataReader<TValue>
    public object? GetValue(int i)
 #pragma warning restore 8766
    {
-      return _enumerator.Current;
+      object? value = _enumerator.Current;
+
+      return value is null || _convertToProvider is null ? value : _convertToProvider(value);
    }
 
    /// <inheritdoc />

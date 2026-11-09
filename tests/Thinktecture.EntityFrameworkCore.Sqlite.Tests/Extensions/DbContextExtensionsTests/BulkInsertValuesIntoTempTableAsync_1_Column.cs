@@ -1,4 +1,5 @@
 using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Thinktecture.EntityFrameworkCore.BulkOperations;
 using Thinktecture.EntityFrameworkCore.TempTables;
 using Thinktecture.TestDatabaseContext;
@@ -228,5 +229,138 @@ public class BulkInsertValuesIntoTempTableAsync_1_Column : SchemaChangingIntegra
       await using var query = await ActDbContext.BulkInsertValuesIntoTempTableAsync(values);
 
       query.NumberOfInsertedRows.Should().Be(2);
+   }
+
+   [Fact]
+   public async Task Should_insert_struct_with_value_converter()
+   {
+      ConfigureModel = builder => builder.ConfigureTempTable<Timestamp>(b => b.Property(t => t.Column1).HasConversion<TimestampConverter>());
+
+      await using var tempTable = await ActDbContext.BulkInsertValuesIntoTempTableAsync(new List<Timestamp> { new(1), new(2) });
+
+      var values = await tempTable.Query.ToListAsync();
+      values.Should().BeEquivalentTo([new Timestamp(1), new Timestamp(2)]);
+   }
+
+   [Fact]
+   public async Task Should_insert_enum_with_string_conversion_as_string()
+   {
+      ConfigureModel = builder => builder.ConfigureTempTable<Color>(b => b.Property(t => t.Column1).HasConversion<string>());
+
+      await using var tempTable = await ActDbContext.BulkInsertValuesIntoTempTableAsync(new List<Color> { Color.Red });
+
+      var storedValue = await ActDbContext.Database.SqlQueryRaw<string>($"""SELECT "Column1" AS "Value" FROM "{tempTable.Name}" """).SingleAsync();
+      storedValue.Should().Be("Red");
+
+      var values = await tempTable.Query.ToListAsync();
+      values.Should().BeEquivalentTo([Color.Red]);
+   }
+
+   [Fact]
+   public async Task Should_insert_nullable_struct_with_value_converter_including_null()
+   {
+      ConfigureModel = builder => builder.ConfigureTempTable<Timestamp?>(b => b.Property(t => t.Column1).HasConversion<TimestampConverter>());
+
+      await using var tempTable = await ActDbContext.BulkInsertValuesIntoTempTableAsync(new List<Timestamp?> { new Timestamp(1), null }, new SqliteTempTableBulkInsertOptions { PrimaryKeyCreation = IPrimaryKeyPropertiesProvider.None });
+
+      var values = await tempTable.Query.ToListAsync();
+      values.Should().BeEquivalentTo([new Timestamp(1), (Timestamp?)null]);
+   }
+
+   [Fact]
+   public async Task Should_insert_struct_with_value_converter_into_existing_temp_table()
+   {
+      // Arrange
+      ConfigureModel = builder => builder.ConfigureTempTable<Timestamp>(b => b.Property(t => t.Column1).HasConversion<TimestampConverter>());
+
+      await using var tempTable = await ActDbContext.BulkInsertValuesIntoTempTableAsync(new List<Timestamp>());
+
+      // Act
+      await ActDbContext.BulkInsertValuesIntoTempTableAsync(new List<Timestamp> { new(1), new(2) }, tempTable);
+
+      // Assert
+      var values = await tempTable.Query.ToListAsync();
+      values.Should().BeEquivalentTo([new Timestamp(1), new Timestamp(2)]);
+   }
+
+   [Fact]
+   public async Task Should_insert_enum_without_explicit_conversion()
+   {
+      ConfigureModel = builder => builder.ConfigureTempTable<Color>();
+
+      await using var tempTable = await ActDbContext.BulkInsertValuesIntoTempTableAsync(new List<Color> { Color.Red });
+
+      var values = await tempTable.Query.ToListAsync();
+      values.Should().BeEquivalentTo([Color.Red]);
+   }
+
+   [Fact]
+   public async Task Should_insert_number_based_value_object()
+   {
+      ConfigureModel = builder => builder.ConfigureTempTable<Quantity>(b => b.Property(t => t.Column1).HasConversion(v => v.Value, v => new Quantity(v)));
+
+      await using var tempTable = await ActDbContext.BulkInsertValuesIntoTempTableAsync(new List<Quantity> { new(3) });
+
+      var storedValue = await ActDbContext.Database.SqlQueryRaw<int>($"""SELECT "Column1" AS "Value" FROM "{tempTable.Name}" """).SingleAsync();
+      storedValue.Should().Be(3);
+
+      var values = await tempTable.Query.ToListAsync();
+      values.Should().BeEquivalentTo([new Quantity(3)]);
+   }
+
+   [Fact]
+   public async Task Should_insert_DateTime_based_value_object()
+   {
+      ConfigureModel = builder => builder.ConfigureTempTable<Moment>(b => b.Property(t => t.Column1).HasConversion(v => v.Value, v => new Moment(v)));
+
+      var moment = new Moment(new DateTime(2026, 1, 2, 3, 4, 5, DateTimeKind.Utc));
+      await using var tempTable = await ActDbContext.BulkInsertValuesIntoTempTableAsync(new List<Moment> { moment });
+
+      var values = await tempTable.Query.ToListAsync();
+      values.Should().BeEquivalentTo([moment]);
+   }
+
+   [Fact]
+   public async Task Should_apply_value_changing_converter_of_number()
+   {
+      ConfigureModel = builder => builder.ConfigureTempTable<int>(b => b.Property(t => t.Column1).HasConversion(v => v * 100, v => v / 100));
+
+      await using var tempTable = await ActDbContext.BulkInsertValuesIntoTempTableAsync(new List<int> { 3 });
+
+      var storedValue = await ActDbContext.Database.SqlQueryRaw<int>($"""SELECT "Column1" AS "Value" FROM "{tempTable.Name}" """).SingleAsync();
+      storedValue.Should().Be(300);
+
+      var values = await tempTable.Query.ToListAsync();
+      values.Should().BeEquivalentTo([3]);
+   }
+
+   [Fact]
+   public async Task Should_apply_value_changing_converter_of_DateTime()
+   {
+      ConfigureModel = builder => builder.ConfigureTempTable<DateTime>(b => b.Property(t => t.Column1).HasConversion(v => v.Ticks, v => new DateTime(v, DateTimeKind.Utc)));
+
+      var value = new DateTime(2026, 1, 2, 3, 4, 5, DateTimeKind.Utc);
+      await using var tempTable = await ActDbContext.BulkInsertValuesIntoTempTableAsync(new List<DateTime> { value });
+
+      var storedValue = await ActDbContext.Database.SqlQueryRaw<long>($"""SELECT "Column1" AS "Value" FROM "{tempTable.Name}" """).SingleAsync();
+      storedValue.Should().Be(value.Ticks);
+
+      var values = await tempTable.Query.ToListAsync();
+      values.Should().BeEquivalentTo([value]);
+   }
+
+   public readonly record struct Timestamp(long Value);
+
+   public sealed class TimestampConverter() : ValueConverter<Timestamp, long>(v => v.Value, v => new Timestamp(v));
+
+   public readonly record struct Quantity(int Value);
+
+   public readonly record struct Moment(DateTime Value);
+
+   public enum Color
+   {
+      None = 0,
+      Blue = 1,
+      Red = 2
    }
 }
