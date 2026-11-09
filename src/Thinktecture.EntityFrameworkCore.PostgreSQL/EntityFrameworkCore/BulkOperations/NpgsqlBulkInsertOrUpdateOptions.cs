@@ -33,7 +33,7 @@ public sealed class NpgsqlBulkInsertOrUpdateOptions : IBulkInsertOrUpdateOptions
    public NpgsqlBulkOperationTempTableOptions TempTableOptions { get; }
 
    /// <inheritdoc />
-   [Obsolete("Use 'TableNameProvider' instead: 'IBulkOperationTableNameProvider.ForRootEntityWithDefaultSchema(tableName)' when only 'TableName' is set, or 'IBulkOperationTableNameProvider.ForRootEntity(tableName, schema)' when 'Schema' is set as well.")]
+   [Obsolete("Use 'TableNameProvider' instead: 'IBulkOperationTableNameProvider.ForRootEntityWithDefaultSchema(tableName)' when only 'TableName' is set, or 'IBulkOperationTableNameProvider.ForRootEntity(tableName, schema)' when 'Schema' is set as well. For a temp table entity use 'IBulkOperationTableNameProvider.ForRootEntity(tableName, schema)', because 'ForRootEntityWithDefaultSchema' throws for temp table entities.")]
    public string? TableName
    {
       get => _tableNames.TableName;
