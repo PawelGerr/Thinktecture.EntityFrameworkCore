@@ -1,6 +1,4 @@
-using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
-using Microsoft.EntityFrameworkCore.Storage;
 
 // ReSharper disable InconsistentNaming
 namespace Thinktecture.TestDatabaseContext;
@@ -104,10 +102,8 @@ public class TestDbContext : DbContext
    {
       ArgumentNullException.ThrowIfNull(tableName);
 
-      var helper = this.GetService<ISqlGenerationHelper>();
-
       return Set<SqliteTableInfo>()
-         .FromSqlRaw($"SELECT * FROM PRAGMA_TABLE_INFO({helper.DelimitIdentifier(tableName)})");
+         .FromSqlRaw($"SELECT * FROM PRAGMA_TABLE_INFO('{tableName}')");
    }
 
    public IQueryable<SqliteTableInfo> GetTempTableKeyColumns<T>()

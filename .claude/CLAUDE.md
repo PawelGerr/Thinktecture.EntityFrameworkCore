@@ -78,12 +78,12 @@ dotnet test tests/Thinktecture.EntityFrameworkCore.SqlServer.Tests/ -c Release  
 |--------|-------|
 | Target framework | `net10.0` |
 | Language | C# 14.0, nullable enabled, implicit usings |
-| EF Core | 10.0.2 (`Microsoft.EntityFrameworkCore.*`) |
-| PostgreSQL | Npgsql.EntityFrameworkCore.PostgreSQL 10.0.0 |
-| Testing | xUnit 2.9.3 + AwesomeAssertions 9.3.0 + NSubstitute 5.3.0 |
+| EF Core | 10.0.14 (`Microsoft.EntityFrameworkCore.*`) |
+| PostgreSQL | Npgsql.EntityFrameworkCore.PostgreSQL 10.0.3 |
+| Testing | xUnit 2.9.3 + AwesomeAssertions 9.6.0 + NSubstitute 5.3.0 |
 | Logging | Serilog.Extensions.Logging 10.0.0 + Serilog.Sinks.XUnit 3.0.19 |
-| SQL Server tests | Testcontainers.MsSql 4.10.0 (Docker) or configured connection string |
-| PostgreSQL tests | Testcontainers.PostgreSql 4.10.0 (Docker) or configured connection string |
+| SQL Server tests | Testcontainers.MsSql 4.16.0 (Docker) or configured connection string |
+| PostgreSQL tests | Testcontainers.PostgreSql 4.16.0 (Docker) or configured connection string |
 | Root namespace | `Thinktecture` (set in Directory.Build.props) |
 | Package versions | Centralized in `Directory.Packages.props` (no versions in `.csproj`) |
 
