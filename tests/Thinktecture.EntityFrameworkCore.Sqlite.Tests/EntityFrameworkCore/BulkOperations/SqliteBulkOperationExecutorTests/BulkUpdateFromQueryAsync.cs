@@ -1998,5 +1998,158 @@ public class BulkUpdateFromQueryAsync : IntegrationTestsBase
       exception.Which.Message.Should().NotContain("unbound variable");
    }
 
+   [Theory]
+   [InlineData(2, 1)]
+   [InlineData(1, 1)]
+   [InlineData(0, 0)]
+   public async Task Should_update_rows_When_filter_uses_captured_Guid_array_Contains(int arrayLength, int expectedAffectedRows)
+   {
+      var match = new TestEntity { Id = new Guid("8B000000-0000-0000-0000-0000000000A5"), RequiredName = "RequiredName" };
+      var other = new TestEntity { Id = new Guid("8B000000-0000-0000-0000-0000000000A6"), RequiredName = "RequiredName" };
+      ArrangeDbContext.AddRange(match, other);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      Guid[] ids = arrayLength switch
+      {
+         0 => [],
+         1 => [match.Id],
+         _ => [match.Id, Guid.NewGuid()]
+      };
+
+      var affectedRows = await ActDbContext.TestEntities.BulkUpdateAsync(
+         ActDbContext.TestEntities,
+         e => e.Id,
+         s => s.Id,
+         builder => builder.Set(e => e.Count, (e, s) => 1),
+         filter: (e, s) => ids.Contains(s.Id));
+
+      affectedRows.Should().Be(expectedAffectedRows);
+
+      if (arrayLength == 2)
+         ExecutedCommands.Last().Should().Contain(" IN (");
+
+      if (arrayLength == 1)
+         ExecutedCommands.Last().Should().NotContain(" IN (");
+
+      (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == match.Id)).Count.Should().Be(expectedAffectedRows);
+      (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == other.Id)).Count.Should().Be(0);
+   }
+
+   [Fact]
+   public async Task Should_update_rows_When_filter_uses_captured_string_array_Contains()
+   {
+      var match = new TestEntity { Id = new Guid("8C000000-0000-0000-0000-00000000001A"), RequiredName = "RequiredName", Name = "x" };
+      var other = new TestEntity { Id = new Guid("8C000000-0000-0000-0000-00000000001B"), RequiredName = "RequiredName", Name = "z" };
+      ArrangeDbContext.AddRange(match, other);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      string[] names = ["x", "y"];
+
+      var affectedRows = await ActDbContext.TestEntities.BulkUpdateAsync(
+         ActDbContext.TestEntities,
+         e => e.Id,
+         s => s.Id,
+         builder => builder.Set(e => e.Count, (e, s) => 1),
+         filter: (e, s) => names.Contains(s.Name!));
+
+      affectedRows.Should().Be(1);
+      ExecutedCommands.Last().Should().Contain(" IN ('x', 'y')");
+      (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == match.Id)).Count.Should().Be(1);
+      (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == other.Id)).Count.Should().Be(0);
+   }
+
+   [Fact]
+   public async Task Should_update_rows_When_value_uses_inline_array_Contains()
+   {
+      var match = new TestEntity { Id = new Guid("8C000000-0000-0000-0000-00000000001C"), RequiredName = "RequiredName", Count = 1 };
+      var other = new TestEntity { Id = new Guid("8C000000-0000-0000-0000-00000000001D"), RequiredName = "RequiredName", Count = 3 };
+      ArrangeDbContext.AddRange(match, other);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var affectedRows = await ActDbContext.TestEntities.BulkUpdateAsync(
+         ActDbContext.TestEntities,
+         e => e.Id,
+         s => s.Id,
+         builder => builder.Set(e => e.Count, (e, s) => new[] { 1, 2 }.Contains(s.Count) ? 7 : 8));
+
+      affectedRows.Should().Be(2);
+      ExecutedCommands.Last().Should().Contain(" IN (1, 2)");
+      (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == match.Id)).Count.Should().Be(7);
+      (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == other.Id)).Count.Should().Be(8);
+   }
+
+   [Fact]
+   public async Task Should_update_rows_When_value_uses_captured_int_array_Contains()
+   {
+      var entity = new TestEntity { Id = new Guid("8B000000-0000-0000-0000-0000000000A7"), RequiredName = "RequiredName", Count = 5 };
+      ArrangeDbContext.Add(entity);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      int[] counts = [5, 7];
+
+      var affectedRows = await ActDbContext.TestEntities.BulkUpdateAsync(
+         ActDbContext.TestEntities,
+         e => e.Id,
+         s => s.Id,
+         builder => builder.Set(e => e.Count, (e, s) => counts.Contains(s.Count) ? s.Count + 100 : 0));
+
+      affectedRows.Should().Be(1);
+      ExecutedCommands.Last().Should().Contain("CASE");
+      ExecutedCommands.Last().Should().Contain(" IN (");
+
+      (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == entity.Id)).Count.Should().Be(105);
+   }
+
+   [Fact]
+   public async Task Should_update_rows_When_captured_array_is_used_inside_captured_lambda()
+   {
+      var entity = new TestEntity { Id = new Guid("8B000000-0000-0000-0000-0000000000A8"), RequiredName = "RequiredName" };
+      ArrangeDbContext.Add(entity);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var items = new List<CapturedItem> { new(Guid.NewGuid(), true), new(Guid.NewGuid(), false), new(Guid.NewGuid(), true) };
+      Guid[] ids = [items[0].Id, items[1].Id];
+
+      var affectedRows = await ActDbContext.TestEntities.BulkUpdateAsync(
+         ActDbContext.TestEntities,
+         e => e.Id,
+         s => s.Id,
+         builder => builder.Set(e => e.Count, (e, s) => items.Where(i => ids.Contains(i.Id)).Count()));
+
+      affectedRows.Should().Be(1);
+      ExecutedCommands.Last().Should().Contain("\"Count\" = 2");
+
+      (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == entity.Id)).Count.Should().Be(2);
+   }
+
+   [Theory]
+   [InlineData(true, 1)]
+   [InlineData(false, 0)]
+   public async Task Should_update_rows_When_filter_uses_captured_array_SequenceEqual(bool equal, int expectedAffectedRows)
+   {
+      var entity = new TestEntity { Id = new Guid("8B000000-0000-0000-0000-0000000000A9"), RequiredName = "RequiredName" };
+      ArrangeDbContext.Add(entity);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      int[] left = [1, 3];
+      int[] right = equal ? [1, 3] : [1, 4];
+
+      var affectedRows = await ActDbContext.TestEntities.BulkUpdateAsync(
+         ActDbContext.TestEntities,
+         e => e.Id,
+         s => s.Id,
+         builder => builder.Set(e => e.Count, (e, s) => 1),
+         filter: (e, s) => left.SequenceEqual(right) && s.Id == entity.Id);
+
+      affectedRows.Should().Be(expectedAffectedRows);
+
+      if (equal)
+         ExecutedCommands.Last().Should().NotContain("1 = 0");
+      else
+         ExecutedCommands.Last().Should().Contain("1 = 0");
+
+      (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == entity.Id)).Count.Should().Be(expectedAffectedRows);
+   }
+
    private sealed record CapturedItem(Guid Id, bool Active);
 }

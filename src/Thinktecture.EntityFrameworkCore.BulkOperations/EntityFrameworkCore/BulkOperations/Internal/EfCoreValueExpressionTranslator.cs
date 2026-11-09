@@ -458,6 +458,8 @@ public sealed class EfCoreValueExpressionTranslator
 
    private Expression FlattenClosures(Expression expression)
    {
+      expression = new SpanConversionRewritingVisitor().Visit(expression);
+
       var finder = new EvaluatableSubtreeFinder(_ctx.GetService<IEvaluatableExpressionFilter>(), _ctx.Model);
       finder.Visit(expression);
 
@@ -503,6 +505,41 @@ public sealed class EfCoreValueExpressionTranslator
                                   property.ClrType,
                                   typeMapping,
                                   property.IsColumnNullable());
+   }
+
+   /// <summary>
+   /// Runs before pass 1: rewrites the span-based "Contains" and "SequenceEqual" that C# 14 binds for an array ("ids.Contains(x)" is
+   /// "MemoryExtensions.Contains(op_Implicit(ids), x)") to the Enumerable methods, the rule of EF Core's funcletizer.
+   /// A span is a ref struct, so the interpreter cannot use it as a generic argument of its delegate, and the SQL translator has no translation for it.
+   /// </summary>
+   private sealed class SpanConversionRewritingVisitor : ExpressionVisitor
+   {
+      protected override Expression VisitMethodCall(MethodCallExpression node)
+      {
+         if (node.Method.DeclaringType != typeof(MemoryExtensions) || node.Method.Name is not (nameof(MemoryExtensions.Contains) or nameof(MemoryExtensions.SequenceEqual)))
+            return base.VisitMethodCall(node);
+
+         var arguments = node.Arguments.Select(UnwrapSpanConversion).ToList();
+
+         // A span that is not the conversion of a collection cannot be rewritten; it fails in the client evaluation.
+         if (arguments.Any(a => a.Type.IsByRefLike))
+            return base.VisitMethodCall(node);
+
+         // A null comparer is dropped, so the two-argument "Contains" or "SequenceEqual" is used; EF Core translates that "Contains" to "IN (...)".
+         if (arguments is [_, _, ConstantExpression { Value: null }])
+            arguments.RemoveAt(2);
+
+         return Visit(Expression.Call(typeof(Enumerable), node.Method.Name, node.Method.GetGenericArguments(), arguments.ToArray()));
+      }
+
+      // "op_Implicit(array)" of Span<T> or ReadOnlySpan<T>.
+      private static Expression UnwrapSpanConversion(Expression expression)
+      {
+         return expression is MethodCallExpression { Method: { Name: "op_Implicit", DeclaringType: { IsGenericType: true } declaringType }, Arguments: [var operand] }
+                && (declaringType.GetGenericTypeDefinition() == typeof(Span<>) || declaringType.GetGenericTypeDefinition() == typeof(ReadOnlySpan<>))
+                   ? operand
+                   : expression;
+      }
    }
 
    /// <summary>

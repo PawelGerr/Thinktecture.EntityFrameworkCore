@@ -1068,5 +1068,59 @@ public class BulkInsertFromQueryAsync : IntegrationTestsBase
       (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == newId)).Count.Should().Be(1);
    }
 
+   [Theory]
+   [InlineData(true, 1)]
+   [InlineData(false, 0)]
+   public async Task Should_insert_When_value_uses_captured_Guid_array_Contains(bool contained, int expectedCount)
+   {
+      var sourceId = new Guid("8B000000-0000-0000-0000-0000000000B4");
+      var newId = new Guid("8B000000-0000-0000-0000-0000000000B5");
+      ArrangeDbContext.Add(new TestEntity { Id = sourceId, RequiredName = "Req", Count = 7 });
+      await ArrangeDbContext.SaveChangesAsync();
+
+      Guid[] ids = [contained ? sourceId : Guid.NewGuid(), Guid.NewGuid()];
+
+      var affectedRows = await ActDbContext.TestEntities.BulkInsertAsync(
+         ActDbContext.TestEntities.Where(e => e.Id == sourceId),
+         builder => builder.Map(e => e.Id, s => newId)
+                           .Map(e => e.RequiredName, s => s.RequiredName)
+                           .Map(e => e.Count, s => ids.Contains(s.Id) ? 1 : 0)
+                           .Map(e => e.PropertyWithBackingField, s => s.Count)
+                           .Map(e => EF.Property<int>(e, "_privateField"), s => s.Count));
+
+      affectedRows.Should().Be(1);
+      ExecutedCommands.Last().Should().Contain("CASE");
+      ExecutedCommands.Last().Should().Contain(" IN (");
+
+      (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == newId)).Count.Should().Be(expectedCount);
+   }
+
+   [Fact]
+   public async Task Should_insert_When_captured_array_is_used_inside_captured_lambda()
+   {
+      var sourceId = new Guid("8B000000-0000-0000-0000-0000000000B6");
+      var newId = new Guid("8B000000-0000-0000-0000-0000000000B7");
+      ArrangeDbContext.Add(new TestEntity { Id = sourceId, RequiredName = "Req", Count = 7 });
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var items = new List<CapturedItem> { new(Guid.NewGuid(), true), new(Guid.NewGuid(), false), new(Guid.NewGuid(), true) };
+      Guid[] ids = [items[0].Id, items[1].Id];
+
+      var affectedRows = await ActDbContext.TestEntities.BulkInsertAsync(
+         ActDbContext.TestEntities.Where(e => e.Id == sourceId),
+         builder => builder.Map(e => e.Id, s => newId)
+                           .Map(e => e.RequiredName, s => s.RequiredName)
+                           .Map(e => e.Count, s => items.Where(i => ids.Contains(i.Id)).Count())
+                           .Map(e => e.PropertyWithBackingField, s => s.Count)
+                           .Map(e => EF.Property<int>(e, "_privateField"), s => s.Count));
+
+      affectedRows.Should().Be(1);
+      ExecutedCommands.Last().Should().Contain("__insert_const_1");
+
+      var inserted = await AssertDbContext.TestEntities.SingleAsync(e => e.Id == newId);
+      inserted.Count.Should().Be(2);
+      inserted.PropertyWithBackingField.Should().Be(7);
+   }
+
    private sealed record CapturedItem(Guid Id, bool Active);
 }
