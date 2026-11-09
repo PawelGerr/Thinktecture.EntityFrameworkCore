@@ -114,6 +114,8 @@ public sealed class EfCoreValueExpressionTranslator
             selectExpression.ApplyPredicate(sqlExprFactory.Equal(sqlExprFactory.Constant(1), sqlExprFactory.Constant(0)));
          else if (sqlFilter is SqlExpression filterExpr)
             selectExpression.ApplyPredicate(filterExpr);
+         else
+            throw new InvalidOperationException($"Could not translate filter expression: {filter}");
       }
 
       // Step 7: Clear projections and build UpdateExpression
