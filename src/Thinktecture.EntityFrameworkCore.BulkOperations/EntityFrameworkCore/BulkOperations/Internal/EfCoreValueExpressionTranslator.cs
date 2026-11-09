@@ -470,7 +470,9 @@ public sealed class EfCoreValueExpressionTranslator
       var finder = new EvaluatableSubtreeFinder(_ctx.GetService<IEvaluatableExpressionFilter>(), _ctx.Model);
       finder.Visit(expression);
 
-      return new ClosureFlatteningVisitor(finder.EvaluatableNodes).Visit(expression);
+      var useRelationalNulls = RelationalOptionsExtension.Extract(_ctx.GetService<IDbContextOptions>()).UseRelationalNulls;
+
+      return new ClosureFlatteningVisitor(finder.EvaluatableNodes, useRelationalNulls).Visit(expression);
    }
 
    private static SqlExpression TranslateValueExpression(
@@ -642,7 +644,7 @@ public sealed class EfCoreValueExpressionTranslator
    /// <summary>
    /// Pass 2: replaces every maximal evaluatable subtree with a constant.
    /// </summary>
-   private sealed class ClosureFlatteningVisitor(HashSet<Expression> evaluatableNodes) : ExpressionVisitor
+   private sealed class ClosureFlatteningVisitor(HashSet<Expression> evaluatableNodes, bool useRelationalNulls) : ExpressionVisitor
    {
       [return: NotNullIfNotNull(nameof(node))]
       public override Expression? Visit(Expression? node)
@@ -654,6 +656,59 @@ public sealed class EfCoreValueExpressionTranslator
             return base.Visit(node);
 
          return node is ConstantExpression ? node : Evaluate(node);
+      }
+
+      // EF Core's ContainsTranslator throws NullReferenceException for a null element of a constant collection and has no translation for a null collection.
+      // EF Core's query pipeline binds a captured collection as a parameter and renders a null element as "col IS NULL" (not with UseRelationalNulls)
+      // and a null collection as a false condition.
+      protected override Expression VisitMethodCall(MethodCallExpression node)
+      {
+         var visited = base.VisitMethodCall(node);
+
+         if (visited is not MethodCallExpression { Method.Name: nameof(Enumerable.Contains) } call)
+            return visited;
+
+         // "Enumerable.Contains(collection, item)" or "collection.Contains(item)" of a collection type (e.g. List<T>, the rule of ContainsTranslator). A Contains with a comparer,
+         // of a string or of a non-collection object (e.g. NpgsqlRange<T> or another IEnumerable with its own Contains) is not rewritten.
+         var (collection, item) = call switch
+         {
+            { Object: null, Arguments: [ConstantExpression c, var i] } when call.Method.DeclaringType == typeof(Enumerable) => (c, i),
+            { Object: ConstantExpression c, Arguments: [var i] } when IsCollectionType(call.Method.DeclaringType!) => (c, i),
+            _ => (null, null)
+         };
+
+         if (collection is null || item is null)
+            return visited;
+
+         if (collection.Value is null)
+            return Expression.Constant(false);
+
+         // Materialized once and used to rebuild the call, because the collection can be a single-use or lazy sequence that EF Core would enumerate again.
+         var elements = ((System.Collections.IEnumerable)collection.Value).Cast<object?>().ToList();
+         var nonNullElements = elements.Where(e => e is not null).ToList();
+         var elementType = call.Method.GetParameters()[^1].ParameterType;
+         var nonNullArray = Array.CreateInstance(elementType, nonNullElements.Count);
+
+         for (var i = 0; i < nonNullElements.Count; i++)
+         {
+            nonNullArray.SetValue(nonNullElements[i], i);
+         }
+
+         var containsNonNull = Expression.Call(typeof(Enumerable), nameof(Enumerable.Contains), [elementType], Expression.Constant(nonNullArray), item);
+
+         return useRelationalNulls || nonNullElements.Count == elements.Count
+                   ? containsNonNull
+                   : Expression.OrElse(containsNonNull, Expression.Equal(item, Expression.Constant(null, item.Type)));
+      }
+
+      // The rule of EF Core's internal IsContainsMethod. Any other IEnumerable can have a Contains with its own semantics (e.g. a GeometryCollection).
+      private static bool IsCollectionType(Type type)
+      {
+         return type.GetInterfaces().Append(type).Any(t => t == typeof(System.Collections.IList)
+                                                           || (t.IsGenericType
+                                                               && (t.GetGenericTypeDefinition() == typeof(ICollection<>)
+                                                                   || t.GetGenericTypeDefinition() == typeof(IReadOnlySet<>)
+                                                                   || t.GetGenericTypeDefinition() == typeof(System.Collections.Immutable.IImmutableSet<>))));
       }
 
       // Like EF Core's funcletizer, a client-evaluatable test selects the branch, so a null guard protects a branch that contains a column.

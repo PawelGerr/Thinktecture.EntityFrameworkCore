@@ -33,4 +33,31 @@ public class BulkUpdateFromQueryWithConvertedColumnsAsync : SchemaChangingIntegr
       var stored = await AssertDbContext.Database.SqlQueryRaw<int>("""SELECT "Count" AS "Value" FROM "TestEntities" ORDER BY "NullableCount" """).ToListAsync();
       stored.Should().Equal(100, 200);
    }
+
+   [Fact]
+   public async Task Should_update_rows_When_filter_uses_captured_collection_with_null_element_and_relational_nulls()
+   {
+      Configure = builder => builder.UseSqlite(o => o.UseRelationalNulls());
+
+      var withNull = new TestEntity { Id = new Guid("8D000000-0000-0000-0000-000000000008"), RequiredName = "RequiredName", NullableCount = null };
+      var match = new TestEntity { Id = new Guid("8D000000-0000-0000-0000-000000000009"), RequiredName = "RequiredName", NullableCount = 7 };
+      ArrangeDbContext.AddRange(withNull, match);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      int?[] counts = [7, null];
+
+      // Control: the SQL of EF Core for the same collection as a parameter.
+      ActDbContext.TestEntities.Where(e => counts.Contains(e.NullableCount)).ToQueryString().Should().NotContain("IS NULL");
+
+      var affectedRows = await ActDbContext.TestEntities.BulkUpdateAsync(
+         ActDbContext.TestEntities,
+         e => e.Id,
+         s => s.Id,
+         builder => builder.Set(e => e.Count, (e, s) => 1),
+         filter: (e, s) => counts.Contains(s.NullableCount));
+
+      affectedRows.Should().Be(1);
+      (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == match.Id)).Count.Should().Be(1);
+      (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == withNull.Id)).Count.Should().Be(0);
+   }
 }

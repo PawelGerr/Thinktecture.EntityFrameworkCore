@@ -2512,5 +2512,92 @@ public class BulkUpdateFromQueryAsync : IntegrationTestsBase
       stored.Should().Equal(100, 200);
    }
 
+   [Fact]
+   public async Task Should_update_rows_When_filter_uses_captured_collection_with_null_element()
+   {
+      var withNull = new TestEntity { Id = new Guid("8C000000-0000-0000-0000-00000000000F"), RequiredName = "RequiredName", NullableCount = null };
+      var match = new TestEntity { Id = new Guid("8C000000-0000-0000-0000-000000000010"), RequiredName = "RequiredName", NullableCount = 7 };
+      var other = new TestEntity { Id = new Guid("8C000000-0000-0000-0000-000000000011"), RequiredName = "RequiredName", NullableCount = 8 };
+      ArrangeDbContext.AddRange(withNull, match, other);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      int?[] counts = [7, null];
+
+      var affectedRows = await ActDbContext.TestEntities.BulkUpdateAsync(
+         ActDbContext.TestEntities,
+         e => e.Id,
+         s => s.Id,
+         builder => builder.Set(e => e.Count, (e, s) => 1),
+         filter: (e, s) => counts.Contains(s.NullableCount));
+
+      affectedRows.Should().Be(2);
+      ExecutedCommands.Last().Should().Contain(".\"NullableCount\" IS NULL").And.Contain(".\"NullableCount\" = 7");
+
+      (await AssertDbContext.TestEntities.Where(e => e.Count == 1).CountAsync()).Should().Be(2);
+      (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == other.Id)).Count.Should().Be(0);
+   }
+
+   [Fact]
+   public async Task Should_update_no_rows_When_filter_uses_captured_null_collection()
+   {
+      var entity = new TestEntity { Id = new Guid("8C000000-0000-0000-0000-000000000019"), RequiredName = "RequiredName" };
+      ArrangeDbContext.Add(entity);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      int[]? ids = null;
+
+      var affectedRows = await ActDbContext.TestEntities.BulkUpdateAsync(
+         ActDbContext.TestEntities,
+         e => e.Id,
+         s => s.Id,
+         builder => builder.Set(e => e.Count, (e, s) => 1),
+         filter: (e, s) => ids!.Contains(s.Count));
+
+      affectedRows.Should().Be(0);
+      ExecutedCommands.Last().Should().Contain("1 = 0");
+   }
+
+   [Fact]
+   public async Task Should_update_rows_When_filter_uses_captured_HashSet_with_null_element()
+   {
+      var withNull = new TestEntity { Id = new Guid("8C000000-0000-0000-0000-000000000022"), RequiredName = "RequiredName", NullableCount = null };
+      var match = new TestEntity { Id = new Guid("8C000000-0000-0000-0000-000000000023"), RequiredName = "RequiredName", NullableCount = 7 };
+      var other = new TestEntity { Id = new Guid("8C000000-0000-0000-0000-000000000024"), RequiredName = "RequiredName", NullableCount = 8 };
+      ArrangeDbContext.AddRange(withNull, match, other);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var counts = new HashSet<int?> { 7, null };
+
+      var affectedRows = await ActDbContext.TestEntities.BulkUpdateAsync(
+         ActDbContext.TestEntities,
+         e => e.Id,
+         s => s.Id,
+         builder => builder.Set(e => e.Count, (e, s) => 1),
+         filter: (e, s) => counts.Contains(s.NullableCount));
+
+      affectedRows.Should().Be(2);
+      ExecutedCommands.Last().Should().Contain(".\"NullableCount\" IS NULL");
+      (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == other.Id)).Count.Should().Be(0);
+   }
+
+   [Fact]
+   public async Task Should_take_else_branch_When_value_uses_Contains_of_captured_null_collection()
+   {
+      var entity = new TestEntity { Id = new Guid("8C000000-0000-0000-0000-000000000025"), RequiredName = "RequiredName" };
+      ArrangeDbContext.Add(entity);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      int[]? ids = null;
+
+      var affectedRows = await ActDbContext.TestEntities.BulkUpdateAsync(
+         ActDbContext.TestEntities,
+         e => e.Id,
+         s => s.Id,
+         builder => builder.Set(e => e.Count, (e, s) => ids!.Contains(s.Count) ? 1 : 2));
+
+      affectedRows.Should().Be(1);
+      (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == entity.Id)).Count.Should().Be(2);
+   }
+
    private sealed record CapturedItem(Guid Id, bool Active);
 }

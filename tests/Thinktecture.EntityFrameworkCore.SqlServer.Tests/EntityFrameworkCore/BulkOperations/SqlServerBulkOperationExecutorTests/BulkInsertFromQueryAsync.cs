@@ -1172,5 +1172,28 @@ public class BulkInsertFromQueryAsync : IntegrationTestsBase
       names.Should().Equal("A", "A", "B");
    }
 
+   [Fact]
+   public async Task Should_insert_When_value_uses_captured_collection_with_null_element()
+   {
+      var source = new TestEntity { Id = new Guid("7C000000-0000-0000-0000-000000000017"), RequiredName = "RequiredName", NullableCount = null };
+      ArrangeDbContext.Add(source);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var newId = new Guid("7C000000-0000-0000-0000-000000000018");
+      int?[] counts = [7, null];
+
+      var affectedRows = await ActDbContext.TestEntities.BulkInsertAsync(
+         ActDbContext.TestEntities.Where(s => s.Id == source.Id),
+         builder => builder.Map(e => e.Id, s => newId)
+                           .Map(e => e.RequiredName, s => s.RequiredName)
+                           .Map(e => e.Count, s => counts.Contains(s.NullableCount) ? 1 : 0)
+                           .Map(e => e.PropertyWithBackingField, s => s.PropertyWithBackingField)
+                           .Map(e => EF.Property<int>(e, "_privateField"), s => EF.Property<int>(s, "_privateField")));
+
+      affectedRows.Should().Be(1);
+      ExecutedCommands.Last().Should().Contain(".[NullableCount] IS NULL").And.Contain(".[NullableCount] = 7");
+      (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == newId)).Count.Should().Be(1);
+   }
+
    private sealed record CapturedItem(Guid Id, bool Active);
 }

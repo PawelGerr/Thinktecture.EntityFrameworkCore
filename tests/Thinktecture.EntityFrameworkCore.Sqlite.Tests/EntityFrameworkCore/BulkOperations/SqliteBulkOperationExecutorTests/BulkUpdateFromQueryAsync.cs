@@ -2199,5 +2199,250 @@ public class BulkUpdateFromQueryAsync : IntegrationTestsBase
       loaded[1].OptionalConverted.Should().Be(forNulls);
    }
 
+   [Fact]
+   public async Task Should_update_rows_When_filter_uses_captured_collection_with_null_element()
+   {
+      var withNull = new TestEntity { Id = new Guid("8C000000-0000-0000-0000-00000000000F"), RequiredName = "RequiredName", NullableCount = null };
+      var match = new TestEntity { Id = new Guid("8C000000-0000-0000-0000-000000000010"), RequiredName = "RequiredName", NullableCount = 7 };
+      var other = new TestEntity { Id = new Guid("8C000000-0000-0000-0000-000000000011"), RequiredName = "RequiredName", NullableCount = 8 };
+      ArrangeDbContext.AddRange(withNull, match, other);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      int?[] counts = [7, null];
+
+      var affectedRows = await ActDbContext.TestEntities.BulkUpdateAsync(
+         ActDbContext.TestEntities,
+         e => e.Id,
+         s => s.Id,
+         builder => builder.Set(e => e.Count, (e, s) => 1),
+         filter: (e, s) => counts.Contains(s.NullableCount));
+
+      affectedRows.Should().Be(2);
+      ExecutedCommands.Last().Should().Contain(".\"NullableCount\" IS NULL").And.Contain(".\"NullableCount\" = 7");
+
+      (await AssertDbContext.TestEntities.Where(e => e.Count == 1).CountAsync()).Should().Be(2);
+      (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == other.Id)).Count.Should().Be(0);
+   }
+
+   [Fact]
+   public async Task Should_update_no_rows_When_filter_uses_captured_null_collection()
+   {
+      var entity = new TestEntity { Id = new Guid("8C000000-0000-0000-0000-000000000019"), RequiredName = "RequiredName" };
+      ArrangeDbContext.Add(entity);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      int[]? ids = null;
+
+      var affectedRows = await ActDbContext.TestEntities.BulkUpdateAsync(
+         ActDbContext.TestEntities,
+         e => e.Id,
+         s => s.Id,
+         builder => builder.Set(e => e.Count, (e, s) => 1),
+         filter: (e, s) => ids!.Contains(s.Count));
+
+      affectedRows.Should().Be(0);
+      ExecutedCommands.Last().Should().Contain("1 = 0");
+   }
+
+   [Fact]
+   public async Task Should_update_rows_When_filter_uses_captured_list_with_only_null_element()
+   {
+      var withNull = new TestEntity { Id = new Guid("8C000000-0000-0000-0000-000000000012"), RequiredName = "RequiredName", NullableCount = null };
+      var other = new TestEntity { Id = new Guid("8C000000-0000-0000-0000-000000000013"), RequiredName = "RequiredName", NullableCount = 8 };
+      ArrangeDbContext.AddRange(withNull, other);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var counts = new List<int?> { null };
+
+      var affectedRows = await ActDbContext.TestEntities.BulkUpdateAsync(
+         ActDbContext.TestEntities,
+         e => e.Id,
+         s => s.Id,
+         builder => builder.Set(e => e.Count, (e, s) => 1),
+         filter: (e, s) => counts.Contains(s.NullableCount));
+
+      affectedRows.Should().Be(1);
+      ExecutedCommands.Last().Should().Contain("\"NullableCount\" IS NULL").And.NotContain(" IN (");
+      (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == withNull.Id)).Count.Should().Be(1);
+   }
+
+   [Fact]
+   public async Task Should_update_rows_When_filter_uses_captured_string_array_with_null_element()
+   {
+      var withNull = new TestEntity { Id = new Guid("8C000000-0000-0000-0000-000000000014"), RequiredName = "RequiredName", Name = null };
+      var match = new TestEntity { Id = new Guid("8C000000-0000-0000-0000-000000000015"), RequiredName = "RequiredName", Name = "x" };
+      var other = new TestEntity { Id = new Guid("8C000000-0000-0000-0000-000000000016"), RequiredName = "RequiredName", Name = "y" };
+      ArrangeDbContext.AddRange(withNull, match, other);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      string?[] names = ["x", null];
+
+      var affectedRows = await ActDbContext.TestEntities.BulkUpdateAsync(
+         ActDbContext.TestEntities,
+         e => e.Id,
+         s => s.Id,
+         builder => builder.Set(e => e.Count, (e, s) => 1),
+         filter: (e, s) => names.Contains(s.Name));
+
+      affectedRows.Should().Be(2);
+      ExecutedCommands.Last().Should().Contain("\"Name\" IS NULL").And.Contain("\"Name\" = 'x'");
+      (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == other.Id)).Count.Should().Be(0);
+   }
+
+   // Guard: passes without the rewrite in ClosureFlatteningVisitor.VisitMethodCall.
+   [Fact]
+   public async Task Should_throw_When_client_evaluated_Contains_uses_captured_null_collection()
+   {
+      int[]? ids = null;
+
+      var act = () => ActDbContext.TestEntities.BulkUpdateAsync(
+         ActDbContext.TestEntities,
+         e => e.Id,
+         s => s.Id,
+         builder => builder.Set(e => e.Count, (e, s) => ids!.Contains(5) ? 1 : 2));
+
+      await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("The expression '*' cannot be evaluated on the client: Value cannot be null.*");
+   }
+
+   // Guard: passes without the rewrite in ClosureFlatteningVisitor.VisitMethodCall.
+   [Fact]
+   public async Task Should_throw_When_filter_uses_Contains_of_captured_non_collection_object()
+   {
+      var range = new IntRange(1, 10);
+
+      var act = () => ActDbContext.TestEntities.BulkUpdateAsync(
+         ActDbContext.TestEntities,
+         e => e.Id,
+         s => s.Id,
+         builder => builder.Set(e => e.Count, (e, s) => 1),
+         filter: (e, s) => range.Contains(s.Count));
+
+      await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("Could not translate filter expression:*");
+   }
+
+   [Fact]
+   public async Task Should_enumerate_captured_collection_once_When_filter_uses_Contains()
+   {
+      var match = new TestEntity { Id = new Guid("8C000000-0000-0000-0000-00000000001F"), RequiredName = "RequiredName", NullableCount = 7 };
+      var other = new TestEntity { Id = new Guid("8C000000-0000-0000-0000-000000000020"), RequiredName = "RequiredName", NullableCount = 8 };
+      ArrangeDbContext.AddRange(match, other);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var enumerations = 0;
+      IEnumerable<int?> counts = EnumerateOnce();
+
+      IEnumerable<int?> EnumerateOnce()
+      {
+         if (++enumerations > 1)
+            throw new InvalidOperationException("The captured collection was enumerated more than once.");
+
+         yield return 7;
+      }
+
+      var affectedRows = await ActDbContext.TestEntities.BulkUpdateAsync(
+         ActDbContext.TestEntities,
+         e => e.Id,
+         s => s.Id,
+         builder => builder.Set(e => e.Count, (e, s) => 1),
+         filter: (e, s) => counts.Contains(s.NullableCount));
+
+      affectedRows.Should().Be(1);
+      enumerations.Should().Be(1);
+      (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == match.Id)).Count.Should().Be(1);
+      (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == other.Id)).Count.Should().Be(0);
+   }
+
+   // Guard: a string is not a collection, so a captured null string keeps the translation of EF Core and does not become a false condition.
+   [Fact]
+   public async Task Should_keep_translation_of_string_Contains_When_captured_string_is_null()
+   {
+      ArrangeDbContext.Add(new TestEntity { Id = new Guid("8C000000-0000-0000-0000-000000000021"), RequiredName = "RequiredName", Name = "x" });
+      await ArrangeDbContext.SaveChangesAsync();
+
+      string? nullStr = null;
+
+      var affectedRows = await ActDbContext.TestEntities.BulkUpdateAsync(
+         ActDbContext.TestEntities,
+         e => e.Id,
+         s => s.Id,
+         builder => builder.Set(e => e.Count, (e, s) => 1),
+         filter: (e, s) => nullStr!.Contains(s.Name!));
+
+      affectedRows.Should().Be(0);
+      ExecutedCommands.Last().Should().NotContain("1 = 0");
+   }
+
+   // Guard: EF Core treats only IList and ICollection<T> as collections, so the own Contains method of any other IEnumerable is not replaced with IN (...).
+   [Fact]
+   public async Task Should_throw_When_filter_uses_own_Contains_of_captured_enumerable_that_is_not_a_collection()
+   {
+      var sequence = new IntSequence();
+
+      var act = () => ActDbContext.TestEntities.BulkUpdateAsync(
+         ActDbContext.TestEntities,
+         e => e.Id,
+         s => s.Id,
+         builder => builder.Set(e => e.Count, (e, s) => 1),
+         filter: (e, s) => sequence.Contains(s.Count));
+
+      await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("Could not translate filter expression:*");
+   }
+
+   [Fact]
+   public async Task Should_update_rows_When_filter_uses_captured_HashSet_with_null_element()
+   {
+      var withNull = new TestEntity { Id = new Guid("8C000000-0000-0000-0000-000000000022"), RequiredName = "RequiredName", NullableCount = null };
+      var match = new TestEntity { Id = new Guid("8C000000-0000-0000-0000-000000000023"), RequiredName = "RequiredName", NullableCount = 7 };
+      var other = new TestEntity { Id = new Guid("8C000000-0000-0000-0000-000000000024"), RequiredName = "RequiredName", NullableCount = 8 };
+      ArrangeDbContext.AddRange(withNull, match, other);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var counts = new HashSet<int?> { 7, null };
+
+      var affectedRows = await ActDbContext.TestEntities.BulkUpdateAsync(
+         ActDbContext.TestEntities,
+         e => e.Id,
+         s => s.Id,
+         builder => builder.Set(e => e.Count, (e, s) => 1),
+         filter: (e, s) => counts.Contains(s.NullableCount));
+
+      affectedRows.Should().Be(2);
+      ExecutedCommands.Last().Should().Contain(".\"NullableCount\" IS NULL");
+      (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == other.Id)).Count.Should().Be(0);
+   }
+
+   [Fact]
+   public async Task Should_take_else_branch_When_value_uses_Contains_of_captured_null_collection()
+   {
+      var entity = new TestEntity { Id = new Guid("8C000000-0000-0000-0000-000000000025"), RequiredName = "RequiredName" };
+      ArrangeDbContext.Add(entity);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      int[]? ids = null;
+
+      var affectedRows = await ActDbContext.TestEntities.BulkUpdateAsync(
+         ActDbContext.TestEntities,
+         e => e.Id,
+         s => s.Id,
+         builder => builder.Set(e => e.Count, (e, s) => ids!.Contains(s.Count) ? 1 : 2));
+
+      affectedRows.Should().Be(1);
+      (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == entity.Id)).Count.Should().Be(2);
+   }
+
+   private sealed class IntRange(int lower, int upper)
+   {
+      public bool Contains(int value) => value >= lower && value <= upper;
+   }
+
+   private sealed class IntSequence : IEnumerable<int>
+   {
+      public bool Contains(int value) => value % 2 == 0;
+
+      public IEnumerator<int> GetEnumerator() => Enumerable.Range(1, 3).GetEnumerator();
+
+      System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
+   }
+
    private sealed record CapturedItem(Guid Id, bool Active);
 }
