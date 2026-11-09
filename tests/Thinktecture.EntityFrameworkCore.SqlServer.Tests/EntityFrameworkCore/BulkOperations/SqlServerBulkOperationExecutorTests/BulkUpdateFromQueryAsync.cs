@@ -1812,4 +1812,219 @@ public class BulkUpdateFromQueryAsync : IntegrationTestsBase
       (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == first.Id)).Count.Should().Be(11);
       (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == second.Id)).Count.Should().Be(0);
    }
+
+   [Fact]
+   public async Task Should_update_override_table_When_value_and_filter_use_target_parameter()
+   {
+      var id = new Guid("8C000000-0000-0000-0000-00000000001E");
+      ArrangeDbContext.Add(new TestEntity { Id = id, RequiredName = "RequiredName", Count = 1 });
+      await ArrangeDbContext.SaveChangesAsync();
+
+      try
+      {
+         await ActDbContext.Database.ExecuteSqlRawAsync($"""
+            CREATE TABLE [{Schema}].[TestEntities_QueryUpdateTarget] (
+               [Id] uniqueidentifier NOT NULL,
+               [RequiredName] nvarchar(max) NOT NULL,
+               [Name] nvarchar(max) NULL,
+               [Count] int NOT NULL,
+               [NullableCount] int NULL,
+               [ConvertibleClass] int NULL,
+               [ParentId] uniqueidentifier NULL,
+               [PropertyWithBackingField] int NOT NULL,
+               [_privateField] int NOT NULL,
+               CONSTRAINT [PK_TestEntities_QueryUpdateTarget] PRIMARY KEY ([Id])
+            );
+            INSERT INTO [{Schema}].[TestEntities_QueryUpdateTarget] ([Id], [RequiredName], [Name], [Count], [NullableCount], [ConvertibleClass], [ParentId], [PropertyWithBackingField], [_privateField])
+            VALUES ('8C000000-0000-0000-0000-00000000001E', 'RequiredName', NULL, 100, NULL, NULL, NULL, 0, 0);
+            """);
+
+         var affectedRows = await ActDbContext.Set<TestEntity>().BulkUpdateAsync(
+            ActDbContext.TestEntities.Where(e => e.Id == id),
+            e => e.Id,
+            f => f.Id,
+            builder => builder.Set(e => e.Count, (e, f) => e.Count + f.Count),
+            filter: (e, f) => e.Count >= 100,
+            options: new SqlServerBulkUpdateFromQueryOptions { TableNameProvider = IBulkOperationTableNameProvider.ForRootEntity("TestEntities_QueryUpdateTarget", Schema) });
+
+         affectedRows.Should().Be(1);
+
+         var lastCommand = ExecutedCommands.Last();
+         lastCommand.Should().Contain($"[{Schema}].[TestEntities_QueryUpdateTarget] AS", Exactly.Once());
+         lastCommand.Should().Contain($"[{Schema}].[TestEntities] AS", Exactly.Once());
+
+         var redirected = await AssertDbContext.Database.SqlQueryRaw<int>($"SELECT [Count] AS [Value] FROM [{Schema}].[TestEntities_QueryUpdateTarget]").SingleAsync();
+         redirected.Should().Be(101);
+         (await AssertDbContext.TestEntities.SingleAsync()).Count.Should().Be(1);
+      }
+      finally
+      {
+         await ActDbContext.Database.ExecuteSqlRawAsync($"DROP TABLE IF EXISTS [{Schema}].[TestEntities_QueryUpdateTarget]");
+      }
+   }
+
+   [Fact]
+   public async Task Should_update_override_table_from_source_query_over_model_table()
+   {
+      var id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866");
+      ArrangeDbContext.Add(new TestEntity { Id = id, Name = "Source", RequiredName = "RequiredName", Count = 1 });
+      await ArrangeDbContext.SaveChangesAsync();
+
+      await ActDbContext.Database.ExecuteSqlRawAsync($"""
+         CREATE TABLE [{Schema}].[TestEntities_QueryUpdateRedirect] (
+            [Id] uniqueidentifier NOT NULL,
+            [RequiredName] nvarchar(max) NOT NULL,
+            [Name] nvarchar(max) NULL,
+            [Count] int NOT NULL,
+            [NullableCount] int NULL,
+            [ConvertibleClass] int NULL,
+            [ParentId] uniqueidentifier NULL,
+            [PropertyWithBackingField] int NOT NULL,
+            [_privateField] int NOT NULL,
+            CONSTRAINT [PK_TestEntities_QueryUpdateRedirect] PRIMARY KEY ([Id])
+         );
+         INSERT INTO [{Schema}].[TestEntities_QueryUpdateRedirect] ([Id], [RequiredName], [Name], [Count], [NullableCount], [ConvertibleClass], [ParentId], [PropertyWithBackingField], [_privateField])
+         VALUES ('40B5CA93-5C02-48AD-B8A1-12BC13313866', 'RequiredName', NULL, 0, NULL, NULL, NULL, 0, 0);
+         """);
+
+      try
+      {
+         var affectedRows = await ActDbContext.Set<TestEntity>().BulkUpdateAsync(
+            ActDbContext.TestEntities.Where(e => e.Id == id),
+            e => e.Id,
+            f => f.Id,
+            builder => builder
+               .Set(e => e.Name, (e, f) => f.Name)
+               .Set(e => e.Count, (e, f) => f.Count + 40),
+            options: new SqlServerBulkUpdateFromQueryOptions { TableNameProvider = IBulkOperationTableNameProvider.ForRootEntity("TestEntities_QueryUpdateRedirect", Schema) });
+
+         affectedRows.Should().Be(1);
+
+         var lastCommand = ExecutedCommands.Last();
+         lastCommand.Should().Contain($"[{Schema}].[TestEntities_QueryUpdateRedirect] AS", Exactly.Once());
+         lastCommand.Should().Contain($"[{Schema}].[TestEntities] AS", Exactly.Once());
+
+         var redirected = await AssertDbContext.Database
+                                               .SqlQueryRaw<string>($"""SELECT [Name] + ':' + CAST([Count] AS nvarchar(10)) AS [Value] FROM [{Schema}].[TestEntities_QueryUpdateRedirect] """)
+                                               .SingleAsync();
+         redirected.Should().Be("Source:41");
+
+         var source = await AssertDbContext.TestEntities.SingleAsync();
+         source.Name.Should().Be("Source");
+         source.Count.Should().Be(1);
+      }
+      finally
+      {
+         await ActDbContext.Database.ExecuteSqlRawAsync($"""DROP TABLE IF EXISTS [{Schema}].[TestEntities_QueryUpdateRedirect] """);
+      }
+   }
+
+   [Fact]
+   public async Task Should_update_table_in_override_schema_from_source_query_over_model_table()
+   {
+      var id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866");
+      ArrangeDbContext.Add(new TestEntity { Id = id, Name = "Source", RequiredName = "RequiredName", Count = 1 });
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var archiveSchema = $"{Schema}_archive";
+
+      try
+      {
+         await ActDbContext.Database.ExecuteSqlRawAsync($"CREATE SCHEMA [{archiveSchema}]");
+         await ActDbContext.Database.ExecuteSqlRawAsync($"""
+            CREATE TABLE [{archiveSchema}].[TestEntities] (
+               [Id] uniqueidentifier NOT NULL,
+               [RequiredName] nvarchar(max) NOT NULL,
+               [Name] nvarchar(max) NULL,
+               [Count] int NOT NULL,
+               [NullableCount] int NULL,
+               [ConvertibleClass] int NULL,
+               [ParentId] uniqueidentifier NULL,
+               [PropertyWithBackingField] int NOT NULL,
+               [_privateField] int NOT NULL,
+               CONSTRAINT [PK_TestEntities_Archive] PRIMARY KEY ([Id])
+            );
+            INSERT INTO [{archiveSchema}].[TestEntities] ([Id], [RequiredName], [Name], [Count], [NullableCount], [ConvertibleClass], [ParentId], [PropertyWithBackingField], [_privateField])
+            VALUES ('40B5CA93-5C02-48AD-B8A1-12BC13313866', 'RequiredName', NULL, 0, NULL, NULL, NULL, 0, 0);
+            """);
+
+         var affectedRows = await ActDbContext.Set<TestEntity>().BulkUpdateAsync(
+            ActDbContext.TestEntities.Where(e => e.Id == id),
+            e => e.Id,
+            f => f.Id,
+            builder => builder.Set(e => e.Count, (e, f) => f.Count + 40),
+            options: new SqlServerBulkUpdateFromQueryOptions { TableNameProvider = IBulkOperationTableNameProvider.ForRootEntityWithDefaultName(archiveSchema) });
+
+         affectedRows.Should().Be(1);
+
+         var lastCommand = ExecutedCommands.Last();
+         lastCommand.Should().Contain($"[{archiveSchema}].[TestEntities] AS", Exactly.Once());
+         lastCommand.Should().Contain($"[{Schema}].[TestEntities] AS", Exactly.Once());
+
+         var archivedCount = await AssertDbContext.Database.SqlQueryRaw<int>($"SELECT [Count] AS [Value] FROM [{archiveSchema}].[TestEntities]").SingleAsync();
+         archivedCount.Should().Be(41);
+         (await AssertDbContext.TestEntities.SingleAsync()).Count.Should().Be(1);
+      }
+      finally
+      {
+         await ActDbContext.Database.ExecuteSqlRawAsync($"DROP TABLE IF EXISTS [{archiveSchema}].[TestEntities]; DROP SCHEMA IF EXISTS [{archiveSchema}];");
+      }
+   }
+
+   [Fact]
+   public async Task Should_update_override_table_When_source_query_over_model_table_uses_table_hints()
+   {
+      var id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866");
+      ArrangeDbContext.Add(new TestEntity { Id = id, Name = "Source", RequiredName = "RequiredName", Count = 1 });
+      await ArrangeDbContext.SaveChangesAsync();
+
+      await ActDbContext.Database.ExecuteSqlRawAsync($"""
+         CREATE TABLE [{Schema}].[TestEntities_QueryUpdateRedirect] (
+            [Id] uniqueidentifier NOT NULL,
+            [RequiredName] nvarchar(max) NOT NULL,
+            [Name] nvarchar(max) NULL,
+            [Count] int NOT NULL,
+            [NullableCount] int NULL,
+            [ConvertibleClass] int NULL,
+            [ParentId] uniqueidentifier NULL,
+            [PropertyWithBackingField] int NOT NULL,
+            [_privateField] int NOT NULL,
+            CONSTRAINT [PK_TestEntities_QueryUpdateRedirect] PRIMARY KEY ([Id])
+         );
+         INSERT INTO [{Schema}].[TestEntities_QueryUpdateRedirect] ([Id], [RequiredName], [Name], [Count], [NullableCount], [ConvertibleClass], [ParentId], [PropertyWithBackingField], [_privateField])
+         VALUES ('40B5CA93-5C02-48AD-B8A1-12BC13313866', 'RequiredName', NULL, 0, NULL, NULL, NULL, 0, 0);
+         """);
+
+      try
+      {
+         var affectedRows = await ActDbContext.Set<TestEntity>().BulkUpdateAsync(
+            ActDbContext.TestEntities.WithTableHints(SqlServerTableHint.NoLock).Where(e => e.Id == id),
+            e => e.Id,
+            f => f.Id,
+            builder => builder
+               .Set(e => e.Name, (e, f) => f.Name)
+               .Set(e => e.Count, (e, f) => f.Count + 40),
+            options: new SqlServerBulkUpdateFromQueryOptions { TableNameProvider = IBulkOperationTableNameProvider.ForRootEntity("TestEntities_QueryUpdateRedirect", Schema) });
+
+         affectedRows.Should().Be(1);
+
+         var lastCommand = ExecutedCommands.Last();
+         lastCommand.Should().Contain($"[{Schema}].[TestEntities_QueryUpdateRedirect] AS", Exactly.Once());
+         lastCommand.Should().Contain($"[{Schema}].[TestEntities] AS", Exactly.Once());
+         lastCommand.Should().Contain("WITH (NOLOCK)", Exactly.Once());
+
+         var redirected = await AssertDbContext.Database
+                                               .SqlQueryRaw<string>($"""SELECT [Name] + ':' + CAST([Count] AS nvarchar(10)) AS [Value] FROM [{Schema}].[TestEntities_QueryUpdateRedirect] """)
+                                               .SingleAsync();
+         redirected.Should().Be("Source:41");
+
+         var source = await AssertDbContext.TestEntities.SingleAsync();
+         source.Name.Should().Be("Source");
+         source.Count.Should().Be(1);
+      }
+      finally
+      {
+         await ActDbContext.Database.ExecuteSqlRawAsync($"""DROP TABLE IF EXISTS [{Schema}].[TestEntities_QueryUpdateRedirect] """);
+      }
+   }
 }

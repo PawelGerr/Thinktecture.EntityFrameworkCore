@@ -121,45 +121,31 @@ public sealed class EfCoreValueExpressionTranslator
       selectExpression.ReplaceProjection(new List<Expression>());
       selectExpression.ApplyProjection();
 
-      // The target TableExpression is Tables[0] in the SelectExpression.
-      var targetTable = selectExpression.Tables[0];
+      // The target TableExpression is Tables[0] in the SelectExpression. The source query uses its own TableExpression instances,
+      // so only this instance is renamed. The target comes from Set<TTarget>() and carries no annotations (table hints, temp table).
+      if (selectExpression.Tables[0] is not TableExpression targetTable)
+         throw new InvalidOperationException($"Expected TableExpression as first table but got {selectExpression.Tables[0].GetType().Name}.");
 
-      if (targetTable is not TableExpression targetTableExpr)
-         throw new InvalidOperationException($"Expected TableExpression as first table but got {targetTable.GetType().Name}.");
+      var renamedTargetTable = new TableExpression(targetTable.GetRequiredAlias(), new BulkOperationTargetTable(targetTable.Table, tableNameProvider.GetValidTableName(targetEntityType)));
+      var tables = selectExpression.Tables.ToList();
+      tables[0] = renamedTargetTable;
 
-      var updateExpression = new UpdateExpression(targetTableExpr, selectExpression, setters);
+      // SQL Server renders the target table from the tables of the select, PostgreSQL and SQLite from the table of the UpdateExpression.
+      var updateSelect = selectExpression.Update(tables,
+                                                 selectExpression.Predicate,
+                                                 selectExpression.GroupBy,
+                                                 selectExpression.Having,
+                                                 selectExpression.Projection,
+                                                 selectExpression.Orderings,
+                                                 selectExpression.Offset,
+                                                 selectExpression.Limit);
+      var updateExpression = new UpdateExpression(renamedTargetTable, updateSelect, setters);
 
       // Step 8: Render SQL
       var sqlGeneratorFactory = _ctx.GetService<IQuerySqlGeneratorFactory>();
       var command = sqlGeneratorFactory.Create().GetCommand(ProcessParameters(Postprocess(updateExpression, compilationContext), parameterValues));
 
-      // Step 9: Apply the table name of the provider via string replacement
-      var sql = ApplyTableName(command.CommandText, tableNameProvider.GetValidTableName(targetEntityType), targetEntityType);
-
-      return (CreateCommand(sql, command.Parameters), parameterValues);
-   }
-
-   private string ApplyTableName(
-      string sql,
-      BulkOperationTableName tableName,
-      IEntityType targetEntityType)
-   {
-      var originalName = targetEntityType.GetTableName()!;
-      var originalSchema = targetEntityType.GetSchema();
-
-      if (tableName.Name == originalName && tableName.Schema == originalSchema)
-         return sql;
-
-      var sqlGenerationHelper = _ctx.GetService<ISqlGenerationHelper>();
-      var originalQualified = sqlGenerationHelper.DelimitIdentifier(originalName, originalSchema);
-      var overriddenQualified = sqlGenerationHelper.DelimitIdentifier(tableName.Name, tableName.Schema);
-
-      var updatedSql = sql.Replace(originalQualified, overriddenQualified);
-
-      if (ReferenceEquals(sql, updatedSql))
-         throw new InvalidOperationException($"The table name from 'TableNameProvider' could not be applied, because the table '{originalQualified}' was not found in the generated UPDATE SQL.");
-
-      return updatedSql;
+      return (CreateCommand(command.CommandText, command.Parameters), parameterValues);
    }
 
    /// <summary>
