@@ -127,24 +127,24 @@ public class TestDbContext : DbContext, IDbDefaultSchema
    {
       ArgumentNullException.ThrowIfNull(tableName);
 
-      return Set<PgTempTableColumn>().FromSqlInterpolated($"""
-                                                            SELECT
-                                                               a.attname AS "ColumnName",
-                                                               pg_catalog.format_type(a.atttypid, a.atttypmod) AS "DataType",
-                                                               NOT a.attnotnull AS "IsNullable",
-                                                               pg_catalog.pg_get_expr(d.adbin, d.adrelid) AS "ColumnDefault",
-                                                               CAST(c.collname AS text) AS "CollationName"
-                                                            FROM pg_catalog.pg_attribute a
-                                                            JOIN pg_catalog.pg_class t ON t.oid = a.attrelid
-                                                            JOIN pg_catalog.pg_namespace n ON n.oid = t.relnamespace
-                                                            LEFT JOIN pg_catalog.pg_attrdef d ON d.adrelid = a.attrelid AND d.adnum = a.attnum
-                                                            LEFT JOIN pg_catalog.pg_collation c ON c.oid = a.attcollation AND a.attcollation <> 0
-                                                            WHERE t.relname = {tableName}
-                                                              AND n.nspname LIKE 'pg_temp_%'
-                                                              AND a.attnum > 0
-                                                              AND NOT a.attisdropped
-                                                            ORDER BY a.attnum
-                                                            """);
+      return Set<PgTempTableColumn>().FromSql($"""
+                                               SELECT
+                                                  a.attname AS "ColumnName",
+                                                  pg_catalog.format_type(a.atttypid, a.atttypmod) AS "DataType",
+                                                  NOT a.attnotnull AS "IsNullable",
+                                                  pg_catalog.pg_get_expr(d.adbin, d.adrelid) AS "ColumnDefault",
+                                                  CAST(c.collname AS text) AS "CollationName"
+                                               FROM pg_catalog.pg_attribute a
+                                               JOIN pg_catalog.pg_class t ON t.oid = a.attrelid
+                                               JOIN pg_catalog.pg_namespace n ON n.oid = t.relnamespace
+                                               LEFT JOIN pg_catalog.pg_attrdef d ON d.adrelid = a.attrelid AND d.adnum = a.attnum
+                                               LEFT JOIN pg_catalog.pg_collation c ON c.oid = a.attcollation AND a.attcollation <> 0
+                                               WHERE t.relname = {tableName}
+                                                  AND n.nspname LIKE 'pg_temp_%'
+                                                  AND a.attnum > 0
+                                                  AND NOT a.attisdropped
+                                               ORDER BY a.attnum
+                                               """);
    }
 
    public IQueryable<PgTempTableConstraint> GetTempTableConstraints<T>()
@@ -159,21 +159,21 @@ public class TestDbContext : DbContext, IDbDefaultSchema
    {
       ArgumentNullException.ThrowIfNull(tableName);
 
-      return Set<PgTempTableConstraint>().FromSqlInterpolated($"""
-                                                                SELECT
-                                                                   con.conname AS "ConstraintName",
-                                                                   CASE con.contype
-                                                                      WHEN 'p' THEN 'PRIMARY KEY'
-                                                                      WHEN 'u' THEN 'UNIQUE'
-                                                                      WHEN 'c' THEN 'CHECK'
-                                                                      WHEN 'f' THEN 'FOREIGN KEY'
-                                                                      ELSE con.contype::text
-                                                                   END AS "ConstraintType"
-                                                                FROM pg_catalog.pg_constraint con
-                                                                JOIN pg_catalog.pg_class t ON t.oid = con.conrelid
-                                                                JOIN pg_catalog.pg_namespace n ON n.oid = t.relnamespace
-                                                                WHERE t.relname = {tableName}
-                                                                  AND n.nspname LIKE 'pg_temp_%'
-                                                                """);
+      return Set<PgTempTableConstraint>().FromSql($"""
+                                                   SELECT
+                                                      con.conname AS "ConstraintName",
+                                                      CASE con.contype
+                                                         WHEN 'p' THEN 'PRIMARY KEY'
+                                                         WHEN 'u' THEN 'UNIQUE'
+                                                         WHEN 'c' THEN 'CHECK'
+                                                         WHEN 'f' THEN 'FOREIGN KEY'
+                                                         ELSE con.contype::text
+                                                      END AS "ConstraintType"
+                                                   FROM pg_catalog.pg_constraint con
+                                                   JOIN pg_catalog.pg_class t ON t.oid = con.conrelid
+                                                   JOIN pg_catalog.pg_namespace n ON n.oid = t.relnamespace
+                                                   WHERE t.relname = {tableName}
+                                                   AND n.nspname LIKE 'pg_temp_%'
+                                                   """);
    }
 }

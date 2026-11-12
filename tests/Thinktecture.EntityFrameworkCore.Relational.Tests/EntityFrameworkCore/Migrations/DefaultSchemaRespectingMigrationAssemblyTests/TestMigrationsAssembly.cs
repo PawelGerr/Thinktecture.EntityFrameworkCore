@@ -20,6 +20,11 @@ public class TestMigrationsAssembly : IMigrationsAssembly
       return Mock.CreateMigration(migrationClass, activeProvider);
    }
 
+   public void AddMigrations(Assembly additionalMigrationsAssembly)
+   {
+      Mock.AddMigrations(additionalMigrationsAssembly);
+   }
+
    /// <inheritdoc />
    public IReadOnlyDictionary<string, TypeInfo> Migrations => Mock.Migrations;
 

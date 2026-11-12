@@ -30,4 +30,5 @@ internal sealed class BulkOperationTargetTable(ITableBase table, BulkOperationTa
    public IAnnotation SetRuntimeAnnotation(string name, object? value) => table.SetRuntimeAnnotation(name, value);
    public IAnnotation? RemoveRuntimeAnnotation(string name) => table.RemoveRuntimeAnnotation(name);
    public TValue GetOrAddRuntimeAnnotationValue<TValue, TArg>(string name, Func<TArg?, TValue> valueFactory, TArg? factoryArgument) => table.GetOrAddRuntimeAnnotationValue(name, valueFactory, factoryArgument);
+   public IColumnBase? FindColumn(IPropertyBase propertyBase) => table.FindColumn(propertyBase);
 }

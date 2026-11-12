@@ -140,14 +140,14 @@ public class TestDbContext : DbContext, IDbDefaultSchema
       if (!tableName.StartsWith("#", StringComparison.Ordinal))
          tableName = $"#{tableName}";
 
-      return Set<InformationSchemaColumn>().FromSqlInterpolated($"""
-                                                                 SELECT
-                                                                    *
-                                                                 FROM
-                                                                    tempdb.INFORMATION_SCHEMA.COLUMNS WITH (NOLOCK)
-                                                                 WHERE
-                                                                    OBJECT_ID(TABLE_CATALOG + '..' + TABLE_NAME) = OBJECT_ID({"tempdb.." + tableName})
-                                                                 """);
+      return Set<InformationSchemaColumn>().FromSql($"""
+                                                     SELECT
+                                                        *
+                                                     FROM
+                                                        tempdb.INFORMATION_SCHEMA.COLUMNS WITH (NOLOCK)
+                                                     WHERE
+                                                        OBJECT_ID(TABLE_CATALOG + '..' + TABLE_NAME) = OBJECT_ID({"tempdb.." + tableName})
+                                                     """);
    }
 
    public IQueryable<InformationSchemaTableConstraint> GetTempTableConstraints<T>()
@@ -158,14 +158,14 @@ public class TestDbContext : DbContext, IDbDefaultSchema
       if (!tableName.StartsWith("#", StringComparison.Ordinal))
          tableName = $"#{tableName}";
 
-      return Set<InformationSchemaTableConstraint>().FromSqlInterpolated($"""
-                                                                          SELECT
-                                                                             *
-                                                                          FROM
-                                                                             tempdb.INFORMATION_SCHEMA.TABLE_CONSTRAINTS WITH (NOLOCK)
-                                                                          WHERE
-                                                                             OBJECT_ID(TABLE_CATALOG + '..' + TABLE_NAME) = OBJECT_ID({"tempdb.." + tableName})
-                                                                          """);
+      return Set<InformationSchemaTableConstraint>().FromSql($"""
+                                                              SELECT
+                                                                 *
+                                                              FROM
+                                                                 tempdb.INFORMATION_SCHEMA.TABLE_CONSTRAINTS WITH (NOLOCK)
+                                                              WHERE
+                                                                 OBJECT_ID(TABLE_CATALOG + '..' + TABLE_NAME) = OBJECT_ID({"tempdb.." + tableName})
+                                                              """);
    }
 
    public IQueryable<InformationSchemaConstraintColumn> GetTempTableConstraintsColumns<T>()
@@ -175,14 +175,14 @@ public class TestDbContext : DbContext, IDbDefaultSchema
       if (!tableName.StartsWith("#", StringComparison.Ordinal))
          tableName = $"#{tableName}";
 
-      return Set<InformationSchemaConstraintColumn>().FromSqlInterpolated($"""
-                                                                           SELECT
-                                                                              *
-                                                                           FROM
-                                                                              tempdb.INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE WITH (NOLOCK)
-                                                                           WHERE
-                                                                              OBJECT_ID(TABLE_CATALOG + '..' + TABLE_NAME) = OBJECT_ID({"tempdb.." + tableName})
-                                                                           """);
+      return Set<InformationSchemaConstraintColumn>().FromSql($"""
+                                                               SELECT
+                                                                  *
+                                                               FROM
+                                                                  tempdb.INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE WITH (NOLOCK)
+                                                               WHERE
+                                                                  OBJECT_ID(TABLE_CATALOG + '..' + TABLE_NAME) = OBJECT_ID({"tempdb.." + tableName})
+                                                               """);
    }
 
    public IQueryable<InformationSchemaKeyColumn> GetTempTableKeyColumns<T>()
@@ -204,13 +204,13 @@ public class TestDbContext : DbContext, IDbDefaultSchema
       if (!tableName.StartsWith("#", StringComparison.Ordinal))
          tableName = $"#{tableName}";
 
-      return Set<InformationSchemaKeyColumn>().FromSqlInterpolated($"""
-                                                                    SELECT
-                                                                       *
-                                                                    FROM
-                                                                       tempdb.INFORMATION_SCHEMA.KEY_COLUMN_USAGE WITH (NOLOCK)
-                                                                    WHERE
-                                                                       OBJECT_ID(TABLE_CATALOG + '..' + TABLE_NAME) = OBJECT_ID({"tempdb.." + tableName})
-                                                                    """);
+      return Set<InformationSchemaKeyColumn>().FromSql($"""
+                                                        SELECT
+                                                           *
+                                                        FROM
+                                                           tempdb.INFORMATION_SCHEMA.KEY_COLUMN_USAGE WITH (NOLOCK)
+                                                        WHERE
+                                                           OBJECT_ID(TABLE_CATALOG + '..' + TABLE_NAME) = OBJECT_ID({"tempdb.." + tableName})
+                                                        """);
    }
 }

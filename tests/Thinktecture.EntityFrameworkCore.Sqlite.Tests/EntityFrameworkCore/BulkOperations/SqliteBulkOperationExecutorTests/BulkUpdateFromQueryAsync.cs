@@ -1763,7 +1763,7 @@ public class BulkUpdateFromQueryAsync : IntegrationTestsBase
       var name = "x";
 
       var affectedRows = await ActDbContext.TestEntities.BulkUpdateAsync(
-         ActDbContext.TestEntities.FromSqlInterpolated($"SELECT * FROM \"TestEntities\" WHERE \"Name\" = {name}"), e => e.Id, s => s.Id,
+         ActDbContext.TestEntities.FromSql($"SELECT * FROM \"TestEntities\" WHERE \"Name\" = {name}"), e => e.Id, s => s.Id,
          builder => builder.Set(e => e.Count, (e, s) => 1));
 
       affectedRows.Should().Be(1);

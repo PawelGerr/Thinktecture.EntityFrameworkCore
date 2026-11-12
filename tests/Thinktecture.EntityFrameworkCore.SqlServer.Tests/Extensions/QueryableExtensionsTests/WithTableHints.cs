@@ -128,7 +128,7 @@ public class WithTableHints : IntegrationTestsBase
                                         $"    FROM {EscapedSchema}.[SeparateEntitiesMany_SeparateEntitiesMany] AS [s] WITH (NOLOCK)" + Environment.NewLine +
                                         $"    LEFT JOIN {EscapedSchema}.[SeparateEntitiesMany_SeparateEntitiesMany_Inner] AS [s0] WITH (NOLOCK) ON [s].[TestEntity_Owns_SeparateMany_SeparateManyId] = [s0].[OwnedEntity_Owns_SeparateManyTestEntity_Owns_SeparateMany_SeparateManyId] AND [s].[Id] = [s0].[OwnedEntity_Owns_SeparateManyId]" + Environment.NewLine +
                                         ") AS [s1] ON [t].[Id] = [s1].[TestEntity_Owns_SeparateMany_SeparateManyId]" + Environment.NewLine +
-                                        "ORDER BY [t].[Id], [s1].[TestEntity_Owns_SeparateMany_SeparateManyId], [s1].[Id], [s1].[OwnedEntity_Owns_SeparateManyTestEntity_Owns_SeparateMany_SeparateManyId], [s1].[OwnedEntity_Owns_SeparateManyId]");
+                                        "ORDER BY [t].[Id], [s1].[TestEntity_Owns_SeparateMany_SeparateManyId], [s1].[Id], [s1].[OwnedEntity_Owns_SeparateManyTestEntity_Owns_SeparateMany_SeparateManyId], [s1].[OwnedEntity_Owns_SeparateManyId], [s1].[Id0]");
 
       var result = await query.ToListAsync();
       result.Should().BeEmpty();

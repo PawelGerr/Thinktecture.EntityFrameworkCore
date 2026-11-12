@@ -43,6 +43,12 @@ public sealed class DefaultSchemaRespectingMigrationAssembly<TMigrationsAssembly
    }
 
    /// <inheritdoc />
+   public void AddMigrations(Assembly additionalMigrationsAssembly)
+   {
+      _innerMigrationsAssembly.AddMigrations(additionalMigrationsAssembly);
+   }
+
+   /// <inheritdoc />
    public string? FindMigrationId(string nameOrId)
    {
       return _innerMigrationsAssembly.FindMigrationId(nameOrId);

@@ -2,6 +2,7 @@ using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Migrations.Operations;
+using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Storage;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Infrastructure.Internal;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Migrations;
@@ -21,10 +22,12 @@ public class ThinktectureNpgsqlMigrationsSqlGenerator : NpgsqlMigrationsSqlGener
    /// </summary>
    /// <param name="dependencies">Dependencies.</param>
    /// <param name="npgsqlSingletonOptions">Npgsql singleton options.</param>
+   /// <param name="querySqlGeneratorFactory">The SQL generator used to render JSON extraction expressions.</param>
    public ThinktectureNpgsqlMigrationsSqlGenerator(
       MigrationsSqlGeneratorDependencies dependencies,
-      INpgsqlSingletonOptions npgsqlSingletonOptions)
-      : base(dependencies, npgsqlSingletonOptions)
+      INpgsqlSingletonOptions npgsqlSingletonOptions,
+      IQuerySqlGeneratorFactory querySqlGeneratorFactory)
+      : base(dependencies, npgsqlSingletonOptions, querySqlGeneratorFactory)
    {
    }
 

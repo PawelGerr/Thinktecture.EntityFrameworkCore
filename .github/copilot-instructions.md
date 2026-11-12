@@ -54,7 +54,7 @@ These rules guide GitHub Copilot in this repo so generated code, tests, and docs
 
 ### EF Core Specific Patterns
 - **Query composition**: Keep operations server-evaluable; avoid client evaluation; prefer `IQueryable` over early `ToList()`
-- **SQL safety**: Never concatenate raw SQL; use `FromSqlInterpolated` or existing parameterized helpers
+- **SQL safety**: Never concatenate raw SQL; use `FromSql` or existing parameterized helpers
 - **Read-only queries**: Use `AsNoTracking()` unless state tracking is needed
 - **Transactions**: Use EF Core `IDbContextTransaction`/`ExecutionStrategy` patterns
 - **Provider specifics**:
@@ -386,7 +386,7 @@ public class ComponentTests
 
 #### Query Safety and Performance
 - **Server evaluation**: Ensure expressions are server-evaluable; avoid client-side method calls
-- **SQL parameterization**: Never concatenate SQL strings; use `FromSqlInterpolated` or existing helpers
+- **SQL parameterization**: Never concatenate SQL strings; use `FromSql` or existing helpers
 - **Query tracking**: Default to `AsNoTracking()` for read-only queries
 - **Transaction patterns**: Use EF Core `IDbContextTransaction`/`ExecutionStrategy` patterns
 
