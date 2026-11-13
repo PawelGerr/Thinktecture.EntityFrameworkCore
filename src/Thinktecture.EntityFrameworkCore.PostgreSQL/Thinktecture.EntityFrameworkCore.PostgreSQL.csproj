@@ -1,6 +1,15 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+  <PropertyGroup>
+    <!-- shortcut: NU1608 is expected while Npgsql 11.0.0-rc.3 is used with EF Core 11.0.0; remove it when Npgsql 11.0.0 GA is referenced. -->
+    <NoWarn>$(NoWarn);NU1608</NoWarn>
+    <!-- shortcut: the package stays a prerelease while it depends on Npgsql 11.0.0-rc.3; a VersionSuffix that ci.ps1 appends for a tag with a suffix or for a CI build wins, because it comes later. Remove it when Npgsql 11.0.0 GA is referenced. -->
+    <VersionSuffix>rc.3</VersionSuffix>
+  </PropertyGroup>
+
   <ItemGroup>
+    <!-- shortcut: Npgsql 11.0.0-rc.3 pins EF Core to rc.3 exactly, so this direct reference lifts EF Core to the GA version; remove it when Npgsql 11.0.0 GA is referenced. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
   </ItemGroup>
 

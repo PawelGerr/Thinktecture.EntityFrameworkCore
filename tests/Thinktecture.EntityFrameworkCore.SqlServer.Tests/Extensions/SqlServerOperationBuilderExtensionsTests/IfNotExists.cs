@@ -1,4 +1,6 @@
 using System.Reflection;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace Thinktecture.Extensions.SqlServerOperationBuilderExtensionsTests;
 
@@ -149,6 +151,30 @@ public class IfNotExists : ExistTestBase
       {
          Context.Database.ExecuteSqlRaw($"DROP TABLE IF EXISTS [{tableName}]");
       }
+   }
+
+   [Fact]
+   public void Should_throw_NotSupportedException_if_used_with_CreateIndex_of_full_text_index()
+   {
+      Migration.ConfigureUp = builder => builder.CreateIndex("IX1", "Foo", "Col1")
+                                                .Annotation("SqlServer:FullTextIndex", "PK_Foo")
+                                                .IfNotExists();
+
+      ExecuteMigration.Invoking(a => a())
+                      .Should().Throw<NotSupportedException>();
+   }
+
+   [Fact]
+   public void Should_keep_transaction_suppression_if_used_with_CreateIndex_of_vector_index()
+   {
+      Migration.ConfigureUp = builder => builder.CreateIndex("IX1", "Foo", "Col1")
+                                                .Annotation("SqlServer:VectorIndexMetric", "cosine")
+                                                .IfNotExists();
+
+      var command = Context.GetService<IMigrationsSqlGenerator>().Generate(Migration.UpOperations).Should().ContainSingle().Subject;
+
+      command.TransactionSuppressed.Should().BeTrue();
+      command.CommandText.Should().Contain("IndexProperty(").And.Contain("CREATE VECTOR INDEX [IX1] ON [Foo]");
    }
 
    [Fact]

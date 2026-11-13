@@ -77,25 +77,6 @@ public static class SqlServerDbContextOptionsBuilderExtensions
    }
 
    /// <summary>
-   /// Adds support for "RowNumber".
-   /// </summary>
-   /// <param name="builder">Options builder.</param>
-   /// <param name="addRowNumberSupport">Indication whether to enable or disable the feature.</param>
-   /// <returns>Provided <paramref name="builder"/>.</returns>
-   [Obsolete($"Use '{nameof(AddWindowFunctionsSupport)}' instead.")]
-   public static SqlServerDbContextOptionsBuilder AddRowNumberSupport(
-      this SqlServerDbContextOptionsBuilder builder,
-      bool addRowNumberSupport = true)
-   {
-      builder.AddOrUpdateExtension(extension =>
-                                   {
-                                      extension.AddWindowFunctionsSupport = addRowNumberSupport;
-                                      return extension;
-                                   });
-      return builder;
-   }
-
-   /// <summary>
    /// Adds support for window functions like "RowNumber".
    /// </summary>
    /// <param name="builder">Options builder.</param>

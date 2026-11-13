@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+   <PropertyGroup>
+      <IsTestProject>false</IsTestProject>
+   </PropertyGroup>
+
+   <ItemGroup>
+     <ProjectReference Include="..\..\src\Thinktecture.EntityFrameworkCore.Relational\Thinktecture.EntityFrameworkCore.Relational.csproj" />
+   </ItemGroup>
+
+</Project>

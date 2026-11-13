@@ -14,7 +14,7 @@
    </ItemGroup>
 
    <ItemGroup>
-      <ProjectReference Include="..\..\src\Thinktecture.EntityFrameworkCore.SqlServer.Testing\Thinktecture.EntityFrameworkCore.SqlServer.Testing.csproj" />
+      <ProjectReference Include="..\Thinktecture.EntityFrameworkCore.SqlServer.Testing\Thinktecture.EntityFrameworkCore.SqlServer.Testing.csproj" />
       <ProjectReference Include="..\..\src\Thinktecture.EntityFrameworkCore.SqlServer\Thinktecture.EntityFrameworkCore.SqlServer.csproj" />
       <ProjectReference Include="..\Thinktecture.EntityFrameworkCore.TestHelpers\Thinktecture.EntityFrameworkCore.TestHelpers.csproj" />
    </ItemGroup>

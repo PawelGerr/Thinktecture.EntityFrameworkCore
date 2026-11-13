@@ -31,16 +31,6 @@ public sealed class SqlServerDbContextOptionsExtension : DbContextOptionsExtensi
    public DbContextOptionsExtensionInfo Info => _info ??= new SqlServerDbContextOptionsExtensionInfo(this);
 
    /// <summary>
-   /// Enables and disables support for "RowNumber".
-   /// </summary>
-   [Obsolete($"Use '{nameof(AddWindowFunctionsSupport)}'")]
-   public bool AddRowNumberSupport
-   {
-      get => _relationalOptions.AddWindowFunctionsSupport;
-      set => _relationalOptions.AddWindowFunctionsSupport = value;
-   }
-
-   /// <summary>
    /// Enables and disables support for window functions like "RowNumber".
    /// </summary>
    public bool AddWindowFunctionsSupport

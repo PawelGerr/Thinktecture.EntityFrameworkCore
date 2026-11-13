@@ -76,11 +76,11 @@ dotnet test tests/Thinktecture.EntityFrameworkCore.SqlServer.Tests/ -c Release  
 
 | Aspect | Value |
 |--------|-------|
-| Target framework | `net10.0` |
-| Language | C# 14.0, nullable enabled, implicit usings |
-| EF Core | 10.0.14 (`Microsoft.EntityFrameworkCore.*`) |
-| PostgreSQL | Npgsql.EntityFrameworkCore.PostgreSQL 10.0.3 |
-| Testing | xUnit 2.9.3 + AwesomeAssertions 9.6.0 + NSubstitute 5.3.0 |
+| Target framework | `net11.0` |
+| Language | C# 15.0, nullable enabled, implicit usings |
+| EF Core | 11.0.0 (`Microsoft.EntityFrameworkCore.*`) |
+| PostgreSQL | Npgsql.EntityFrameworkCore.PostgreSQL 11.0.0-rc.3; Npgsql pins EF Core to rc.3 exactly, so the PostgreSQL project references `Microsoft.EntityFrameworkCore.Relational` directly to resolve 11.0.0 (NU1608 is suppressed in the PostgreSQL projects, and `VersionSuffix` `rc.3` in the PostgreSQL csproj keeps its package a prerelease also for a release tag; remove the reference, the suppression and the suffix when Npgsql 11.0.0 GA is used) |
+| Testing | xUnit 2.9.3 + AwesomeAssertions 9.6.0 + NSubstitute 6.2.0 |
 | Logging | Serilog.Extensions.Logging 10.0.0 + Serilog.Sinks.XUnit 3.0.19 |
 | SQL Server tests | Testcontainers.MsSql 4.16.0 (Docker) or configured connection string |
 | PostgreSQL tests | Testcontainers.PostgreSql 4.16.0 (Docker) or configured connection string |
@@ -97,18 +97,18 @@ dotnet test tests/Thinktecture.EntityFrameworkCore.SqlServer.Tests/ -c Release  
 ### Project Layout
 
 ```
-src/                                    # Runtime packages (9 projects)
+src/                                    # Runtime packages (6 projects)
   Thinktecture.EntityFrameworkCore.Relational/          # Foundation layer
   Thinktecture.EntityFrameworkCore.BulkOperations/      # Provider-agnostic bulk ops
   Thinktecture.EntityFrameworkCore.SqlServer/            # SQL Server implementation
-  Thinktecture.EntityFrameworkCore.SqlServer.Testing/    # SQL Server test utilities
   Thinktecture.EntityFrameworkCore.PostgreSQL/           # PostgreSQL implementation (Npgsql)
   Thinktecture.EntityFrameworkCore.Sqlite.Core/          # SQLite foundation
   Thinktecture.EntityFrameworkCore.Sqlite/               # SQLite full package
-  Thinktecture.EntityFrameworkCore.Sqlite.Testing/       # SQLite test utilities
-  Thinktecture.EntityFrameworkCore.Testing/              # Shared testing infrastructure
-tests/                                  # Test projects (7 projects, mirror src/)
+tests/                                  # Test projects (7 projects, mirror src/) and test infrastructure (not packed)
   Thinktecture.EntityFrameworkCore.TestHelpers/          # Shared test entities & DbContext
+  Thinktecture.EntityFrameworkCore.Testing/              # Shared integration test infrastructure
+  Thinktecture.EntityFrameworkCore.SqlServer.Testing/    # SQL Server integration test infrastructure
+  Thinktecture.EntityFrameworkCore.Sqlite.Testing/       # SQLite integration test infrastructure
 samples/                                # Sample apps and benchmarks
 agent-skills/                           # Git submodule PawelGerr/agent-skills; this repo owns only skills/thinktecture-entityframeworkcore/
 skills/thinktecture-entityframeworkcore/SKILL.md   # Redirect stub for old `npx skills add PawelGerr/Thinktecture.EntityFrameworkCore` installs; keep it, add nothing else
@@ -138,10 +138,10 @@ The Relational foundation adds: `Data/` (entity data readers), `Internal/` (anno
 ```
 Relational (foundation)
   └─ BulkOperations (abstractions)
-       ├─ SqlServer (SQL Server impl) → SqlServer.Testing
+       ├─ SqlServer (SQL Server impl)
        ├─ PostgreSQL (PostgreSQL/Npgsql impl)
-       └─ Sqlite.Core → Sqlite → Sqlite.Testing
-Testing (shared test infrastructure, used by *.Testing packages)
+       └─ Sqlite.Core → Sqlite
+tests/: Testing (shared test infrastructure) ← SqlServer.Testing, Sqlite.Testing (not packed)
 ```
 
 ### Key Configuration Files
@@ -151,9 +151,9 @@ Testing (shared test infrastructure, used by *.Testing packages)
 | `Thinktecture.EntityFrameworkCore.slnx` | Solution file (19 projects) |
 | `Directory.Build.props` | Root MSBuild props (version, TFM, lang version) |
 | `Directory.Packages.props` | Centralized NuGet versions |
-| `src/Directory.Build.props` | Source Link, symbol packages |
-| `tests/Directory.Build.props` | Test dependencies, warning suppressions, global usings |
-| `global.json` | .NET SDK 10.0.0, rollForward: latestMajor |
+| `src/Directory.Build.props` | Symbol packages and package assets (Source Link is part of the .NET SDK) |
+| `tests/Directory.Build.props` | `IsPackable=false`, test dependencies, warning suppressions, global usings; non-test projects in `tests/` set `IsTestProject=false` |
+| `global.json` | .NET SDK 11.0.100, rollForward: latestMajor |
 
 ## Critical Rules
 
@@ -467,7 +467,7 @@ public class IntegrationTestsBase : SqlServerDbContextIntegrationTests<TestDbCon
 }
 ```
 
-- Inherits `SqlServerDbContextIntegrationTests<TestDbContext>` (from `SqlServer.Testing`)
+- Inherits `SqlServerDbContextIntegrationTests<TestDbContext>` (from `tests/Thinktecture.EntityFrameworkCore.SqlServer.Testing`)
 - `ArrangeDbContext`, `ActDbContext`, `AssertDbContext` accessed via `TestCtxProvider` property
 - `ExecutedCommands` accessed via `TestCtxProvider.ExecutedCommands`
 - Per-test config: `ConfigureModel` and `Configure` properties set in builder's `InitializeContext()`
@@ -576,7 +576,7 @@ After substantial changes (new features, API changes, new entities/options, chan
 - **Format:** GitHub Wiki markdown in `docs/` folder
 - **File naming:** Title-Case-With-Hyphens (e.g., `Bulk-Insert.md`, `Table-Hints-(SQL-Server).md`)
 - **Provider annotations:** parenthesized on sidebar entries, e.g., `(SQL Server, PostgreSQL)`
-- **Sidebar organization** (`docs/_Sidebar.md`): sections are Performance, Features, Convenience, Integration Testing, Extensibility
+- **Sidebar organization** (`docs/_Sidebar.md`): sections are Performance, Features, Convenience, Best Practices, Extensibility, AI Coding Assistants
 - **PostgreSQL gap:** Docs predate the PostgreSQL provider — when touching any page, check for missing PostgreSQL examples
 
 ### Agent Skill

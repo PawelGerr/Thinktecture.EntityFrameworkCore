@@ -327,7 +327,7 @@ public class RowNumber : IntegrationTestsBase
       var result = ActDbContext.TestEntities
                                .Select(e => new
                                             {
-                                               ConvertibleClass = (long)e.ConvertibleClass!.Key,
+                                               ConvertibleClass = (long)e.ConvertibleClass!,
 #pragma warning disable CS8604
                                                RowNumber = EF.Functions.RowNumber(e.Name, (long)e.ConvertibleClass, (long)e.Count,
                                                                                   EF.Functions.OrderBy(e.Name).ThenBy((long)e.ConvertibleClass).ThenBy((long)e.Count))
@@ -349,7 +349,7 @@ public class RowNumber : IntegrationTestsBase
       var result = ActDbContext.TestEntities
                                .Select(e => new
                                             {
-                                               ConvertibleClass = (long)e.ConvertibleClass!.Key,
+                                               ConvertibleClass = (long)e.ConvertibleClass!,
 #pragma warning disable CS8604
                                                RowNumber = EF.Functions.RowNumber(e.Name, (long)e.ConvertibleClass + 1, (long)e.Count + 1,
                                                                                   EF.Functions.OrderBy(e.Name).ThenBy((long)e.ConvertibleClass + 1).ThenBy((long)e.Count + 1))

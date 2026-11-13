@@ -16,7 +16,6 @@
   </Folder>
   <Folder Name="/assets/.github/">
     <File Path=".github/workflows/ci.ps1" />
-    <File Path=".github\copilot-instructions.md" />
     <File Path=".github\workflows\main.yml" />
     <File Path=".github\workflows\claude.yml" />
     <File Path=".github\workflows\claude-code-review.yml" />
@@ -31,22 +30,22 @@
     <Project Path="src/Thinktecture.EntityFrameworkCore.BulkOperations/Thinktecture.EntityFrameworkCore.BulkOperations.csproj" />
     <Project Path="src/Thinktecture.EntityFrameworkCore.PostgreSQL/Thinktecture.EntityFrameworkCore.PostgreSQL.csproj" />
     <Project Path="src/Thinktecture.EntityFrameworkCore.Relational/Thinktecture.EntityFrameworkCore.Relational.csproj" />
-    <Project Path="src/Thinktecture.EntityFrameworkCore.Sqlite.Testing/Thinktecture.EntityFrameworkCore.Sqlite.Testing.csproj" />
     <Project Path="src/Thinktecture.EntityFrameworkCore.Sqlite.Core/Thinktecture.EntityFrameworkCore.Sqlite.Core.csproj" />
     <Project Path="src/Thinktecture.EntityFrameworkCore.Sqlite/Thinktecture.EntityFrameworkCore.Sqlite.csproj" />
-    <Project Path="src/Thinktecture.EntityFrameworkCore.SqlServer.Testing/Thinktecture.EntityFrameworkCore.SqlServer.Testing.csproj" />
     <Project Path="src/Thinktecture.EntityFrameworkCore.SqlServer/Thinktecture.EntityFrameworkCore.SqlServer.csproj" />
-    <Project Path="src/Thinktecture.EntityFrameworkCore.Testing/Thinktecture.EntityFrameworkCore.Testing.csproj" />
     <File Path="src/Directory.Build.props" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Thinktecture.EntityFrameworkCore.BulkOperations.Tests/Thinktecture.EntityFrameworkCore.BulkOperations.Tests.csproj" />
     <Project Path="tests/Thinktecture.EntityFrameworkCore.PostgreSQL.Tests/Thinktecture.EntityFrameworkCore.PostgreSQL.Tests.csproj" />
     <Project Path="tests/Thinktecture.EntityFrameworkCore.Relational.Tests/Thinktecture.EntityFrameworkCore.Relational.Tests.csproj" />
+    <Project Path="tests/Thinktecture.EntityFrameworkCore.Sqlite.Testing/Thinktecture.EntityFrameworkCore.Sqlite.Testing.csproj" />
     <Project Path="tests/Thinktecture.EntityFrameworkCore.Sqlite.Tests/Thinktecture.EntityFrameworkCore.Sqlite.Tests.csproj" />
+    <Project Path="tests/Thinktecture.EntityFrameworkCore.SqlServer.Testing/Thinktecture.EntityFrameworkCore.SqlServer.Testing.csproj" />
     <Project Path="tests/Thinktecture.EntityFrameworkCore.SqlServer.Tests/Thinktecture.EntityFrameworkCore.SqlServer.Tests.csproj" />
     <Project Path="tests/Thinktecture.EntityFrameworkCore.TestHelpers/Thinktecture.EntityFrameworkCore.TestHelpers.csproj" />
     <Project Path="tests/Thinktecture.EntityFrameworkCore.Testing.Tests/Thinktecture.EntityFrameworkCore.Testing.Tests.csproj" />
+    <Project Path="tests/Thinktecture.EntityFrameworkCore.Testing/Thinktecture.EntityFrameworkCore.Testing.csproj" />
     <File Path="tests/Directory.Build.props" />
   </Folder>
 </Solution>

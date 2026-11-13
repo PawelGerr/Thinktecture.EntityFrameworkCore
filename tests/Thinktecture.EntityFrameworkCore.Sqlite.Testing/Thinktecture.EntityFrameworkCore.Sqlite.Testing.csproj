@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+   <PropertyGroup>
+      <IsTestProject>false</IsTestProject>
+   </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\src\Thinktecture.EntityFrameworkCore.Sqlite.Core\Thinktecture.EntityFrameworkCore.Sqlite.Core.csproj" />
+        <ProjectReference Include="..\Thinktecture.EntityFrameworkCore.Testing\Thinktecture.EntityFrameworkCore.Testing.csproj" />
+    </ItemGroup>
+
+</Project>

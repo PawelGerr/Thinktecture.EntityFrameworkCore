@@ -1,6 +1,8 @@
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Migrations.Operations;
+using Microsoft.EntityFrameworkCore.SqlServer.Metadata.Internal;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.EntityFrameworkCore.Update;
 
@@ -162,6 +164,8 @@ public class ThinktectureSqlServerMigrationsSqlGenerator : SqlServerMigrationsSq
          return;
       }
 
+      EnsureNoFullTextIndex(operation, nameof(SqlServerOperationBuilderExtensions.IfNotExists));
+
       builder.AppendLine($"IF(IndexProperty(OBJECT_ID('{DelimitIdentifier(operation.Table, operation.Schema)}'), {GenerateSqlLiteral(operation.Name)}, 'IndexId') IS NULL)")
              .AppendLine("BEGIN");
 
@@ -174,7 +178,7 @@ public class ThinktectureSqlServerMigrationsSqlGenerator : SqlServerMigrationsSq
       builder.AppendLine("END");
 
       if (terminate)
-         builder.EndCommand();
+         builder.EndCommand(IsTransactionSuppressed(probe => base.Generate(operation, model, probe)));
    }
 
    /// <inheritdoc />
@@ -192,6 +196,7 @@ public class ThinktectureSqlServerMigrationsSqlGenerator : SqlServerMigrationsSq
       }
 
       var table = operation.Table ?? throw new InvalidOperationException($"The {nameof(DropIndexOperation)} for index '{operation.Name}' has no table name.");
+      EnsureNoFullTextIndex(operation, nameof(SqlServerOperationBuilderExtensions.IfExists));
 
       builder.AppendLine($"IF(IndexProperty(OBJECT_ID('{DelimitIdentifier(table, operation.Schema)}'), {GenerateSqlLiteral(operation.Name)}, 'IndexId') IS NOT NULL)")
              .AppendLine("BEGIN");
@@ -205,7 +210,7 @@ public class ThinktectureSqlServerMigrationsSqlGenerator : SqlServerMigrationsSq
       builder.AppendLine("END");
 
       if (terminate)
-         builder.EndCommand();
+         builder.EndCommand(IsTransactionSuppressed(probe => base.Generate(operation, model, probe, true)));
    }
 
    /// <inheritdoc />
@@ -278,5 +283,21 @@ public class ThinktectureSqlServerMigrationsSqlGenerator : SqlServerMigrationsSq
    private string DelimitIdentifier(string name, string? schema = null)
    {
       return Dependencies.SqlGenerationHelper.DelimitIdentifier(name, schema);
+   }
+
+   // EF Core runs some index statements (e.g. full-text, vector, JSON, memory-optimized) outside of a transaction; the wrapped statement must keep that.
+   private bool IsTransactionSuppressed(Action<MigrationCommandListBuilder> generateTerminated)
+   {
+      var probe = new MigrationCommandListBuilder(Dependencies);
+      generateTerminated(probe);
+
+      return probe.GetCommandList().Any(command => command.TransactionSuppressed);
+   }
+
+   [SuppressMessage("Usage", "EF1001", MessageId = "Internal EF Core API usage.")]
+   private static void EnsureNoFullTextIndex(MigrationOperation operation, string check)
+   {
+      if (operation[SqlServerAnnotationNames.FullTextIndex] is not null)
+         throw new NotSupportedException($"The check '{check}()' is not supported for a full-text index, because a full-text index cannot be found by its name.");
    }
 }

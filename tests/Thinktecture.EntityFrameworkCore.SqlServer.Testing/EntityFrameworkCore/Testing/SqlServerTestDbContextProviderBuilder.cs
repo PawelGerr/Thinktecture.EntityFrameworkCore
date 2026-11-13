@@ -35,17 +35,6 @@ public class SqlServerTestDbContextProviderBuilder<T> : TestDbContextProviderBui
    /// Initializes new instance of <see cref="SqlServerTestDbContextProviderBuilder{T}"/>.
    /// </summary>
    /// <param name="connectionString">Connection string to use.</param>
-   /// <param name="useSharedTables">Indication whether to create new tables with a new schema or use the existing ones.</param>
-   [Obsolete($"Use the overload with '{nameof(ITestIsolationOptions)}' instead.")]
-   public SqlServerTestDbContextProviderBuilder(string connectionString, bool useSharedTables)
-      : this(connectionString, useSharedTables ? ITestIsolationOptions.SharedTablesAmbientTransaction : ITestIsolationOptions.RollbackMigrationsAndCleanup)
-   {
-   }
-
-   /// <summary>
-   /// Initializes new instance of <see cref="SqlServerTestDbContextProviderBuilder{T}"/>.
-   /// </summary>
-   /// <param name="connectionString">Connection string to use.</param>
    /// <param name="isolationOptions">Test isolation behavior.</param>
    public SqlServerTestDbContextProviderBuilder(string connectionString, ITestIsolationOptions isolationOptions)
    {
@@ -284,17 +273,6 @@ public class SqlServerTestDbContextProviderBuilder<T> : TestDbContextProviderBui
       _providerFactory = providerFactory;
 
       return this;
-   }
-
-   /// <summary>
-   /// Gets/generates schema to be used.
-   /// </summary>
-   /// <param name="useSharedTables">Indication whether a new schema should be generated or a shared one.</param>
-   /// <returns>A database schema.</returns>
-   [Obsolete($"Use the overload with '{nameof(ITestIsolationOptions)}' instead.")]
-   protected virtual string? DetermineSchema(bool useSharedTables)
-   {
-      return DetermineSchema(useSharedTables ? ITestIsolationOptions.SharedTablesAmbientTransaction : ITestIsolationOptions.RollbackMigrationsAndCleanup);
    }
 
    /// <summary>

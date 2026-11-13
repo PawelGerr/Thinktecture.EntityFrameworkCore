@@ -6,13 +6,11 @@
 
 [![Thinktecture.EntityFrameworkCore.Relational](https://img.shields.io/nuget/vpre/Thinktecture.EntityFrameworkCore.Relational.svg?label=Thinktecture.EntityFrameworkCore.Relational&maxAge=3600)](https://www.nuget.org/packages/Thinktecture.EntityFrameworkCore.Relational/)  
 [![Thinktecture.EntityFrameworkCore.SqlServer](https://img.shields.io/nuget/vpre/Thinktecture.EntityFrameworkCore.SqlServer.svg?label=Thinktecture.EntityFrameworkCore.SqlServer&maxAge=3600)](https://www.nuget.org/packages/Thinktecture.EntityFrameworkCore.SqlServer/)  
-[![Thinktecture.EntityFrameworkCore.SqlServer.Testing](https://img.shields.io/nuget/vpre/Thinktecture.EntityFrameworkCore.SqlServer.Testing.svg?label=Thinktecture.EntityFrameworkCore.SqlServer.Testing&maxAge=3600)](https://www.nuget.org/packages/Thinktecture.EntityFrameworkCore.SqlServer.Testing/) [DEPRECATED]  
 [![Thinktecture.EntityFrameworkCore.PostgreSQL](https://img.shields.io/nuget/vpre/Thinktecture.EntityFrameworkCore.PostgreSQL.svg?label=Thinktecture.EntityFrameworkCore.PostgreSQL&maxAge=3600)](https://www.nuget.org/packages/Thinktecture.EntityFrameworkCore.PostgreSQL/)  
 [![Thinktecture.EntityFrameworkCore.Sqlite.Core](https://img.shields.io/nuget/vpre/Thinktecture.EntityFrameworkCore.Sqlite.Core.svg?label=Thinktecture.EntityFrameworkCore.Sqlite.Core&maxAge=3600)](https://www.nuget.org/packages/Thinktecture.EntityFrameworkCore.Sqlite.Core/)  
 [![Thinktecture.EntityFrameworkCore.Sqlite](https://img.shields.io/nuget/vpre/Thinktecture.EntityFrameworkCore.Sqlite.svg?label=Thinktecture.EntityFrameworkCore.Sqlite&maxAge=3600)](https://www.nuget.org/packages/Thinktecture.EntityFrameworkCore.Sqlite/)  
-[![Thinktecture.EntityFrameworkCore.Sqlite.Testing](https://img.shields.io/nuget/vpre/Thinktecture.EntityFrameworkCore.Sqlite.Testing.svg?label=Thinktecture.EntityFrameworkCore.Sqlite.Testing&maxAge=3600)](https://www.nuget.org/packages/Thinktecture.EntityFrameworkCore.Sqlite.Testing/) [DEPRECATED]  
 
-These libraries extend [Entity Framework Core](https://docs.microsoft.com/en-us/ef/core/) by a few features to make it easier to work with EF and for easier integration testing or to get more performance in some special cases.
+These libraries extend [Entity Framework Core](https://docs.microsoft.com/en-us/ef/core/) by a few features to make it easier to work with EF or to get more performance in some special cases.
 
 ## Supported Providers
 
@@ -48,9 +46,6 @@ These libraries extend [Entity Framework Core](https://docs.microsoft.com/en-us/
 
 ## Best Practices
 * [DbContext Lifetime and Change-Tracking](https://github.com/PawelGerr/Thinktecture.EntityFrameworkCore/wiki/DbContext-Lifetime-and-Change-Tracking)
-
-## Integration Testing
-* [Isolation of tests](https://github.com/PawelGerr/Thinktecture.EntityFrameworkCore/wiki/Isolation-of-tests) [DEPRECATED]
 
 ## Extensibility
 * [Adding custom IRelationalTypeMappingSourcePlugin](https://github.com/PawelGerr/Thinktecture.EntityFrameworkCore/wiki/Adding-custom-IRelationalTypeMappingSourcePlugin)

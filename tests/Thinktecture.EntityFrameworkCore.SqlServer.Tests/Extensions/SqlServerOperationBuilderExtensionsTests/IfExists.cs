@@ -95,6 +95,17 @@ public class IfExists : ExistTestBase
    }
 
    [Fact]
+   public void Should_throw_NotSupportedException_if_used_with_DropIndex_of_full_text_index()
+   {
+      Migration.ConfigureUp = builder => builder.DropIndex("IX1", "Foo")
+                                                .Annotation("SqlServer:FullTextIndex", "PK_Foo")
+                                                .IfExists();
+
+      ExecuteMigration.Invoking(a => a())
+                      .Should().Throw<NotSupportedException>();
+   }
+
+   [Fact]
    public void Should_not_throw_if_used_with_DropIndex_and_index_not_exists()
    {
       Migration.ConfigureUp = builder => builder.DropIndex("Foo", "Bar").IfExists();

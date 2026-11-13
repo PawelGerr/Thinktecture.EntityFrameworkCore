@@ -17,7 +17,7 @@ internal sealed class BulkOperationTargetTable(ITableBase table, BulkOperationTa
    public IEnumerable<ITableMappingBase> ComplexTypeMappings => table.ComplexTypeMappings;
    public IEnumerable<IColumnBase> Columns => table.Columns;
    public IColumnBase? FindColumn(string name) => table.FindColumn(name);
-   public IColumnBase? FindColumn(IProperty property) => table.FindColumn(property);
+   public IColumnBase? FindColumn(IPropertyBase propertyBase) => table.FindColumn(propertyBase);
    public IEnumerable<IForeignKey> GetRowInternalForeignKeys(IEntityType entityType) => table.GetRowInternalForeignKeys(entityType);
    public IEnumerable<IForeignKey> GetReferencingRowInternalForeignKeys(IEntityType entityType) => table.GetReferencingRowInternalForeignKeys(entityType);
    public bool IsOptional(ITypeBase typeBase) => table.IsOptional(typeBase);
@@ -30,5 +30,4 @@ internal sealed class BulkOperationTargetTable(ITableBase table, BulkOperationTa
    public IAnnotation SetRuntimeAnnotation(string name, object? value) => table.SetRuntimeAnnotation(name, value);
    public IAnnotation? RemoveRuntimeAnnotation(string name) => table.RemoveRuntimeAnnotation(name);
    public TValue GetOrAddRuntimeAnnotationValue<TValue, TArg>(string name, Func<TArg?, TValue> valueFactory, TArg? factoryArgument) => table.GetOrAddRuntimeAnnotationValue(name, valueFactory, factoryArgument);
-   public IColumnBase? FindColumn(IPropertyBase propertyBase) => table.FindColumn(propertyBase);
 }

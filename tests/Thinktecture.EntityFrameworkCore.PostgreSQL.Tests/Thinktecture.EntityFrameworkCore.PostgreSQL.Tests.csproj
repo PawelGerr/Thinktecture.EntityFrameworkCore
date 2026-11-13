@@ -1,7 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
    <PropertyGroup>
-      <NoWarn>$(NoWarn);CS1591;CA2000</NoWarn>
+      <!-- shortcut: NU1608 is expected while Npgsql 11.0.0-rc.3 is used with EF Core 11.0.0; remove it when Npgsql 11.0.0 GA is referenced. -->
+      <NoWarn>$(NoWarn);CS1591;CA2000;NU1608</NoWarn>
       <UserSecretsId>5c040900-7731-4efd-9db6-99364ed26d45</UserSecretsId>
    </PropertyGroup>
 
@@ -14,7 +15,7 @@
 
    <ItemGroup>
       <ProjectReference Include="..\..\src\Thinktecture.EntityFrameworkCore.PostgreSQL\Thinktecture.EntityFrameworkCore.PostgreSQL.csproj" />
-      <ProjectReference Include="..\..\src\Thinktecture.EntityFrameworkCore.Testing\Thinktecture.EntityFrameworkCore.Testing.csproj" />
+      <ProjectReference Include="..\Thinktecture.EntityFrameworkCore.Testing\Thinktecture.EntityFrameworkCore.Testing.csproj" />
       <ProjectReference Include="..\Thinktecture.EntityFrameworkCore.TestHelpers\Thinktecture.EntityFrameworkCore.TestHelpers.csproj" />
    </ItemGroup>
 

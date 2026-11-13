@@ -9,7 +9,7 @@
    </ItemGroup>
 
    <ItemGroup>
-      <ProjectReference Include="..\..\src\Thinktecture.EntityFrameworkCore.Testing\Thinktecture.EntityFrameworkCore.Testing.csproj" />
+      <ProjectReference Include="..\Thinktecture.EntityFrameworkCore.Testing\Thinktecture.EntityFrameworkCore.Testing.csproj" />
    </ItemGroup>
 
 </Project>
