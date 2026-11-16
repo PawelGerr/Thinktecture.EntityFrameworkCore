@@ -55,6 +55,80 @@ public sealed class MySqlDbContextOptionsExtensionTests
    }
 
    [Fact]
+   public void Should_not_share_a_service_provider_if_only_the_bulk_copy_setting_differs()
+   {
+      var withoutBulkCopy = CreateExtension(builder => builder.AddBulkOperationSupport(useBulkCopy: false));
+      var withBulkCopy = CreateExtension(builder => builder.AddBulkOperationSupport(useBulkCopy: true));
+
+      withoutBulkCopy.Info.ShouldUseSameServiceProvider(withBulkCopy.Info).Should().BeFalse();
+      withoutBulkCopy.Info.GetServiceProviderHashCode().Should().NotBe(withBulkCopy.Info.GetServiceProviderHashCode());
+   }
+
+   [Fact]
+   public void Should_not_share_a_service_provider_if_only_the_parameter_budget_differs()
+   {
+      var withDefaultBudget = CreateExtension(builder => builder.AddBulkOperationSupport());
+      var withOtherBudget = CreateExtension(builder => builder.AddBulkOperationSupport(maxParametersPerStatement: 1_000));
+
+      withDefaultBudget.Info.ShouldUseSameServiceProvider(withOtherBudget.Info).Should().BeFalse();
+      withDefaultBudget.Info.GetServiceProviderHashCode().Should().NotBe(withOtherBudget.Info.GetServiceProviderHashCode());
+   }
+
+   [Fact]
+   public void Should_use_multi_row_insert_and_5000_parameters_per_statement_by_default()
+   {
+      var extension = CreateExtension(builder => builder.AddBulkOperationSupport());
+
+      extension.UseBulkCopy.Should().BeFalse();
+      extension.MaxParametersPerStatement.Should().Be(5_000);
+   }
+
+   [Theory]
+   [InlineData(0)]
+   [InlineData(-1)]
+   [InlineData(65_536)]
+   public void Should_throw_if_the_registered_parameter_budget_is_out_of_range(int maxParametersPerStatement)
+   {
+      var act = () => CreateExtension(builder => builder.AddBulkOperationSupport(maxParametersPerStatement: maxParametersPerStatement));
+
+      act.Should().Throw<ArgumentOutOfRangeException>().WithParameterName("maxParametersPerStatement");
+   }
+
+   [Theory]
+   [InlineData(0)]
+   [InlineData(65_536)]
+   public void Should_throw_if_the_parameter_budget_of_the_extension_is_out_of_range(int maxParametersPerStatement)
+   {
+      var extension = CreateExtension(builder => builder.AddBulkOperationSupport());
+
+      var act = () => extension.MaxParametersPerStatement = maxParametersPerStatement;
+
+      act.Should().Throw<ArgumentOutOfRangeException>().WithParameterName("value");
+   }
+
+   [Theory]
+   [InlineData(1)]
+   [InlineData(65_535)]
+   public void Should_accept_the_limits_of_the_registered_parameter_budget(int maxParametersPerStatement)
+   {
+      var extension = CreateExtension(builder => builder.AddBulkOperationSupport(maxParametersPerStatement: maxParametersPerStatement));
+
+      extension.MaxParametersPerStatement.Should().Be(maxParametersPerStatement);
+   }
+
+   [Fact]
+   public void Should_report_the_insert_strategy_in_the_debug_info()
+   {
+      var extension = CreateExtension(builder => builder.AddBulkOperationSupport(useBulkCopy: true, maxParametersPerStatement: 1_234));
+      var debugInfo = new Dictionary<string, string>();
+
+      extension.Info.PopulateDebugInfo(debugInfo);
+
+      debugInfo["Thinktecture:MySqlUseBulkCopy"].Should().Be("True");
+      debugInfo["Thinktecture:MySqlMaxParametersPerStatement"].Should().Be("1234");
+   }
+
+   [Fact]
    public void Should_report_the_features_in_the_debug_info()
    {
       var extension = CreateExtension(builder => builder.AddBulkOperationSupport().AddWindowFunctionsSupport());
@@ -78,7 +152,7 @@ public sealed class MySqlDbContextOptionsExtensionTests
 
    private static MySqlDbContextOptionsExtension CreateExtension(Action<MySqlDbContextOptionsBuilder> configure)
    {
-      var options = new DbContextOptionsBuilder<MySqlTestDbContext>()
+      var options = MySqlTestDbContext.CreateOptionsBuilder()
                     .UseMySql("Server=localhost;Database=test", MySqlContainerFixture.ServerVersion, configure)
                     .Options;
 

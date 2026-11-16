@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Thinktecture.TestDatabaseContext;
 
 namespace Thinktecture;
@@ -17,6 +18,7 @@ public sealed class MySqlTestDbContext(DbContextOptions<MySqlTestDbContext> opti
    public DbSet<MySqlOwnerEntity> Owners => Set<MySqlOwnerEntity>();
    public DbSet<MySqlCollatedEntity> CollatedEntities => Set<MySqlCollatedEntity>();
    public DbSet<MySqlAutoIncrementEntity> AutoIncrementEntities => Set<MySqlAutoIncrementEntity>();
+   public DbSet<MySqlTemporalEntity> TemporalEntities => Set<MySqlTemporalEntity>();
 
    // Shared entities of Thinktecture.EntityFrameworkCore.TestHelpers (same names as in the other provider test projects).
    public DbSet<TestEntity> TestEntities => Set<TestEntity>();
@@ -43,6 +45,10 @@ public sealed class MySqlTestDbContext(DbContextOptions<MySqlTestDbContext> opti
    public DbSet<TestEntityWithFlags> TestEntitiesWithFlags => Set<TestEntityWithFlags>();
    public DbSet<TestEntityWithDifferentColumnNames> TestEntitiesWithDifferentColumnNames => Set<TestEntityWithDifferentColumnNames>();
    public DbSet<TestEntityWithCollation> TestEntitiesWithCollation => Set<TestEntityWithCollation>();
+   public DbSet<TestEntityWithStructComplexType> TestEntitiesWithStructComplexType => Set<TestEntityWithStructComplexType>();
+   public DbSet<TestEntityWithConvertedComplexType> TestEntitiesWithConvertedComplexType => Set<TestEntityWithConvertedComplexType>();
+   public DbSet<TestEntityWithNullableComplexTypes> TestEntitiesWithNullableComplexTypes => Set<TestEntityWithNullableComplexTypes>();
+   public DbSet<TestEntityWithStructsInOptionalComplexType> TestEntitiesWithStructsInOptionalComplexType => Set<TestEntityWithStructsInOptionalComplexType>();
 
    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
    {
@@ -51,9 +57,31 @@ public sealed class MySqlTestDbContext(DbContextOptions<MySqlTestDbContext> opti
       Configure?.Invoke(optionsBuilder);
    }
 
+   /// <summary>
+   /// Creates the options builder that every test uses for this context.
+   /// The limit of 20 internal service providers of EF Core applies to the whole process, and the tests use many different options.
+   /// The warning is configured on the options and not in <see cref="OnConfiguring"/>, because the constructor of <see cref="DbContext"/> builds the service provider before <see cref="OnConfiguring"/> runs.
+   /// </summary>
+   public static DbContextOptionsBuilder<MySqlTestDbContext> CreateOptionsBuilder()
+   {
+      return new DbContextOptionsBuilder<MySqlTestDbContext>()
+         .ConfigureWarnings(warningsBuilder => warningsBuilder.Ignore(CoreEventId.ManyServiceProvidersCreatedWarning));
+   }
+
    protected override void OnModelCreating(ModelBuilder modelBuilder)
    {
       modelBuilder.Entity<MySqlAutoIncrementEntity>().Property(entity => entity.Name).HasMaxLength(100);
+      // An explicit column type with a fractional precision gives the provider mapping a Size of 6 and no Precision.
+      modelBuilder.Entity<MySqlTemporalEntity>(builder =>
+                                               {
+                                                  builder.Property(entity => entity.Id).ValueGeneratedNever();
+                                                  builder.Property(entity => entity.DateTime).HasColumnType("timestamp(6)");
+                                                  builder.Property(entity => entity.DateTimeOffset).HasColumnType("datetime(6)");
+                                                  builder.Property(entity => entity.TimeOnly).HasColumnType("time(6)");
+                                                  builder.Property(entity => entity.TimeSpan).HasColumnType("time(6)");
+                                                  builder.Property(entity => entity.NullableDateTime).HasColumnType("datetime(6)");
+                                                  builder.Property(entity => entity.Converted).HasConversion(wrapper => wrapper.Value, value => new MySqlDateTimeWrapper(value)).HasColumnType("datetime(6)");
+                                               });
       modelBuilder.Entity<MySqlTypedEntity>(builder =>
                                             {
                                                builder.Property(entity => entity.Id).ValueGeneratedNever();
@@ -129,6 +157,10 @@ public sealed class MySqlTestDbContext(DbContextOptions<MySqlTestDbContext> opti
       TestEntityWithComplexType.Configure(modelBuilder);
       TestEntityWithDifferentColumnNames.Configure(modelBuilder);
       TestEntityWithFlags.Configure(modelBuilder);
+      TestEntityWithStructComplexType.Configure(modelBuilder);
+      TestEntityWithConvertedComplexType.Configure(modelBuilder);
+      TestEntityWithNullableComplexTypes.Configure(modelBuilder);
+      TestEntityWithStructsInOptionalComplexType.Configure(modelBuilder);
 
       // MySQL: UUID() is an expression default and must be enclosed in parentheses.
       modelBuilder.Entity<TestEntityWithSqlDefaultValues>(builder =>
@@ -171,6 +203,19 @@ public enum MySqlTestStatus
    Draft,
    Published
 }
+
+public sealed class MySqlTemporalEntity
+{
+   public Guid Id { get; set; }
+   public DateTime DateTime { get; set; }
+   public DateTimeOffset DateTimeOffset { get; set; }
+   public TimeOnly TimeOnly { get; set; }
+   public TimeSpan TimeSpan { get; set; }
+   public DateTime? NullableDateTime { get; set; }
+   public MySqlDateTimeWrapper Converted { get; set; }
+}
+
+public readonly record struct MySqlDateTimeWrapper(DateTime Value);
 
 public sealed class MySqlAutoIncrementEntity
 {

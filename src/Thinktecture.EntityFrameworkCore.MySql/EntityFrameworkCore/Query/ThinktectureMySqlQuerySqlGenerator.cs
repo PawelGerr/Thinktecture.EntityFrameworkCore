@@ -7,13 +7,14 @@ using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 using Microsoft.EntityFrameworkCore.Storage;
 using Thinktecture.EntityFrameworkCore.Internal;
 using Thinktecture.EntityFrameworkCore.Query.SqlExpressions;
+using Thinktecture.EntityFrameworkCore.Storage;
 
 namespace Thinktecture.EntityFrameworkCore.Query;
 
 /// <summary>
 /// Extends the MySQL SQL generator with Thinktecture expressions.
 /// </summary>
-[SuppressMessage("Usage", "EF1001:Internal EF Core API usage.")]
+[SuppressMessage("Usage", "EF1001", MessageId = "Internal EF Core API usage.")]
 public sealed class ThinktectureMySqlQuerySqlGenerator : MySqlQuerySqlGenerator
 {
    /// <summary>
@@ -38,6 +39,36 @@ public sealed class ThinktectureMySqlQuerySqlGenerator : MySqlQuerySqlGenerator
          WindowFunctionExpression windowFunctionExpression => VisitWindowFunction(windowFunctionExpression),
          _ => base.VisitExtension(extensionExpression)
       };
+   }
+
+   /// <inheritdoc />
+   protected override Expression VisitSqlConstant(SqlConstantExpression sqlConstantExpression)
+   {
+      ArgumentNullException.ThrowIfNull(sqlConstantExpression);
+
+      var mapping = sqlConstantExpression.TypeMapping;
+      var precisionMapping = mapping?.WithFractionalSecondsPrecision();
+      var providerType = precisionMapping?.Converter?.ProviderClrType ?? precisionMapping?.ClrType;
+
+      // The literal of the provider formats a TimeSpan with "hh", which drops the days and the sign.
+      if (sqlConstantExpression.Value is { } value && providerType is not null && (Nullable.GetUnderlyingType(providerType) ?? providerType) == typeof(TimeSpan))
+      {
+         var timeSpan = (TimeSpan)(precisionMapping!.Converter?.ConvertToProvider(value) ?? value);
+         Sql.Append(GenerateTimeLiteral(timeSpan), sqlConstantExpression.IsSensitive);
+         return sqlConstantExpression;
+      }
+
+      if (!ReferenceEquals(precisionMapping, mapping))
+         sqlConstantExpression = (SqlConstantExpression)sqlConstantExpression.ApplyTypeMapping(precisionMapping);
+
+      return base.VisitSqlConstant(sqlConstantExpression);
+   }
+
+   // MySQL TIME takes the total hours (up to 838) and a sign. A value outside the range fails with error 1525.
+   // The six fraction digits are rounded to the precision of the column, like the value of a parameter.
+   private static string GenerateTimeLiteral(TimeSpan value)
+   {
+      return $"TIME '{MySqlTimeFormatter.Format(value)}'";
    }
 
    /// <inheritdoc />

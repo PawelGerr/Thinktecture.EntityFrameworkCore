@@ -17,43 +17,62 @@ public static class MySqlWindowAggregateDbFunctionsExtensions
    /// <param name="columnToAggregate">The value to aggregate.</param>
    /// <param name="partitionByColumn1">The partition column.</param>
    /// <returns>The windowed sum.</returns>
-   public static TAggregate Sum<TAggregate, TColumn1>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1) {
+   public static TAggregate Sum<TAggregate, TColumn1>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1)
+   {
       throw new InvalidOperationException(_IN_MEMORY_ERROR);
    }
+
    /// <inheritdoc cref="Sum{TAggregate, TColumn1}(DbFunctions, TAggregate, TColumn1)" />
-   public static TAggregate Sum<TAggregate, TColumn1>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, WindowFunctionOrderByClause orderByClause) {
+   public static TAggregate Sum<TAggregate, TColumn1>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, WindowFunctionOrderByClause orderByClause)
+   {
       throw new InvalidOperationException(_IN_MEMORY_ERROR);
    }
+
    /// <inheritdoc cref="Sum{TAggregate, TColumn1}(DbFunctions, TAggregate, TColumn1)" />
-   public static TAggregate Sum<TAggregate, TColumn1, TColumn2>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, TColumn2 partitionByColumn2) {
+   public static TAggregate Sum<TAggregate, TColumn1, TColumn2>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, TColumn2 partitionByColumn2)
+   {
       throw new InvalidOperationException(_IN_MEMORY_ERROR);
    }
+
    /// <inheritdoc cref="Sum{TAggregate, TColumn1}(DbFunctions, TAggregate, TColumn1)" />
-   public static TAggregate Sum<TAggregate, TColumn1, TColumn2>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, TColumn2 partitionByColumn2, WindowFunctionOrderByClause orderByClause) {
+   public static TAggregate Sum<TAggregate, TColumn1, TColumn2>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, TColumn2 partitionByColumn2, WindowFunctionOrderByClause orderByClause)
+   {
       throw new InvalidOperationException(_IN_MEMORY_ERROR);
    }
+
    /// <inheritdoc cref="Sum{TAggregate, TColumn1}(DbFunctions, TAggregate, TColumn1)" />
-   public static TAggregate Sum<TAggregate, TColumn1, TColumn2, TColumn3>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, TColumn2 partitionByColumn2, TColumn3 partitionByColumn3) {
+   public static TAggregate Sum<TAggregate, TColumn1, TColumn2, TColumn3>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, TColumn2 partitionByColumn2, TColumn3 partitionByColumn3)
+   {
       throw new InvalidOperationException(_IN_MEMORY_ERROR);
    }
+
    /// <inheritdoc cref="Sum{TAggregate, TColumn1}(DbFunctions, TAggregate, TColumn1)" />
-   public static TAggregate Sum<TAggregate, TColumn1, TColumn2, TColumn3>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, TColumn2 partitionByColumn2, TColumn3 partitionByColumn3, WindowFunctionOrderByClause orderByClause) {
+   public static TAggregate Sum<TAggregate, TColumn1, TColumn2, TColumn3>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, TColumn2 partitionByColumn2, TColumn3 partitionByColumn3, WindowFunctionOrderByClause orderByClause)
+   {
       throw new InvalidOperationException(_IN_MEMORY_ERROR);
    }
+
    /// <inheritdoc cref="Sum{TAggregate, TColumn1}(DbFunctions, TAggregate, TColumn1)" />
-   public static TAggregate Sum<TAggregate, TColumn1, TColumn2, TColumn3, TColumn4>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, TColumn2 partitionByColumn2, TColumn3 partitionByColumn3, TColumn4 partitionByColumn4) {
+   public static TAggregate Sum<TAggregate, TColumn1, TColumn2, TColumn3, TColumn4>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, TColumn2 partitionByColumn2, TColumn3 partitionByColumn3, TColumn4 partitionByColumn4)
+   {
       throw new InvalidOperationException(_IN_MEMORY_ERROR);
    }
+
    /// <inheritdoc cref="Sum{TAggregate, TColumn1}(DbFunctions, TAggregate, TColumn1)" />
-   public static TAggregate Sum<TAggregate, TColumn1, TColumn2, TColumn3, TColumn4>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, TColumn2 partitionByColumn2, TColumn3 partitionByColumn3, TColumn4 partitionByColumn4, WindowFunctionOrderByClause orderByClause) {
+   public static TAggregate Sum<TAggregate, TColumn1, TColumn2, TColumn3, TColumn4>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, TColumn2 partitionByColumn2, TColumn3 partitionByColumn3, TColumn4 partitionByColumn4, WindowFunctionOrderByClause orderByClause)
+   {
       throw new InvalidOperationException(_IN_MEMORY_ERROR);
    }
+
    /// <inheritdoc cref="Sum{TAggregate, TColumn1}(DbFunctions, TAggregate, TColumn1)" />
-   public static TAggregate Sum<TAggregate, TColumn1, TColumn2, TColumn3, TColumn4, TColumn5>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, TColumn2 partitionByColumn2, TColumn3 partitionByColumn3, TColumn4 partitionByColumn4, TColumn5 partitionByColumn5) {
+   public static TAggregate Sum<TAggregate, TColumn1, TColumn2, TColumn3, TColumn4, TColumn5>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, TColumn2 partitionByColumn2, TColumn3 partitionByColumn3, TColumn4 partitionByColumn4, TColumn5 partitionByColumn5)
+   {
       throw new InvalidOperationException(_IN_MEMORY_ERROR);
    }
+
    /// <inheritdoc cref="Sum{TAggregate, TColumn1}(DbFunctions, TAggregate, TColumn1)" />
-   public static TAggregate Sum<TAggregate, TColumn1, TColumn2, TColumn3, TColumn4, TColumn5>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, TColumn2 partitionByColumn2, TColumn3 partitionByColumn3, TColumn4 partitionByColumn4, TColumn5 partitionByColumn5, WindowFunctionOrderByClause orderByClause) {
+   public static TAggregate Sum<TAggregate, TColumn1, TColumn2, TColumn3, TColumn4, TColumn5>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, TColumn2 partitionByColumn2, TColumn3 partitionByColumn3, TColumn4 partitionByColumn4, TColumn5 partitionByColumn5, WindowFunctionOrderByClause orderByClause)
+   {
       throw new InvalidOperationException(_IN_MEMORY_ERROR);
    }
 
@@ -64,43 +83,62 @@ public static class MySqlWindowAggregateDbFunctionsExtensions
    /// <param name="columnToAggregate">The value to aggregate.</param>
    /// <param name="partitionByColumn1">The partition column.</param>
    /// <returns>The windowed average.</returns>
-   public static TAggregate Average<TAggregate, TColumn1>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1) {
+   public static TAggregate Average<TAggregate, TColumn1>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1)
+   {
       throw new InvalidOperationException(_IN_MEMORY_ERROR);
    }
+
    /// <inheritdoc cref="Average{TAggregate, TColumn1}(DbFunctions, TAggregate, TColumn1)" />
-   public static TAggregate Average<TAggregate, TColumn1>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, WindowFunctionOrderByClause orderByClause) {
+   public static TAggregate Average<TAggregate, TColumn1>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, WindowFunctionOrderByClause orderByClause)
+   {
       throw new InvalidOperationException(_IN_MEMORY_ERROR);
    }
+
    /// <inheritdoc cref="Average{TAggregate, TColumn1}(DbFunctions, TAggregate, TColumn1)" />
-   public static TAggregate Average<TAggregate, TColumn1, TColumn2>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, TColumn2 partitionByColumn2) {
+   public static TAggregate Average<TAggregate, TColumn1, TColumn2>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, TColumn2 partitionByColumn2)
+   {
       throw new InvalidOperationException(_IN_MEMORY_ERROR);
    }
+
    /// <inheritdoc cref="Average{TAggregate, TColumn1}(DbFunctions, TAggregate, TColumn1)" />
-   public static TAggregate Average<TAggregate, TColumn1, TColumn2>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, TColumn2 partitionByColumn2, WindowFunctionOrderByClause orderByClause) {
+   public static TAggregate Average<TAggregate, TColumn1, TColumn2>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, TColumn2 partitionByColumn2, WindowFunctionOrderByClause orderByClause)
+   {
       throw new InvalidOperationException(_IN_MEMORY_ERROR);
    }
+
    /// <inheritdoc cref="Average{TAggregate, TColumn1}(DbFunctions, TAggregate, TColumn1)" />
-   public static TAggregate Average<TAggregate, TColumn1, TColumn2, TColumn3>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, TColumn2 partitionByColumn2, TColumn3 partitionByColumn3) {
+   public static TAggregate Average<TAggregate, TColumn1, TColumn2, TColumn3>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, TColumn2 partitionByColumn2, TColumn3 partitionByColumn3)
+   {
       throw new InvalidOperationException(_IN_MEMORY_ERROR);
    }
+
    /// <inheritdoc cref="Average{TAggregate, TColumn1}(DbFunctions, TAggregate, TColumn1)" />
-   public static TAggregate Average<TAggregate, TColumn1, TColumn2, TColumn3>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, TColumn2 partitionByColumn2, TColumn3 partitionByColumn3, WindowFunctionOrderByClause orderByClause) {
+   public static TAggregate Average<TAggregate, TColumn1, TColumn2, TColumn3>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, TColumn2 partitionByColumn2, TColumn3 partitionByColumn3, WindowFunctionOrderByClause orderByClause)
+   {
       throw new InvalidOperationException(_IN_MEMORY_ERROR);
    }
+
    /// <inheritdoc cref="Average{TAggregate, TColumn1}(DbFunctions, TAggregate, TColumn1)" />
-   public static TAggregate Average<TAggregate, TColumn1, TColumn2, TColumn3, TColumn4>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, TColumn2 partitionByColumn2, TColumn3 partitionByColumn3, TColumn4 partitionByColumn4) {
+   public static TAggregate Average<TAggregate, TColumn1, TColumn2, TColumn3, TColumn4>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, TColumn2 partitionByColumn2, TColumn3 partitionByColumn3, TColumn4 partitionByColumn4)
+   {
       throw new InvalidOperationException(_IN_MEMORY_ERROR);
    }
+
    /// <inheritdoc cref="Average{TAggregate, TColumn1}(DbFunctions, TAggregate, TColumn1)" />
-   public static TAggregate Average<TAggregate, TColumn1, TColumn2, TColumn3, TColumn4>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, TColumn2 partitionByColumn2, TColumn3 partitionByColumn3, TColumn4 partitionByColumn4, WindowFunctionOrderByClause orderByClause) {
+   public static TAggregate Average<TAggregate, TColumn1, TColumn2, TColumn3, TColumn4>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, TColumn2 partitionByColumn2, TColumn3 partitionByColumn3, TColumn4 partitionByColumn4, WindowFunctionOrderByClause orderByClause)
+   {
       throw new InvalidOperationException(_IN_MEMORY_ERROR);
    }
+
    /// <inheritdoc cref="Average{TAggregate, TColumn1}(DbFunctions, TAggregate, TColumn1)" />
-   public static TAggregate Average<TAggregate, TColumn1, TColumn2, TColumn3, TColumn4, TColumn5>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, TColumn2 partitionByColumn2, TColumn3 partitionByColumn3, TColumn4 partitionByColumn4, TColumn5 partitionByColumn5) {
+   public static TAggregate Average<TAggregate, TColumn1, TColumn2, TColumn3, TColumn4, TColumn5>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, TColumn2 partitionByColumn2, TColumn3 partitionByColumn3, TColumn4 partitionByColumn4, TColumn5 partitionByColumn5)
+   {
       throw new InvalidOperationException(_IN_MEMORY_ERROR);
    }
+
    /// <inheritdoc cref="Average{TAggregate, TColumn1}(DbFunctions, TAggregate, TColumn1)" />
-   public static TAggregate Average<TAggregate, TColumn1, TColumn2, TColumn3, TColumn4, TColumn5>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, TColumn2 partitionByColumn2, TColumn3 partitionByColumn3, TColumn4 partitionByColumn4, TColumn5 partitionByColumn5, WindowFunctionOrderByClause orderByClause) {
+   public static TAggregate Average<TAggregate, TColumn1, TColumn2, TColumn3, TColumn4, TColumn5>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, TColumn2 partitionByColumn2, TColumn3 partitionByColumn3, TColumn4 partitionByColumn4, TColumn5 partitionByColumn5, WindowFunctionOrderByClause orderByClause)
+   {
       throw new InvalidOperationException(_IN_MEMORY_ERROR);
    }
 
@@ -111,43 +149,62 @@ public static class MySqlWindowAggregateDbFunctionsExtensions
    /// <param name="columnToAggregate">The value to aggregate.</param>
    /// <param name="partitionByColumn1">The partition column.</param>
    /// <returns>The windowed maximum.</returns>
-   public static TAggregate Max<TAggregate, TColumn1>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1) {
+   public static TAggregate Max<TAggregate, TColumn1>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1)
+   {
       throw new InvalidOperationException(_IN_MEMORY_ERROR);
    }
+
    /// <inheritdoc cref="Max{TAggregate, TColumn1}(DbFunctions, TAggregate, TColumn1)" />
-   public static TAggregate Max<TAggregate, TColumn1>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, WindowFunctionOrderByClause orderByClause) {
+   public static TAggregate Max<TAggregate, TColumn1>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, WindowFunctionOrderByClause orderByClause)
+   {
       throw new InvalidOperationException(_IN_MEMORY_ERROR);
    }
+
    /// <inheritdoc cref="Max{TAggregate, TColumn1}(DbFunctions, TAggregate, TColumn1)" />
-   public static TAggregate Max<TAggregate, TColumn1, TColumn2>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, TColumn2 partitionByColumn2) {
+   public static TAggregate Max<TAggregate, TColumn1, TColumn2>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, TColumn2 partitionByColumn2)
+   {
       throw new InvalidOperationException(_IN_MEMORY_ERROR);
    }
+
    /// <inheritdoc cref="Max{TAggregate, TColumn1}(DbFunctions, TAggregate, TColumn1)" />
-   public static TAggregate Max<TAggregate, TColumn1, TColumn2>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, TColumn2 partitionByColumn2, WindowFunctionOrderByClause orderByClause) {
+   public static TAggregate Max<TAggregate, TColumn1, TColumn2>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, TColumn2 partitionByColumn2, WindowFunctionOrderByClause orderByClause)
+   {
       throw new InvalidOperationException(_IN_MEMORY_ERROR);
    }
+
    /// <inheritdoc cref="Max{TAggregate, TColumn1}(DbFunctions, TAggregate, TColumn1)" />
-   public static TAggregate Max<TAggregate, TColumn1, TColumn2, TColumn3>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, TColumn2 partitionByColumn2, TColumn3 partitionByColumn3) {
+   public static TAggregate Max<TAggregate, TColumn1, TColumn2, TColumn3>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, TColumn2 partitionByColumn2, TColumn3 partitionByColumn3)
+   {
       throw new InvalidOperationException(_IN_MEMORY_ERROR);
    }
+
    /// <inheritdoc cref="Max{TAggregate, TColumn1}(DbFunctions, TAggregate, TColumn1)" />
-   public static TAggregate Max<TAggregate, TColumn1, TColumn2, TColumn3>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, TColumn2 partitionByColumn2, TColumn3 partitionByColumn3, WindowFunctionOrderByClause orderByClause) {
+   public static TAggregate Max<TAggregate, TColumn1, TColumn2, TColumn3>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, TColumn2 partitionByColumn2, TColumn3 partitionByColumn3, WindowFunctionOrderByClause orderByClause)
+   {
       throw new InvalidOperationException(_IN_MEMORY_ERROR);
    }
+
    /// <inheritdoc cref="Max{TAggregate, TColumn1}(DbFunctions, TAggregate, TColumn1)" />
-   public static TAggregate Max<TAggregate, TColumn1, TColumn2, TColumn3, TColumn4>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, TColumn2 partitionByColumn2, TColumn3 partitionByColumn3, TColumn4 partitionByColumn4) {
+   public static TAggregate Max<TAggregate, TColumn1, TColumn2, TColumn3, TColumn4>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, TColumn2 partitionByColumn2, TColumn3 partitionByColumn3, TColumn4 partitionByColumn4)
+   {
       throw new InvalidOperationException(_IN_MEMORY_ERROR);
    }
+
    /// <inheritdoc cref="Max{TAggregate, TColumn1}(DbFunctions, TAggregate, TColumn1)" />
-   public static TAggregate Max<TAggregate, TColumn1, TColumn2, TColumn3, TColumn4>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, TColumn2 partitionByColumn2, TColumn3 partitionByColumn3, TColumn4 partitionByColumn4, WindowFunctionOrderByClause orderByClause) {
+   public static TAggregate Max<TAggregate, TColumn1, TColumn2, TColumn3, TColumn4>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, TColumn2 partitionByColumn2, TColumn3 partitionByColumn3, TColumn4 partitionByColumn4, WindowFunctionOrderByClause orderByClause)
+   {
       throw new InvalidOperationException(_IN_MEMORY_ERROR);
    }
+
    /// <inheritdoc cref="Max{TAggregate, TColumn1}(DbFunctions, TAggregate, TColumn1)" />
-   public static TAggregate Max<TAggregate, TColumn1, TColumn2, TColumn3, TColumn4, TColumn5>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, TColumn2 partitionByColumn2, TColumn3 partitionByColumn3, TColumn4 partitionByColumn4, TColumn5 partitionByColumn5) {
+   public static TAggregate Max<TAggregate, TColumn1, TColumn2, TColumn3, TColumn4, TColumn5>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, TColumn2 partitionByColumn2, TColumn3 partitionByColumn3, TColumn4 partitionByColumn4, TColumn5 partitionByColumn5)
+   {
       throw new InvalidOperationException(_IN_MEMORY_ERROR);
    }
+
    /// <inheritdoc cref="Max{TAggregate, TColumn1}(DbFunctions, TAggregate, TColumn1)" />
-   public static TAggregate Max<TAggregate, TColumn1, TColumn2, TColumn3, TColumn4, TColumn5>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, TColumn2 partitionByColumn2, TColumn3 partitionByColumn3, TColumn4 partitionByColumn4, TColumn5 partitionByColumn5, WindowFunctionOrderByClause orderByClause) {
+   public static TAggregate Max<TAggregate, TColumn1, TColumn2, TColumn3, TColumn4, TColumn5>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, TColumn2 partitionByColumn2, TColumn3 partitionByColumn3, TColumn4 partitionByColumn4, TColumn5 partitionByColumn5, WindowFunctionOrderByClause orderByClause)
+   {
       throw new InvalidOperationException(_IN_MEMORY_ERROR);
    }
 
@@ -158,43 +215,62 @@ public static class MySqlWindowAggregateDbFunctionsExtensions
    /// <param name="columnToAggregate">The value to aggregate.</param>
    /// <param name="partitionByColumn1">The partition column.</param>
    /// <returns>The windowed minimum.</returns>
-   public static TAggregate Min<TAggregate, TColumn1>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1) {
+   public static TAggregate Min<TAggregate, TColumn1>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1)
+   {
       throw new InvalidOperationException(_IN_MEMORY_ERROR);
    }
+
    /// <inheritdoc cref="Min{TAggregate, TColumn1}(DbFunctions, TAggregate, TColumn1)" />
-   public static TAggregate Min<TAggregate, TColumn1>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, WindowFunctionOrderByClause orderByClause) {
+   public static TAggregate Min<TAggregate, TColumn1>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, WindowFunctionOrderByClause orderByClause)
+   {
       throw new InvalidOperationException(_IN_MEMORY_ERROR);
    }
+
    /// <inheritdoc cref="Min{TAggregate, TColumn1}(DbFunctions, TAggregate, TColumn1)" />
-   public static TAggregate Min<TAggregate, TColumn1, TColumn2>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, TColumn2 partitionByColumn2) {
+   public static TAggregate Min<TAggregate, TColumn1, TColumn2>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, TColumn2 partitionByColumn2)
+   {
       throw new InvalidOperationException(_IN_MEMORY_ERROR);
    }
+
    /// <inheritdoc cref="Min{TAggregate, TColumn1}(DbFunctions, TAggregate, TColumn1)" />
-   public static TAggregate Min<TAggregate, TColumn1, TColumn2>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, TColumn2 partitionByColumn2, WindowFunctionOrderByClause orderByClause) {
+   public static TAggregate Min<TAggregate, TColumn1, TColumn2>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, TColumn2 partitionByColumn2, WindowFunctionOrderByClause orderByClause)
+   {
       throw new InvalidOperationException(_IN_MEMORY_ERROR);
    }
+
    /// <inheritdoc cref="Min{TAggregate, TColumn1}(DbFunctions, TAggregate, TColumn1)" />
-   public static TAggregate Min<TAggregate, TColumn1, TColumn2, TColumn3>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, TColumn2 partitionByColumn2, TColumn3 partitionByColumn3) {
+   public static TAggregate Min<TAggregate, TColumn1, TColumn2, TColumn3>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, TColumn2 partitionByColumn2, TColumn3 partitionByColumn3)
+   {
       throw new InvalidOperationException(_IN_MEMORY_ERROR);
    }
+
    /// <inheritdoc cref="Min{TAggregate, TColumn1}(DbFunctions, TAggregate, TColumn1)" />
-   public static TAggregate Min<TAggregate, TColumn1, TColumn2, TColumn3>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, TColumn2 partitionByColumn2, TColumn3 partitionByColumn3, WindowFunctionOrderByClause orderByClause) {
+   public static TAggregate Min<TAggregate, TColumn1, TColumn2, TColumn3>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, TColumn2 partitionByColumn2, TColumn3 partitionByColumn3, WindowFunctionOrderByClause orderByClause)
+   {
       throw new InvalidOperationException(_IN_MEMORY_ERROR);
    }
+
    /// <inheritdoc cref="Min{TAggregate, TColumn1}(DbFunctions, TAggregate, TColumn1)" />
-   public static TAggregate Min<TAggregate, TColumn1, TColumn2, TColumn3, TColumn4>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, TColumn2 partitionByColumn2, TColumn3 partitionByColumn3, TColumn4 partitionByColumn4) {
+   public static TAggregate Min<TAggregate, TColumn1, TColumn2, TColumn3, TColumn4>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, TColumn2 partitionByColumn2, TColumn3 partitionByColumn3, TColumn4 partitionByColumn4)
+   {
       throw new InvalidOperationException(_IN_MEMORY_ERROR);
    }
+
    /// <inheritdoc cref="Min{TAggregate, TColumn1}(DbFunctions, TAggregate, TColumn1)" />
-   public static TAggregate Min<TAggregate, TColumn1, TColumn2, TColumn3, TColumn4>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, TColumn2 partitionByColumn2, TColumn3 partitionByColumn3, TColumn4 partitionByColumn4, WindowFunctionOrderByClause orderByClause) {
+   public static TAggregate Min<TAggregate, TColumn1, TColumn2, TColumn3, TColumn4>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, TColumn2 partitionByColumn2, TColumn3 partitionByColumn3, TColumn4 partitionByColumn4, WindowFunctionOrderByClause orderByClause)
+   {
       throw new InvalidOperationException(_IN_MEMORY_ERROR);
    }
+
    /// <inheritdoc cref="Min{TAggregate, TColumn1}(DbFunctions, TAggregate, TColumn1)" />
-   public static TAggregate Min<TAggregate, TColumn1, TColumn2, TColumn3, TColumn4, TColumn5>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, TColumn2 partitionByColumn2, TColumn3 partitionByColumn3, TColumn4 partitionByColumn4, TColumn5 partitionByColumn5) {
+   public static TAggregate Min<TAggregate, TColumn1, TColumn2, TColumn3, TColumn4, TColumn5>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, TColumn2 partitionByColumn2, TColumn3 partitionByColumn3, TColumn4 partitionByColumn4, TColumn5 partitionByColumn5)
+   {
       throw new InvalidOperationException(_IN_MEMORY_ERROR);
    }
+
    /// <inheritdoc cref="Min{TAggregate, TColumn1}(DbFunctions, TAggregate, TColumn1)" />
-   public static TAggregate Min<TAggregate, TColumn1, TColumn2, TColumn3, TColumn4, TColumn5>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, TColumn2 partitionByColumn2, TColumn3 partitionByColumn3, TColumn4 partitionByColumn4, TColumn5 partitionByColumn5, WindowFunctionOrderByClause orderByClause) {
+   public static TAggregate Min<TAggregate, TColumn1, TColumn2, TColumn3, TColumn4, TColumn5>(this DbFunctions _, TAggregate columnToAggregate, TColumn1 partitionByColumn1, TColumn2 partitionByColumn2, TColumn3 partitionByColumn3, TColumn4 partitionByColumn4, TColumn5 partitionByColumn5, WindowFunctionOrderByClause orderByClause)
+   {
       throw new InvalidOperationException(_IN_MEMORY_ERROR);
    }
 }

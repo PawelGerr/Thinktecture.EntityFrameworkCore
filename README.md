@@ -8,7 +8,7 @@
 [![Thinktecture.EntityFrameworkCore.SqlServer](https://img.shields.io/nuget/vpre/Thinktecture.EntityFrameworkCore.SqlServer.svg?label=Thinktecture.EntityFrameworkCore.SqlServer&maxAge=3600)](https://www.nuget.org/packages/Thinktecture.EntityFrameworkCore.SqlServer/)  
 [![Thinktecture.EntityFrameworkCore.SqlServer.Testing](https://img.shields.io/nuget/vpre/Thinktecture.EntityFrameworkCore.SqlServer.Testing.svg?label=Thinktecture.EntityFrameworkCore.SqlServer.Testing&maxAge=3600)](https://www.nuget.org/packages/Thinktecture.EntityFrameworkCore.SqlServer.Testing/) [DEPRECATED]  
 [![Thinktecture.EntityFrameworkCore.PostgreSQL](https://img.shields.io/nuget/vpre/Thinktecture.EntityFrameworkCore.PostgreSQL.svg?label=Thinktecture.EntityFrameworkCore.PostgreSQL&maxAge=3600)](https://www.nuget.org/packages/Thinktecture.EntityFrameworkCore.PostgreSQL/)  
-[![Thinktecture.EntityFrameworkCore.MySql](https://img.shields.io/nuget/vpre/Thinktecture.EntityFrameworkCore.MySql.svg?label=Thinktecture.EntityFrameworkCore.MySql&maxAge=3600)](https://www.nuget.org/packages/Thinktecture.EntityFrameworkCore.MySql/)
+[![Thinktecture.EntityFrameworkCore.MySql](https://img.shields.io/nuget/vpre/Thinktecture.EntityFrameworkCore.MySql.svg?label=Thinktecture.EntityFrameworkCore.MySql&maxAge=3600)](https://www.nuget.org/packages/Thinktecture.EntityFrameworkCore.MySql/)  
 [![Thinktecture.EntityFrameworkCore.Sqlite.Core](https://img.shields.io/nuget/vpre/Thinktecture.EntityFrameworkCore.Sqlite.Core.svg?label=Thinktecture.EntityFrameworkCore.Sqlite.Core&maxAge=3600)](https://www.nuget.org/packages/Thinktecture.EntityFrameworkCore.Sqlite.Core/)  
 [![Thinktecture.EntityFrameworkCore.Sqlite](https://img.shields.io/nuget/vpre/Thinktecture.EntityFrameworkCore.Sqlite.svg?label=Thinktecture.EntityFrameworkCore.Sqlite&maxAge=3600)](https://www.nuget.org/packages/Thinktecture.EntityFrameworkCore.Sqlite/)  
 [![Thinktecture.EntityFrameworkCore.Sqlite.Testing](https://img.shields.io/nuget/vpre/Thinktecture.EntityFrameworkCore.Sqlite.Testing.svg?label=Thinktecture.EntityFrameworkCore.Sqlite.Testing&maxAge=3600)](https://www.nuget.org/packages/Thinktecture.EntityFrameworkCore.Sqlite.Testing/) [DEPRECATED]  
@@ -21,7 +21,7 @@ These libraries extend [Entity Framework Core](https://docs.microsoft.com/en-us/
 |----------|------------------------------------------------|
 | SQL Server | `Thinktecture.EntityFrameworkCore.SqlServer`   |
 | PostgreSQL (Npgsql) | `Thinktecture.EntityFrameworkCore.PostgreSQL` |
-| MySQL / MariaDB (Microting) | `Thinktecture.EntityFrameworkCore.MySql` |
+| MySQL (Microting; MariaDB is not tested) | `Thinktecture.EntityFrameworkCore.MySql` |
 | SQLite | `Thinktecture.EntityFrameworkCore.Sqlite`      |
 
 ## Performance
@@ -41,10 +41,10 @@ These libraries extend [Entity Framework Core](https://docs.microsoft.com/en-us/
 * [Changing default schema at runtime](https://github.com/PawelGerr/Thinktecture.EntityFrameworkCore/wiki/Changing-default-schema-at-runtime)
 * [If-Exists / If-Not-Exists checks in migrations](https://github.com/PawelGerr/Thinktecture.EntityFrameworkCore/wiki/If-(Not-)Exists-checks-in-migrations) (SQL Server, PostgreSQL)
 
-> \* SQLite supports RowNumber only; Sum, Average, Min, Max are available on SQL Server, PostgreSQL and MySQL.
+> \* SQLite supports RowNumber and NTile; Sum, Average, Min, Max are available on SQL Server, PostgreSQL and MySQL.
 
-For MySQL bulk inserts, `MySqlBulkInsertOptions.UseBulkCopy` opts into `LOAD DATA LOCAL INFILE`. The connection must use `AllowLoadLocalInfile=true` and the server must have `local_infile=ON`; this strategy buffers the source rows in memory.
-MySQL bulk upserts return the number of processed input rows, rather than MySQL's provider-specific affected-row count.
+MySQL bulk operations insert rows with multi-row `INSERT` statements by default. The registration `AddBulkOperationSupport(useBulkCopy: true)` switches every insert of the bulk operations to `MySqlBulkCopy` (`LOAD DATA LOCAL INFILE`). Bulk copy needs `AllowLoadLocalInfile=true` in the connection string and `local_infile=ON` on the server.
+A MySQL bulk upsert returns the number of matched rows of its UPDATE plus the number of inserted rows.
 
 ## Convenience
 * [Migrations: include-columns](https://github.com/PawelGerr/Thinktecture.EntityFrameworkCore/wiki/Migrations-Include-columns) (SQL Server, PostgreSQL)

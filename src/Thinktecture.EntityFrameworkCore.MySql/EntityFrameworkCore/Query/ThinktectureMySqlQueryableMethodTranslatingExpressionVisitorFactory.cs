@@ -7,7 +7,7 @@ namespace Thinktecture.EntityFrameworkCore.Query;
 /// <summary>
 /// Creates MySQL queryable method translators with Thinktecture support.
 /// </summary>
-[SuppressMessage("Usage", "EF1001:Internal EF Core API usage.")]
+[SuppressMessage("Usage", "EF1001", MessageId = "Internal EF Core API usage.")]
 public sealed class ThinktectureMySqlQueryableMethodTranslatingExpressionVisitorFactory : IQueryableMethodTranslatingExpressionVisitorFactory
 {
    private readonly QueryableMethodTranslatingExpressionVisitorDependencies _dependencies;

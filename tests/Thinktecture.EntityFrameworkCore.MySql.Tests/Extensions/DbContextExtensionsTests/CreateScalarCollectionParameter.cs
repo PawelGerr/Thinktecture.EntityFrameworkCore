@@ -86,8 +86,8 @@ public sealed class CreateScalarCollectionParameter : MySqlIntegrationTestsBase
       new[] { new TimeSpan(838, 59, 59), new TimeSpan(-838, -59, -59) },
    ]);
 
-   public CreateScalarCollectionParameter(MySqlContainerFixture fixture)
-      : base(fixture)
+   public CreateScalarCollectionParameter(ITestOutputHelper testOutputHelper, MySqlContainerFixture fixture)
+      : base(testOutputHelper, fixture)
    {
       ConfigureMySql = builder => builder.AddCollectionParameterSupport(CollectionParameterJsonSerializerOptions.Default);
    }

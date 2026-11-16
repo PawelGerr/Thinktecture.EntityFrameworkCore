@@ -14,8 +14,8 @@ public sealed class WindowFunctionTests : MySqlIntegrationTestsBase
    private static readonly WindowFunction<int> _count = new("COUNT", true);
    private static readonly WindowFunction<int?> _lag = new("LAG");
 
-   public WindowFunctionTests(MySqlContainerFixture fixture)
-      : base(fixture)
+   public WindowFunctionTests(ITestOutputHelper testOutputHelper, MySqlContainerFixture fixture)
+      : base(testOutputHelper, fixture)
    {
    }
 

@@ -4,8 +4,10 @@ using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage;
+using Thinktecture.EntityFrameworkCore.Internal;
 using Thinktecture.Internal;
 
 namespace Thinktecture.EntityFrameworkCore.Parameters;
@@ -34,10 +36,12 @@ public sealed class MySqlCollectionParameterFactory : ICollectionParameterFactor
       ArgumentNullException.ThrowIfNull(jsonSerializerOptions);
 
       // MySQL parses JSON numbers as DOUBLE and rejects the .NET formats of TimeSpan/DateTime; these values are sent as strings instead.
+      // A DateTimeOffset is sent as UTC without an offset, because MySQL converts a value with an offset into the session time zone.
       _jsonSerializerOptions = new JsonSerializerOptions(jsonSerializerOptions);
       _jsonSerializerOptions.Converters.Add(new DecimalStringConverter());
       _jsonSerializerOptions.Converters.Add(new TimeSpanStringConverter());
       _jsonSerializerOptions.Converters.Add(new DateTimeStringConverter());
+      _jsonSerializerOptions.Converters.Add(new DateTimeOffsetStringConverter());
       _sqlGenerationHelper = sqlGenerationHelper ?? throw new ArgumentNullException(nameof(sqlGenerationHelper));
       _typeMappingSource = typeMappingSource ?? throw new ArgumentNullException(nameof(typeMappingSource));
    }
@@ -47,7 +51,7 @@ public sealed class MySqlCollectionParameterFactory : ICollectionParameterFactor
    {
       var entityName = EntityNameProvider.GetCollectionParameterName(typeof(T), true);
       var entityType = ctx.Model.GetEntityType(entityName);
-      var info = _cache.GetOrAdd(entityType, type => CreateScalarInfo(type));
+      var info = _cache.GetOrAdd(entityType, type => CreateScalarInfo(ctx, type));
       var property = entityType.GetProperties().Single();
       // GetValueConverter() returns an explicitly configured converter only; HasConversion<TProvider>() is resolved by the type mapping.
       var json = Serialize(values, property.GetValueConverter() ?? property.GetRelationalTypeMapping().Converter);
@@ -63,30 +67,30 @@ public sealed class MySqlCollectionParameterFactory : ICollectionParameterFactor
    {
       var entityName = EntityNameProvider.GetCollectionParameterName(typeof(T), false);
       var entityType = ctx.Model.GetEntityType(entityName);
-      var info = _cache.GetOrAdd(entityType, CreateComplexInfo);
+      var info = _cache.GetOrAdd(entityType, type => CreateComplexInfo(ctx, type));
       var json = JsonSerializer.Serialize(objects, _jsonSerializerOptions);
 
       return ctx.Set<T>(entityName)
                 .FromSqlRaw(applyDistinct ? info.StatementWithDistinct : info.Statement, objects.Count, json);
    }
 
-   private CollectionParameterInfo CreateScalarInfo(IEntityType entityType)
+   private CollectionParameterInfo CreateScalarInfo(DbContext ctx, IEntityType entityType)
    {
       var property = entityType.GetProperties().Single();
       var storeObject = StoreObjectIdentifier.Create(entityType, StoreObjectType.Table)
                         ?? throw new InvalidOperationException($"Could not create StoreObjectIdentifier for table '{entityType.Name}'.");
       var columnName = property.GetColumnName(storeObject)
                        ?? throw new InvalidOperationException($"The property '{property.Name}' has no column name.");
-      var columnType = GetColumnType(property, storeObject);
+      var columnType = GetColumnDefinition(ctx, property, storeObject, columnName);
       var column = _sqlGenerationHelper.DelimitIdentifier(columnName);
-      var columns = $"{column} {columnType} PATH '$'";
+      var columns = $"{column} {columnType} PATH '$' ERROR ON ERROR";
 
       return new CollectionParameterInfo(
          $"SELECT {column} FROM JSON_TABLE({{1}}, '$[*]' COLUMNS ({columns})) AS `collection` LIMIT {{0}}",
          $"SELECT DISTINCT {column} FROM JSON_TABLE({{1}}, '$[*]' COLUMNS ({columns})) AS `collection` LIMIT {{0}}");
    }
 
-   private CollectionParameterInfo CreateComplexInfo(IEntityType entityType)
+   private CollectionParameterInfo CreateComplexInfo(DbContext ctx, IEntityType entityType)
    {
       var storeObject = StoreObjectIdentifier.Create(entityType, StoreObjectType.Table)
                         ?? throw new InvalidOperationException($"Could not create StoreObjectIdentifier for table '{entityType.Name}'.");
@@ -107,9 +111,9 @@ public sealed class MySqlCollectionParameterFactory : ICollectionParameterFactor
          var jsonPath = _typeMappingSource.FindMapping(typeof(string))
                         ?.GenerateSqlLiteral("$." + JsonSerializer.Serialize(GetJsonPropertyName(property), _jsonSerializerOptions))
                         ?? throw new InvalidOperationException("MySQL string type mapping is unavailable.");
-         var columnType = GetColumnType(property, storeObject);
+         var columnType = GetColumnDefinition(ctx, property, storeObject, columnName);
 
-         columns.Append(jsonColumn).Append(' ').Append(columnType).Append(" PATH ").Append(jsonPath);
+         columns.Append(jsonColumn).Append(' ').Append(columnType).Append(" PATH ").Append(jsonPath).Append(" ERROR ON ERROR");
          selections.Append("`collection`.").Append(jsonColumn).Append(" AS ").Append(_sqlGenerationHelper.DelimitIdentifier(columnName));
       }
 
@@ -117,9 +121,15 @@ public sealed class MySqlCollectionParameterFactory : ICollectionParameterFactor
       return new CollectionParameterInfo($"SELECT {selections}{from}", $"SELECT DISTINCT {selections}{from}");
    }
 
-   private string GetColumnType(IProperty property, StoreObjectIdentifier storeObject)
+   // ERROR ON ERROR: a value that does not fit the column type raises an error instead of becoming NULL.
+   // The charset and the collation make a comparison with a collated column possible (error 1267 otherwise).
+   private static string GetColumnDefinition(DbContext ctx, IProperty property, StoreObjectIdentifier storeObject, string columnName)
    {
-      return property.GetColumnType(storeObject);
+      var columnType = property.GetColumnType(storeObject);
+
+      return MySqlColumnCharSet.SupportsCharSet(columnType)
+                ? columnType + MySqlColumnCharSet.GetColumnClauses(ctx.GetService<IDesignTimeModel>().Model, storeObject, columnName, columnType)
+                : columnType;
    }
 
    private string GetJsonPropertyName(IProperty property)
@@ -173,13 +183,9 @@ public sealed class MySqlCollectionParameterFactory : ICollectionParameterFactor
          return TimeSpan.FromTicks(isNegative ? -ticks : ticks);
       }
 
-      // MySQL TIME accepts hours beyond 23 (up to 838), unlike the .NET constant format "d.hh:mm:ss".
       public override void Write(Utf8JsonWriter writer, TimeSpan value, JsonSerializerOptions options)
       {
-         var ticks = Math.Abs(value.Ticks);
-         var text = String.Create(CultureInfo.InvariantCulture,
-                                  $"{(value.Ticks < 0 ? "-" : "")}{ticks / TimeSpan.TicksPerHour:00}:{ticks / TimeSpan.TicksPerMinute % 60:00}:{ticks / TimeSpan.TicksPerSecond % 60:00}.{ticks % TimeSpan.TicksPerSecond / 10:000000}");
-         writer.WriteStringValue(text);
+         writer.WriteStringValue(MySqlTimeFormatter.Format(value));
       }
    }
 
@@ -194,6 +200,20 @@ public sealed class MySqlCollectionParameterFactory : ICollectionParameterFactor
       public override void Write(Utf8JsonWriter writer, DateTime value, JsonSerializerOptions options)
       {
          writer.WriteStringValue(value.ToString("yyyy-MM-dd HH:mm:ss.ffffff", CultureInfo.InvariantCulture));
+      }
+   }
+
+   private sealed class DateTimeOffsetStringConverter : JsonConverter<DateTimeOffset>
+   {
+      public override DateTimeOffset Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+      {
+         return DateTimeOffset.Parse(reader.GetString()!, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal);
+      }
+
+      // The provider stores a DateTimeOffset as UTC. MySQL converts a value with an offset into the session time zone.
+      public override void Write(Utf8JsonWriter writer, DateTimeOffset value, JsonSerializerOptions options)
+      {
+         writer.WriteStringValue(value.UtcDateTime.ToString("yyyy-MM-dd HH:mm:ss.ffffff", CultureInfo.InvariantCulture));
       }
    }
 }

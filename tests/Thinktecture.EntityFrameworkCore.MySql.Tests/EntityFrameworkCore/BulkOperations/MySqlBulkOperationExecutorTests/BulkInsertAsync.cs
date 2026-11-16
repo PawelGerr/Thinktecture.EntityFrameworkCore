@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microting.EntityFrameworkCore.MySql.Infrastructure;
 using MySqlConnector;
 using Thinktecture.EntityFrameworkCore.TempTables;
 using Thinktecture.TestDatabaseContext;
@@ -23,8 +24,8 @@ public sealed class BulkInsertAsync : MySqlIntegrationTestsBase
 
    private MySqlBulkOperationExecutor SUT => field ??= ActDbContext.GetService<MySqlBulkOperationExecutor>();
 
-   public BulkInsertAsync(MySqlContainerFixture fixture)
-      : base(fixture)
+   public BulkInsertAsync(ITestOutputHelper testOutputHelper, MySqlContainerFixture fixture)
+      : base(testOutputHelper, fixture)
    {
    }
 
@@ -575,7 +576,7 @@ public sealed class BulkInsertAsync : MySqlIntegrationTestsBase
    [Theory]
    [InlineData(null)]
    [InlineData(2)]
-   public async Task Should_insert_multiple_owners_with_and_without_separate_owned_entity(int? batchSize)
+   public async Task Should_insert_multiple_owners_with_and_without_separate_owned_entity(int? maxParametersPerStatement)
    {
       var testEntities = Enumerable.Range(1, 5)
                                    .Select(i => new TestEntity_Owns_SeparateOne
@@ -586,7 +587,7 @@ public sealed class BulkInsertAsync : MySqlIntegrationTestsBase
                                    .ToList();
       ActDbContext.AddRange(testEntities);
 
-      var affectedRows = await SUT.BulkInsertAsync(testEntities, new MySqlBulkInsertOptions { BatchSize = batchSize });
+      var affectedRows = await SUT.BulkInsertAsync(testEntities, new MySqlBulkInsertOptions { MaxParametersPerStatement = maxParametersPerStatement });
 
       affectedRows.Should().Be(8, "5 owners and 3 owned entities");
 
@@ -597,7 +598,7 @@ public sealed class BulkInsertAsync : MySqlIntegrationTestsBase
    [Theory]
    [InlineData(null)]
    [InlineData(2)]
-   public async Task Should_insert_multiple_owners_with_separate_owned_collections(int? batchSize)
+   public async Task Should_insert_multiple_owners_with_separate_owned_collections(int? maxParametersPerStatement)
    {
       var testEntities = new[]
                          {
@@ -611,7 +612,7 @@ public sealed class BulkInsertAsync : MySqlIntegrationTestsBase
                          };
       ActDbContext.AddRange(testEntities);
 
-      var affectedRows = await SUT.BulkInsertAsync(testEntities, new MySqlBulkInsertOptions { BatchSize = batchSize });
+      var affectedRows = await SUT.BulkInsertAsync(testEntities, new MySqlBulkInsertOptions { MaxParametersPerStatement = maxParametersPerStatement });
 
       affectedRows.Should().Be(7, "3 owners and 4 owned entities");
 
@@ -1027,7 +1028,7 @@ public sealed class BulkInsertAsync : MySqlIntegrationTestsBase
                          };
       ActDbContext.AddRange(testEntities);
 
-      var affectedRows = await SUT.BulkInsertAsync(testEntities, new MySqlBulkInsertOptions { BatchSize = 1 });
+      var affectedRows = await SUT.BulkInsertAsync(testEntities, new MySqlBulkInsertOptions { MaxParametersPerStatement = 1 });
 
       affectedRows.Should().Be(7, "2 owners, 2 owned entities and 3 nested owned entities");
 
@@ -1044,6 +1045,111 @@ public sealed class BulkInsertAsync : MySqlIntegrationTestsBase
 
       var loadedEntities = await AssertDbContext.TestEntities_with_ComplexType.ToListAsync();
       loadedEntities.Should().BeEquivalentTo([testEntity]);
+   }
+
+   [Fact]
+   public async Task Should_round_trip_nullable_ComplexTypes_through_SaveChanges()
+   {
+      var withValues = TestEntityWithNullableComplexTypes.CreateWithValues(new Guid("8B6B7C9E-2C2C-4C9B-9C6D-3F3A2E1D0C01"));
+      var withNulls = TestEntityWithNullableComplexTypes.CreateWithNulls(new Guid("8B6B7C9E-2C2C-4C9B-9C6D-3F3A2E1D0C02"));
+      ArrangeDbContext.AddRange(withValues, withNulls);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var loaded = await AssertDbContext.TestEntitiesWithNullableComplexTypes.ToListAsync();
+      loaded.Should().BeEquivalentTo([withValues, withNulls]);
+   }
+
+   [Theory]
+   [InlineData(false)]
+   [InlineData(true)]
+   public async Task Should_insert_entity_with_struct_ComplexType(bool useBulkCopy)
+   {
+      var options = CreateOptions(useBulkCopy);
+      var testEntity = new TestEntityWithStructComplexType
+                       {
+                          Id = _TEST_ENTITY_ID,
+                          MessageTimestamp = 10,
+                          EffectiveMessage = new TimestampPair(100, 200),
+                          Name = "Name"
+                       };
+
+      await SUT.BulkInsertAsync([testEntity], options);
+
+      var loadedEntities = await AssertDbContext.TestEntitiesWithStructComplexType.ToListAsync();
+      loadedEntities.Should().BeEquivalentTo([testEntity]);
+
+      // The rows are written with raw ADO commands, so the configured column names are verified by reading them directly.
+      var columnSum = await AssertDbContext.Database
+                                          .SqlQueryRaw<long>("SELECT `effective_received_at` + `effective_message_timestamp` AS `Value` FROM `TestEntitiesWithStructComplexType`")
+                                          .SingleAsync();
+      columnSum.Should().Be(300);
+   }
+
+   [Theory]
+   [InlineData(false)]
+   [InlineData(true)]
+   public async Task Should_insert_entity_with_value_converted_members_of_struct_ComplexType(bool useBulkCopy)
+   {
+      var options = CreateOptions(useBulkCopy);
+      var testEntity = new TestEntityWithConvertedComplexType
+                       {
+                          Id = _TEST_ENTITY_ID,
+                          MessageTimestamp = 10,
+                          EffectiveMessage = new ConvertedTimestampPair(new TimestampValue(100), new TimestampValue(200))
+                       };
+
+      await SUT.BulkInsertAsync([testEntity], options);
+
+      var loadedEntities = await AssertDbContext.TestEntitiesWithConvertedComplexType.ToListAsync();
+      loadedEntities.Should().BeEquivalentTo([testEntity]);
+   }
+
+   [Theory]
+   [InlineData(false)]
+   [InlineData(true)]
+   public async Task Should_insert_nullable_ComplexTypes_with_null_and_non_null_values(bool useBulkCopy)
+   {
+      var options = CreateOptions(useBulkCopy);
+      var withValues = TestEntityWithNullableComplexTypes.CreateWithValues(new Guid("5D2F1B3A-0E5E-4F6C-9F35-7B2A6C1E0001"));
+      var withNulls = TestEntityWithNullableComplexTypes.CreateWithNulls(new Guid("5D2F1B3A-0E5E-4F6C-9F35-7B2A6C1E0002"));
+
+      await SUT.BulkInsertAsync([withValues, withNulls], options);
+
+      var loaded = await AssertDbContext.TestEntitiesWithNullableComplexTypes.ToListAsync();
+      loaded.Should().BeEquivalentTo([withValues, withNulls]);
+   }
+
+   [Fact]
+   public async Task Should_round_trip_nested_struct_ComplexTypes_through_SaveChanges()
+   {
+      var withValues = TestEntityWithStructsInOptionalComplexType.CreateWithValues(new Guid("9C1E2D3F-4A5B-4C6D-8E9F-0A1B2C3D0001"));
+      var withNulls = TestEntityWithStructsInOptionalComplexType.CreateWithNulls(new Guid("9C1E2D3F-4A5B-4C6D-8E9F-0A1B2C3D0002"));
+      ArrangeDbContext.AddRange(withValues, withNulls);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var loaded = await AssertDbContext.TestEntitiesWithStructsInOptionalComplexType.ToListAsync();
+      loaded.Should().BeEquivalentTo([withValues, withNulls]);
+
+      var structColumns = await MySqlStructColumns.Query(AssertDbContext, "TestEntitiesWithStructsInOptionalComplexType").ToListAsync();
+      structColumns.Should().BeEquivalentTo(new[] { withValues, withNulls }.Select(TestEntityWithStructsInOptionalComplexType.StructColumns.From));
+   }
+
+   [Theory]
+   [InlineData(false)]
+   [InlineData(true)]
+   public async Task Should_insert_null_for_struct_members_of_null_ComplexType(bool useBulkCopy)
+   {
+      var options = CreateOptions(useBulkCopy);
+      var withValues = TestEntityWithStructsInOptionalComplexType.CreateWithValues(new Guid("9C1E2D3F-4A5B-4C6D-8E9F-0A1B2C3D0011"));
+      var withNulls = TestEntityWithStructsInOptionalComplexType.CreateWithNulls(new Guid("9C1E2D3F-4A5B-4C6D-8E9F-0A1B2C3D0012"));
+
+      await SUT.BulkInsertAsync([withValues, withNulls], options);
+
+      var loaded = await AssertDbContext.TestEntitiesWithStructsInOptionalComplexType.ToListAsync();
+      loaded.Should().BeEquivalentTo([withValues, withNulls]);
+
+      var structColumns = await MySqlStructColumns.Query(AssertDbContext, "TestEntitiesWithStructsInOptionalComplexType").ToListAsync();
+      structColumns.Should().BeEquivalentTo(new[] { withValues, withNulls }.Select(TestEntityWithStructsInOptionalComplexType.StructColumns.From));
    }
 
    [Theory]
@@ -1148,9 +1254,73 @@ public sealed class BulkInsertAsync : MySqlIntegrationTestsBase
    }
 
    [Fact]
-   public async Task Should_insert_into_table_of_the_database_from_ForRootEntity_provider()
+   public async Task Should_insert_into_table_from_ForRootEntityWithDefaultSchema_provider()
    {
-      // MySQL has no schemas below the database, so the schema of the table name is the name of the database.
+      await CreateTableCopyAsync("TestEntities", "TestEntities_BulkInsertRedirect");
+
+      try
+      {
+         var testEntity = new TestEntity
+                          {
+                             Id = _TEST_ENTITY_ID,
+                             Name = "Name",
+                             RequiredName = "RequiredName",
+                             Count = 42
+                          };
+
+         await SUT.BulkInsertAsync([testEntity], new MySqlBulkInsertOptions { TableNameProvider = IBulkOperationTableNameProvider.ForRootEntityWithDefaultSchema("TestEntities_BulkInsertRedirect") });
+
+         var loadedEntities = await AssertDbContext.TestEntities.ToListAsync();
+         loadedEntities.Should().HaveCount(0, "original table should be empty");
+
+         var redirectedIds = await LoadColumnAsync<Guid>("TestEntities_BulkInsertRedirect", "Id");
+         redirectedIds.Should().Equal(_TEST_ENTITY_ID);
+      }
+      finally
+      {
+         await DropTablesAsync("TestEntities_BulkInsertRedirect");
+      }
+   }
+
+   [Fact]
+   public async Task Should_insert_into_table_from_ForRootEntityWithDefaultName_provider()
+   {
+      // MySQL has no schemas below the database; SchemaBehavior Translate maps the schema into the table name ("archive_TestEntities").
+      const string redirectSchema = "archive";
+      const string redirectTable = $"{redirectSchema}_TestEntities";
+      ConfigureMySql = builder => builder.SchemaBehavior(MySqlSchemaBehavior.Translate, (schema, name) => $"{schema}_{name}");
+      await CreateTableCopyAsync("TestEntities", redirectTable);
+
+      try
+      {
+         var testEntity = new TestEntity
+                          {
+                             Id = _TEST_ENTITY_ID,
+                             Name = "Name",
+                             RequiredName = "RequiredName",
+                             Count = 42
+                          };
+
+         await SUT.BulkInsertAsync([testEntity], new MySqlBulkInsertOptions { TableNameProvider = IBulkOperationTableNameProvider.ForRootEntityWithDefaultName(redirectSchema) });
+
+         var loadedEntities = await AssertDbContext.TestEntities.ToListAsync();
+         loadedEntities.Should().HaveCount(0, "original table should be empty");
+
+         var redirectedIds = await LoadColumnAsync<Guid>(redirectTable, "Id");
+         redirectedIds.Should().Equal(_TEST_ENTITY_ID);
+      }
+      finally
+      {
+         await DropTablesAsync(redirectTable);
+      }
+   }
+
+   [Fact]
+   public async Task Should_insert_into_table_of_the_database_from_ForRootEntity_provider_if_SchemaBehavior_is_Ignore()
+   {
+      // MySQL has no schemas below the database, so the schema of the table name is the name of the database (here: the current one).
+      // SchemaBehavior Ignore drops the schema; the default (Throw) rejects it.
+      ConfigureMySql = builder => builder.SchemaBehavior(MySqlSchemaBehavior.Ignore);
       var database = await ActDbContext.Database.SqlQueryRaw<string>("SELECT DATABASE() AS `Value`").SingleAsync();
       await CreateTableCopyAsync("TestEntities", "TestEntities_BulkInsertRedirect");
 
@@ -1199,8 +1369,8 @@ public sealed class BulkInsertAsync : MySqlIntegrationTestsBase
    }
 
    // https://github.com/PawelGerr/Thinktecture.EntityFrameworkCore/issues/76
-   // The owned entity must not be written to the table of the model. The bulk insert fails when it reaches the owned type.
-   // The executor runs in its own transaction, so (unlike with PostgreSQL) the owner row is rolled back as well.
+   // The owned entity must not be written to the table of the model.
+   // The executor resolves the table of the owned type before the first statement, so (unlike with PostgreSQL) the owner row is not written either.
    [Fact]
    public async Task Should_not_insert_separated_owned_entities_into_model_table_when_table_name_is_overridden()
    {
@@ -1222,7 +1392,7 @@ public sealed class BulkInsertAsync : MySqlIntegrationTestsBase
          (await LoadColumnAsync<Guid>("SeparateEntitiesOne", "TestEntity_Owns_SeparateOneId"))
             .Should().BeEmpty("the owned entity must not be written to the table of the model when the owner is redirected");
          (await LoadColumnAsync<Guid>("TestEntities_Own_SeparateOne_BulkInsertRedirect", "Id"))
-            .Should().BeEmpty("the executor rolls back the owner row because it runs in its own transaction");
+            .Should().BeEmpty("the executor resolves every table before the first statement");
       }
       finally
       {
@@ -1244,13 +1414,13 @@ public sealed class BulkInsertAsync : MySqlIntegrationTestsBase
                .Should().ThrowAsync<InvalidOperationException>()
                .WithMessage("*'TableName'*'TableNameProvider'*");
 
-      // The executor runs in its own transaction, so the root row is rolled back when the operation reaches the owned type.
+      // The executor resolves the table of the owned type before the first statement, so the root row is not written.
       (await LoadColumnAsync<Guid>("TestEntities_Own_SeparateOne", "Id")).Should().BeEmpty();
       (await LoadColumnAsync<int>("SeparateEntitiesOne", "IntColumn")).Should().BeEmpty();
    }
 
    [Fact]
-   public async Task Should_leave_rollback_to_the_caller_if_owned_entity_fails_inside_user_transaction()
+   public async Task Should_throw_before_the_first_write_if_owned_entity_table_cannot_be_resolved_inside_user_transaction()
    {
       var testEntity = new TestEntity_Owns_SeparateOne
                        {
@@ -1264,8 +1434,8 @@ public sealed class BulkInsertAsync : MySqlIntegrationTestsBase
                .Should().ThrowAsync<InvalidOperationException>()
                .WithMessage("*'TableName'*'TableNameProvider'*");
 
-      // The executor never ends a transaction of the caller. The caller decides about the root row.
-      (await ActDbContext.Database.SqlQueryRaw<Guid>("SELECT `Id` AS `Value` FROM `TestEntities_Own_SeparateOne`").ToListAsync()).Should().Equal(_SEPARATE_OWNER_ID);
+      // The table names are resolved before the first statement, so the root row is not written inside the transaction of the caller.
+      (await ActDbContext.Database.SqlQueryRaw<Guid>("SELECT `Id` AS `Value` FROM `TestEntities_Own_SeparateOne`").ToListAsync()).Should().BeEmpty();
 
       await transaction.RollbackAsync();
 
@@ -1516,24 +1686,30 @@ public sealed class BulkInsertAsync : MySqlIntegrationTestsBase
       (await AssertDbContext.TestEntities.CountAsync()).Should().Be(0);
    }
 
+   // TestEntity has 9 columns, so the default budget of 5,000 parameters gives 555 rows per statement.
    [Theory]
-   [InlineData(1, null, 1)]
-   [InlineData(499, null, 1)]
-   [InlineData(500, null, 1)] // the default batch size
-   [InlineData(501, null, 2)]
-   [InlineData(1000, null, 2)]
-   [InlineData(1001, null, 3)]
-   [InlineData(10, 1, 10)]
-   [InlineData(10, 3, 4)]
-   [InlineData(10, 10, 1)]
-   [InlineData(10, 100, 1)]
-   public async Task Should_split_rows_into_statements_according_to_batch_size(int rowCount, int? batchSize, int expectedStatements)
+   [InlineData(1, null, null, 1)]
+   [InlineData(555, null, null, 1)]
+   [InlineData(556, null, null, 2)]
+   [InlineData(1111, null, null, 3)]
+   [InlineData(10, null, 9, 10)]
+   [InlineData(10, null, 27, 4)]
+   [InlineData(10, null, 26, 5)]
+   [InlineData(10, null, 1, 10)] // a budget below the column count gives 1 row per statement
+   [InlineData(10, null, 900, 1)]
+   [InlineData(10, 27, null, 4)] // the registered budget
+   [InlineData(10, 9, 900, 1)] // the budget of the options overrides the registered budget
+   public async Task Should_split_rows_into_statements_according_to_the_parameter_budget(int rowCount, int? registeredBudget, int? optionBudget, int expectedStatements)
    {
+      if (registeredBudget is not null)
+         ConfigureMySql = builder => builder.AddBulkOperationSupport(maxParametersPerStatement: registeredBudget.Value);
+
+      ActDbContext.Model.FindEntityType(typeof(TestEntity))!.GetProperties().Should().HaveCount(9);
       var entities = Enumerable.Range(0, rowCount).Select(CreateTestEntity);
       await OpenActConnectionAsync();
 
       var statementsBefore = await GetSessionStatusAsync("Com_insert");
-      var affectedRows = await SUT.BulkInsertAsync(entities, new MySqlBulkInsertOptions { BatchSize = batchSize });
+      var affectedRows = await SUT.BulkInsertAsync(entities, new MySqlBulkInsertOptions { MaxParametersPerStatement = optionBudget });
       var statements = await GetSessionStatusAsync("Com_insert") - statementsBefore;
 
       affectedRows.Should().Be(rowCount);
@@ -1543,17 +1719,43 @@ public sealed class BulkInsertAsync : MySqlIntegrationTestsBase
       loadedCounts.Should().Equal(Enumerable.Range(0, rowCount));
    }
 
+   // Every full batch runs the same prepared statement with new values; the last partial batch runs as a one-time statement.
+   // Com_insert counts every INSERT, Com_stmt_execute counts the executions of prepared statements only.
+   [Theory]
+   [InlineData(2, 0)] // one partial batch
+   [InlineData(3, 1)] // one full batch
+   [InlineData(9, 3)] // three full batches
+   [InlineData(10, 3)] // three full batches and one partial batch
+   public async Task Should_execute_all_full_batches_with_one_prepared_statement(int rowCount, int expectedPreparedExecutions)
+   {
+      var entities = Enumerable.Range(0, rowCount).Select(CreateTestEntity);
+      await OpenActConnectionAsync();
+
+      var statementsBefore = await GetSessionStatusAsync("Com_insert");
+      var preparedExecutionsBefore = await GetSessionStatusAsync("Com_stmt_execute");
+      var affectedRows = await SUT.BulkInsertAsync(entities, new MySqlBulkInsertOptions { MaxParametersPerStatement = 3 * 9 });
+      var statements = await GetSessionStatusAsync("Com_insert") - statementsBefore;
+      var preparedExecutions = await GetSessionStatusAsync("Com_stmt_execute") - preparedExecutionsBefore;
+
+      affectedRows.Should().Be(rowCount);
+      statements.Should().Be((rowCount + 2) / 3);
+      preparedExecutions.Should().Be(expectedPreparedExecutions);
+
+      var loadedCounts = await AssertDbContext.TestEntities.Select(e => e.Count).OrderBy(c => c).ToListAsync();
+      loadedCounts.Should().Equal(Enumerable.Range(0, rowCount));
+   }
+
    [Fact]
    public async Task Should_limit_rows_per_statement_to_the_parameter_limit_of_mysql()
    {
-      // MySQL accepts 65,535 parameters per statement, so the number of rows per statement is limited by the number of columns.
+      // MySQL accepts 65,535 parameters per prepared statement, so the number of rows per statement is limited by the number of columns.
       var columnCount = ActDbContext.Model.FindEntityType(typeof(TestEntity))!.GetProperties().Count();
       var maximumRows = 65_535 / columnCount;
       var entities = Enumerable.Range(0, maximumRows + 1).Select(CreateTestEntity);
       await OpenActConnectionAsync();
 
       var statementsBefore = await GetSessionStatusAsync("Com_insert");
-      var affectedRows = await SUT.BulkInsertAsync(entities, new MySqlBulkInsertOptions { BatchSize = Int32.MaxValue });
+      var affectedRows = await SUT.BulkInsertAsync(entities, new MySqlBulkInsertOptions { MaxParametersPerStatement = 65_535 });
       var statements = await GetSessionStatusAsync("Com_insert") - statementsBefore;
 
       affectedRows.Should().Be(maximumRows + 1);
@@ -1564,13 +1766,12 @@ public sealed class BulkInsertAsync : MySqlIntegrationTestsBase
    [Theory]
    [InlineData(0)]
    [InlineData(-1)]
-   public async Task Should_throw_if_batch_size_is_not_positive(int batchSize)
+   [InlineData(65_536)]
+   public void Should_throw_if_the_parameter_budget_is_out_of_range(int maxParametersPerStatement)
    {
-      await SUT.Awaiting(sut => sut.BulkInsertAsync([CreateTestEntity(1)], new MySqlBulkInsertOptions { BatchSize = batchSize }))
-               .Should().ThrowAsync<ArgumentOutOfRangeException>()
-               .WithMessage("*batch size*greater than 0*");
+      var act = () => new MySqlBulkInsertOptions { MaxParametersPerStatement = maxParametersPerStatement };
 
-      (await AssertDbContext.TestEntities.CountAsync()).Should().Be(0);
+      act.Should().Throw<ArgumentOutOfRangeException>().WithParameterName("value");
    }
 
    [Theory]
@@ -1608,6 +1809,27 @@ public sealed class BulkInsertAsync : MySqlIntegrationTestsBase
    }
 
    [Fact]
+   public async Task Should_apply_command_timeout_of_the_context_to_insert_statements_if_options_have_none()
+   {
+      // The uncommitted row of another transaction blocks the insert of the same primary key
+      // until the lock wait timeout of the server (50 seconds by default) is reached. The default timeout of a MySqlCommand is 30 seconds.
+      await using var blockingTransaction = await ArrangeDbContext.Database.BeginTransactionAsync();
+      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = _TEST_ENTITY_ID, RequiredName = "Blocking" });
+      await ArrangeDbContext.SaveChangesAsync();
+
+      // The provider copies the timeout of the context into the connection string when it creates the connection, so the timeout is set afterwards.
+      ActDbContext.Database.GetDbConnection();
+      ActDbContext.Database.SetCommandTimeout(1);
+
+      var stopwatch = Stopwatch.StartNew();
+
+      await SUT.Awaiting(sut => sut.BulkInsertAsync([new TestEntity { Id = _TEST_ENTITY_ID, RequiredName = "Blocked" }], new MySqlBulkInsertOptions()))
+               .Should().ThrowAsync<MySqlException>();
+
+      stopwatch.Elapsed.Should().BeLessThan(TimeSpan.FromSeconds(20));
+   }
+
+   [Fact]
    public async Task Should_throw_when_cancellation_is_requested()
    {
       using var cancellationTokenSource = new CancellationTokenSource();
@@ -1630,7 +1852,7 @@ public sealed class BulkInsertAsync : MySqlIntegrationTestsBase
                      };
 
       // 1062: duplicate primary key in the third batch
-      var exception = await SUT.Awaiting(sut => sut.BulkInsertAsync(entities, new MySqlBulkInsertOptions { BatchSize = 1 }))
+      var exception = await SUT.Awaiting(sut => sut.BulkInsertAsync(entities, new MySqlBulkInsertOptions { MaxParametersPerStatement = 1 }))
                                .Should().ThrowAsync<MySqlException>();
       exception.Which.Number.Should().Be(1062);
 
@@ -1640,9 +1862,9 @@ public sealed class BulkInsertAsync : MySqlIntegrationTestsBase
    [Fact]
    public async Task Should_not_leave_rows_of_a_complete_batch_when_the_last_batch_fails()
    {
-      // The first statement contains 500 valid rows (default batch size), the duplicate is the only row of the second statement.
-      var entities = Enumerable.Range(0, 500).Select(CreateTestEntity).ToList();
-      entities.Add(new TestEntity { Id = entities[0].Id, RequiredName = "Duplicate", Count = 500 });
+      // The first statement contains 555 valid rows (the default budget of 5,000 parameters for 9 columns), the duplicate is the only row of the second statement.
+      var entities = Enumerable.Range(0, 555).Select(CreateTestEntity).ToList();
+      entities.Add(new TestEntity { Id = entities[0].Id, RequiredName = "Duplicate", Count = 555 });
 
       var exception = await SUT.Awaiting(sut => sut.BulkInsertAsync(entities, new MySqlBulkInsertOptions()))
                                .Should().ThrowAsync<MySqlException>();
@@ -1767,10 +1989,10 @@ public sealed class BulkInsertAsync : MySqlIntegrationTestsBase
    }
 
    [Fact]
-   public async Task Should_insert_all_rows_with_single_load_data_statement_and_ignore_batch_size()
+   public async Task Should_insert_all_rows_with_single_load_data_statement_and_ignore_the_parameter_budget()
    {
       var options = CreateOptions(true);
-      options.BatchSize = 1;
+      options.MaxParametersPerStatement = 1;
       await OpenActConnectionAsync();
 
       var insertsBefore = await GetSessionStatusAsync("Com_insert");
@@ -1970,17 +2192,11 @@ public sealed class BulkInsertAsync : MySqlIntegrationTestsBase
              };
    }
 
-   // MySqlBulkCopy uses LOAD DATA LOCAL INFILE, which the connection has to allow explicitly (the server is started with --local-infile=1).
-   // This must happen before the first use of the connection of ActDbContext.
+   // The insert path is part of the registration, so this must happen before the first context is accessed.
    private MySqlBulkInsertOptions CreateOptions(bool useBulkCopy)
    {
-      if (useBulkCopy)
-      {
-         var connectionString = new MySqlConnectionStringBuilder(ConnectionString) { AllowLoadLocalInfile = true };
-         ActDbContext.Database.SetConnectionString(connectionString.ConnectionString);
-      }
-
-      return new MySqlBulkInsertOptions { UseBulkCopy = useBulkCopy };
+      UseBulkCopy = useBulkCopy;
+      return new MySqlBulkInsertOptions();
    }
 
    // The status counters are per session. The connection of ActDbContext stays open, so the executor and the status queries share the session.
@@ -2007,6 +2223,8 @@ public sealed class BulkInsertAsync : MySqlIntegrationTestsBase
    // LIKE copies the columns, the indexes and the primary key, but no foreign keys.
    private async Task CreateTableCopyAsync(string sourceTableName, string targetTableName)
    {
+      // A run that was killed before its cleanup leaves the table behind; CREATE TABLE would then fail with error 1050.
+      await DropTablesAsync(targetTableName);
       await ActDbContext.Database.ExecuteSqlRawAsync($"CREATE TABLE {Quote(targetTableName)} LIKE {Quote(sourceTableName)}");
    }
 

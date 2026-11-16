@@ -4,8 +4,7 @@ using Thinktecture.Json;
 namespace Thinktecture.Extensions.DbContextExtensionsTests;
 
 // EF Core creates a service provider per distinct set of options and compares JsonSerializerOptions by reference.
-// The collection parameter tests therefore share these instances instead of creating their own, otherwise the test run
-// exceeds the limit of 20 EF service providers (ManyServiceProvidersCreatedWarning is an error by default).
+// The collection parameter tests therefore share these instances instead of creating their own, so that the tests reuse one service provider per naming policy.
 internal static class CollectionParameterJsonSerializerOptions
 {
    public static readonly JsonSerializerOptions Default = Create(null);

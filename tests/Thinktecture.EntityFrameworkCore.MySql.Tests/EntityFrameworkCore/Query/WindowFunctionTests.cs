@@ -9,7 +9,7 @@ public sealed class WindowFunctionTests
    [Fact]
    public void Should_generate_row_number_sql()
    {
-      var options = new DbContextOptionsBuilder<MySqlTestDbContext>()
+      var options = MySqlTestDbContext.CreateOptionsBuilder()
                     .UseMySql("Server=localhost;Database=test", MySqlContainerFixture.ServerVersion, builder => builder.AddWindowFunctionsSupport())
                     .Options;
 
@@ -24,7 +24,7 @@ public sealed class WindowFunctionTests
    [Fact]
    public void Should_generate_custom_window_function_sql()
    {
-      var options = new DbContextOptionsBuilder<MySqlTestDbContext>()
+      var options = MySqlTestDbContext.CreateOptionsBuilder()
                     .UseMySql("Server=localhost;Database=test", MySqlContainerFixture.ServerVersion, builder => builder.AddWindowFunctionsSupport())
                     .Options;
 
@@ -39,7 +39,7 @@ public sealed class WindowFunctionTests
    [Fact]
    public void Should_generate_multi_argument_window_function_sql()
    {
-      var options = new DbContextOptionsBuilder<MySqlTestDbContext>()
+      var options = MySqlTestDbContext.CreateOptionsBuilder()
                     .UseMySql("Server=localhost;Database=test", MySqlContainerFixture.ServerVersion, builder => builder.AddWindowFunctionsSupport())
                     .Options;
 
@@ -55,7 +55,7 @@ public sealed class WindowFunctionTests
    [Fact]
    public void Should_generate_partition_only_window_function_sql()
    {
-      var options = new DbContextOptionsBuilder<MySqlTestDbContext>()
+      var options = MySqlTestDbContext.CreateOptionsBuilder()
                     .UseMySql("Server=localhost;Database=test", MySqlContainerFixture.ServerVersion, builder => builder.AddWindowFunctionsSupport())
                     .Options;
 
@@ -71,7 +71,7 @@ public sealed class WindowFunctionTests
    [Fact]
    public void Should_generate_ntile_sql()
    {
-      var options = new DbContextOptionsBuilder<MySqlTestDbContext>()
+      var options = MySqlTestDbContext.CreateOptionsBuilder()
                     .UseMySql("Server=localhost;Database=test", MySqlContainerFixture.ServerVersion, builder => builder.AddWindowFunctionsSupport())
                     .Options;
 
@@ -87,7 +87,7 @@ public sealed class WindowFunctionTests
    [Fact]
    public void Should_generate_partitioned_ntile_sql()
    {
-      var options = new DbContextOptionsBuilder<MySqlTestDbContext>()
+      var options = MySqlTestDbContext.CreateOptionsBuilder()
                     .UseMySql("Server=localhost;Database=test", MySqlContainerFixture.ServerVersion, builder => builder.AddWindowFunctionsSupport())
                     .Options;
 

@@ -11,8 +11,8 @@ namespace Thinktecture.Extensions.MySqlDbFunctionsExtensionsTests;
 [Collection(MySqlTestCollection.NAME)]
 public sealed class MinWindowFunction : MySqlIntegrationTestsBase
 {
-   public MinWindowFunction(MySqlContainerFixture fixture)
-      : base(fixture)
+   public MinWindowFunction(ITestOutputHelper testOutputHelper, MySqlContainerFixture fixture)
+      : base(testOutputHelper, fixture)
    {
    }
 

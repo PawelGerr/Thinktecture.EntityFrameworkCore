@@ -44,6 +44,21 @@ public sealed class MySqlDbContextOptionsExtension : DbContextOptionsExtensionBa
    /// </summary>
    public bool AddBulkOperationSupport { get; set; }
 
+   /// <summary>
+   /// Uses <see cref="MySqlConnector.MySqlBulkCopy" /> (<c>LOAD DATA LOCAL INFILE</c>) for every insert of the bulk operations instead of multi-row INSERT statements.
+   /// </summary>
+   public bool UseBulkCopy { get; set; }
+
+   /// <summary>
+   /// Maximum number of parameters of one multi-row INSERT statement of the bulk operations. The default is 5,000.
+   /// </summary>
+   /// <exception cref="ArgumentOutOfRangeException">The value is less than 1 or greater than 65,535.</exception>
+   public int MaxParametersPerStatement
+   {
+      get;
+      set => field = MySqlParameterBudget.Validate(value);
+   } = 5_000;
+
    private bool _addCustomQueryableMethodTranslatingExpressionVisitorFactory;
 
    /// <summary>
@@ -100,7 +115,7 @@ public sealed class MySqlDbContextOptionsExtension : DbContextOptionsExtensionBa
    }
 
    /// <inheritdoc />
-   [SuppressMessage("Usage", "EF1001:Internal EF Core API usage.")]
+   [SuppressMessage("Usage", "EF1001", MessageId = "Internal EF Core API usage.")]
    public void ApplyServices(IServiceCollection services)
    {
       services.TryAddSingleton<MySqlDbContextOptionsExtensionOptions>();
@@ -149,7 +164,7 @@ public sealed class MySqlDbContextOptionsExtension : DbContextOptionsExtensionBa
    }
 
    /// <inheritdoc />
-   [SuppressMessage("Usage", "EF1001:Internal EF Core API usage.")]
+   [SuppressMessage("Usage", "EF1001", MessageId = "Internal EF Core API usage.")]
    public void Validate(IDbContextOptions options)
    {
       ArgumentNullException.ThrowIfNull(options);
@@ -187,12 +202,13 @@ public sealed class MySqlDbContextOptionsExtension : DbContextOptionsExtensionBa
    private sealed class MySqlDbContextOptionsExtensionInfo : DbContextOptionsExtensionInfo
    {
       private readonly MySqlDbContextOptionsExtension _extension;
+
       public override bool IsDatabaseProvider => false;
 
       /// <inheritdoc />
       public override string LogFragment => (_extension.AddBulkOperationSupport ? "BulkOperationSupport " : String.Empty)
-                          + (_extension._addCollectionParameterSupport ? "CollectionParameterSupport " : String.Empty)
-                          + (_extension.AddWindowFunctionsSupport ? "WindowFunctionsSupport " : String.Empty);
+                                            + (_extension._addCollectionParameterSupport ? "CollectionParameterSupport " : String.Empty)
+                                            + (_extension.AddWindowFunctionsSupport ? "WindowFunctionsSupport " : String.Empty);
 
       public MySqlDbContextOptionsExtensionInfo(MySqlDbContextOptionsExtension extension)
          : base(extension)
@@ -205,6 +221,8 @@ public sealed class MySqlDbContextOptionsExtension : DbContextOptionsExtensionBa
       {
          var hashCode = new HashCode();
          hashCode.Add(_extension.AddBulkOperationSupport);
+         hashCode.Add(_extension.UseBulkCopy);
+         hashCode.Add(_extension.MaxParametersPerStatement);
          hashCode.Add(_extension.ConfigureTempTablesForPrimitiveTypes);
          hashCode.Add(_extension.AddWindowFunctionsSupport);
          hashCode.Add(_extension._addCollectionParameterSupport);
@@ -220,11 +238,13 @@ public sealed class MySqlDbContextOptionsExtension : DbContextOptionsExtensionBa
       public override bool ShouldUseSameServiceProvider(DbContextOptionsExtensionInfo other)
       {
          return other is MySqlDbContextOptionsExtensionInfo otherMySqlInfo
-              && _extension.AddBulkOperationSupport == otherMySqlInfo._extension.AddBulkOperationSupport
+                && _extension.AddBulkOperationSupport == otherMySqlInfo._extension.AddBulkOperationSupport
+                && _extension.UseBulkCopy == otherMySqlInfo._extension.UseBulkCopy
+                && _extension.MaxParametersPerStatement == otherMySqlInfo._extension.MaxParametersPerStatement
                 && _extension.ConfigureTempTablesForPrimitiveTypes == otherMySqlInfo._extension.ConfigureTempTablesForPrimitiveTypes
-                        && _extension._addCollectionParameterSupport == otherMySqlInfo._extension._addCollectionParameterSupport
-                        && _extension.ConfigureCollectionParametersForPrimitiveTypes == otherMySqlInfo._extension.ConfigureCollectionParametersForPrimitiveTypes
-                        && _extension._collectionParameterJsonSerializerOptions == otherMySqlInfo._extension._collectionParameterJsonSerializerOptions
+                && _extension._addCollectionParameterSupport == otherMySqlInfo._extension._addCollectionParameterSupport
+                && _extension.ConfigureCollectionParametersForPrimitiveTypes == otherMySqlInfo._extension.ConfigureCollectionParametersForPrimitiveTypes
+                && _extension._collectionParameterJsonSerializerOptions == otherMySqlInfo._extension._collectionParameterJsonSerializerOptions
                 && _extension.AddWindowFunctionsSupport == otherMySqlInfo._extension.AddWindowFunctionsSupport
                 && _extension.AddCustomQueryableMethodTranslatingExpressionVisitorFactory == otherMySqlInfo._extension.AddCustomQueryableMethodTranslatingExpressionVisitorFactory
                 && _extension.AddCustomQuerySqlGeneratorFactory == otherMySqlInfo._extension.AddCustomQuerySqlGeneratorFactory
@@ -236,6 +256,8 @@ public sealed class MySqlDbContextOptionsExtension : DbContextOptionsExtensionBa
       {
          debugInfo["Thinktecture:MySqlWindowFunctionsSupport"] = _extension.AddWindowFunctionsSupport.ToString(CultureInfo.InvariantCulture);
          debugInfo["Thinktecture:MySqlBulkOperationSupport"] = _extension.AddBulkOperationSupport.ToString(CultureInfo.InvariantCulture);
+         debugInfo["Thinktecture:MySqlUseBulkCopy"] = _extension.UseBulkCopy.ToString(CultureInfo.InvariantCulture);
+         debugInfo["Thinktecture:MySqlMaxParametersPerStatement"] = _extension.MaxParametersPerStatement.ToString(CultureInfo.InvariantCulture);
          debugInfo["Thinktecture:MySqlConfigureTempTablesForPrimitiveTypes"] = _extension.ConfigureTempTablesForPrimitiveTypes.ToString(CultureInfo.InvariantCulture);
          debugInfo["Thinktecture:MySqlCollectionParameterSupport"] = _extension._addCollectionParameterSupport.ToString(CultureInfo.InvariantCulture);
          debugInfo["Thinktecture:MySqlConfigureCollectionParametersForPrimitiveTypes"] = _extension.ConfigureCollectionParametersForPrimitiveTypes.ToString(CultureInfo.InvariantCulture);

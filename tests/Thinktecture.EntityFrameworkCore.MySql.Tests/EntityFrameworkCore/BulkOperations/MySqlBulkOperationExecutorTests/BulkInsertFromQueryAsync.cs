@@ -1,6 +1,7 @@
 using System.Text.RegularExpressions;
 using System.Transactions;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microting.EntityFrameworkCore.MySql.Infrastructure;
 using MySqlConnector;
 using Thinktecture.EntityFrameworkCore.TempTables;
 using Thinktecture.TestDatabaseContext;
@@ -9,7 +10,7 @@ using Thinktecture.TestDatabaseContext;
 
 namespace Thinktecture.EntityFrameworkCore.BulkOperations.MySqlBulkOperationExecutorTests;
 
-// "INSERT INTO target (columns) SELECT ... FROM source" is executed by EF Core (ExecuteSqlRawAsync), so the statement is visible in ExecutedCommands.
+// "INSERT INTO target (columns) SELECT ... FROM source" is executed through the relational command pipeline of EF Core (EfCoreValueExpressionTranslator.ExecuteNonQueryAsync), so the statement is visible in ExecutedCommands.
 // ExecutedCommands contains the setup statements of the tests as well, so the tests pick the statement by its prefix.
 // A single statement is atomic, i.e. a failing statement leaves the target table unchanged.
 // A MySQL temp table can be referenced once per statement, which is all that "INSERT ... SELECT" needs.
@@ -26,8 +27,8 @@ public sealed class BulkInsertFromQueryAsync : MySqlIntegrationTestsBase
 
    private MySqlBulkOperationExecutor SUT => field ??= ActDbContext.GetService<MySqlBulkOperationExecutor>();
 
-   public BulkInsertFromQueryAsync(MySqlContainerFixture fixture)
-      : base(fixture)
+   public BulkInsertFromQueryAsync(ITestOutputHelper testOutputHelper, MySqlContainerFixture fixture)
+      : base(testOutputHelper, fixture)
    {
    }
 
@@ -47,6 +48,80 @@ public sealed class BulkInsertFromQueryAsync : MySqlIntegrationTestsBase
 
       var loadedEntities = await AssertDbContext.TestEntities.OrderBy(e => e.Count).ToListAsync();
       loadedEntities.Should().BeEquivalentTo(sourceEntities, config => config.WithStrictOrdering());
+   }
+
+   [Fact]
+   public async Task Should_insert_captured_temporal_values_with_fractional_seconds_inside_an_expression()
+   {
+      ArrangeDbContext.TemporalEntities.Add(new MySqlTemporalEntity
+                                            {
+                                               Id = _TEST_ENTITY_ID,
+                                               DateTime = new DateTime(2000, 1, 1),
+                                               DateTimeOffset = new DateTimeOffset(2000, 1, 1, 0, 0, 0, TimeSpan.Zero),
+                                               TimeOnly = new TimeOnly(1, 0),
+                                               TimeSpan = TimeSpan.FromHours(1),
+                                               NullableDateTime = new DateTime(2000, 1, 1),
+                                               Converted = new MySqlDateTimeWrapper(new DateTime(2000, 1, 1))
+                                            });
+      await ArrangeDbContext.SaveChangesAsync();
+
+      // The columns have 6 fractional digits: 123456 microseconds.
+      var expected = new MySqlTemporalEntity
+                     {
+                        Id = _OTHER_TEST_ENTITY_ID,
+                        DateTime = new DateTime(2024, 5, 6, 7, 8, 9).AddTicks(1234560),
+                        DateTimeOffset = new DateTimeOffset(2024, 5, 6, 7, 8, 9, TimeSpan.Zero).AddTicks(1234560),
+                        TimeOnly = new TimeOnly(7, 8, 9).Add(TimeSpan.FromTicks(1234560)),
+                        TimeSpan = new TimeSpan(7, 8, 9).Add(TimeSpan.FromTicks(1234560)),
+                        NullableDateTime = new DateTime(2024, 5, 6, 7, 8, 9).AddTicks(1234560),
+                        Converted = new MySqlDateTimeWrapper(new DateTime(2024, 5, 6, 7, 8, 9).AddTicks(1234560))
+                     };
+
+      // A single captured value is bound as a parameter. Inside a CASE expression the values are rendered as SQL literals.
+      var affectedRows = await ActDbContext.TemporalEntities.BulkInsertAsync(
+                            ActDbContext.TemporalEntities,
+                            builder => builder.Map(e => e.Id, f => expected.Id)
+                                              .Map(e => e.DateTime, f => f.Id == _TEST_ENTITY_ID ? expected.DateTime : f.DateTime)
+                                              .Map(e => e.DateTimeOffset, f => f.Id == _TEST_ENTITY_ID ? expected.DateTimeOffset : f.DateTimeOffset)
+                                              .Map(e => e.TimeOnly, f => f.Id == _TEST_ENTITY_ID ? expected.TimeOnly : f.TimeOnly)
+                                              .Map(e => e.TimeSpan, f => f.Id == _TEST_ENTITY_ID ? expected.TimeSpan : f.TimeSpan)
+                                              .Map(e => e.NullableDateTime, f => f.Id == _TEST_ENTITY_ID ? expected.NullableDateTime : f.NullableDateTime)
+                                              .Map(e => e.Converted, f => f.Id == _TEST_ENTITY_ID ? expected.Converted : f.Converted));
+
+      affectedRows.Should().Be(1);
+
+      var loadedEntity = await AssertDbContext.TemporalEntities.SingleAsync(e => e.Id == _OTHER_TEST_ENTITY_ID);
+      loadedEntity.Should().BeEquivalentTo(expected);
+   }
+
+   [Fact]
+   public async Task Should_insert_captured_time_span_beyond_one_day_inside_an_expression()
+   {
+      ArrangeDbContext.TemporalEntities.Add(new MySqlTemporalEntity
+                                            {
+                                               Id = _TEST_ENTITY_ID,
+                                               DateTime = new DateTime(2000, 1, 1),
+                                               DateTimeOffset = new DateTimeOffset(2000, 1, 1, 0, 0, 0, TimeSpan.Zero),
+                                               TimeOnly = new TimeOnly(1, 0),
+                                               TimeSpan = TimeSpan.FromHours(1),
+                                               NullableDateTime = new DateTime(2000, 1, 1),
+                                               Converted = new MySqlDateTimeWrapper(new DateTime(2000, 1, 1))
+                                            });
+      await ArrangeDbContext.SaveChangesAsync();
+      var value = TimeSpan.FromHours(36).Add(TimeSpan.FromTicks(1234560));
+
+      var affectedRows = await ActDbContext.TemporalEntities.BulkInsertAsync(
+                            ActDbContext.TemporalEntities,
+                            builder => builder.Map(e => e.Id, f => _OTHER_TEST_ENTITY_ID)
+                                              .Map(e => e.DateTime, f => f.DateTime)
+                                              .Map(e => e.DateTimeOffset, f => f.DateTimeOffset)
+                                              .Map(e => e.TimeOnly, f => f.TimeOnly)
+                                              .Map(e => e.TimeSpan, f => f.Id == _TEST_ENTITY_ID ? value : f.TimeSpan)
+                                              .Map(e => e.NullableDateTime, f => f.NullableDateTime)
+                                              .Map(e => e.Converted, f => f.Converted));
+
+      affectedRows.Should().Be(1);
+      (await AssertDbContext.TemporalEntities.SingleAsync(e => e.Id == _OTHER_TEST_ENTITY_ID)).TimeSpan.Should().Be(value);
    }
 
    [Fact]
@@ -305,9 +380,11 @@ public sealed class BulkInsertFromQueryAsync : MySqlIntegrationTestsBase
    }
 
    [Fact]
-   public async Task Should_insert_entities_in_table_of_the_database_from_ForRootEntity_provider()
+   public async Task Should_insert_entities_in_table_of_the_database_from_ForRootEntity_provider_if_SchemaBehavior_is_Ignore()
    {
       // MySQL has no schemas below the database, so the schema of the table name is the name of the database (here: the current one).
+      // SchemaBehavior Ignore drops the schema; the default (Throw) rejects it.
+      ConfigureMySql = builder => builder.SchemaBehavior(MySqlSchemaBehavior.Ignore);
       var database = await ActDbContext.Database.SqlQueryRaw<string>("SELECT DATABASE() AS `Value`").SingleAsync();
       await CreateTableCopyAsync("TestEntities", _REDIRECT_TABLE);
 
@@ -329,7 +406,7 @@ public sealed class BulkInsertFromQueryAsync : MySqlIntegrationTestsBase
       }
    }
 
-   [Fact(Skip = "Known limitation: the schema of a table name is dropped by DelimitIdentifier of the MySQL SQL generation helper (Pomelo SchemaBehavior), so the statement runs against the current database without an error.")]
+   [Fact]
    public async Task Should_not_write_to_the_current_database_if_the_schema_of_the_table_name_names_another_database()
    {
       await CreateTableCopyAsync("TestEntities", _REDIRECT_TABLE);
@@ -338,14 +415,13 @@ public sealed class BulkInsertFromQueryAsync : MySqlIntegrationTestsBase
       {
          await using var tempTable = await CreateSourceAsync(new TestEntity { Id = _TEST_ENTITY_ID, RequiredName = "RequiredName", Name = "InsertedName" });
 
-         // The schema of a MySQL table name is the name of the database. The statement has to address that database (or fail),
-         // it must not silently write to the table of the same name in the current database.
+         // With the default SchemaBehavior (Throw) the provider would drop the schema and write to the table of the same name in the current database.
          var act = () => ActDbContext.TestEntities.BulkInsertAsync(
                       tempTable.Query,
                       MapAllColumns,
                       new MySqlBulkInsertFromQueryOptions { TableNameProvider = IBulkOperationTableNameProvider.ForRootEntity(_REDIRECT_TABLE, "other_database") });
 
-         await act.Should().ThrowAsync<Exception>();
+         await act.Should().ThrowAsync<NotSupportedException>().WithMessage("*SchemaBehavior*");
          (await LoadColumnAsync<Guid>(_REDIRECT_TABLE, "Id")).Should().BeEmpty();
       }
       finally
@@ -881,6 +957,704 @@ public sealed class BulkInsertFromQueryAsync : MySqlIntegrationTestsBase
       (await AssertDbContext.QueryTargets.CountAsync()).Should().Be(0);
    }
 
+   [Fact]
+   public async Task Should_insert_struct_ComplexType_members_from_temp_table()
+   {
+      ConfigureModel = TempTableWithStructComplexType.Configure;
+
+      await using var tempTable = await CreateSourceAsync(CreateStructComplexTypeSource());
+
+      var affectedRows = await ActDbContext.TestEntitiesWithStructComplexType.BulkInsertAsync(
+                            tempTable.Query,
+                            builder => builder.Map(e => e.Id, s => s.Id)
+                                              .Map(e => e.MessageTimestamp, s => s.MessageTimestamp)
+                                              .Map(e => e.EffectiveMessage.ReceivedAt, s => s.EffectiveMessage.ReceivedAt)
+                                              .Map(e => e.EffectiveMessage.MessageTimestamp, s => s.EffectiveMessage.MessageTimestamp));
+
+      affectedRows.Should().Be(1);
+      GetExecutedStatement("INSERT INTO ").Should().Contain("(`id`, `message_timestamp`, `effective_received_at`, `effective_message_timestamp`)");
+
+      var loaded = await AssertDbContext.TestEntitiesWithStructComplexType.SingleAsync();
+      loaded.EffectiveMessage.Should().Be(new TimestampPair(100, 200));
+   }
+
+   [Fact]
+   public async Task Should_insert_whole_struct_ComplexType_from_temp_table()
+   {
+      ConfigureModel = TempTableWithStructComplexType.Configure;
+
+      await using var tempTable = await CreateSourceAsync(CreateStructComplexTypeSource());
+
+      var affectedRows = await ActDbContext.TestEntitiesWithStructComplexType.BulkInsertAsync(
+                            tempTable.Query,
+                            builder => builder.Map(e => e.Id, s => s.Id)
+                                              .Map(e => e.MessageTimestamp, s => s.MessageTimestamp)
+                                              .Map(e => e.EffectiveMessage, s => s.EffectiveMessage));
+
+      affectedRows.Should().Be(1);
+      GetExecutedStatement("INSERT INTO ").Should().Contain("(`id`, `message_timestamp`, `effective_message_timestamp`, `effective_received_at`)");
+
+      var loaded = await AssertDbContext.TestEntitiesWithStructComplexType.SingleAsync();
+      loaded.EffectiveMessage.Should().Be(new TimestampPair(100, 200));
+   }
+
+   [Fact]
+   public async Task Should_skip_generated_member_when_mapping_whole_ComplexType()
+   {
+      const string tableName = "TestEntities_with_ComplexType_Generated";
+      ConfigureModel = builder => builder.Entity<TestEntityWithComplexType>().ComplexProperty(e => e.Boundary, c => c.Property(b => b.Lower).ValueGeneratedOnAddOrUpdate());
+      await CreateTableCopyAsync("TestEntities_with_ComplexType", tableName);
+
+      try
+      {
+         await ActDbContext.Database.ExecuteSqlRawAsync($"ALTER TABLE {Quote(tableName)} ALTER COLUMN `Boundary_Lower` SET DEFAULT 0");
+         await ActDbContext.Database.ExecuteSqlRawAsync($"INSERT INTO `TestEntities_with_ComplexType` (`Id`, `Boundary_Upper`, `Boundary_Lower`) VALUES ('{_TEST_ENTITY_ID}', 1, 2)");
+
+         var affectedRows = await ActDbContext.Set<TestEntityWithComplexType>().BulkInsertAsync(
+                               ActDbContext.Set<TestEntityWithComplexType>(),
+                               builder => builder.Map(e => e.Id, f => f.Id)
+                                                 .Map(e => e.Boundary, f => f.Boundary),
+                               new MySqlBulkInsertFromQueryOptions { TableNameProvider = IBulkOperationTableNameProvider.ForRootEntity(tableName) });
+
+         affectedRows.Should().Be(1);
+         GetExecutedStatement("INSERT INTO ").Should().NotContain("Boundary_Lower");
+         (await LoadColumnAsync<int>(tableName, "Boundary_Lower")).Should().Equal(0);
+      }
+      finally
+      {
+         await DropTablesAsync(tableName);
+      }
+   }
+
+   [Fact]
+   public async Task Should_throw_for_member_of_nullable_class_ComplexType()
+   {
+      var act = () => ActDbContext.TestEntitiesWithNullableComplexTypes.BulkInsertAsync(
+                   ActDbContext.TestEntitiesWithNullableComplexTypes,
+                   builder => builder.Map(e => e.Id, f => f.Id).Map(e => e.OptionalBoundary!.Upper, f => f.OptionalBoundary!.Upper));
+
+      await act.Should().ThrowAsync<NotSupportedException>().WithMessage("The member 'OptionalBoundary' of '*' is a nullable complex property.*");
+      ExecutedCommands.Should().NotContain(c => c.StartsWith("INSERT INTO ", StringComparison.Ordinal));
+   }
+
+   [Fact]
+   public async Task Should_throw_when_every_member_of_whole_ComplexType_is_generated_and_another_column_is_mapped()
+   {
+      ConfigureModel = builder => builder.Entity<TestEntityWithComplexType>().ComplexProperty(e => e.Boundary, c =>
+                                                                                              {
+                                                                                                 c.Property(b => b.Upper).ValueGeneratedOnAddOrUpdate();
+                                                                                                 c.Property(b => b.Lower).ValueGeneratedOnAddOrUpdate();
+                                                                                              });
+
+      var act = () => ActDbContext.Set<TestEntityWithComplexType>().BulkInsertAsync(
+                   ActDbContext.Set<TestEntityWithComplexType>(),
+                   builder => builder.Map(e => e.Id, f => f.Id)
+                                     .Map(e => e.Boundary, f => f.Boundary));
+
+      await act.Should().ThrowAsync<ArgumentException>().WithMessage("*every member*generated*Expression: e => e.Boundary");
+      ExecutedCommands.Should().NotContain(c => c.StartsWith("INSERT INTO ", StringComparison.Ordinal));
+   }
+
+   [Fact]
+   public async Task Should_map_whole_nullable_ComplexTypes_from_source_columns()
+   {
+      var sourceRows = new[]
+                       {
+                          TestEntityWithNullableComplexTypes.CreateWithValues(new Guid("AB6D3F7E-4C9C-4DAF-9B79-BF6EAF5C0001")),
+                          TestEntityWithNullableComplexTypes.CreateWithNulls(new Guid("AB6D3F7E-4C9C-4DAF-9B79-BF6EAF5C0002"))
+                       };
+      await using var tempTable = await CreateSourceAsync(sourceRows);
+
+      var affectedRows = await ActDbContext.TestEntitiesWithNullableComplexTypes.BulkInsertAsync(
+                            tempTable.Query,
+                            builder => builder.Map(e => e.Id, s => s.Id)
+                                              .Map(e => e.OptionalBoundary, s => s.OptionalBoundary)
+                                              .Map(e => e.OptionalPair, s => s.OptionalPair)
+                                              .Map(e => e.Tagged, s => s.Tagged)
+                                              .Map(e => e.Outer, s => s.Outer)
+                                              .Map(e => e.OptionalOuter, s => s.OptionalOuter)
+                                              .Map(e => e.OptionalConverted, s => s.OptionalConverted));
+
+      affectedRows.Should().Be(2);
+      (await AssertDbContext.TestEntitiesWithNullableComplexTypes.ToListAsync()).Should().BeEquivalentTo(sourceRows);
+   }
+
+   [Fact]
+   public async Task Should_map_whole_nullable_ComplexTypes_from_captured_values_and_nulls()
+   {
+      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = _TEST_ENTITY_ID, RequiredName = "RequiredName" });
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var id = new Guid("AB6D3F7E-4C9C-4DAF-9B79-BF6EAF5C0004");
+      var boundary = new BoundaryValueObject(2, 5);
+      TimestampPair? pair = null;
+      var tagged = new TaggedValues { X = 7, Text = "t" };
+      var outer = new OuterWithOptionalInner { Z = 1, Inner = null };
+      OptionalOuter? optionalOuter = null;
+      ConvertedTimestampPair? converted = new ConvertedTimestampPair(new TimestampValue(1), new TimestampValue(2));
+
+      var affectedRows = await ActDbContext.TestEntitiesWithNullableComplexTypes.BulkInsertAsync(
+                            ActDbContext.TestEntities,
+                            builder => builder.Map(e => e.Id, s => id)
+                                              .Map(e => e.OptionalBoundary, s => boundary)
+                                              .Map(e => e.OptionalPair, s => pair)
+                                              .Map(e => e.Tagged, s => tagged)
+                                              .Map(e => e.Outer, s => outer)
+                                              .Map(e => e.OptionalOuter, s => optionalOuter)
+                                              .Map(e => e.OptionalConverted, s => converted));
+
+      affectedRows.Should().Be(1);
+      (await AssertDbContext.TestEntitiesWithNullableComplexTypes.SingleAsync()).Should().BeEquivalentTo(
+         new TestEntityWithNullableComplexTypes
+         {
+            Id = id,
+            OptionalBoundary = new BoundaryValueObject(2, 5),
+            OptionalPair = null,
+            Tagged = new TaggedValues { X = 7, Text = "t" },
+            Outer = new OuterWithOptionalInner { Z = 1, Inner = null },
+            OptionalOuter = null,
+            OptionalConverted = new ConvertedTimestampPair(new TimestampValue(1), new TimestampValue(2))
+         });
+   }
+
+   [Fact]
+   public async Task Should_insert_rows_When_source_query_compares_column_with_null()
+   {
+      var nullName = new TestEntity { Id = new Guid("5D1C7A3E-0F2B-4E6A-9C1D-2B7F3E4A0020"), Name = null, RequiredName = "RequiredName" };
+      var withName = new TestEntity { Id = new Guid("5D1C7A3E-0F2B-4E6A-9C1D-2B7F3E4A0021"), Name = "x", RequiredName = "RequiredName" };
+      ArrangeDbContext.TestEntities.AddRange(nullName, withName);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var affectedRows = await ActDbContext.TestEntitiesWithNullableComplexTypes.BulkInsertAsync(
+                            ActDbContext.TestEntities.Where(s => s.Name == null),
+                            builder => builder.Map(e => e.Id, s => s.Id)
+                                              .Map(e => e.Outer.Z, s => s.Name == null ? 1 : 2));
+
+      affectedRows.Should().Be(1);
+      GetExecutedStatement("INSERT INTO ").Should().Contain("IS NULL").And.NotContain("= NULL");
+      var inserted = await AssertDbContext.TestEntitiesWithNullableComplexTypes.SingleAsync();
+      inserted.Id.Should().Be(nullName.Id);
+      inserted.Outer.Z.Should().Be(1);
+   }
+
+   [Fact]
+   public async Task Should_insert_rows_When_source_query_compares_column_with_not_null()
+   {
+      var nullName = new TestEntity { Id = new Guid("5D1C7A3E-0F2B-4E6A-9C1D-2B7F3E4A0022"), Name = null, RequiredName = "RequiredName" };
+      var withName = new TestEntity { Id = new Guid("5D1C7A3E-0F2B-4E6A-9C1D-2B7F3E4A0023"), Name = "x", RequiredName = "RequiredName" };
+      ArrangeDbContext.TestEntities.AddRange(nullName, withName);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var affectedRows = await ActDbContext.TestEntitiesWithNullableComplexTypes.BulkInsertAsync(
+                            ActDbContext.TestEntities.Where(s => s.Name != null),
+                            builder => builder.Map(e => e.Id, s => s.Id)
+                                              .Map(e => e.Outer.Z, s => 1));
+
+      affectedRows.Should().Be(1);
+      GetExecutedStatement("INSERT INTO ").Should().Contain("IS NOT NULL").And.NotContain("<> NULL");
+      var inserted = await AssertDbContext.TestEntitiesWithNullableComplexTypes.SingleAsync();
+      inserted.Id.Should().Be(withName.Id);
+      inserted.Outer.Z.Should().Be(1);
+   }
+
+   [Fact]
+   public async Task Should_insert_rows_When_source_query_compares_column_with_captured_null()
+   {
+      var nullName = new TestEntity { Id = new Guid("5D1C7A3E-0F2B-4E6A-9C1D-2B7F3E4A0024"), Name = null, RequiredName = "RequiredName" };
+      var withName = new TestEntity { Id = new Guid("5D1C7A3E-0F2B-4E6A-9C1D-2B7F3E4A0025"), Name = "x", RequiredName = "RequiredName" };
+      ArrangeDbContext.TestEntities.AddRange(nullName, withName);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      string? captured = null;
+
+      var affectedRows = await ActDbContext.TestEntitiesWithNullableComplexTypes.BulkInsertAsync(
+                            ActDbContext.TestEntities.Where(s => s.Name == captured),
+                            builder => builder.Map(e => e.Id, s => s.Id)
+                                              .Map(e => e.Outer.Z, s => 1));
+
+      affectedRows.Should().Be(1);
+      GetExecutedStatement("INSERT INTO ").Should().Contain("IS NULL").And.NotContain("= NULL");
+      var inserted = await AssertDbContext.TestEntitiesWithNullableComplexTypes.SingleAsync();
+      inserted.Id.Should().Be(nullName.Id);
+      inserted.Outer.Z.Should().Be(1);
+   }
+
+   [Fact]
+   public async Task Should_insert_rows_When_source_query_uses_collection_parameter()
+   {
+      ConfigureMySql = builder => builder.AddCollectionParameterSupport();
+      var nullName = new TestEntity { Id = new Guid("5D1C7A3E-0F2B-4E6A-9C1D-2B7F3E4A0026"), Name = null, RequiredName = "RequiredName" };
+      var withName = new TestEntity { Id = new Guid("5D1C7A3E-0F2B-4E6A-9C1D-2B7F3E4A0027"), Name = "x", RequiredName = "RequiredName" };
+      ArrangeDbContext.TestEntities.AddRange(nullName, withName);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var ids = new List<Guid> { nullName.Id };
+
+      var affectedRows = await ActDbContext.TestEntitiesWithNullableComplexTypes.BulkInsertAsync(
+                            ActDbContext.TestEntities.Where(s => ids.Contains(s.Id)),
+                            builder => builder.Map(e => e.Id, s => s.Id)
+                                              .Map(e => e.Outer.Z, s => 1));
+
+      affectedRows.Should().Be(1);
+      var inserted = await AssertDbContext.TestEntitiesWithNullableComplexTypes.SingleAsync();
+      inserted.Id.Should().Be(nullName.Id);
+      inserted.Outer.Z.Should().Be(1);
+   }
+
+   [Fact]
+   public async Task Should_insert_rows_When_source_query_filters_nullable_ComplexType()
+   {
+      var withValues = TestEntityWithNullableComplexTypes.CreateWithValues(new Guid("5D1C7A3E-0F2B-4E6A-9C1D-2B7F3E4A0030"));
+      var withNulls = TestEntityWithNullableComplexTypes.CreateWithNulls(new Guid("5D1C7A3E-0F2B-4E6A-9C1D-2B7F3E4A0031"));
+      ArrangeDbContext.TestEntitiesWithNullableComplexTypes.AddRange(withValues, withNulls);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var newId = new Guid("5D1C7A3E-0F2B-4E6A-9C1D-2B7F3E4A0032");
+
+      var affectedRows = await ActDbContext.TestEntitiesWithNullableComplexTypes.BulkInsertAsync(
+                            ActDbContext.TestEntitiesWithNullableComplexTypes.Where(s => s.OptionalBoundary != null),
+                            builder => builder.Map(e => e.Id, s => newId)
+                                              .Map(e => e.OptionalBoundary, s => s.OptionalBoundary)
+                                              .Map(e => e.Outer, s => s.Outer));
+
+      affectedRows.Should().Be(1);
+      GetExecutedStatement("INSERT INTO ").Should().Contain("IS NOT NULL");
+      (await AssertDbContext.TestEntitiesWithNullableComplexTypes.SingleAsync(e => e.Id == newId)).OptionalBoundary.Should().BeEquivalentTo(new BoundaryValueObject(2, 5));
+   }
+
+   [Fact]
+   public async Task Should_map_whole_nullable_ComplexType_from_coalesce_with_column_left_operand()
+   {
+      var sourceWithNulls = TestEntityWithNullableComplexTypes.CreateWithNulls(new Guid("AB6D3F7E-4C9C-4DAF-9B79-BF6EAF5C0020"));
+      var sourceWithValues = TestEntityWithNullableComplexTypes.CreateWithValues(new Guid("AB6D3F7E-4C9C-4DAF-9B79-BF6EAF5C0021"));
+      await using var tempTable = await CreateSourceAsync(sourceWithNulls, sourceWithValues);
+
+      var boundary = new BoundaryValueObject(3, 9);
+
+      var affectedRows = await ActDbContext.TestEntitiesWithNullableComplexTypes.BulkInsertAsync(
+                            tempTable.Query,
+                            builder => builder.Map(e => e.Id, s => s.Id)
+                                              .Map(e => e.Outer, s => s.Outer)
+                                              .Map(e => e.OptionalBoundary, s => s.OptionalBoundary ?? boundary));
+
+      affectedRows.Should().Be(2);
+      GetExecutedStatement("INSERT INTO ").Should().Contain("IS NULL").And.NotContain("= NULL");
+      (await AssertDbContext.TestEntitiesWithNullableComplexTypes.SingleAsync(e => e.Id == sourceWithNulls.Id)).OptionalBoundary.Should().BeEquivalentTo(new BoundaryValueObject(3, 9));
+      (await AssertDbContext.TestEntitiesWithNullableComplexTypes.SingleAsync(e => e.Id == sourceWithValues.Id)).OptionalBoundary.Should().BeEquivalentTo(new BoundaryValueObject(2, 5));
+   }
+
+   [Fact]
+   public async Task Should_insert_value_converted_captured_value()
+   {
+      var source = new TestEntity { Id = new Guid("7A000000-0000-0000-0000-000000000005"), RequiredName = "RequiredName" };
+      ArrangeDbContext.TestEntities.Add(source);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var captured = new ConvertibleClass(7);
+      var newId = new Guid("7A000000-0000-0000-0000-000000000006");
+
+      var affectedRows = await ActDbContext.TestEntities.BulkInsertAsync(
+                            ActDbContext.TestEntities.Where(s => s.Id == source.Id),
+                            builder => builder.Map(e => e.Id, s => newId)
+                                              .Map(e => e.RequiredName, s => s.RequiredName)
+                                              .Map(e => e.Count, s => s.Count)
+                                              .Map(e => e.PropertyWithBackingField, s => s.PropertyWithBackingField)
+                                              .Map(e => EF.Property<int>(e, "_privateField"), s => EF.Property<int>(s, "_privateField"))
+                                              .Map(e => e.ConvertibleClass, s => captured));
+
+      affectedRows.Should().Be(1);
+      (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == newId)).ConvertibleClass!.Key.Should().Be(7);
+   }
+
+   [Fact]
+   public async Task Should_insert_When_same_source_column_is_mapped_to_several_target_columns()
+   {
+      var source = new TestEntity { Id = new Guid("7B000000-0000-0000-0000-000000000001"), RequiredName = "Req", Count = 7 };
+      ArrangeDbContext.TestEntities.Add(source);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var newId = new Guid("7B000000-0000-0000-0000-000000000002");
+
+      var affectedRows = await ActDbContext.TestEntities.BulkInsertAsync(
+                            ActDbContext.TestEntities.Where(e => e.Id == source.Id),
+                            builder => builder.Map(e => e.Id, s => newId)
+                                              .Map(e => e.RequiredName, s => s.RequiredName)
+                                              .Map(e => e.Count, s => s.Count)
+                                              .Map(e => e.PropertyWithBackingField, s => s.Count)
+                                              .Map(e => EF.Property<int>(e, "_privateField"), s => s.Count));
+
+      affectedRows.Should().Be(1);
+      GetExecutedStatement("INSERT INTO ").Should().Contain("`t`.`Count`, `t`.`Count`, `t`.`Count`");
+
+      var inserted = await AssertDbContext.TestEntities.SingleAsync(e => e.Id == newId);
+      inserted.RequiredName.Should().Be("Req");
+      inserted.Count.Should().Be(7);
+      inserted.PropertyWithBackingField.Should().Be(7);
+      inserted.GetPrivateField().Should().Be(7);
+   }
+
+   [Fact]
+   public async Task Should_insert_When_same_arithmetic_expression_is_mapped_to_several_target_columns()
+   {
+      var source = new TestEntity { Id = new Guid("7B000000-0000-0000-0000-000000000003"), RequiredName = "Req", Count = 7 };
+      ArrangeDbContext.TestEntities.Add(source);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var newId = new Guid("7B000000-0000-0000-0000-000000000004");
+
+      var affectedRows = await ActDbContext.TestEntities.BulkInsertAsync(
+                            ActDbContext.TestEntities.Where(e => e.Id == source.Id),
+                            builder => builder.Map(e => e.Id, s => newId)
+                                              .Map(e => e.RequiredName, s => s.RequiredName)
+                                              .Map(e => e.Count, s => s.Count * 2 + 1)
+                                              .Map(e => e.PropertyWithBackingField, s => s.Count * 2 + 1)
+                                              .Map(e => EF.Property<int>(e, "_privateField"), s => s.Count));
+
+      affectedRows.Should().Be(1);
+      GetExecutedStatement("INSERT INTO ").Should().Contain("(`t`.`Count` * 2) + 1, (`t`.`Count` * 2) + 1");
+
+      var inserted = await AssertDbContext.TestEntities.SingleAsync(e => e.Id == newId);
+      inserted.Count.Should().Be(15);
+      inserted.PropertyWithBackingField.Should().Be(15);
+      inserted.GetPrivateField().Should().Be(7);
+   }
+
+   [Fact]
+   public async Task Should_map_whole_nullable_ComplexType_from_server_conditional_with_equal_member_values()
+   {
+      var sourceWithPositiveCount = new TestEntity { Id = new Guid("7B000000-0000-0000-0000-000000000005"), RequiredName = "Req", Count = 1 };
+      var sourceWithZeroCount = new TestEntity { Id = new Guid("7B000000-0000-0000-0000-000000000006"), RequiredName = "Req", Count = 0 };
+      ArrangeDbContext.TestEntities.AddRange(sourceWithPositiveCount, sourceWithZeroCount);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var boundary = new BoundaryValueObject(3, 3);
+      var outer = new OuterWithOptionalInner { Z = 1, Inner = null };
+
+      var affectedRows = await ActDbContext.TestEntitiesWithNullableComplexTypes.BulkInsertAsync(
+                            ActDbContext.TestEntities.Where(e => e.Id == sourceWithPositiveCount.Id || e.Id == sourceWithZeroCount.Id),
+                            builder => builder.Map(e => e.Id, s => s.Id)
+                                              .Map(e => e.Outer, s => outer)
+                                              .Map(e => e.OptionalBoundary, s => s.Count > 0 ? boundary : null));
+
+      affectedRows.Should().Be(2);
+      Regex.Matches(GetExecutedStatement("INSERT INTO "), @"CASE\s+WHEN").Count.Should().Be(2);
+
+      var withBoundary = await AssertDbContext.TestEntitiesWithNullableComplexTypes.SingleAsync(e => e.Id == sourceWithPositiveCount.Id);
+      withBoundary.OptionalBoundary.Should().BeEquivalentTo(new BoundaryValueObject(3, 3));
+      withBoundary.Outer.Z.Should().Be(1);
+      withBoundary.Outer.Inner.Should().BeNull();
+
+      var withoutBoundary = await AssertDbContext.TestEntitiesWithNullableComplexTypes.SingleAsync(e => e.Id == sourceWithZeroCount.Id);
+      withoutBoundary.OptionalBoundary.Should().BeNull();
+      withoutBoundary.Outer.Z.Should().Be(1);
+      withoutBoundary.Outer.Inner.Should().BeNull();
+   }
+
+   [Fact]
+   public async Task Should_insert_When_same_source_column_is_mapped_twice_and_source_is_ordered_and_paged()
+   {
+      ArrangeDbContext.TestEntities.AddRange(new TestEntity { Id = new Guid("7B000000-0000-0000-0000-000000000007"), RequiredName = "Req", Count = 1 },
+                                             new TestEntity { Id = new Guid("7B000000-0000-0000-0000-000000000008"), RequiredName = "Req", Count = 2 },
+                                             new TestEntity { Id = new Guid("7B000000-0000-0000-0000-000000000009"), RequiredName = "Req", Count = 3 });
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var newId = new Guid("7B000000-0000-0000-0000-00000000000A");
+
+      var affectedRows = await ActDbContext.TestEntities.BulkInsertAsync(
+                            ActDbContext.TestEntities.OrderBy(e => e.Count).Skip(1).Take(1),
+                            builder => builder.Map(e => e.Id, s => newId)
+                                              .Map(e => e.RequiredName, s => s.RequiredName)
+                                              .Map(e => e.Count, s => s.Count)
+                                              .Map(e => e.PropertyWithBackingField, s => s.Count)
+                                              .Map(e => EF.Property<int>(e, "_privateField"), s => s.Count));
+
+      affectedRows.Should().Be(1);
+      GetExecutedStatement("INSERT INTO ").Should().Contain("`t`.`Count`, `t`.`Count`, `t`.`Count`").And.Contain("ORDER BY").And.Contain("LIMIT @").And.Contain("OFFSET @");
+
+      var inserted = await AssertDbContext.TestEntities.SingleAsync(e => e.Id == newId);
+      inserted.Count.Should().Be(2);
+      inserted.PropertyWithBackingField.Should().Be(2);
+      inserted.GetPrivateField().Should().Be(2);
+   }
+
+   [Fact]
+   public async Task Should_insert_When_same_source_column_is_mapped_twice_and_source_is_distinct_projection()
+   {
+      ArrangeDbContext.TestEntities.AddRange(new TestEntity { Id = new Guid("7B000000-0000-0000-0000-00000000000B"), RequiredName = "Req", Count = 4 },
+                                             new TestEntity { Id = new Guid("7B000000-0000-0000-0000-00000000000C"), RequiredName = "Req", Count = 4 });
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var newId = new Guid("7B000000-0000-0000-0000-00000000000D");
+
+      var affectedRows = await ActDbContext.TestEntities.BulkInsertAsync(
+                            ActDbContext.TestEntities.Select(e => new { e.RequiredName, e.Count }).Distinct(),
+                            builder => builder.Map(e => e.Id, s => newId)
+                                              .Map(e => e.RequiredName, s => s.RequiredName)
+                                              .Map(e => e.Count, s => s.Count)
+                                              .Map(e => e.PropertyWithBackingField, s => s.Count)
+                                              .Map(e => EF.Property<int>(e, "_privateField"), s => s.Count));
+
+      affectedRows.Should().Be(1);
+      GetExecutedStatement("INSERT INTO ").Should().Contain("SELECT DISTINCT").And.Contain("`t0`.`Count`, `t0`.`Count`, `t0`.`Count`");
+
+      var inserted = await AssertDbContext.TestEntities.SingleAsync(e => e.Id == newId);
+      inserted.Count.Should().Be(4);
+      inserted.PropertyWithBackingField.Should().Be(4);
+      inserted.GetPrivateField().Should().Be(4);
+   }
+
+   [Fact]
+   public async Task Should_insert_When_same_source_column_and_equal_constants_are_mapped_to_several_target_columns()
+   {
+      var source = new TestEntity { Id = new Guid("7B000000-0000-0000-0000-00000000000E"), RequiredName = "Req", Count = 7 };
+      ArrangeDbContext.TestEntities.Add(source);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var newId = new Guid("7B000000-0000-0000-0000-00000000000F");
+
+      var affectedRows = await ActDbContext.TestEntities.BulkInsertAsync(
+                            ActDbContext.TestEntities.Where(e => e.Id == source.Id),
+                            builder => builder.Map(e => e.Id, s => newId)
+                                              .Map(e => e.RequiredName, s => s.RequiredName)
+                                              .Map(e => e.Count, s => s.Count)
+                                              .Map(e => e.PropertyWithBackingField, s => s.Count)
+                                              .Map(e => EF.Property<int>(e, "_privateField"), s => 5)
+                                              .Map(e => e.NullableCount, s => 5));
+
+      affectedRows.Should().Be(1);
+      GetExecutedStatement("INSERT INTO ").Should().Contain("`t`.`Count`, `t`.`Count`, @__insert_const_1, @__insert_const_2");
+
+      var inserted = await AssertDbContext.TestEntities.SingleAsync(e => e.Id == newId);
+      inserted.Count.Should().Be(7);
+      inserted.PropertyWithBackingField.Should().Be(7);
+      inserted.GetPrivateField().Should().Be(5);
+      inserted.NullableCount.Should().Be(5);
+   }
+
+   [Fact]
+   public async Task Should_insert_When_value_is_count_of_captured_collection_filtered_with_lambda()
+   {
+      var sourceId = new Guid("8B000000-0000-0000-0000-0000000000B0");
+      var newId = new Guid("8B000000-0000-0000-0000-0000000000B1");
+      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = sourceId, RequiredName = "Req", Count = 7 });
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var items = new List<CapturedItem> { new(Guid.NewGuid(), true), new(Guid.NewGuid(), false), new(Guid.NewGuid(), true) };
+
+      var affectedRows = await ActDbContext.TestEntities.BulkInsertAsync(
+                            ActDbContext.TestEntities.Where(e => e.Id == sourceId),
+                            builder => builder.Map(e => e.Id, s => newId)
+                                              .Map(e => e.RequiredName, s => s.RequiredName)
+                                              .Map(e => e.Count, s => items.Where(i => i.Active).Count())
+                                              .Map(e => e.PropertyWithBackingField, s => s.Count)
+                                              .Map(e => EF.Property<int>(e, "_privateField"), s => s.Count));
+
+      affectedRows.Should().Be(1);
+      GetExecutedStatement("INSERT INTO ").Should().Contain("__insert_const_1");
+
+      var inserted = await AssertDbContext.TestEntities.SingleAsync(e => e.Id == newId);
+      inserted.Count.Should().Be(2);
+      inserted.PropertyWithBackingField.Should().Be(7);
+   }
+
+   [Fact]
+   public async Task Should_map_whole_nullable_ComplexTypes_from_captured_collection_with_lambda()
+   {
+      var source = TestEntityWithNullableComplexTypes.CreateWithNulls(new Guid("7C000000-0000-0000-0000-00000000000D"));
+      ArrangeDbContext.TestEntitiesWithNullableComplexTypes.Add(source);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var newId = new Guid("7C000000-0000-0000-0000-00000000000E");
+      var boundaries = new List<BoundaryValueObject> { new(1, 2) };
+      var tagged = new List<TaggedValues> { new() { X = 8, Text = "u" } };
+
+      var affectedRows = await ActDbContext.TestEntitiesWithNullableComplexTypes.BulkInsertAsync(
+                            ActDbContext.TestEntitiesWithNullableComplexTypes,
+                            builder => builder.Map(e => e.Id, s => newId)
+                                              .Map(e => e.Outer, s => s.Outer)
+                                              .Map(e => e.OptionalBoundary, s => boundaries.FirstOrDefault(b => b.Upper == 99))
+                                              .Map(e => e.Tagged, s => tagged.FirstOrDefault(t => t.X == 8)));
+
+      affectedRows.Should().Be(1);
+
+      var loaded = await AssertDbContext.TestEntitiesWithNullableComplexTypes.SingleAsync(e => e.Id == newId);
+      loaded.OptionalBoundary.Should().BeNull();
+      loaded.Tagged.Should().BeEquivalentTo(new TaggedValues { X = 8, Text = "u" });
+   }
+
+   [Fact]
+   public async Task Should_insert_When_value_uses_captured_collection_with_lambda_in_server_conditional()
+   {
+      var sourceId = new Guid("8B000000-0000-0000-0000-0000000000B2");
+      var newId = new Guid("8B000000-0000-0000-0000-0000000000B3");
+      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = sourceId, RequiredName = "Req", Count = 7 });
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var items = new List<CapturedItem> { new(sourceId, true), new(Guid.NewGuid(), false) };
+
+      var affectedRows = await ActDbContext.TestEntities.BulkInsertAsync(
+                            ActDbContext.TestEntities.Where(e => e.Id == sourceId),
+                            builder => builder.Map(e => e.Id, s => newId)
+                                              .Map(e => e.RequiredName, s => s.RequiredName)
+                                              .Map(e => e.Count, s => items.Select(i => i.Id).Contains(s.Id) ? 1 : 0)
+                                              .Map(e => e.PropertyWithBackingField, s => s.Count)
+                                              .Map(e => EF.Property<int>(e, "_privateField"), s => s.Count));
+
+      affectedRows.Should().Be(1);
+      var statement = GetExecutedStatement("INSERT INTO ");
+      statement.Should().Contain("CASE");
+      statement.Should().Contain(" IN (");
+
+      (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == newId)).Count.Should().Be(1);
+   }
+
+   [Theory]
+   [InlineData(true, 1)]
+   [InlineData(false, 0)]
+   public async Task Should_insert_When_value_uses_captured_Guid_array_Contains(bool contained, int expectedCount)
+   {
+      var sourceId = new Guid("8B000000-0000-0000-0000-0000000000B4");
+      var newId = new Guid("8B000000-0000-0000-0000-0000000000B5");
+      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = sourceId, RequiredName = "Req", Count = 7 });
+      await ArrangeDbContext.SaveChangesAsync();
+
+      Guid[] ids = [contained ? sourceId : Guid.NewGuid(), Guid.NewGuid()];
+
+      var affectedRows = await ActDbContext.TestEntities.BulkInsertAsync(
+                            ActDbContext.TestEntities.Where(e => e.Id == sourceId),
+                            builder => builder.Map(e => e.Id, s => newId)
+                                              .Map(e => e.RequiredName, s => s.RequiredName)
+                                              .Map(e => e.Count, s => ids.Contains(s.Id) ? 1 : 0)
+                                              .Map(e => e.PropertyWithBackingField, s => s.Count)
+                                              .Map(e => EF.Property<int>(e, "_privateField"), s => s.Count));
+
+      affectedRows.Should().Be(1);
+      var statement = GetExecutedStatement("INSERT INTO ");
+      statement.Should().Contain("CASE");
+      statement.Should().Contain(" IN (");
+
+      (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == newId)).Count.Should().Be(expectedCount);
+   }
+
+   [Fact]
+   public async Task Should_insert_When_captured_array_is_used_inside_captured_lambda()
+   {
+      var sourceId = new Guid("8B000000-0000-0000-0000-0000000000B6");
+      var newId = new Guid("8B000000-0000-0000-0000-0000000000B7");
+      ArrangeDbContext.TestEntities.Add(new TestEntity { Id = sourceId, RequiredName = "Req", Count = 7 });
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var items = new List<CapturedItem> { new(Guid.NewGuid(), true), new(Guid.NewGuid(), false), new(Guid.NewGuid(), true) };
+      Guid[] ids = [items[0].Id, items[1].Id];
+
+      var affectedRows = await ActDbContext.TestEntities.BulkInsertAsync(
+                            ActDbContext.TestEntities.Where(e => e.Id == sourceId),
+                            builder => builder.Map(e => e.Id, s => newId)
+                                              .Map(e => e.RequiredName, s => s.RequiredName)
+                                              .Map(e => e.Count, s => items.Where(i => ids.Contains(i.Id)).Count())
+                                              .Map(e => e.PropertyWithBackingField, s => s.Count)
+                                              .Map(e => EF.Property<int>(e, "_privateField"), s => s.Count));
+
+      affectedRows.Should().Be(1);
+      GetExecutedStatement("INSERT INTO ").Should().Contain("__insert_const_1");
+
+      var inserted = await AssertDbContext.TestEntities.SingleAsync(e => e.Id == newId);
+      inserted.Count.Should().Be(2);
+      inserted.PropertyWithBackingField.Should().Be(7);
+   }
+
+   [Fact]
+   public async Task Should_insert_value_converted_property_from_server_conditional_over_captured_values()
+   {
+      var source = new TestEntity { Id = new Guid("7C000000-0000-0000-0000-000000000005"), RequiredName = "RequiredName", Count = 20 };
+      ArrangeDbContext.TestEntities.Add(source);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var newId = new Guid("7C000000-0000-0000-0000-000000000006");
+      var highValue = new ConvertibleClass(2);
+
+      var affectedRows = await ActDbContext.TestEntities.BulkInsertAsync(
+                            ActDbContext.TestEntities.Where(s => s.Id == source.Id),
+                            builder => builder.Map(e => e.Id, s => newId)
+                                              .Map(e => e.RequiredName, s => s.RequiredName)
+                                              .Map(e => e.Count, s => s.Count)
+                                              .Map(e => e.PropertyWithBackingField, s => s.PropertyWithBackingField)
+                                              .Map(e => EF.Property<int>(e, "_privateField"), s => EF.Property<int>(s, "_privateField"))
+                                              .Map(e => e.ConvertibleClass, s => s.Count > 15 ? highValue : new ConvertibleClass(1)));
+
+      affectedRows.Should().Be(1);
+      GetExecutedStatement("INSERT INTO ").Should().Contain("THEN 2").And.Contain("ELSE 1");
+      (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == newId)).ConvertibleClass!.Key.Should().Be(2);
+   }
+
+   [Fact]
+   public async Task Should_insert_value_converted_int_property_from_server_conditional_over_constants()
+   {
+      ConfigureModel = builder => builder.Entity<TestEntity>().Property(e => e.Count).HasConversion(v => v * 100, v => v / 100);
+
+      var source = new TestEntity { Id = new Guid("8D000000-0000-0000-0000-000000000003"), RequiredName = "RequiredName", NullableCount = 20 };
+      ArrangeDbContext.TestEntities.Add(source);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var newId = new Guid("8D000000-0000-0000-0000-000000000004");
+
+      var affectedRows = await ActDbContext.TestEntities.BulkInsertAsync(
+                            ActDbContext.TestEntities.Where(s => s.Id == source.Id),
+                            builder => builder.Map(e => e.Id, s => newId)
+                                              .Map(e => e.RequiredName, s => s.RequiredName)
+                                              .Map(e => e.Count, s => s.NullableCount > 15 ? 2 : 1)
+                                              .Map(e => e.PropertyWithBackingField, s => s.PropertyWithBackingField)
+                                              .Map(e => EF.Property<int>(e, "_privateField"), s => EF.Property<int>(s, "_privateField")));
+
+      affectedRows.Should().Be(1);
+      GetExecutedStatement("INSERT INTO ").Should().Contain("THEN 200").And.Contain("ELSE 100");
+
+      var stored = await AssertDbContext.Database.SqlQueryRaw<int>($"SELECT `Count` AS `Value` FROM `TestEntities` WHERE `Id` = '{newId}'").SingleAsync();
+      stored.Should().Be(200);
+   }
+
+   [Fact]
+   public async Task Should_insert_all_distinct_rows_When_source_is_distinct_projection_and_not_every_column_is_mapped()
+   {
+      ArrangeDbContext.TestEntities.AddRange(new TestEntity { Id = new Guid("7C000000-0000-0000-0000-000000000007"), RequiredName = "A", Count = 1 },
+                                             new TestEntity { Id = new Guid("7C000000-0000-0000-0000-000000000008"), RequiredName = "A", Count = 2 },
+                                             new TestEntity { Id = new Guid("7C000000-0000-0000-0000-000000000009"), RequiredName = "B", Count = 1 });
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var affectedRows = await ActDbContext.TestEntitiesWithAutoIncrement.BulkInsertAsync(
+                            ActDbContext.TestEntities.Select(e => new { e.RequiredName, e.Count }).Distinct(),
+                            builder => builder.Map(e => e.Name, s => s.RequiredName));
+
+      affectedRows.Should().Be(3);
+      GetExecutedStatement("INSERT INTO ").Should().Contain("FROM (").And.Contain("SELECT DISTINCT");
+
+      var names = await AssertDbContext.TestEntitiesWithAutoIncrement.Select(e => e.Name).OrderBy(n => n).ToListAsync();
+      names.Should().Equal("A", "A", "B");
+   }
+
+   [Fact]
+   public async Task Should_insert_When_value_uses_captured_collection_with_null_element()
+   {
+      var source = new TestEntity { Id = new Guid("7C000000-0000-0000-0000-000000000017"), RequiredName = "RequiredName", NullableCount = null };
+      ArrangeDbContext.TestEntities.Add(source);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var newId = new Guid("7C000000-0000-0000-0000-000000000018");
+      int?[] counts = [7, null];
+
+      var affectedRows = await ActDbContext.TestEntities.BulkInsertAsync(
+                            ActDbContext.TestEntities.Where(s => s.Id == source.Id),
+                            builder => builder.Map(e => e.Id, s => newId)
+                                              .Map(e => e.RequiredName, s => s.RequiredName)
+                                              .Map(e => e.Count, s => counts.Contains(s.NullableCount) ? 1 : 0)
+                                              .Map(e => e.PropertyWithBackingField, s => s.PropertyWithBackingField)
+                                              .Map(e => EF.Property<int>(e, "_privateField"), s => EF.Property<int>(s, "_privateField")));
+
+      affectedRows.Should().Be(1);
+      GetExecutedStatement("INSERT INTO ").Should().Contain(".`NullableCount` IS NULL").And.Contain(".`NullableCount` = 7");
+      (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == newId)).Count.Should().Be(1);
+   }
+
    private async Task ArrangeSourcesWithCurlyBracesAsync()
    {
       ArrangeDbContext.QuerySources.AddRange(new MySqlQuerySource { Id = 1, Name = "{0}", Count = 1 },
@@ -908,6 +1682,11 @@ public sealed class BulkInsertFromQueryAsync : MySqlIntegrationTestsBase
    private static string NotTranslatable(string? value)
    {
       return value ?? String.Empty;
+   }
+
+   private static TempTableWithStructComplexType CreateStructComplexTypeSource()
+   {
+      return new TempTableWithStructComplexType { Id = _TEST_ENTITY_ID, MessageTimestamp = 10, EffectiveMessage = new TimestampPair(100, 200) };
    }
 
    private static InsertPropertyBuilder<TestEntity, TestEntity> MapAllColumns(InsertPropertyBuilder<TestEntity, TestEntity> builder)
@@ -951,6 +1730,8 @@ public sealed class BulkInsertFromQueryAsync : MySqlIntegrationTestsBase
    // LIKE copies the columns, the indexes and the primary key, but no foreign keys.
    private async Task CreateTableCopyAsync(string sourceTableName, string targetTableName)
    {
+      // A run that was killed before its cleanup leaves the table behind; CREATE TABLE would then fail with error 1050.
+      await DropTablesAsync(targetTableName);
       await ActDbContext.Database.ExecuteSqlRawAsync($"CREATE TABLE {Quote(targetTableName)} LIKE {Quote(sourceTableName)}");
    }
 
@@ -966,4 +1747,6 @@ public sealed class BulkInsertFromQueryAsync : MySqlIntegrationTestsBase
    {
       return $"`{identifier.Replace("`", "``", StringComparison.Ordinal)}`";
    }
+
+   private sealed record CapturedItem(Guid Id, bool Active);
 }

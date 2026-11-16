@@ -15,8 +15,8 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests;
 [Collection(MySqlTestCollection.NAME)]
 public sealed class BulkInsertValuesIntoTempTableAsync_1_Column : MySqlIntegrationTestsBase
 {
-   public BulkInsertValuesIntoTempTableAsync_1_Column(MySqlContainerFixture fixture)
-      : base(fixture)
+   public BulkInsertValuesIntoTempTableAsync_1_Column(ITestOutputHelper testOutputHelper, MySqlContainerFixture fixture)
+      : base(testOutputHelper, fixture)
    {
    }
 
@@ -339,12 +339,12 @@ public sealed class BulkInsertValuesIntoTempTableAsync_1_Column : MySqlIntegrati
    [InlineData(2)]
    [InlineData(5)]
    [InlineData(100)]
-   public async Task Should_insert_values_with_batch_size(int batchSize)
+   public async Task Should_insert_values_with_parameter_budget(int maxParametersPerStatement)
    {
       ConfigureModel = builder => builder.ConfigureTempTable<int>();
 
       var values = new List<int> { 1, 2, 3, 4, 5 };
-      await using var query = await ActDbContext.BulkInsertValuesIntoTempTableAsync(values, new MySqlTempTableBulkInsertOptions { BatchSize = batchSize });
+      await using var query = await ActDbContext.BulkInsertValuesIntoTempTableAsync(values, new MySqlTempTableBulkInsertOptions { MaxParametersPerStatement = maxParametersPerStatement });
 
       query.NumberOfInsertedRows.Should().Be(5);
       (await query.Query.OrderBy(v => v).ToListAsync()).Should().Equal(1, 2, 3, 4, 5);
@@ -1003,17 +1003,11 @@ public sealed class BulkInsertValuesIntoTempTableAsync_1_Column : MySqlIntegrati
                                  typeBuilder => typeBuilder.Property(t => t.Column1).HasConversion(c => c.Key.ToString(), k => new ConvertibleClass(Int32.Parse(k))).HasMaxLength(20));
    }
 
-   // MySqlBulkCopy uses LOAD DATA LOCAL INFILE, which the connection has to allow explicitly (the server is started with --local-infile=1).
-   // This must happen before the first use of the connection of ActDbContext.
+   // The insert path is part of the registration, so this must happen before the first context is accessed.
    private MySqlTempTableBulkInsertOptions CreateOptions(bool useBulkCopy)
    {
-      if (useBulkCopy)
-      {
-         var connectionString = new MySqlConnectionStringBuilder(ConnectionString) { AllowLoadLocalInfile = true };
-         ActDbContext.Database.SetConnectionString(connectionString.ConnectionString);
-      }
-
-      return new MySqlTempTableBulkInsertOptions { UseBulkCopy = useBulkCopy };
+      UseBulkCopy = useBulkCopy;
+      return new MySqlTempTableBulkInsertOptions();
    }
 
    private async Task AssertInsertFailsAsync<T>(

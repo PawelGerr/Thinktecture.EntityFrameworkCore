@@ -37,7 +37,7 @@ public sealed class MySqlAggregateTests
 
    private static MySqlTestDbContext CreateContext()
    {
-      var options = new DbContextOptionsBuilder<MySqlTestDbContext>()
+      var options = MySqlTestDbContext.CreateOptionsBuilder()
                     .UseMySql("Server=localhost;Database=test", MySqlContainerFixture.ServerVersion, builder => builder.AddWindowFunctionsSupport())
                     .Options;
 

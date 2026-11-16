@@ -3,8 +3,8 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.MySqlBulkOperationExec
 [Collection(MySqlTestCollection.NAME)]
 public sealed class MySqlBulkInsertTests : MySqlIntegrationTestsBase
 {
-   public MySqlBulkInsertTests(MySqlContainerFixture fixture)
-      : base(fixture)
+   public MySqlBulkInsertTests(ITestOutputHelper testOutputHelper, MySqlContainerFixture fixture)
+      : base(testOutputHelper, fixture)
    {
    }
 

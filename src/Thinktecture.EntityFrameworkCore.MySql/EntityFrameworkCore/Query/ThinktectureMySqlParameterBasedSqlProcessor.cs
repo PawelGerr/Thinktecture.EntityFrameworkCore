@@ -9,7 +9,7 @@ namespace Thinktecture.EntityFrameworkCore.Query;
 /// <summary>
 /// Extends the MySQL parameter-based SQL processor with Thinktecture expressions.
 /// </summary>
-[SuppressMessage("Usage", "EF1001:Internal EF Core API usage.")]
+[SuppressMessage("Usage", "EF1001", MessageId = "Internal EF Core API usage.")]
 public sealed class ThinktectureMySqlParameterBasedSqlProcessor : MySqlParameterBasedSqlProcessor
 {
    /// <summary>

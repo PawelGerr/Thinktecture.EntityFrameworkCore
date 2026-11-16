@@ -5,8 +5,8 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.MySqlBulkOperationExec
 [Collection(MySqlTestCollection.NAME)]
 public sealed class MySqlBulkCopyTests : MySqlIntegrationTestsBase
 {
-   public MySqlBulkCopyTests(MySqlContainerFixture fixture)
-      : base(fixture)
+   public MySqlBulkCopyTests(ITestOutputHelper testOutputHelper, MySqlContainerFixture fixture)
+      : base(testOutputHelper, fixture)
    {
    }
 
@@ -17,10 +17,24 @@ public sealed class MySqlBulkCopyTests : MySqlIntegrationTestsBase
 
       var affectedRows = await context.GetService<MySqlBulkOperationExecutor>().BulkInsertAsync(
          [new MySqlTestEntity { Id = 1, Name = null }],
-         new MySqlBulkInsertOptions { UseBulkCopy = true });
+         new MySqlBulkInsertOptions());
 
       affectedRows.Should().Be(1);
       (await context.Entities.AsNoTracking().Select(entity => entity.Name).SingleAsync()).Should().BeNull();
+   }
+
+   [Fact]
+   public async Task Should_round_trip_string_with_tab_line_feed_and_backslash()
+   {
+      await using var context = await CreateBulkCopyContextAsync();
+      const string value = "a\tb\nc\rd\\e'f";
+
+      var affectedRows = await context.GetService<MySqlBulkOperationExecutor>().BulkInsertAsync(
+         [new MySqlTestEntity { Id = 1, Name = value }],
+         new MySqlBulkInsertOptions());
+
+      affectedRows.Should().Be(1);
+      (await context.Entities.AsNoTracking().Select(entity => entity.Name).SingleAsync()).Should().Be(value);
    }
 
    [Fact]
@@ -31,7 +45,7 @@ public sealed class MySqlBulkCopyTests : MySqlIntegrationTestsBase
 
       var act = () => context.GetService<MySqlBulkOperationExecutor>().BulkInsertAsync(
          [new MySqlTestEntity { Id = 2, Name = "New" }, new MySqlTestEntity { Id = 3, Name = "Existing" }],
-         new MySqlBulkInsertOptions { UseBulkCopy = true });
+         new MySqlBulkInsertOptions());
 
       // MySqlConnector compares the copied and inserted row counts itself; the warnings check covers the remaining silent cases.
       await act.Should().ThrowAsync<MySqlConnector.MySqlException>().WithMessage("*only 1 was inserted*");
@@ -44,21 +58,17 @@ public sealed class MySqlBulkCopyTests : MySqlIntegrationTestsBase
       await using var context = await CreateBulkCopyContextAsync();
       var id = Guid.NewGuid();
 
-      await context.GetService<MySqlBulkOperationExecutor>().BulkInsertAsync(
-         [new MySqlTypedEntity { Id = id, Amount = 12.5m, Status = MySqlTestStatus.Published, CreatedAt = new DateTime(2020, 1, 2, 3, 4, 5), Data = [1, 2], Flag = true }],
-         new MySqlBulkInsertOptions { UseBulkCopy = true });
+      var entity = new MySqlTypedEntity { Id = id, Amount = 12.5m, Status = MySqlTestStatus.Published, CreatedAt = new DateTime(2020, 1, 2, 3, 4, 5), Data = [1, 2], Flag = true };
+
+      await context.GetService<MySqlBulkOperationExecutor>().BulkInsertAsync([entity], new MySqlBulkInsertOptions());
 
       var loaded = await context.TypedEntities.AsNoTracking().SingleAsync();
-      loaded.Id.Should().Be(id);
-      loaded.Status.Should().Be(MySqlTestStatus.Published);
-      loaded.Data.Should().Equal(1, 2);
+      loaded.Should().BeEquivalentTo(entity);
    }
 
-   private async Task<MySqlTestDbContext> CreateBulkCopyContextAsync()
+   private Task<MySqlTestDbContext> CreateBulkCopyContextAsync()
    {
-      var context = await CreateContextAsync();
-      var builder = new MySqlConnector.MySqlConnectionStringBuilder(ConnectionString) { AllowLoadLocalInfile = true };
-      context.Database.SetConnectionString(builder.ConnectionString);
-      return context;
+      UseBulkCopy = true;
+      return CreateContextAsync();
    }
 }

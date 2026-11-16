@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Transactions;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microting.EntityFrameworkCore.MySql.Infrastructure;
 using MySqlConnector;
 using Thinktecture.EntityFrameworkCore.TempTables;
 using Thinktecture.TestDatabaseContext;
@@ -10,10 +11,10 @@ using Thinktecture.TestDatabaseContext;
 
 namespace Thinktecture.EntityFrameworkCore.BulkOperations.MySqlBulkOperationExecutorTests;
 
-// The executor stages the rows in a temp table (EF creates it, so the CREATE statement is visible in ExecutedCommands) and runs one raw
-// "UPDATE target INNER JOIN staging" statement. That statement is not visible in ExecutedCommands, so the tests verify the resulting rows
-// and the return values (the number of matched rows, i.e. rows with unchanged values are counted as well).
-// Inside a System.Transactions.TransactionScope the executor updates row by row because MySQL rejects temp tables inside XA transactions.
+// The executor stages the rows in a temporary table ("CREATE TEMPORARY TABLE ... SELECT ... FROM target LIMIT 0") and runs one
+// "UPDATE target INNER JOIN staging" statement. EF Core executes these statements, so they are visible in ExecutedCommands. Only the
+// INSERT statements that fill the staging table use raw ADO commands. The tests verify the resulting rows and the return values (the number of matched rows, i.e. rows with unchanged values are counted as well).
+// MySQL rejects temporary tables inside XA transactions, so the tests with a TransactionScope use a connection with "UseXaTransactions=false".
 // ReSharper disable once InconsistentNaming
 [Collection(MySqlTestCollection.NAME)]
 public sealed class BulkUpdateAsync : MySqlIntegrationTestsBase
@@ -25,8 +26,8 @@ public sealed class BulkUpdateAsync : MySqlIntegrationTestsBase
 
    private MySqlBulkOperationExecutor SUT => field ??= ActDbContext.GetService<MySqlBulkOperationExecutor>();
 
-   public BulkUpdateAsync(MySqlContainerFixture fixture)
-      : base(fixture)
+   public BulkUpdateAsync(ITestOutputHelper testOutputHelper, MySqlContainerFixture fixture)
+      : base(testOutputHelper, fixture)
    {
    }
 
@@ -190,17 +191,21 @@ public sealed class BulkUpdateAsync : MySqlIntegrationTestsBase
    [Fact]
    public async Task Should_stage_key_and_update_properties_only_in_the_temp_table()
    {
-      var entity = new TestEntity { Id = _TEST_ENTITY_ID, Name = "original value", RequiredName = "RequiredName" };
-      ArrangeDbContext.Add(entity);
+      ArrangeDbContext.TypedEntities.Add(new MySqlTypedEntity { Id = _TEST_ENTITY_ID, Amount = 1, Flag = false });
       await ArrangeDbContext.SaveChangesAsync();
 
-      entity.Name = "Name";
+      // The amount does not fit into the column decimal(18,4). If it were staged, the staging insert would fail with error 1264 (out of range).
+      var affectedRows = await SUT.BulkUpdateAsync([new MySqlTypedEntity { Id = _TEST_ENTITY_ID, Amount = 100_000_000_000_000_000_000m, Flag = true }],
+                                                   new MySqlBulkUpdateOptions { PropertiesToUpdate = IEntityPropertiesProvider.Include<MySqlTypedEntity>(e => e.Flag) });
 
-      await SUT.BulkUpdateAsync([entity], new MySqlBulkUpdateOptions { PropertiesToUpdate = IEntityPropertiesProvider.Include<TestEntity>(e => e.Name) });
+      affectedRows.Should().Be(1);
 
       var createStatement = ExecutedCommands.Should().ContainSingle(command => command.StartsWith("CREATE TEMPORARY TABLE", StringComparison.Ordinal)).Subject;
-      createStatement.Should().Contain("`Id`").And.Contain("`Name`");
-      createStatement.Should().NotContain("`RequiredName`").And.NotContain("`Count`");
+      createStatement.Should().Contain("SELECT `Id`, `Flag` FROM `TypedEntities` LIMIT 0");
+
+      var loadedEntity = await AssertDbContext.TypedEntities.SingleAsync();
+      loadedEntity.Flag.Should().BeTrue();
+      loadedEntity.Amount.Should().Be(1);
    }
 
    [Fact]
@@ -400,10 +405,6 @@ public sealed class BulkUpdateAsync : MySqlIntegrationTestsBase
 
       affectedRows.Should().Be(1);
 
-      // The staging table of a regular entity must not renumber explicit ids.
-      ExecutedCommands.Should().ContainSingle(command => command.StartsWith("CREATE TEMPORARY TABLE", StringComparison.Ordinal))
-                      .Which.Should().NotContain("AUTO_INCREMENT");
-
       var loadedEntities = await AssertDbContext.TestEntitiesWithAutoIncrement.ToListAsync();
       loadedEntities.Should().HaveCount(1);
       var loadedEntity = loadedEntities[0];
@@ -586,6 +587,49 @@ public sealed class BulkUpdateAsync : MySqlIntegrationTestsBase
 
       var loadedEntities = await AssertDbContext.TestEntities_with_ComplexType.ToListAsync();
       loadedEntities.Should().BeEquivalentTo([testEntity]);
+   }
+
+   [Theory]
+   [InlineData(false)]
+   [InlineData(true)]
+   public async Task Should_update_nullable_ComplexTypes_to_null_and_to_values(bool useBulkCopy)
+   {
+      var options = CreateOptions(useBulkCopy);
+      var toNulls = TestEntityWithNullableComplexTypes.CreateWithValues(new Guid("6E3A0C4B-1F6F-4A7D-8E46-8C3B7D2F0001"));
+      var toValues = TestEntityWithNullableComplexTypes.CreateWithNulls(new Guid("6E3A0C4B-1F6F-4A7D-8E46-8C3B7D2F0002"));
+      ArrangeDbContext.AddRange(toNulls, toValues);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var updated = new[] { TestEntityWithNullableComplexTypes.CreateWithNulls(toNulls.Id), TestEntityWithNullableComplexTypes.CreateWithValues(toValues.Id) };
+
+      var affectedRows = await SUT.BulkUpdateAsync(updated, options);
+
+      affectedRows.Should().Be(2);
+      var loaded = await AssertDbContext.TestEntitiesWithNullableComplexTypes.ToListAsync();
+      loaded.Should().BeEquivalentTo(updated);
+   }
+
+   [Theory]
+   [InlineData(false)]
+   [InlineData(true)]
+   public async Task Should_update_struct_members_of_null_ComplexType_to_null(bool useBulkCopy)
+   {
+      var options = CreateOptions(useBulkCopy);
+      var toNulls = TestEntityWithStructsInOptionalComplexType.CreateWithValues(new Guid("9C1E2D3F-4A5B-4C6D-8E9F-0A1B2C3D0021"));
+      var toValues = TestEntityWithStructsInOptionalComplexType.CreateWithNulls(new Guid("9C1E2D3F-4A5B-4C6D-8E9F-0A1B2C3D0022"));
+      ArrangeDbContext.AddRange(toNulls, toValues);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var updated = new[] { TestEntityWithStructsInOptionalComplexType.CreateWithNulls(toNulls.Id), TestEntityWithStructsInOptionalComplexType.CreateWithValues(toValues.Id) };
+
+      var affectedRows = await SUT.BulkUpdateAsync(updated, options);
+
+      affectedRows.Should().Be(2);
+      var loaded = await AssertDbContext.TestEntitiesWithStructsInOptionalComplexType.ToListAsync();
+      loaded.Should().BeEquivalentTo(updated);
+
+      var structColumns = await MySqlStructColumns.Query(AssertDbContext, "TestEntitiesWithStructsInOptionalComplexType").ToListAsync();
+      structColumns.Should().BeEquivalentTo(updated.Select(TestEntityWithStructsInOptionalComplexType.StructColumns.From));
    }
 
    [Fact]
@@ -814,9 +858,11 @@ public sealed class BulkUpdateAsync : MySqlIntegrationTestsBase
    }
 
    [Fact]
-   public async Task Should_update_entities_in_table_of_the_database_from_ForRootEntity_provider()
+   public async Task Should_update_entities_in_table_of_the_database_from_ForRootEntity_provider_if_SchemaBehavior_is_Ignore()
    {
-      // MySQL has no schemas below the database, so the schema of the table name is the name of the database.
+      // MySQL has no schemas below the database, so the schema of the table name is the name of the database (here: the current one).
+      // SchemaBehavior Ignore drops the schema; the default (Throw) rejects it.
+      ConfigureMySql = builder => builder.SchemaBehavior(MySqlSchemaBehavior.Ignore);
       var database = await ActDbContext.Database.SqlQueryRaw<string>("SELECT DATABASE() AS `Value`").SingleAsync();
       await CreateRedirectTableAsync("TestEntities_BulkUpdateRedirect", "OldName");
 
@@ -977,15 +1023,22 @@ public sealed class BulkUpdateAsync : MySqlIntegrationTestsBase
 
    // The tests below cover behavior specific to the MySQL executor: staging table, batching, transactions, command timeout.
 
+   // The staging table has the key and the updated column, so the default budget of 5,000 parameters gives 2,500 rows per statement.
    [Theory]
-   [InlineData(1, null, 1)]
-   [InlineData(500, null, 1)] // the default batch size
-   [InlineData(501, null, 2)]
-   [InlineData(10, 1, 10)]
-   [InlineData(10, 3, 4)]
-   [InlineData(10, 100, 1)]
-   public async Task Should_stage_rows_in_batches_according_to_batch_size(int rowCount, int? batchSize, int expectedStatements)
+   [InlineData(1, null, null, 1)]
+   [InlineData(2500, null, null, 1)]
+   [InlineData(2501, null, null, 2)]
+   [InlineData(10, null, 2, 10)]
+   [InlineData(10, null, 6, 4)]
+   [InlineData(10, null, 1, 10)] // a budget below the column count gives 1 row per statement
+   [InlineData(10, null, 200, 1)]
+   [InlineData(10, 6, null, 4)] // the registered budget
+   [InlineData(10, 2, 200, 1)] // the budget of the options overrides the registered budget
+   public async Task Should_stage_rows_in_statements_according_to_the_parameter_budget(int rowCount, int? registeredBudget, int? optionBudget, int expectedStatements)
    {
+      if (registeredBudget is not null)
+         ConfigureMySql = builder => builder.AddBulkOperationSupport(maxParametersPerStatement: registeredBudget.Value);
+
       var entities = Enumerable.Range(0, rowCount).Select(count => new TestEntity { Id = Guid.NewGuid(), RequiredName = "RequiredName", Count = count }).ToList();
       ArrangeDbContext.AddRange(entities);
       await ArrangeDbContext.SaveChangesAsync();
@@ -999,7 +1052,7 @@ public sealed class BulkUpdateAsync : MySqlIntegrationTestsBase
       await ActDbContext.Database.OpenConnectionAsync();
 
       var statementsBefore = await GetSessionStatusAsync("Com_insert");
-      var affectedRows = await SUT.BulkUpdateAsync(entities, new MySqlBulkUpdateOptions { BatchSize = batchSize, PropertiesToUpdate = IEntityPropertiesProvider.Include<TestEntity>(e => e.Count) });
+      var affectedRows = await SUT.BulkUpdateAsync(entities, new MySqlBulkUpdateOptions { MaxParametersPerStatement = optionBudget, PropertiesToUpdate = IEntityPropertiesProvider.Include<TestEntity>(e => e.Count) });
       var statements = await GetSessionStatusAsync("Com_insert") - statementsBefore;
 
       affectedRows.Should().Be(rowCount);
@@ -1026,7 +1079,7 @@ public sealed class BulkUpdateAsync : MySqlIntegrationTestsBase
       await ActDbContext.Database.OpenConnectionAsync();
 
       var statementsBefore = await GetSessionStatusAsync("Com_insert");
-      var affectedRows = await SUT.BulkUpdateAsync(entities, new MySqlBulkUpdateOptions { BatchSize = Int32.MaxValue });
+      var affectedRows = await SUT.BulkUpdateAsync(entities, new MySqlBulkUpdateOptions { MaxParametersPerStatement = 65_535 });
       var statements = await GetSessionStatusAsync("Com_insert") - statementsBefore;
 
       affectedRows.Should().Be(maximumRows + 1);
@@ -1037,19 +1090,12 @@ public sealed class BulkUpdateAsync : MySqlIntegrationTestsBase
    [Theory]
    [InlineData(0)]
    [InlineData(-1)]
-   public async Task Should_throw_if_batch_size_is_not_positive(int batchSize)
+   [InlineData(65_536)]
+   public void Should_throw_if_the_parameter_budget_is_out_of_range(int maxParametersPerStatement)
    {
-      var entity = new TestEntity { Id = _TEST_ENTITY_ID, RequiredName = "RequiredName" };
-      ArrangeDbContext.Add(entity);
-      await ArrangeDbContext.SaveChangesAsync();
+      var act = () => new MySqlBulkUpdateOptions { MaxParametersPerStatement = maxParametersPerStatement };
 
-      entity.Count = 42;
-
-      await SUT.Awaiting(sut => sut.BulkUpdateAsync([entity], new MySqlBulkUpdateOptions { BatchSize = batchSize }))
-               .Should().ThrowAsync<ArgumentOutOfRangeException>()
-               .WithMessage("*batch size*greater than 0*");
-
-      (await AssertDbContext.TestEntities.SingleAsync()).Count.Should().Be(0);
+      act.Should().Throw<ArgumentOutOfRangeException>().WithParameterName("value");
    }
 
    [Fact]
@@ -1061,16 +1107,44 @@ public sealed class BulkUpdateAsync : MySqlIntegrationTestsBase
 
       entity.Count = 42;
 
-      // A temp table belongs to the session. The connection stays open, so the executor and the query below share the session.
+      // A temp table belongs to the session. The connection stays open, so both updates and the query below share the session.
       await ActDbContext.Database.OpenConnectionAsync();
 
       await SUT.BulkUpdateAsync([entity], new MySqlBulkUpdateOptions());
-      var stagingTable = ExecutedCommands.Should().ContainSingle(command => command.StartsWith("CREATE TEMPORARY TABLE", StringComparison.Ordinal)).Subject;
-      var tableName = stagingTable.Split('`')[1];
+      var stagingTable = ExecutedCommands.Should().ContainSingle(command => command.StartsWith("CREATE TEMPORARY TABLE", StringComparison.Ordinal)).Subject.Split('`')[1];
+      ExecutedCommands.Should().Contain($"DROP TEMPORARY TABLE IF EXISTS `{stagingTable}`;");
+
+      // The second update leases the same name again. If the first staging table still existed, its CREATE would fail with error 1050.
+      entity.Count = 43;
+      (await SUT.BulkUpdateAsync([entity], new MySqlBulkUpdateOptions())).Should().Be(1);
 
       // A temporary table exists for the session only; if the executor didn't drop it, the table could still be queried.
-      var act = () => ActDbContext.Database.ExecuteSqlRawAsync($"SELECT 1 FROM `{tableName}`");
+      var act = () => ActDbContext.Database.ExecuteSqlRawAsync($"SELECT 1 FROM `{stagingTable}`");
       (await act.Should().ThrowAsync<MySqlException>()).Which.Number.Should().Be(1146);
+      (await AssertDbContext.TestEntities.SingleAsync()).Count.Should().Be(43);
+   }
+
+   [Fact]
+   public async Task Should_drop_the_staging_table_if_the_update_fails()
+   {
+      var entity = new TestEntity { Id = _TEST_ENTITY_ID, RequiredName = "RequiredName" };
+      ArrangeDbContext.Add(entity);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      // A temp table belongs to the session. The connection stays open, so both updates share the session.
+      await ActDbContext.Database.OpenConnectionAsync();
+
+      var act = () => SUT.BulkUpdateAsync([
+                                             new TestEntity { Id = _TEST_ENTITY_ID, RequiredName = "RequiredName", Count = 1 },
+                                             new TestEntity { Id = _TEST_ENTITY_ID, RequiredName = "RequiredName", Count = 2 }
+                                          ],
+                                          new MySqlBulkUpdateOptions());
+      (await act.Should().ThrowAsync<MySqlException>()).Which.Number.Should().Be(1062);
+
+      // The second update leases the same name again. If the staging table of the failed update still existed, its CREATE would fail with error 1050.
+      entity.Count = 42;
+      (await SUT.BulkUpdateAsync([entity], new MySqlBulkUpdateOptions())).Should().Be(1);
+      (await AssertDbContext.TestEntities.SingleAsync()).Count.Should().Be(42);
    }
 
    [Fact]
@@ -1086,6 +1160,65 @@ public sealed class BulkUpdateAsync : MySqlIntegrationTestsBase
 
       affectedRows.Should().Be(1);
       (await AssertDbContext.TestEntities.SingleAsync()).Count.Should().Be(42);
+   }
+
+   [Fact]
+   public async Task Should_apply_command_timeout_of_the_context_to_bulk_update()
+   {
+      var entity = new TestEntity { Id = _TEST_ENTITY_ID, RequiredName = "RequiredName" };
+      ArrangeDbContext.Add(entity);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      entity.Count = 42;
+
+      // The uncommitted update of another transaction locks the row until the lock wait timeout of the server (50 seconds by default) is reached.
+      // The default timeout of a MySqlCommand is 30 seconds.
+      await using var blockingTransaction = await ArrangeDbContext.Database.BeginTransactionAsync();
+      await ArrangeDbContext.Database.ExecuteSqlRawAsync("UPDATE `TestEntities` SET `Name` = 'Blocking' WHERE `Id` = {0}", _TEST_ENTITY_ID);
+
+      // The provider copies the timeout of the context into the connection string when it creates the connection, so the timeout is set afterwards.
+      ActDbContext.Database.GetDbConnection();
+      ActDbContext.Database.SetCommandTimeout(1);
+
+      var stopwatch = Stopwatch.StartNew();
+
+      await SUT.Awaiting(sut => sut.BulkUpdateAsync([entity], new MySqlBulkUpdateOptions()))
+               .Should().ThrowAsync<MySqlException>();
+
+      stopwatch.Elapsed.Should().BeLessThan(TimeSpan.FromSeconds(20));
+   }
+
+   [Fact]
+   public async Task Should_restore_the_command_timeout_of_the_context_after_the_update()
+   {
+      var entity = new TestEntity { Id = _TEST_ENTITY_ID, RequiredName = "RequiredName" };
+      ArrangeDbContext.Add(entity);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      entity.Count = 42;
+      ActDbContext.Database.SetCommandTimeout(17);
+
+      await SUT.BulkUpdateAsync([entity], new MySqlBulkUpdateOptions { CommandTimeout = TimeSpan.FromSeconds(30) });
+
+      ActDbContext.Database.GetCommandTimeout().Should().Be(17);
+   }
+
+   [Fact]
+   public async Task Should_restore_the_command_timeout_of_the_context_after_a_failed_update()
+   {
+      ArrangeDbContext.Add(new TestEntity { Id = _TEST_ENTITY_ID, RequiredName = "RequiredName" });
+      await ArrangeDbContext.SaveChangesAsync();
+
+      ActDbContext.Database.SetCommandTimeout(17);
+
+      var act = () => SUT.BulkUpdateAsync([
+                                             new TestEntity { Id = _TEST_ENTITY_ID, RequiredName = "RequiredName", Count = 1 },
+                                             new TestEntity { Id = _TEST_ENTITY_ID, RequiredName = "RequiredName", Count = 2 }
+                                          ],
+                                          new MySqlBulkUpdateOptions { CommandTimeout = TimeSpan.FromSeconds(30) });
+      (await act.Should().ThrowAsync<MySqlException>()).Which.Number.Should().Be(1062);
+
+      ActDbContext.Database.GetCommandTimeout().Should().Be(17);
    }
 
    [Fact]
@@ -1138,7 +1271,7 @@ public sealed class BulkUpdateAsync : MySqlIntegrationTestsBase
                                              new MySqlTestEntity { Id = 2, Name = "B changed" },
                                              new MySqlTestEntity { Id = 3, Name = new string('x', 300) }
                                           ],
-                                          new MySqlBulkUpdateOptions { BatchSize = 1 });
+                                          new MySqlBulkUpdateOptions { MaxParametersPerStatement = 1 });
 
       // 1406: data too long for the column of the staging table (strict mode)
       (await act.Should().ThrowAsync<MySqlException>()).Which.Number.Should().Be(1406);
@@ -1196,14 +1329,14 @@ public sealed class BulkUpdateAsync : MySqlIntegrationTestsBase
       ArrangeDbContext.Add(entity);
       await ArrangeDbContext.SaveChangesAsync();
 
-      // The staging table has the primary key of the entity.
+      // The staging table has a unique index on the key columns.
       var act = () => SUT.BulkUpdateAsync([
                                              new TestEntity { Id = _TEST_ENTITY_ID, RequiredName = "RequiredName", Count = 1 },
                                              new TestEntity { Id = _TEST_ENTITY_ID, RequiredName = "RequiredName", Count = 2 }
                                           ],
                                           new MySqlBulkUpdateOptions());
 
-      // 1062: duplicate entry for the primary key of the staging table
+      // 1062: duplicate entry for the unique index of the staging table
       (await act.Should().ThrowAsync<MySqlException>()).Which.Number.Should().Be(1062);
 
       (await AssertDbContext.TestEntities.SingleAsync()).Count.Should().Be(0);
@@ -1250,22 +1383,6 @@ public sealed class BulkUpdateAsync : MySqlIntegrationTestsBase
    }
 
    [Fact]
-   public async Task Should_update_rows_inside_a_transaction_scope_without_a_staging_table()
-   {
-      var entity = new TestEntity { Id = _TEST_ENTITY_ID, RequiredName = "RequiredName" };
-      ArrangeDbContext.Add(entity);
-      await ArrangeDbContext.SaveChangesAsync();
-
-      entity.Count = 42;
-
-      var affectedRows = await UpdateAsync([entity], new MySqlBulkUpdateOptions(), true);
-
-      affectedRows.Should().Be(1);
-      (await AssertDbContext.TestEntities.SingleAsync()).Count.Should().Be(42);
-      ExecutedCommands.Should().NotContain(command => command.Contains("TEMPORARY", StringComparison.Ordinal), "MySQL rejects temp tables inside XA transactions");
-   }
-
-   [Fact]
    public async Task Should_roll_back_the_update_if_the_transaction_scope_is_not_completed()
    {
       var entity = new TestEntity { Id = _TEST_ENTITY_ID, RequiredName = "RequiredName" };
@@ -1273,6 +1390,7 @@ public sealed class BulkUpdateAsync : MySqlIntegrationTestsBase
       await ArrangeDbContext.SaveChangesAsync();
 
       entity.Count = 42;
+      UseConnectionWithoutXaTransactions();
 
       using (new TransactionScope(TransactionScopeAsyncFlowOption.Enabled))
       {
@@ -1285,22 +1403,141 @@ public sealed class BulkUpdateAsync : MySqlIntegrationTestsBase
    }
 
    [Fact]
-   public async Task Should_apply_duplicates_of_a_key_in_order_inside_a_transaction_scope()
+   public async Task Should_stage_rows_with_the_column_definitions_of_the_target_table()
    {
-      var entity = new TestEntity { Id = _TEST_ENTITY_ID, RequiredName = "RequiredName" };
+      ArrangeDbContext.TestEntitiesWithCollation.AddRange(new TestEntityWithCollation(_TEST_ENTITY_ID, "old 1", "abc"),
+                                                          new TestEntityWithCollation(_OTHER_TEST_ENTITY_ID, "old 2", "ABC"));
+      await ArrangeDbContext.SaveChangesAsync();
+
+      // The key column is case-sensitive (utf8mb4_bin) and the database default is not. The staging table copies the collation of the column,
+      // so its unique key index accepts both keys and each input row matches its own row only.
+      var affectedRows = await SUT.BulkUpdateAsync([
+                                                      new TestEntityWithCollation(_MISSING_TEST_ENTITY_ID, "new 2", "ABC"),
+                                                      new TestEntityWithCollation(_THIRD_TEST_ENTITY_ID, "new 1", "abc")
+                                                   ],
+                                                   new MySqlBulkUpdateOptions
+                                                   {
+                                                      KeyProperties = IEntityPropertiesProvider.Include<TestEntityWithCollation>(e => e.ColumnWithCollation),
+                                                      PropertiesToUpdate = IEntityPropertiesProvider.Include<TestEntityWithCollation>(e => e.ColumnWithoutCollation)
+                                                   });
+
+      affectedRows.Should().Be(2);
+
+      var loadedEntities = await AssertDbContext.TestEntitiesWithCollation.OrderBy(e => e.ColumnWithCollation).ToListAsync();
+      loadedEntities.Select(e => (e.Id, e.ColumnWithoutCollation, e.ColumnWithCollation)).Should().Equal((_OTHER_TEST_ENTITY_ID, "new 2", "ABC"),
+                                                                                                          (_TEST_ENTITY_ID, "new 1", "abc"));
+   }
+
+   [Fact]
+   public async Task Should_throw_if_entities_contain_duplicate_non_null_values_of_nullable_key()
+   {
+      var entity = new TestEntity { Id = _TEST_ENTITY_ID, RequiredName = "RequiredName", NullableCount = 5 };
       ArrangeDbContext.Add(entity);
       await ArrangeDbContext.SaveChangesAsync();
 
-      // Row by row there is no staging table with a primary key, so every row is applied, the last one wins.
-      var affectedRows = await UpdateAsync([
-                                              new TestEntity { Id = _TEST_ENTITY_ID, RequiredName = "RequiredName", Count = 1 },
-                                              new TestEntity { Id = _TEST_ENTITY_ID, RequiredName = "RequiredName", Count = 2 }
-                                           ],
-                                           new MySqlBulkUpdateOptions(),
-                                           true);
+      // The staging table has a unique index on the nullable key column.
+      var act = () => SUT.BulkUpdateAsync([
+                                             new TestEntity { Id = _TEST_ENTITY_ID, RequiredName = "RequiredName", NullableCount = 5, Count = 1 },
+                                             new TestEntity { Id = _OTHER_TEST_ENTITY_ID, RequiredName = "RequiredName", NullableCount = 5, Count = 2 }
+                                          ],
+                                          new MySqlBulkUpdateOptions
+                                          {
+                                             KeyProperties = IEntityPropertiesProvider.Include<TestEntity>(e => e.NullableCount),
+                                             PropertiesToUpdate = IEntityPropertiesProvider.Include<TestEntity>(e => e.Count)
+                                          });
 
-      affectedRows.Should().Be(2);
-      (await AssertDbContext.TestEntities.SingleAsync()).Count.Should().Be(2);
+      // 1062: duplicate entry for the unique index of the staging table
+      (await act.Should().ThrowAsync<MySqlException>()).Which.Number.Should().Be(1062);
+
+      (await AssertDbContext.TestEntities.SingleAsync()).Count.Should().Be(0);
+   }
+
+   [Fact]
+   public async Task Should_match_null_keys_null_safe_through_unique_staging_index()
+   {
+      // SaveChanges would replace NULL with the SQL default values of the columns; the bulk insert writes the values as they are.
+      await ArrangeDbContext.GetService<MySqlBulkOperationExecutor>()
+                            .BulkInsertAsync([
+                                                new TestEntityWithSqlDefaultValues { Id = _TEST_ENTITY_ID, Int = 1, String = "a", NullableInt = null, NullableString = "x" },
+                                                new TestEntityWithSqlDefaultValues { Id = _OTHER_TEST_ENTITY_ID, Int = 2, String = "b", NullableInt = 1, NullableString = null },
+                                                new TestEntityWithSqlDefaultValues { Id = _THIRD_TEST_ENTITY_ID, Int = 3, String = "c", NullableInt = 1, NullableString = "x" }
+                                             ],
+                                             new MySqlBulkInsertOptions());
+
+      // The keys differ only in the part that is NULL. The unique index of the staging table accepts all of them, and "<=>" matches NULL with NULL.
+      var affectedRows = await SUT.BulkUpdateAsync([
+                                                      new TestEntityWithSqlDefaultValues { Id = _MISSING_TEST_ENTITY_ID, Int = 10, String = "a", NullableInt = null, NullableString = "x" },
+                                                      new TestEntityWithSqlDefaultValues { Id = _MISSING_TEST_ENTITY_ID, Int = 20, String = "b", NullableInt = 1, NullableString = null },
+                                                      new TestEntityWithSqlDefaultValues { Id = _MISSING_TEST_ENTITY_ID, Int = 30, String = "c", NullableInt = 1, NullableString = "x" }
+                                                   ],
+                                                   new MySqlBulkUpdateOptions
+                                                   {
+                                                      KeyProperties = IEntityPropertiesProvider.Include<TestEntityWithSqlDefaultValues>(e => new { e.NullableInt, e.NullableString }),
+                                                      PropertiesToUpdate = IEntityPropertiesProvider.Include<TestEntityWithSqlDefaultValues>(e => e.Int)
+                                                   });
+
+      affectedRows.Should().Be(3);
+
+      var loadedEntities = await AssertDbContext.TestEntitiesWithDefaultValues.OrderBy(e => e.String).ToListAsync();
+      loadedEntities.Select(e => (e.Id, e.Int)).Should().Equal((_TEST_ENTITY_ID, 10), (_OTHER_TEST_ENTITY_ID, 20), (_THIRD_TEST_ENTITY_ID, 30));
+   }
+
+   [Fact]
+   public async Task Should_throw_if_entities_contain_duplicate_auto_increment_keys()
+   {
+      var entity = new TestEntityWithAutoIncrement { Name = "original value" };
+      ArrangeDbContext.Add(entity);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      // Bulk update keeps the unique key index also for an AUTO_INCREMENT key.
+      var act = () => SUT.BulkUpdateAsync([
+                                             new TestEntityWithAutoIncrement { Id = entity.Id, Name = "first" },
+                                             new TestEntityWithAutoIncrement { Id = entity.Id, Name = "second" }
+                                          ],
+                                          new MySqlBulkUpdateOptions());
+
+      // 1062: duplicate entry for the unique index of the staging table
+      (await act.Should().ThrowAsync<MySqlException>()).Which.Number.Should().Be(1062);
+
+      (await AssertDbContext.TestEntitiesWithAutoIncrement.SingleAsync()).Name.Should().Be("original value");
+   }
+
+   [Fact]
+   public async Task Should_throw_if_key_is_wider_than_the_index_limit()
+   {
+      const string tableName = "TestEntities_with_wide_key";
+
+      // varchar(1000) gets the unique key index of the staging table. With utf8mb4 the key has 4,000 bytes, more than the limit of 3,072 bytes.
+      ConfigureModel = builder => builder.Entity<TestEntity>().Property(e => e.Name).HasMaxLength(1000);
+      ArrangeDbContext.Add(new TestEntity { Id = _TEST_ENTITY_ID, Name = "key", RequiredName = "RequiredName", Count = 1 });
+      await ArrangeDbContext.SaveChangesAsync();
+      // A run that was killed before its cleanup leaves the table behind; CREATE TABLE would then fail with error 1050.
+      await DropTablesAsync(tableName);
+      await ActDbContext.Database.ExecuteSqlRawAsync($"CREATE TABLE {Quote(tableName)} LIKE `TestEntities`");
+
+      try
+      {
+         await ActDbContext.Database.ExecuteSqlRawAsync($"ALTER TABLE {Quote(tableName)} MODIFY `Name` varchar(1000) CHARACTER SET utf8mb4 NULL");
+         await ActDbContext.Database.ExecuteSqlRawAsync($"INSERT INTO {Quote(tableName)} SELECT * FROM `TestEntities`");
+
+         var entities = new[] { new TestEntity { Id = _TEST_ENTITY_ID, Name = "key", RequiredName = "RequiredName", Count = 2 } };
+         var keyProperties = IEntityPropertiesProvider.Include<TestEntity>(e => e.Name);
+         var propertiesToUpdate = IEntityPropertiesProvider.Include<TestEntity>(e => e.Count);
+         var tableNameProvider = IBulkOperationTableNameProvider.ForRootEntity(tableName);
+
+         var update = () => SUT.BulkUpdateAsync(entities, new MySqlBulkUpdateOptions { KeyProperties = keyProperties, PropertiesToUpdate = propertiesToUpdate, TableNameProvider = tableNameProvider });
+         var upsert = () => SUT.BulkInsertOrUpdateAsync(entities, new MySqlBulkInsertOrUpdateOptions { KeyProperties = keyProperties, PropertiesToUpdate = propertiesToUpdate, TableNameProvider = tableNameProvider });
+
+         // 1071: specified key was too long
+         (await update.Should().ThrowAsync<MySqlException>()).Which.Number.Should().Be(1071);
+         (await upsert.Should().ThrowAsync<MySqlException>()).Which.Number.Should().Be(1071);
+
+         (await LoadColumnAsync<int>(tableName, "Count")).Should().Equal(1);
+      }
+      finally
+      {
+         await DropTablesAsync(tableName);
+      }
    }
 
    private async Task<int> UpdateAsync<T>(IReadOnlyList<T> entities, IBulkUpdateOptions options, bool useTransactionScope)
@@ -1309,6 +1546,7 @@ public sealed class BulkUpdateAsync : MySqlIntegrationTestsBase
       if (!useTransactionScope)
          return await SUT.BulkUpdateAsync(entities, options);
 
+      UseConnectionWithoutXaTransactions();
       using var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
       var affectedRows = await SUT.BulkUpdateAsync(entities, options);
       scope.Complete();
@@ -1316,7 +1554,14 @@ public sealed class BulkUpdateAsync : MySqlIntegrationTestsBase
       return affectedRows;
    }
 
-   // The status counters are per session; see Should_stage_rows_in_batches_according_to_batch_size.
+   // MySQL rejects temporary tables inside XA transactions. Without XA, MySqlConnector enlists the connection with a plain "START TRANSACTION".
+   private void UseConnectionWithoutXaTransactions()
+   {
+      var builder = new MySqlConnectionStringBuilder(ConnectionString) { UseXaTransactions = false };
+      ActDbContext.Database.SetConnectionString(builder.ConnectionString);
+   }
+
+   // The status counters are per session; see Should_stage_rows_in_statements_according_to_the_parameter_budget.
    private async Task<long> GetSessionStatusAsync(string name)
    {
       await using var command = ActDbContext.Database.GetDbConnection().CreateCommand();
@@ -1334,9 +1579,18 @@ public sealed class BulkUpdateAsync : MySqlIntegrationTestsBase
       ArrangeDbContext.TestEntities.Add(new TestEntity { Id = _TEST_ENTITY_ID, RequiredName = "RequiredName", Name = name });
       await ArrangeDbContext.SaveChangesAsync();
 
+      // A run that was killed before its cleanup leaves the table behind; CREATE TABLE would then fail with error 1050.
+      await DropTablesAsync(tableName);
       await ActDbContext.Database.ExecuteSqlRawAsync($"CREATE TABLE {Quote(tableName)} LIKE `TestEntities`");
       await ActDbContext.Database.ExecuteSqlRawAsync($"INSERT INTO {Quote(tableName)} SELECT * FROM `TestEntities`");
       await ActDbContext.Database.ExecuteSqlRawAsync("DELETE FROM `TestEntities`");
+   }
+
+   // Selects the insert path of the staging fill (multi-row INSERT or MySqlBulkCopy); call it before the first context access.
+   private MySqlBulkUpdateOptions CreateOptions(bool useBulkCopy)
+   {
+      UseBulkCopy = useBulkCopy;
+      return new MySqlBulkUpdateOptions();
    }
 
    private async Task<List<T>> LoadColumnAsync<T>(string tableName, string columnName)

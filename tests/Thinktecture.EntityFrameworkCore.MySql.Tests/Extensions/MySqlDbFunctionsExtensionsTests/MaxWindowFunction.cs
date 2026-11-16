@@ -11,8 +11,8 @@ namespace Thinktecture.Extensions.MySqlDbFunctionsExtensionsTests;
 [Collection(MySqlTestCollection.NAME)]
 public sealed class MaxWindowFunction : MySqlIntegrationTestsBase
 {
-   public MaxWindowFunction(MySqlContainerFixture fixture)
-      : base(fixture)
+   public MaxWindowFunction(ITestOutputHelper testOutputHelper, MySqlContainerFixture fixture)
+      : base(testOutputHelper, fixture)
    {
    }
 

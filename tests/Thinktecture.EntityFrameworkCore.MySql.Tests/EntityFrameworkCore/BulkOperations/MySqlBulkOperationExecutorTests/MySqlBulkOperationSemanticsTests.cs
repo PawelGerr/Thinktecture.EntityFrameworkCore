@@ -1,12 +1,14 @@
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using MySqlConnector;
+using Thinktecture.TestDatabaseContext;
 
 namespace Thinktecture.EntityFrameworkCore.BulkOperations.MySqlBulkOperationExecutorTests;
 
 [Collection(MySqlTestCollection.NAME)]
 public sealed class MySqlBulkOperationSemanticsTests : MySqlIntegrationTestsBase
 {
-   public MySqlBulkOperationSemanticsTests(MySqlContainerFixture fixture)
-      : base(fixture)
+   public MySqlBulkOperationSemanticsTests(ITestOutputHelper testOutputHelper, MySqlContainerFixture fixture)
+      : base(testOutputHelper, fixture)
    {
    }
 
@@ -122,23 +124,45 @@ public sealed class MySqlBulkOperationSemanticsTests : MySqlIntegrationTestsBase
    }
 
    [Fact]
-   public async Task Should_not_reset_the_auto_increment_counter_when_truncating_inside_a_transaction()
+   public async Task Should_update_and_upsert_if_session_requires_primary_keys()
    {
       await using var context = await CreateContextAsync();
-      await context.Database.ExecuteSqlRawAsync("TRUNCATE TABLE `AutoIncrementEntities`");
-      context.AutoIncrementEntities.AddRange(new MySqlAutoIncrementEntity { Name = "first" }, new MySqlAutoIncrementEntity { Name = "second" });
-      await context.SaveChangesAsync();
 
-      await using (var transaction = await context.Database.BeginTransactionAsync())
+      // Changing the session variable needs the privilege SESSION_VARIABLES_ADMIN, which only the root user of the test server has.
+      context.Database.SetConnectionString(new MySqlConnectionStringBuilder(ConnectionString) { UserID = "root" }.ConnectionString);
+
+      var id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866");
+      context.TestEntities.Add(new TestEntity { Id = id, Name = "key", RequiredName = "RequiredName", Count = 1 });
+      await context.SaveChangesAsync();
+      context.ChangeTracker.Clear();
+
+      var executor = context.GetService<MySqlBulkOperationExecutor>();
+      var propertiesToUpdate = IEntityPropertiesProvider.Include<TestEntity>(e => e.Count);
+
+      // The bounded key (char(36)) gets a unique index in the staging table, the longtext key gets none. Both staging tables have the primary key `__ord`,
+      // so MySQL accepts them although the session requires a primary key for every table (otherwise error 3750).
+      var byName = IEntityPropertiesProvider.Include<TestEntity>(e => e.Name);
+      await context.Database.OpenConnectionAsync();
+
+      try
       {
-         await context.TruncateTableAsync<MySqlAutoIncrementEntity>();
-         await transaction.CommitAsync();
+         await context.Database.ExecuteSqlRawAsync("SET SESSION sql_require_primary_key = ON");
+
+         (await executor.BulkUpdateAsync([new TestEntity { Id = id, Name = "key", RequiredName = "RequiredName", Count = 2 }],
+                                         new MySqlBulkUpdateOptions { PropertiesToUpdate = propertiesToUpdate })).Should().Be(1);
+         (await executor.BulkUpdateAsync([new TestEntity { Id = id, Name = "key", RequiredName = "RequiredName", Count = 3 }],
+                                         new MySqlBulkUpdateOptions { PropertiesToUpdate = propertiesToUpdate, KeyProperties = byName })).Should().Be(1);
+         (await executor.BulkInsertOrUpdateAsync([new TestEntity { Id = id, Name = "key", RequiredName = "RequiredName", Count = 4 }],
+                                                 new MySqlBulkInsertOrUpdateOptions { PropertiesToUpdate = propertiesToUpdate })).Should().Be(1);
+         (await executor.BulkInsertOrUpdateAsync([new TestEntity { Id = id, Name = "key", RequiredName = "RequiredName", Count = 5 }],
+                                                 new MySqlBulkInsertOrUpdateOptions { PropertiesToUpdate = propertiesToUpdate, KeyProperties = byName })).Should().Be(1);
+      }
+      finally
+      {
+         await context.Database.ExecuteSqlRawAsync("SET SESSION sql_require_primary_key = OFF");
+         await context.Database.CloseConnectionAsync();
       }
 
-      context.ChangeTracker.Clear();
-      var entity = new MySqlAutoIncrementEntity { Name = "after" };
-      context.AutoIncrementEntities.Add(entity);
-      await context.SaveChangesAsync();
-      entity.Id.Should().Be(3);
+      (await context.TestEntities.AsNoTracking().SingleAsync()).Count.Should().Be(5);
    }
 }

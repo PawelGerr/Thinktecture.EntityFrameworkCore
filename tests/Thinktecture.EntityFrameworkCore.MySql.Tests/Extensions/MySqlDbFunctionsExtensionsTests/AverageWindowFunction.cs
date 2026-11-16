@@ -11,8 +11,8 @@ namespace Thinktecture.Extensions.MySqlDbFunctionsExtensionsTests;
 [Collection(MySqlTestCollection.NAME)]
 public sealed class AverageWindowFunction : MySqlIntegrationTestsBase
 {
-   public AverageWindowFunction(MySqlContainerFixture fixture)
-      : base(fixture)
+   public AverageWindowFunction(ITestOutputHelper testOutputHelper, MySqlContainerFixture fixture)
+      : base(testOutputHelper, fixture)
    {
    }
 

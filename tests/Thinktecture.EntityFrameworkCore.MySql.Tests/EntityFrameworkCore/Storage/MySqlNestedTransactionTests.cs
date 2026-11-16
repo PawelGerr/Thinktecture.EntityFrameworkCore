@@ -5,8 +5,8 @@ namespace Thinktecture.EntityFrameworkCore.Storage;
 [Collection(MySqlTestCollection.NAME)]
 public sealed class MySqlNestedTransactionTests : MySqlIntegrationTestsBase
 {
-   public MySqlNestedTransactionTests(MySqlContainerFixture fixture)
-      : base(fixture)
+   public MySqlNestedTransactionTests(ITestOutputHelper testOutputHelper, MySqlContainerFixture fixture)
+      : base(testOutputHelper, fixture)
    {
    }
 
@@ -76,7 +76,7 @@ public sealed class MySqlNestedTransactionTests : MySqlIntegrationTestsBase
       {
       }
 
-      var options = new DbContextOptionsBuilder<MySqlTestDbContext>()
+      var options = MySqlTestDbContext.CreateOptionsBuilder()
                     .UseMySql(ConnectionString, MySqlContainerFixture.ServerVersion, builder => builder.AddBulkOperationSupport())
                     .AddNestedTransactionSupport()
                     .Options;

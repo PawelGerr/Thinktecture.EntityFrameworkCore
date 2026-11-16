@@ -10,8 +10,8 @@ public sealed class MySqlWindowFunctionExecutionTests : MySqlIntegrationTestsBas
    private static readonly WindowFunction<long> _rank = new("RANK");
    private static readonly WindowFunction<int?> _lead = new("LEAD");
 
-   public MySqlWindowFunctionExecutionTests(MySqlContainerFixture fixture)
-      : base(fixture)
+   public MySqlWindowFunctionExecutionTests(ITestOutputHelper testOutputHelper, MySqlContainerFixture fixture)
+      : base(testOutputHelper, fixture)
    {
    }
 

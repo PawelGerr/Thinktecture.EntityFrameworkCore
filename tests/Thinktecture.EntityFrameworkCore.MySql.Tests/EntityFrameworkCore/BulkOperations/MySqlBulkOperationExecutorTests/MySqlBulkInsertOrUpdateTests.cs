@@ -1,10 +1,12 @@
+using MySqlConnector;
+
 namespace Thinktecture.EntityFrameworkCore.BulkOperations.MySqlBulkOperationExecutorTests;
 
 [Collection(MySqlTestCollection.NAME)]
 public sealed class MySqlBulkInsertOrUpdateTests : MySqlIntegrationTestsBase
 {
-   public MySqlBulkInsertOrUpdateTests(MySqlContainerFixture fixture)
-      : base(fixture)
+   public MySqlBulkInsertOrUpdateTests(ITestOutputHelper testOutputHelper, MySqlContainerFixture fixture)
+      : base(testOutputHelper, fixture)
    {
    }
 
@@ -75,18 +77,21 @@ public sealed class MySqlBulkInsertOrUpdateTests : MySqlIntegrationTestsBase
    }
 
    [Fact]
-   public async Task Should_not_modify_other_row_when_unique_index_conflicts()
+   public async Task Should_throw_if_inserted_row_violates_unique_index_that_is_not_the_key()
    {
       await using var context = await CreateContextAsync();
       context.Entities.Add(new MySqlTestEntity { Id = 1, Name = "a" });
       await context.SaveChangesAsync();
       context.ChangeTracker.Clear();
 
-      await context.BulkInsertOrUpdateAsync(
-         [new MySqlTestEntity { Id = 9, Name = "a" }],
-         propertiesToInsert: entity => new { entity.Id, entity.Name },
-         propertiesToUpdate: entity => new { entity.Id, entity.Name },
-         propertiesToMatchOn: entity => entity.Id);
+      // The name has a unique index; the new row collides with row 1 on it.
+      var act = () => context.BulkInsertOrUpdateAsync(
+                                                      [new MySqlTestEntity { Id = 9, Name = "a" }],
+                                                      propertiesToInsert: entity => new { entity.Id, entity.Name },
+                                                      propertiesToUpdate: entity => new { entity.Id, entity.Name },
+                                                      propertiesToMatchOn: entity => entity.Id);
+
+      (await act.Should().ThrowAsync<MySqlException>()).Which.Number.Should().Be(1062);
 
       var rows = await context.Entities.AsNoTracking().ToListAsync();
       rows.Should().ContainSingle();
@@ -95,25 +100,53 @@ public sealed class MySqlBulkInsertOrUpdateTests : MySqlIntegrationTestsBase
    }
 
    [Fact]
-   public async Task Should_upsert_mixed_batch_with_unique_index_conflict()
+   public async Task Should_insert_a_new_row_with_the_unique_value_that_an_update_of_the_same_batch_releases()
    {
       await using var context = await CreateContextAsync();
       context.Entities.Add(new MySqlTestEntity { Id = 1, Name = "a" });
       await context.SaveChangesAsync();
       context.ChangeTracker.Clear();
 
-      await context.BulkInsertOrUpdateAsync(
-         [
-            new MySqlTestEntity { Id = 9, Name = "a" },
-            new MySqlTestEntity { Id = 10, Name = "new" },
-            new MySqlTestEntity { Id = 1, Name = "a3" }
-         ],
-         propertiesToInsert: entity => new { entity.Id, entity.Name },
-         propertiesToUpdate: entity => entity.Name,
-         propertiesToMatchOn: entity => entity.Id);
+      // The name has a unique index. The UPDATE runs before the INSERT, so row 1 releases "a" before row 9 takes it.
+      var affectedRows = await context.BulkInsertOrUpdateAsync(
+                                                               [
+                                                                  new MySqlTestEntity { Id = 9, Name = "a" },
+                                                                  new MySqlTestEntity { Id = 10, Name = "new" },
+                                                                  new MySqlTestEntity { Id = 1, Name = "a3" }
+                                                               ],
+                                                               propertiesToInsert: entity => new { entity.Id, entity.Name },
+                                                               propertiesToUpdate: entity => entity.Name,
+                                                               propertiesToMatchOn: entity => entity.Id);
+
+      affectedRows.Should().Be(3);
 
       var rows = await context.Entities.AsNoTracking().OrderBy(entity => entity.Id).Select(entity => new { entity.Id, entity.Name }).ToListAsync();
-      rows.Should().BeEquivalentTo(new[] { new { Id = 1, Name = "a3" }, new { Id = 10, Name = "new" } }, options => options.WithStrictOrdering());
+      rows.Should().BeEquivalentTo(new[] { new { Id = 1, Name = "a3" }, new { Id = 9, Name = "a" }, new { Id = 10, Name = "new" } }, options => options.WithStrictOrdering());
+   }
+
+   [Fact]
+   public async Task Should_not_change_any_row_of_a_mixed_batch_with_unique_index_conflict()
+   {
+      await using var context = await CreateContextAsync();
+      context.Entities.AddRange(new MySqlTestEntity { Id = 1, Name = "a" }, new MySqlTestEntity { Id = 2, Name = "b" });
+      await context.SaveChangesAsync();
+      context.ChangeTracker.Clear();
+
+      // The first row collides with row 2 on the unique index of the name. The update of row 1 runs before the insert and is rolled back.
+      var act = () => context.BulkInsertOrUpdateAsync(
+                                                      [
+                                                         new MySqlTestEntity { Id = 9, Name = "b" },
+                                                         new MySqlTestEntity { Id = 10, Name = "new" },
+                                                         new MySqlTestEntity { Id = 1, Name = "a3" }
+                                                      ],
+                                                      propertiesToInsert: entity => new { entity.Id, entity.Name },
+                                                      propertiesToUpdate: entity => entity.Name,
+                                                      propertiesToMatchOn: entity => entity.Id);
+
+      (await act.Should().ThrowAsync<MySqlException>()).Which.Number.Should().Be(1062);
+
+      var rows = await context.Entities.AsNoTracking().OrderBy(entity => entity.Id).Select(entity => new { entity.Id, entity.Name }).ToListAsync();
+      rows.Should().BeEquivalentTo(new[] { new { Id = 1, Name = "a" }, new { Id = 2, Name = "b" } }, options => options.WithStrictOrdering());
    }
 
    [Fact]

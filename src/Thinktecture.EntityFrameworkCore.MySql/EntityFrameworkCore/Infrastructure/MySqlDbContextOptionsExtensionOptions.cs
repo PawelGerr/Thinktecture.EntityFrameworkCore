@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 namespace Thinktecture.EntityFrameworkCore.Infrastructure;
 
 /// <summary>
-/// Singleton options used by MySQL bulk-operation conventions.
+/// Singleton options of the MySQL extension: the conventions for primitive types and the insert strategy of the bulk operations (<see cref="UseBulkCopy" />, <see cref="MaxParametersPerStatement" />).
 /// </summary>
 public sealed class MySqlDbContextOptionsExtensionOptions : IBulkOperationsDbContextOptionsExtensionOptions
 {
@@ -15,11 +15,24 @@ public sealed class MySqlDbContextOptionsExtensionOptions : IBulkOperationsDbCon
    /// </summary>
    public bool ConfigureCollectionParametersForPrimitiveTypes { get; private set; }
 
+   /// <summary>
+   /// Indicates whether the bulk operations insert with <see cref="MySqlConnector.MySqlBulkCopy" /> instead of multi-row INSERT statements.
+   /// </summary>
+   public bool UseBulkCopy { get; private set; }
+
+   /// <summary>
+   /// Maximum number of parameters of one multi-row INSERT statement of the bulk operations.
+   /// </summary>
+   public int MaxParametersPerStatement { get; private set; }
+
    /// <inheritdoc />
    public void Initialize(IDbContextOptions options)
    {
-      ConfigureTempTablesForPrimitiveTypes = GetExtension(options).ConfigureTempTablesForPrimitiveTypes;
-      ConfigureCollectionParametersForPrimitiveTypes = GetExtension(options).ConfigureCollectionParametersForPrimitiveTypes;
+      var extension = GetExtension(options);
+      ConfigureTempTablesForPrimitiveTypes = extension.ConfigureTempTablesForPrimitiveTypes;
+      ConfigureCollectionParametersForPrimitiveTypes = extension.ConfigureCollectionParametersForPrimitiveTypes;
+      UseBulkCopy = extension.UseBulkCopy;
+      MaxParametersPerStatement = extension.MaxParametersPerStatement;
    }
 
    /// <inheritdoc />
@@ -30,6 +43,12 @@ public sealed class MySqlDbContextOptionsExtensionOptions : IBulkOperationsDbCon
 
       if (GetExtension(options).ConfigureCollectionParametersForPrimitiveTypes != ConfigureCollectionParametersForPrimitiveTypes)
          throw new InvalidOperationException($"The setting '{nameof(MySqlDbContextOptionsExtension.ConfigureCollectionParametersForPrimitiveTypes)}' has been changed.");
+
+      if (GetExtension(options).UseBulkCopy != UseBulkCopy)
+         throw new InvalidOperationException($"The setting '{nameof(MySqlDbContextOptionsExtension.UseBulkCopy)}' has been changed.");
+
+      if (GetExtension(options).MaxParametersPerStatement != MaxParametersPerStatement)
+         throw new InvalidOperationException($"The setting '{nameof(MySqlDbContextOptionsExtension.MaxParametersPerStatement)}' has been changed.");
    }
 
    private static MySqlDbContextOptionsExtension GetExtension(IDbContextOptions options)

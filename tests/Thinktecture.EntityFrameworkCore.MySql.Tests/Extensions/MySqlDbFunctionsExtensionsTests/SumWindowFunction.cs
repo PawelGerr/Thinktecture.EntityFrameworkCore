@@ -12,8 +12,8 @@ namespace Thinktecture.Extensions.MySqlDbFunctionsExtensionsTests;
 [Collection(MySqlTestCollection.NAME)]
 public sealed class SumWindowFunction : MySqlIntegrationTestsBase
 {
-   public SumWindowFunction(MySqlContainerFixture fixture)
-      : base(fixture)
+   public SumWindowFunction(ITestOutputHelper testOutputHelper, MySqlContainerFixture fixture)
+      : base(testOutputHelper, fixture)
    {
    }
 

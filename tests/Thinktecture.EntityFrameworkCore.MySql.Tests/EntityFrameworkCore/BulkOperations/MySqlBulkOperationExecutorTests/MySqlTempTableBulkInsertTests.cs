@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using MySqlConnector;
 using Thinktecture.EntityFrameworkCore.TempTables;
 using Thinktecture.Internal;
 
@@ -8,8 +9,8 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations.MySqlBulkOperationExec
 [Collection(MySqlTestCollection.NAME)]
 public sealed class MySqlTempTableBulkInsertTests : MySqlIntegrationTestsBase
 {
-   public MySqlTempTableBulkInsertTests(MySqlContainerFixture fixture)
-      : base(fixture)
+   public MySqlTempTableBulkInsertTests(ITestOutputHelper testOutputHelper, MySqlContainerFixture fixture)
+      : base(testOutputHelper, fixture)
    {
    }
 
@@ -72,6 +73,46 @@ public sealed class MySqlTempTableBulkInsertTests : MySqlIntegrationTestsBase
       tempTable.NumberOfInsertedRows.Should().Be(3);
       (await tempTable.Query.OrderBy(value => value).ToArrayAsync())
          .Should().Equal(11, 22, 33);
+   }
+
+   [Fact]
+   public async Task Should_throw_error_3750_for_keyless_temp_table_when_sql_require_primary_key_is_on()
+   {
+      await using var context = await CreateContextRequiringPrimaryKeysAsync();
+
+      var exception = await context.Awaiting(ctx => ctx.BulkInsertValuesIntoTempTableAsync(new List<int> { 1, 2 }))
+                                   .Should().ThrowAsync<MySqlException>();
+
+      exception.Which.Number.Should().Be(3750);
+   }
+
+   [Fact]
+   public async Task Should_create_temp_table_with_AdaptiveForced_primary_key_when_sql_require_primary_key_is_on()
+   {
+      await using var context = await CreateContextRequiringPrimaryKeysAsync();
+
+      await using var tempTable = await context.BulkInsertValuesIntoTempTableAsync(new List<int> { 1, 2 },
+                                                                                  new MySqlTempTableBulkInsertOptions { PrimaryKeyCreation = IPrimaryKeyPropertiesProvider.AdaptiveForced });
+
+      (await tempTable.Query.OrderBy(value => value).ToArrayAsync()).Should().Equal(1, 2);
+   }
+
+   // SET SESSION sql_require_primary_key needs SESSION_VARIABLES_ADMIN, which the user of the container does not have (error 1227).
+   // Testcontainers gives root the password of that user. A configured connection string is used as it is, so its user needs the privilege.
+   private async Task<MySqlTestDbContext> CreateContextRequiringPrimaryKeysAsync()
+   {
+      var connectionString = Boolean.TryParse(TestContext.Instance.Configuration["UseMySqlContainer"], out var useContainer) && useContainer
+                                ? new MySqlConnectionStringBuilder(ConnectionString) { UserID = "root" }.ConnectionString
+                                : ConnectionString;
+      var options = MySqlTestDbContext.CreateOptionsBuilder()
+                                      .UseMySql(connectionString, MySqlContainerFixture.ServerVersion, builder => builder.AddBulkOperationSupport())
+                                      .Options;
+      var context = new MySqlTestDbContext(options);
+
+      // The session setting ends with the connection: the context closes it on dispose, and the pool resets the session.
+      await context.Database.OpenConnectionAsync();
+      await context.Database.ExecuteSqlRawAsync("SET SESSION sql_require_primary_key = ON");
+      return context;
    }
 
    [Fact]

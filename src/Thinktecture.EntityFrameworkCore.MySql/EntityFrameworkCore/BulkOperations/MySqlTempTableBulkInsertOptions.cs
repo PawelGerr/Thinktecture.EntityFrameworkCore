@@ -9,7 +9,8 @@ namespace Thinktecture.EntityFrameworkCore.BulkOperations;
 /// MySQL does not allow a temporary table to be referenced more than once in a single statement
 /// (self-join, <c>EXISTS</c>, <c>UNION</c>, ...); doing so fails with error 1137 "Can't reopen table".
 /// Insert the data into a second temp table or materialize the query instead.
-/// Temp tables are also unavailable inside a <c>TransactionScope</c> (MySQL XA transactions reject them).
+/// Inside an XA transaction (a <c>TransactionScope</c> with <c>UseXaTransactions=true</c>, the default) MySQL rejects the creation of a temporary table with error 4091,
+/// unless the server runs with <c>xa_detach_on_prepare=OFF</c>. With <c>UseXaTransactions=false</c> temporary tables work inside a <c>TransactionScope</c>.
 /// </remarks>
 public sealed class MySqlTempTableBulkInsertOptions : ITempTableBulkInsertOptions
 {
@@ -29,21 +30,25 @@ public sealed class MySqlTempTableBulkInsertOptions : ITempTableBulkInsertOption
    public IEntityPropertiesProvider? PropertiesToInsert { get; set; }
 
    /// <summary>
-   /// Maximum number of rows per INSERT statement. The default is 500. Ignored when <see cref="UseBulkCopy" /> is enabled.
+   /// Maximum number of parameters of one multi-row INSERT statement; the number of rows per statement is this value divided by the number of columns, at least 1.
+   /// <c>null</c> uses the value of the registration (<c>AddBulkOperationSupport</c>, 5,000 by default). The value is ignored if the registration enables bulk copy.
    /// </summary>
-   public int? BatchSize { get; set; }
+   /// <exception cref="ArgumentOutOfRangeException">The value is less than 1 or greater than 65,535.</exception>
+   public int? MaxParametersPerStatement
+   {
+      get;
+      set => field = value is null ? null : MySqlParameterBudget.Validate(value.Value, nameof(value));
+   }
 
    /// <summary>
-   /// Timeout of the generated commands. <c>null</c> uses the default of the connection.
+   /// Timeout of the generated commands. <c>null</c> uses the command timeout of the context.
    /// </summary>
    public TimeSpan? CommandTimeout { get; set; }
 
    /// <summary>
-   /// Uses <see cref="MySqlConnector.MySqlBulkCopy" /> (<c>LOAD DATA LOCAL INFILE</c>) instead of multi-row INSERT.
-   /// The connection must enable <c>AllowLoadLocalInfile=true</c>, and the server must enable <c>local_infile</c>.
-   /// This path buffers the input in memory before copying it.
+   /// Advanced settings.
    /// </summary>
-   public bool UseBulkCopy { get; set; }
+   public AdvancedMySqlTempTableBulkInsertOptions Advanced { get; } = new();
 
    /// <summary>
    /// Initializes a new instance of <see cref="MySqlTempTableBulkInsertOptions" />.
@@ -62,9 +67,9 @@ public sealed class MySqlTempTableBulkInsertOptions : ITempTableBulkInsertOption
 
       if (optionsToInitializeFrom is MySqlTempTableBulkInsertOptions mySqlOptions)
       {
-         BatchSize = mySqlOptions.BatchSize;
+         MaxParametersPerStatement = mySqlOptions.MaxParametersPerStatement;
          CommandTimeout = mySqlOptions.CommandTimeout;
-         UseBulkCopy = mySqlOptions.UseBulkCopy;
+         Advanced.UsePropertiesToInsertForTempTableCreation = mySqlOptions.Advanced.UsePropertiesToInsertForTempTableCreation;
       }
    }
 
@@ -80,7 +85,7 @@ public sealed class MySqlTempTableBulkInsertOptions : ITempTableBulkInsertOption
                 DropTableOnDispose = DropTableOnDispose,
                 TableNameProvider = TableNameProvider,
                 PrimaryKeyCreation = PrimaryKeyCreation,
-                PropertiesToInclude = PropertiesToInsert
+                PropertiesToInclude = Advanced.UsePropertiesToInsertForTempTableCreation ? PropertiesToInsert : null
              };
    }
 
@@ -90,6 +95,24 @@ public sealed class MySqlTempTableBulkInsertOptions : ITempTableBulkInsertOption
    /// <returns>The bulk insert options.</returns>
    public MySqlBulkInsertOptions GetBulkInsertOptions()
    {
-      return new MySqlBulkInsertOptions { PropertiesToInsert = PropertiesToInsert, BatchSize = BatchSize, CommandTimeout = CommandTimeout, UseBulkCopy = UseBulkCopy };
+      return new MySqlBulkInsertOptions { PropertiesToInsert = PropertiesToInsert, MaxParametersPerStatement = MaxParametersPerStatement, CommandTimeout = CommandTimeout };
+   }
+
+   /// <summary>
+   /// Advanced options.
+   /// </summary>
+   public sealed class AdvancedMySqlTempTableBulkInsertOptions
+   {
+      /// <summary>
+      /// If <c>false</c>, the temp table is created with all properties of the corresponding entity, and <see cref="MySqlTempTableBulkInsertOptions.PropertiesToInsert"/> only selects the inserted columns.
+      /// The returned <see cref="IQueryable{T}"/> can then read every property.
+      /// However, every required (non-nullable) property must be part of <see cref="MySqlTempTableBulkInsertOptions.PropertiesToInsert"/>; otherwise the insert fails with MySQL error 1364.
+      ///
+      /// If <c>true</c>, the temp table is created with the properties of <see cref="MySqlTempTableBulkInsertOptions.PropertiesToInsert"/> only.
+      /// The returned <see cref="IQueryable{T}"/> must not select or use the omitted properties.
+      ///
+      /// Default is <c>false</c>.
+      /// </summary>
+      public bool UsePropertiesToInsertForTempTableCreation { get; set; }
    }
 }

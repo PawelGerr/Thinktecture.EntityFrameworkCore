@@ -3,8 +3,8 @@ namespace Thinktecture.EntityFrameworkCore.Query;
 [Collection(MySqlTestCollection.NAME)]
 public sealed class MySqlAggregateExecutionTests : MySqlIntegrationTestsBase
 {
-   public MySqlAggregateExecutionTests(MySqlContainerFixture fixture)
-      : base(fixture)
+   public MySqlAggregateExecutionTests(ITestOutputHelper testOutputHelper, MySqlContainerFixture fixture)
+      : base(testOutputHelper, fixture)
    {
    }
 

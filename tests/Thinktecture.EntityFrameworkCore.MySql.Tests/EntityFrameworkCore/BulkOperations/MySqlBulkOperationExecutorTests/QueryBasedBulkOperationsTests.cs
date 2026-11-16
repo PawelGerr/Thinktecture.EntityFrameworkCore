@@ -1,7 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.Extensions.Logging;
 using Thinktecture.EntityFrameworkCore.BulkOperations.Internal;
 
 namespace Thinktecture.EntityFrameworkCore.BulkOperations.MySqlBulkOperationExecutorTests;
@@ -13,18 +12,17 @@ public sealed class QueryBasedBulkOperationsTests
    public void Should_generate_insert_select_with_mapped_columns()
    {
       using var context = CreateContext();
-      using var loggerFactory = LoggerFactory.Create(_ => { });
-      var translator = new EfCoreValueExpressionTranslator(loggerFactory.CreateLogger("MySQL tests"), context);
+      var translator = new EfCoreValueExpressionTranslator(context);
       var mapping = new InsertPropertyBuilder<MySqlTestEntity, MySqlTestEntity>()
                     .Map(target => target.Name, source => source.Name);
 
-      var (sql, parameters) = translator.TranslateInsertFromQuery<MySqlTestEntity, MySqlTestEntity>(
+      var (command, parameters) = translator.TranslateInsertFromQuery<MySqlTestEntity, MySqlTestEntity>(
          context.Entities,
          mapping.Entries,
          IBulkOperationTableNameProvider.ForRootEntity("insert_target"));
 
-      sql.Should().Contain("INSERT INTO `insert_target` (`Name`)");
-      sql.Should().Contain("SELECT");
+      command.CommandText.Should().Contain("INSERT INTO `insert_target` (`Name`)");
+      command.CommandText.Should().Contain("SELECT");
       parameters.Should().BeEmpty();
    }
 
@@ -32,13 +30,12 @@ public sealed class QueryBasedBulkOperationsTests
    public void Should_generate_update_join_with_filter()
    {
       using var context = CreateContext();
-      using var loggerFactory = LoggerFactory.Create(_ => { });
-      var translator = new EfCoreValueExpressionTranslator(loggerFactory.CreateLogger("MySQL tests"), context);
+      var translator = new EfCoreValueExpressionTranslator(context);
       var assignments = new SetPropertyBuilder<MySqlTestEntity, MySqlTestEntity>()
                         .Set(target => target.Name, (target, source) => source.Name);
       Expression<Func<MySqlTestEntity, MySqlTestEntity, bool>> filter = (target, source) => target.Id < source.Id;
 
-      var (sql, _) = translator.TranslateUpdateFromQuery<MySqlTestEntity, MySqlTestEntity, int>(
+      var (command, _) = translator.TranslateUpdateFromQuery<MySqlTestEntity, MySqlTestEntity, int>(
          context.Entities,
          target => target.Id,
          source => source.Id,
@@ -46,11 +43,11 @@ public sealed class QueryBasedBulkOperationsTests
          filter,
          IBulkOperationTableNameProvider.Default);
 
-      sql.Should().Contain("UPDATE");
-      sql.Should().Contain("JOIN");
-      sql.Should().Contain(" ON ");
-      sql.Should().Contain("SET");
-      sql.Should().Contain("WHERE");
+      command.CommandText.Should().Contain("UPDATE");
+      command.CommandText.Should().Contain("JOIN");
+      command.CommandText.Should().Contain(" ON ");
+      command.CommandText.Should().Contain("SET");
+      command.CommandText.Should().Contain("WHERE");
    }
 
    [Fact]
@@ -85,7 +82,7 @@ public sealed class QueryBasedBulkOperationsTests
 
    private static MySqlTestDbContext CreateContext()
    {
-      var options = new DbContextOptionsBuilder<MySqlTestDbContext>()
+      var options = MySqlTestDbContext.CreateOptionsBuilder()
                     .UseMySql("Server=localhost;Database=test", MySqlContainerFixture.ServerVersion, builder => builder.AddBulkOperationSupport())
                     .Options;
 

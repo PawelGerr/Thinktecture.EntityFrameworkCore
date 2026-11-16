@@ -8,7 +8,7 @@ namespace Thinktecture.EntityFrameworkCore.Query;
 /// <summary>
 /// Creates MySQL SQL generators with Thinktecture support.
 /// </summary>
-[SuppressMessage("Usage", "EF1001:Internal EF Core API usage.")]
+[SuppressMessage("Usage", "EF1001", MessageId = "Internal EF Core API usage.")]
 public sealed class ThinktectureMySqlQuerySqlGeneratorFactory : IQuerySqlGeneratorFactory
 {
    private readonly QuerySqlGeneratorDependencies _dependencies;

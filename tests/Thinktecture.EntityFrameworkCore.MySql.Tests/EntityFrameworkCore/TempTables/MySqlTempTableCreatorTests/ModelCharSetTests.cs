@@ -9,8 +9,8 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.MySqlTempTableCreatorTests
 [Collection(MySqlTestCollection.NAME)]
 public sealed class ModelCharSetTests : MySqlIntegrationTestsBase
 {
-   public ModelCharSetTests(MySqlContainerFixture fixture)
-      : base(fixture)
+   public ModelCharSetTests(ITestOutputHelper testOutputHelper, MySqlContainerFixture fixture)
+      : base(testOutputHelper, fixture)
    {
       ConfigureModel = modelBuilder => modelBuilder.HasCharSet("utf8mb4");
    }

@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Thinktecture.EntityFrameworkCore.BulkOperations;
 using Thinktecture.EntityFrameworkCore.TempTables;
 
@@ -7,8 +8,8 @@ namespace Thinktecture.EntityFrameworkCore.TempTables.MySqlTempTableCreatorTests
 [Collection(MySqlTestCollection.NAME)]
 public sealed class PrimitiveValueTests : MySqlIntegrationTestsBase
 {
-   public PrimitiveValueTests(MySqlContainerFixture fixture)
-      : base(fixture)
+   public PrimitiveValueTests(ITestOutputHelper testOutputHelper, MySqlContainerFixture fixture)
+      : base(testOutputHelper, fixture)
    {
    }
 
@@ -52,5 +53,16 @@ public sealed class PrimitiveValueTests : MySqlIntegrationTestsBase
                                                                                     CancellationToken.None);
 
       (await tempTable.Query.SingleAsync()).Should().Be(value);
+   }
+
+   [Fact]
+   public async Task Should_not_request_the_design_time_model_for_a_temp_table_without_string_columns()
+   {
+      Configure = builder => builder.ReplaceService<IDesignTimeModel, ThrowingDesignTimeModel>();
+      var executor = ActDbContext.GetService<ITempTableBulkInsertExecutor>();
+
+      await using var tempTable = await executor.BulkInsertValuesIntoTempTableAsync([1, 2], executor.CreateOptions(), CancellationToken.None);
+
+      (await tempTable.Query.OrderBy(value => value).ToArrayAsync()).Should().Equal(1, 2);
    }
 }

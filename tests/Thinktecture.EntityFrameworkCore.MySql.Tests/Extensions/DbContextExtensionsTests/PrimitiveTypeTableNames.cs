@@ -8,18 +8,16 @@ namespace Thinktecture.Extensions.DbContextExtensionsTests;
 /// <summary>
 /// Regression tests for issue #75. The temp table entity types TempTable&lt;DateOnly&gt; and
 /// TempTable&lt;DateOnly?&gt;, as well as the collection parameter entity types
-/// ScalarCollectionParameter&lt;int&gt; and ScalarCollectionParameter&lt;int?&gt;, must keep distinct
-/// table names even when another convention renames every entity type with convention source.
-/// Without the fix the TempTableConvention and the MySqlCollectionParameterConvention configure
-/// the table names with convention source, so a later convention-source rename can overwrite them
-/// and collapse each pair onto a single shared table name, which makes the model build throw an
-/// InvalidOperationException about table sharing. With the fix the table names are configured with
-/// data-annotation source, so the convention-source rename is rejected and the distinct names remain.
+/// ScalarCollectionParameter&lt;int&gt; and ScalarCollectionParameter&lt;int?&gt;, keep distinct
+/// table names when another convention renames every entity type with convention source.
+/// The TempTableConvention and the MySqlCollectionParameterConvention configure the table names
+/// with data-annotation source, so a convention-source rename cannot overwrite them. Otherwise each
+/// pair would share one table name, and the model build would throw an InvalidOperationException.
 /// </summary>
-public class TempTable_DateOnly_Repro
+public sealed class PrimitiveTypeTableNames
 {
    [Fact]
-   public void TempTable_DateOnly_and_nullable_should_keep_distinct_table_names()
+   public void Should_keep_distinct_table_names_for_DateOnly_and_nullable_DateOnly_temp_tables()
    {
       using var context = new MinimalDbContext();
       var model = context.Model;
@@ -33,7 +31,7 @@ public class TempTable_DateOnly_Repro
    }
 
    [Fact]
-   public void ScalarCollectionParameter_int_and_nullable_should_keep_distinct_table_names()
+   public void Should_keep_distinct_table_names_for_int_and_nullable_int_scalar_collection_parameters()
    {
       using var context = new MinimalDbContext();
       var model = context.Model;
@@ -47,7 +45,7 @@ public class TempTable_DateOnly_Repro
    }
 
    [Fact]
-   public void All_temp_tables_of_primitive_types_should_keep_distinct_table_names()
+   public void Should_keep_distinct_table_names_for_all_temp_tables_of_primitive_types()
    {
       using var context = new MinimalDbContext();
 
@@ -60,7 +58,7 @@ public class TempTable_DateOnly_Repro
    }
 
    [Fact]
-   public void All_scalar_collection_parameters_should_keep_distinct_table_names()
+   public void Should_keep_distinct_table_names_for_all_scalar_collection_parameters()
    {
       using var context = new MinimalDbContext();
 

@@ -9,7 +9,7 @@ namespace Thinktecture.EntityFrameworkCore.Query;
 /// <summary>
 /// Extends the MySQL nullability processor with Thinktecture SQL expressions.
 /// </summary>
-[SuppressMessage("Usage", "EF1001:Internal EF Core API usage.")]
+[SuppressMessage("Usage", "EF1001", MessageId = "Internal EF Core API usage.")]
 public sealed class ThinktectureMySqlSqlNullabilityProcessor : MySqlSqlNullabilityProcessor
 {
    /// <summary>

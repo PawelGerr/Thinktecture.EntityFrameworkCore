@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using MySqlConnector;
 using Thinktecture.EntityFrameworkCore.Diagnostics;
 using Thinktecture.EntityFrameworkCore.Infrastructure;
 
@@ -12,14 +13,16 @@ public sealed class MySqlTestCollection : ICollectionFixture<MySqlContainerFixtu
 
 public abstract class MySqlIntegrationTestsBase : IAsyncLifetime, IAsyncDisposable
 {
+   private readonly ITestOutputHelper _testOutputHelper;
    private readonly MySqlContainerFixture _fixture;
    private readonly CommandCapturingInterceptor _commandCapturingInterceptor = new();
    private MySqlTestDbContext? _arrangeDbContext;
    private MySqlTestDbContext? _actDbContext;
    private MySqlTestDbContext? _assertDbContext;
 
-   protected MySqlIntegrationTestsBase(MySqlContainerFixture fixture)
+   protected MySqlIntegrationTestsBase(ITestOutputHelper testOutputHelper, MySqlContainerFixture fixture)
    {
+      _testOutputHelper = testOutputHelper;
       _fixture = fixture;
    }
 
@@ -32,6 +35,13 @@ public abstract class MySqlIntegrationTestsBase : IAsyncLifetime, IAsyncDisposab
    /// Has to be set before the first context is accessed.
    /// </summary>
    protected Action<MySqlDbContextOptionsBuilder>? ConfigureMySql { get; set; }
+
+   /// <summary>
+   /// Registers the bulk copy insert path (<c>AddBulkOperationSupport(useBulkCopy: true)</c>) for the Arrange/Act/Assert contexts
+   /// and allows <c>LOAD DATA LOCAL INFILE</c> on their connections (the server is started with <c>--local-infile=1</c>).
+   /// Has to be set before the first context is accessed.
+   /// </summary>
+   protected bool UseBulkCopy { get; set; }
 
    protected IReadOnlyCollection<string> ExecutedCommands => _commandCapturingInterceptor.Commands;
    protected MySqlTestDbContext ArrangeDbContext => _arrangeDbContext ??= CreateDbContext();
@@ -90,21 +100,30 @@ public abstract class MySqlIntegrationTestsBase : IAsyncLifetime, IAsyncDisposab
 
    private DbContextOptions<MySqlTestDbContext> CreateOptions(Action<MySqlDbContextOptionsBuilder>? configure)
    {
-      var builder = new DbContextOptionsBuilder<MySqlTestDbContext>()
-                    .UseMySql(_fixture.ConnectionString, MySqlContainerFixture.ServerVersion, mySqlBuilder =>
+      var builder = MySqlTestDbContext.CreateOptionsBuilder()
+                    .UseMySql(GetConnectionString(), MySqlContainerFixture.ServerVersion, mySqlBuilder =>
                                                                                               {
-                                                                                                 mySqlBuilder.AddBulkOperationSupport().AddWindowFunctionsSupport();
+                                                                                                 mySqlBuilder.AddBulkOperationSupport(useBulkCopy: UseBulkCopy).AddWindowFunctionsSupport();
                                                                                                  ConfigureMySql?.Invoke(mySqlBuilder);
                                                                                                  configure?.Invoke(mySqlBuilder);
                                                                                               })
                     .AddNestedTransactionSupport()
-                    .AddInterceptors(_commandCapturingInterceptor);
+                    .AddInterceptors(_commandCapturingInterceptor)
+                    .UseLoggerFactory(TestContext.Instance.GetLoggerFactory(_testOutputHelper))
+                    .EnableSensitiveDataLogging();
 
       // EF caches the model per context type; a per-test model configuration must not leak into other tests.
       if (ConfigureModel is not null)
          builder.ReplaceService<IModelCacheKeyFactory, CachePerContextModelCacheKeyFactory>();
 
       return builder.Options;
+   }
+
+   private string GetConnectionString()
+   {
+      return UseBulkCopy
+                ? new MySqlConnectionStringBuilder(_fixture.ConnectionString) { AllowLoadLocalInfile = true }.ConnectionString
+                : _fixture.ConnectionString;
    }
 
    public async ValueTask DisposeAsync()

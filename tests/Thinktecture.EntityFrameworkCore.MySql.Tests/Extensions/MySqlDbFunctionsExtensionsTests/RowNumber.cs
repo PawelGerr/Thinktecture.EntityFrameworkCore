@@ -13,8 +13,8 @@ namespace Thinktecture.Extensions.MySqlDbFunctionsExtensionsTests;
 [Collection(MySqlTestCollection.NAME)]
 public sealed class RowNumber : MySqlIntegrationTestsBase
 {
-   public RowNumber(MySqlContainerFixture fixture)
-      : base(fixture)
+   public RowNumber(ITestOutputHelper testOutputHelper, MySqlContainerFixture fixture)
+      : base(testOutputHelper, fixture)
    {
    }
 

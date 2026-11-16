@@ -13,8 +13,8 @@ public sealed class CreateComplexCollectionParameter : MySqlIntegrationTestsBase
    private static readonly Guid _TEST_ENTITY_ID = new("7F8B0E79-2C91-4682-9F61-6FC86B4E5244");
    private static readonly Guid _OTHER_TEST_ENTITY_ID = new("D3E99F44-40A1-4E4E-820F-9D7C7B02AFA5");
 
-   public CreateComplexCollectionParameter(MySqlContainerFixture fixture)
-      : base(fixture)
+   public CreateComplexCollectionParameter(ITestOutputHelper testOutputHelper, MySqlContainerFixture fixture)
+      : base(testOutputHelper, fixture)
    {
       ConfigureMySql = builder => builder.AddCollectionParameterSupport(CollectionParameterJsonSerializerOptions.Default);
    }

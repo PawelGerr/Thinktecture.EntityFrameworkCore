@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Transactions;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MySqlConnector;
 using Thinktecture.EntityFrameworkCore.TempTables;
 using Thinktecture.EntityFrameworkCore.TempTables.MySqlTempTableCreatorTests;
@@ -19,8 +20,8 @@ public sealed class BulkInsertIntoTempTableAsync : MySqlIntegrationTestsBase
 
    private MySqlBulkOperationExecutor SUT => field ??= ActDbContext.GetService<MySqlBulkOperationExecutor>();
 
-   public BulkInsertIntoTempTableAsync(MySqlContainerFixture fixture)
-      : base(fixture)
+   public BulkInsertIntoTempTableAsync(ITestOutputHelper testOutputHelper, MySqlContainerFixture fixture)
+      : base(testOutputHelper, fixture)
    {
    }
 
@@ -92,6 +93,10 @@ public sealed class BulkInsertIntoTempTableAsync : MySqlIntegrationTestsBase
 
       // The temp table is dropped and the connection is released if the insert fails.
       ActDbContext.Database.GetDbConnection().State.Should().Be(System.Data.ConnectionState.Closed);
+
+      // The name of the failed temp table is available again.
+      await using var tempTable = await SUT.BulkInsertIntoTempTableAsync([new CustomTempTable { Column1 = 1, Column2 = "value1" }], new MySqlTempTableBulkInsertOptions());
+      tempTable.Name.Should().EndWith("_1");
    }
 
    [Fact]
@@ -230,7 +235,6 @@ public sealed class BulkInsertIntoTempTableAsync : MySqlIntegrationTestsBase
    [Fact]
    public async Task Should_insert_entityType_without_required_fields_if_excluded()
    {
-      // The temp table is created with the properties to insert only (MySQL has no 'UsePropertiesToInsertForTempTableCreation' switch).
       var entity = new TestEntity
                    {
                       Id = _TEST_ENTITY_ID
@@ -238,7 +242,8 @@ public sealed class BulkInsertIntoTempTableAsync : MySqlIntegrationTestsBase
       var entities = new List<TestEntity> { entity };
       await using var tempTable = await SUT.BulkInsertIntoTempTableAsync(entities, new MySqlTempTableBulkInsertOptions
                                                                                    {
-                                                                                      PropertiesToInsert = IEntityPropertiesProvider.Include<TestEntity>(e => e.Id)
+                                                                                      PropertiesToInsert = IEntityPropertiesProvider.Include<TestEntity>(e => e.Id),
+                                                                                      Advanced = { UsePropertiesToInsertForTempTableCreation = true }
                                                                                    });
 
       (await MySqlTempTableInspector.GetColumnsAsync(ActDbContext, tempTable.Name)).Select(c => c.Name).Should().Equal(nameof(TestEntity.Id));
@@ -456,10 +461,10 @@ public sealed class BulkInsertIntoTempTableAsync : MySqlIntegrationTestsBase
                                            }
                        };
 
-      // The temp table is created with the properties to insert, which are validated against owned types as well.
+      // The temp table is created with all properties of the entity, so the owned type is rejected although it is not inserted.
       await ActDbContext.Awaiting(ctx => ctx.BulkInsertIntoTempTableAsync([testEntity], e => e.Id))
                         .Should().ThrowAsync<NotSupportedException>()
-                        .WithMessage("The entity 'Thinktecture.TestDatabaseContext.TestEntity_Owns_SeparateOne' must not contain owned entities.");
+                        .WithMessage("Temp tables don't support owned entities.");
    }
 
    [Fact]
@@ -512,6 +517,272 @@ public sealed class BulkInsertIntoTempTableAsync : MySqlIntegrationTestsBase
       tempTable.NumberOfInsertedRows.Should().Be(3);
    }
 
+   [Fact]
+   public async Task Should_insert_entityType_without_required_fields_if_excluded_and_with_UsePropertiesToInsertForTempTableCreation()
+   {
+      var entity = new TestEntity
+                   {
+                      Id = _TEST_ENTITY_ID
+                   };
+      var entities = new List<TestEntity> { entity };
+      await using var tempTable = await SUT.BulkInsertIntoTempTableAsync(entities, new MySqlTempTableBulkInsertOptions
+                                                                                   {
+                                                                                      PropertiesToInsert = IEntityPropertiesProvider.Include<TestEntity>(e => e.Id),
+                                                                                      Advanced = { UsePropertiesToInsertForTempTableCreation = true }
+                                                                                   });
+
+      var result = await tempTable.Query.Select(t => new { t.Id }).ToListAsync();
+      result.Should().BeEquivalentTo([
+                                        new { Id = _TEST_ENTITY_ID }
+                                     ]);
+   }
+
+   [Fact]
+   public async Task Should_insert_entityType_without_required_fields_if_excluded_and_without_UsePropertiesToInsertForTempTableCreation()
+   {
+      var entity = new TestEntity
+                   {
+                      Id = _TEST_ENTITY_ID
+                   };
+      var entities = new List<TestEntity> { entity };
+
+      // 1364: field doesn't have a default value (strict mode), because the temp table has all columns of the entity
+      var exception = await SUT.Awaiting(sut => sut.BulkInsertIntoTempTableAsync(entities, new MySqlTempTableBulkInsertOptions
+                                                                                          {
+                                                                                             PropertiesToInsert = IEntityPropertiesProvider.Include<TestEntity>(e => e.Id),
+                                                                                             Advanced = { UsePropertiesToInsertForTempTableCreation = false }
+                                                                                          }))
+                               .Should().ThrowAsync<MySqlException>().WithMessage("Field '*' doesn't have a default value");
+      exception.Which.Number.Should().Be(1364);
+   }
+
+   [Fact]
+   public async Task Should_insert_temp_table_entity_with_struct_ComplexType()
+   {
+      ConfigureModel = TempTableWithStructComplexType.Configure;
+
+      var entity = new TempTableWithStructComplexType
+                   {
+                      Id = new Guid("54FF93FC-6BE9-4F19-A52E-E517CA9FEAA7"),
+                      MessageTimestamp = 10,
+                      EffectiveMessage = new TimestampPair(100, 200)
+                   };
+
+      await using var tempTable = await SUT.BulkInsertIntoTempTableAsync([entity], new MySqlTempTableBulkInsertOptions());
+
+      var loadedEntities = await tempTable.Query.ToListAsync();
+      loadedEntities.Should().BeEquivalentTo([entity]);
+
+      var columns = await MySqlTempTableInspector.GetColumnsAsync(ActDbContext, tempTable.Name);
+      columns.Select(c => c.Name).Should().BeEquivalentTo("id", "message_timestamp", "effective_received_at", "effective_message_timestamp");
+
+      foreach (var column in columns.Where(c => c.Name.StartsWith("effective_", StringComparison.Ordinal)))
+      {
+         column.IsNullable.Should().BeFalse();
+         column.Type.Should().Be("bigint");
+      }
+   }
+
+   [Fact]
+   public async Task Should_project_struct_ComplexType_members_from_temp_table()
+   {
+      ConfigureModel = TempTableWithStructComplexType.Configure;
+
+      var entity = new TempTableWithStructComplexType
+                   {
+                      Id = new Guid("54FF93FC-6BE9-4F19-A52E-E517CA9FEAA7"),
+                      MessageTimestamp = 10,
+                      EffectiveMessage = new TimestampPair(100, 200)
+                   };
+
+      await using var tempTable = await SUT.BulkInsertIntoTempTableAsync([entity], new MySqlTempTableBulkInsertOptions());
+
+      var projected = await tempTable.Query.Select(e => new { e.Id, e.EffectiveMessage.ReceivedAt }).ToListAsync();
+      projected.Should().BeEquivalentTo([new { entity.Id, ReceivedAt = 100L }]);
+   }
+
+   [Fact]
+   public async Task Should_insert_temp_table_entity_with_value_converted_members_of_struct_ComplexType()
+   {
+      ConfigureModel = TempTableWithConvertedComplexType.Configure;
+
+      var entity = new TempTableWithConvertedComplexType
+                   {
+                      Id = new Guid("54FF93FC-6BE9-4F19-A52E-E517CA9FEAA7"),
+                      MessageTimestamp = 10,
+                      EffectiveMessage = new ConvertedTimestampPair(new TimestampValue(100), new TimestampValue(200))
+                   };
+
+      await using var tempTable = await SUT.BulkInsertIntoTempTableAsync([entity], new MySqlTempTableBulkInsertOptions());
+
+      var loadedEntities = await tempTable.Query.ToListAsync();
+      loadedEntities.Should().BeEquivalentTo([entity]);
+
+      var columns = await MySqlTempTableInspector.GetColumnsAsync(ActDbContext, tempTable.Name);
+
+      foreach (var column in columns.Where(c => c.Name.StartsWith("effective_", StringComparison.Ordinal)))
+      {
+         column.IsNullable.Should().BeFalse();
+         column.Type.Should().Be("bigint");
+      }
+   }
+
+   [Fact]
+   public async Task Should_insert_and_read_back_nullable_ComplexTypes_from_temp_table()
+   {
+      var withValues = TestEntityWithNullableComplexTypes.CreateWithValues(new Guid("7F4B1D5C-2A7A-4B8E-9F57-9D4C8E3A0001"));
+      var withNulls = TestEntityWithNullableComplexTypes.CreateWithNulls(new Guid("7F4B1D5C-2A7A-4B8E-9F57-9D4C8E3A0002"));
+
+      await using var tempTable = await SUT.BulkInsertIntoTempTableAsync([withValues, withNulls], new MySqlTempTableBulkInsertOptions());
+
+      var loaded = await tempTable.Query.ToListAsync();
+      loaded.Should().BeEquivalentTo([withValues, withNulls]);
+   }
+
+   [Theory]
+   [InlineData(false)]
+   [InlineData(true)]
+   public async Task Should_insert_null_for_struct_members_of_null_ComplexType_into_temp_table(bool useBulkCopy)
+   {
+      var options = CreateOptions(useBulkCopy);
+      var withValues = TestEntityWithStructsInOptionalComplexType.CreateWithValues(new Guid("9C1E2D3F-4A5B-4C6D-8E9F-0A1B2C3D0041"));
+      var withNulls = TestEntityWithStructsInOptionalComplexType.CreateWithNulls(new Guid("9C1E2D3F-4A5B-4C6D-8E9F-0A1B2C3D0042"));
+
+      await using var tempTable = await SUT.BulkInsertIntoTempTableAsync([withValues, withNulls], options);
+
+      var loaded = await tempTable.Query.ToListAsync();
+      loaded.Should().BeEquivalentTo([withValues, withNulls]);
+
+      var structColumns = await MySqlStructColumns.Query(ActDbContext, tempTable.Name).ToListAsync();
+      structColumns.Should().BeEquivalentTo(new[] { withValues, withNulls }.Select(TestEntityWithStructsInOptionalComplexType.StructColumns.From));
+   }
+
+   [Fact]
+   public async Task Should_insert_struct_with_value_converter()
+   {
+      ConfigureModel = builder => builder.ConfigureTempTable<Timestamp>(b => b.Property(t => t.Column1).HasConversion<TimestampConverter>());
+
+      await using var tempTable = await SUT.BulkInsertValuesIntoTempTableAsync(new List<Timestamp> { new(1), new(2) }, new MySqlTempTableBulkInsertOptions { PrimaryKeyCreation = IPrimaryKeyPropertiesProvider.None }, CancellationToken.None);
+
+      var values = await tempTable.Query.ToListAsync();
+      values.Should().BeEquivalentTo([new Timestamp(1), new Timestamp(2)]);
+   }
+
+   [Theory]
+   [InlineData(false)]
+   [InlineData(true)]
+   public async Task Should_insert_enum_with_string_conversion_as_string(bool useBulkCopy)
+   {
+      var options = CreateOptions(useBulkCopy);
+      options.PrimaryKeyCreation = IPrimaryKeyPropertiesProvider.None;
+      ConfigureModel = builder => builder.ConfigureTempTable<Color>(b => b.Property(t => t.Column1).HasConversion<string>());
+
+      await using var tempTable = await SUT.BulkInsertValuesIntoTempTableAsync(new List<Color> { Color.Red }, options, CancellationToken.None);
+
+      var storedValue = await ActDbContext.Database.SqlQueryRaw<string>($"SELECT `Column1` AS `Value` FROM `{tempTable.Name}`").SingleAsync();
+      storedValue.Should().Be("Red");
+
+      var values = await tempTable.Query.ToListAsync();
+      values.Should().BeEquivalentTo([Color.Red]);
+   }
+
+   [Fact]
+   public async Task Should_insert_nullable_struct_with_value_converter_including_null()
+   {
+      ConfigureModel = builder => builder.ConfigureTempTable<Timestamp?>(b => b.Property(t => t.Column1).HasConversion<TimestampConverter>());
+
+      await using var tempTable = await SUT.BulkInsertValuesIntoTempTableAsync(new List<Timestamp?> { new Timestamp(1), null }, new MySqlTempTableBulkInsertOptions { PrimaryKeyCreation = IPrimaryKeyPropertiesProvider.None }, CancellationToken.None);
+
+      var values = await tempTable.Query.ToListAsync();
+      values.Should().BeEquivalentTo([new Timestamp(1), (Timestamp?)null]);
+   }
+
+   [Fact]
+   public async Task Should_insert_struct_with_value_converter_into_existing_temp_table()
+   {
+      // Arrange
+      ConfigureModel = builder => builder.ConfigureTempTable<Timestamp>(b => b.Property(t => t.Column1).HasConversion<TimestampConverter>());
+
+      await using var tempTable = await SUT.BulkInsertValuesIntoTempTableAsync(new List<Timestamp>(), new MySqlTempTableBulkInsertOptions { PrimaryKeyCreation = IPrimaryKeyPropertiesProvider.None }, CancellationToken.None);
+
+      // Act
+      await ActDbContext.BulkInsertValuesIntoTempTableAsync(new List<Timestamp> { new(1), new(2) }, tempTable);
+
+      // Assert
+      var values = await tempTable.Query.ToListAsync();
+      values.Should().BeEquivalentTo([new Timestamp(1), new Timestamp(2)]);
+   }
+
+   [Fact]
+   public async Task Should_insert_enum_without_explicit_conversion()
+   {
+      ConfigureModel = builder => builder.ConfigureTempTable<Color>();
+
+      await using var tempTable = await SUT.BulkInsertValuesIntoTempTableAsync(new List<Color> { Color.Red }, new MySqlTempTableBulkInsertOptions { PrimaryKeyCreation = IPrimaryKeyPropertiesProvider.None }, CancellationToken.None);
+
+      var values = await tempTable.Query.ToListAsync();
+      values.Should().BeEquivalentTo([Color.Red]);
+   }
+
+   [Fact]
+   public async Task Should_insert_number_based_value_object()
+   {
+      ConfigureModel = builder => builder.ConfigureTempTable<Quantity>(b => b.Property(t => t.Column1).HasConversion(v => v.Value, v => new Quantity(v)));
+
+      await using var tempTable = await SUT.BulkInsertValuesIntoTempTableAsync(new List<Quantity> { new(3) }, new MySqlTempTableBulkInsertOptions { PrimaryKeyCreation = IPrimaryKeyPropertiesProvider.None }, CancellationToken.None);
+
+      var storedValue = await ActDbContext.Database.SqlQueryRaw<int>($"SELECT `Column1` AS `Value` FROM `{tempTable.Name}`").SingleAsync();
+      storedValue.Should().Be(3);
+
+      var values = await tempTable.Query.ToListAsync();
+      values.Should().BeEquivalentTo([new Quantity(3)]);
+   }
+
+   [Fact]
+   public async Task Should_insert_DateTime_based_value_object()
+   {
+      ConfigureModel = builder => builder.ConfigureTempTable<Moment>(b => b.Property(t => t.Column1).HasConversion(v => v.Value, v => new Moment(v)));
+
+      var moment = new Moment(new DateTime(2026, 1, 2, 3, 4, 5, DateTimeKind.Utc));
+      await using var tempTable = await SUT.BulkInsertValuesIntoTempTableAsync(new List<Moment> { moment }, new MySqlTempTableBulkInsertOptions { PrimaryKeyCreation = IPrimaryKeyPropertiesProvider.None }, CancellationToken.None);
+
+      var values = await tempTable.Query.ToListAsync();
+      values.Should().BeEquivalentTo([moment]);
+   }
+
+   [Fact]
+   public async Task Should_apply_value_changing_converter_of_number()
+   {
+      ConfigureModel = builder => builder.ConfigureTempTable<int>(b => b.Property(t => t.Column1).HasConversion(v => v * 100, v => v / 100));
+
+      await using var tempTable = await SUT.BulkInsertValuesIntoTempTableAsync(new List<int> { 3 }, new MySqlTempTableBulkInsertOptions { PrimaryKeyCreation = IPrimaryKeyPropertiesProvider.None }, CancellationToken.None);
+
+      var storedValue = await ActDbContext.Database.SqlQueryRaw<int>($"SELECT `Column1` AS `Value` FROM `{tempTable.Name}`").SingleAsync();
+      storedValue.Should().Be(300);
+
+      var values = await tempTable.Query.ToListAsync();
+      values.Should().BeEquivalentTo([3]);
+   }
+
+   [Theory]
+   [InlineData(false)]
+   [InlineData(true)]
+   public async Task Should_apply_value_changing_converter_of_DateTime(bool useBulkCopy)
+   {
+      var options = CreateOptions(useBulkCopy);
+      options.PrimaryKeyCreation = IPrimaryKeyPropertiesProvider.None;
+      ConfigureModel = builder => builder.ConfigureTempTable<DateTime>(b => b.Property(t => t.Column1).HasConversion(v => v.Ticks, v => new DateTime(v, DateTimeKind.Utc)));
+
+      var value = new DateTime(2026, 1, 2, 3, 4, 5, DateTimeKind.Utc);
+      await using var tempTable = await SUT.BulkInsertValuesIntoTempTableAsync(new List<DateTime> { value }, options, CancellationToken.None);
+
+      var storedValue = await ActDbContext.Database.SqlQueryRaw<long>($"SELECT `Column1` AS `Value` FROM `{tempTable.Name}`").SingleAsync();
+      storedValue.Should().Be(value.Ticks);
+
+      var values = await tempTable.Query.ToListAsync();
+      values.Should().BeEquivalentTo([value]);
+   }
+
    // The tests below cover behavior specific to MySQL: column mapping, batching, MySqlBulkCopy, command timeout, cancellation, transactions.
 
    [Fact]
@@ -525,9 +796,9 @@ public sealed class BulkInsertIntoTempTableAsync : MySqlIntegrationTestsBase
                        TableNameProvider = DefaultTempTableNameProvider.Instance,
                        PrimaryKeyCreation = IPrimaryKeyPropertiesProvider.AdaptiveForced,
                        PropertiesToInsert = propertiesToInsert,
-                       BatchSize = 7,
+                       MaxParametersPerStatement = 7,
                        CommandTimeout = TimeSpan.FromSeconds(5),
-                       UseBulkCopy = true
+                       Advanced = { UsePropertiesToInsertForTempTableCreation = true }
                     };
 
       new MySqlTempTableBulkInsertOptions(options).Should().BeEquivalentTo(options);
@@ -543,9 +814,8 @@ public sealed class BulkInsertIntoTempTableAsync : MySqlIntegrationTestsBase
       options.GetBulkInsertOptions().Should().BeEquivalentTo(new MySqlBulkInsertOptions
                                                              {
                                                                 PropertiesToInsert = propertiesToInsert,
-                                                                BatchSize = 7,
-                                                                CommandTimeout = TimeSpan.FromSeconds(5),
-                                                                UseBulkCopy = true
+                                                                MaxParametersPerStatement = 7,
+                                                                CommandTimeout = TimeSpan.FromSeconds(5)
                                                              });
    }
 
@@ -568,7 +838,8 @@ public sealed class BulkInsertIntoTempTableAsync : MySqlIntegrationTestsBase
       await using var tempTable = await SUT.BulkInsertIntoTempTableAsync(entities, options);
 
       tempTable.NumberOfInsertedRows.Should().Be(2);
-      (await MySqlTempTableInspector.GetColumnsAsync(ActDbContext, tempTable.Name)).Select(c => c.Name).Should().Equal(nameof(CustomTempTable.Column1));
+      // Options of other providers have no 'UsePropertiesToInsertForTempTableCreation', so the temp table gets all columns.
+      (await MySqlTempTableInspector.GetColumnsAsync(ActDbContext, tempTable.Name)).Select(c => c.Name).Should().Equal(nameof(CustomTempTable.Column1), nameof(CustomTempTable.Column2));
       (await tempTable.Query.OrderBy(e => e.Column1).Select(e => e.Column1).ToListAsync()).Should().Equal(1, 2);
    }
 
@@ -615,18 +886,18 @@ public sealed class BulkInsertIntoTempTableAsync : MySqlIntegrationTestsBase
       loadedEntities.Single(e => e.Id == _OTHER_TEST_ENTITY_ID).JsonColumn.Should().BeNull();
    }
 
+   // CustomTempTable has 2 columns, so the default budget of 5,000 parameters gives 2,500 rows per statement.
    [Theory]
    [InlineData(1, null, 1)]
-   [InlineData(499, null, 1)]
-   [InlineData(500, null, 1)] // the default batch size
-   [InlineData(501, null, 2)]
-   [InlineData(1000, null, 2)]
-   [InlineData(1001, null, 3)]
-   [InlineData(10, 1, 10)]
-   [InlineData(10, 3, 4)]
-   [InlineData(10, 10, 1)]
-   [InlineData(10, 100, 1)]
-   public async Task Should_split_rows_into_statements_according_to_batch_size(int rowCount, int? batchSize, int expectedStatements)
+   [InlineData(2500, null, 1)]
+   [InlineData(2501, null, 2)]
+   [InlineData(5001, null, 3)]
+   [InlineData(10, 2, 10)]
+   [InlineData(10, 6, 4)]
+   [InlineData(10, 1, 10)] // a budget below the column count gives 1 row per statement
+   [InlineData(10, 20, 1)]
+   [InlineData(10, 200, 1)]
+   public async Task Should_split_rows_into_statements_according_to_the_parameter_budget(int rowCount, int? maxParametersPerStatement, int expectedStatements)
    {
       ConfigureModel = builder => builder.ConfigureTempTableEntity<CustomTempTable>();
 
@@ -634,7 +905,7 @@ public sealed class BulkInsertIntoTempTableAsync : MySqlIntegrationTestsBase
       var options = new MySqlTempTableBulkInsertOptions
                     {
                        PrimaryKeyCreation = IPrimaryKeyPropertiesProvider.None,
-                       BatchSize = batchSize
+                       MaxParametersPerStatement = maxParametersPerStatement
                     };
 
       // The status counters are per session. The connection of ActDbContext stays open, so the executor and the status queries share the session.
@@ -661,21 +932,12 @@ public sealed class BulkInsertIntoTempTableAsync : MySqlIntegrationTestsBase
    [Theory]
    [InlineData(0)]
    [InlineData(-1)]
-   public async Task Should_throw_and_drop_temp_table_if_batch_size_is_not_positive(int batchSize)
+   [InlineData(65_536)]
+   public void Should_throw_if_the_parameter_budget_is_out_of_range(int maxParametersPerStatement)
    {
-      ConfigureModel = builder => builder.ConfigureTempTableEntity<CustomTempTable>();
+      var act = () => new MySqlTempTableBulkInsertOptions { MaxParametersPerStatement = maxParametersPerStatement };
 
-      var options = new MySqlTempTableBulkInsertOptions { BatchSize = batchSize };
-
-      await SUT.Awaiting(sut => sut.BulkInsertIntoTempTableAsync([new CustomTempTable(1, "value")], options))
-               .Should().ThrowAsync<ArgumentOutOfRangeException>()
-               .WithMessage("*batch size*greater than 0*");
-
-      ActDbContext.Database.GetDbConnection().State.Should().Be(System.Data.ConnectionState.Closed);
-
-      // The name of the failed temp table is available again.
-      await using var tempTable = await SUT.BulkInsertIntoTempTableAsync([new CustomTempTable(1, "value")], new MySqlTempTableBulkInsertOptions());
-      tempTable.Name.Should().EndWith("_1");
+      act.Should().Throw<ArgumentOutOfRangeException>().WithParameterName("value");
    }
 
    [Fact]
@@ -732,13 +994,13 @@ public sealed class BulkInsertIntoTempTableAsync : MySqlIntegrationTestsBase
    }
 
    [Fact]
-   public async Task Should_insert_all_rows_with_single_load_data_statement_and_ignore_batch_size()
+   public async Task Should_insert_all_rows_with_single_load_data_statement_and_ignore_the_parameter_budget()
    {
       ConfigureModel = builder => builder.ConfigureTempTableEntity<CustomTempTable>();
 
       var options = CreateOptions(true);
       options.PrimaryKeyCreation = IPrimaryKeyPropertiesProvider.None;
-      options.BatchSize = 1;
+      options.MaxParametersPerStatement = 1;
       var entities = Enumerable.Range(0, 1001).Select(i => new CustomTempTable(i, $"value {i}")).ToList();
 
       await ActDbContext.Database.OpenConnectionAsync();
@@ -900,17 +1162,11 @@ public sealed class BulkInsertIntoTempTableAsync : MySqlIntegrationTestsBase
       exception.Which.Number.Should().Be(4091);
    }
 
-   // MySqlBulkCopy uses LOAD DATA LOCAL INFILE, which the connection has to allow explicitly (the server is started with --local-infile=1).
-   // This must happen before the first use of the connection of ActDbContext.
+   // The insert path is part of the registration, so this must happen before the first context is accessed.
    private MySqlTempTableBulkInsertOptions CreateOptions(bool useBulkCopy)
    {
-      if (useBulkCopy)
-      {
-         var connectionString = new MySqlConnectionStringBuilder(ConnectionString) { AllowLoadLocalInfile = true };
-         ActDbContext.Database.SetConnectionString(connectionString.ConnectionString);
-      }
-
-      return new MySqlTempTableBulkInsertOptions { UseBulkCopy = useBulkCopy };
+      UseBulkCopy = useBulkCopy;
+      return new MySqlTempTableBulkInsertOptions();
    }
 
    private async Task<long> GetSessionStatusAsync(string name)
@@ -921,6 +1177,21 @@ public sealed class BulkInsertIntoTempTableAsync : MySqlIntegrationTestsBase
       await reader.ReadAsync();
 
       return Int64.Parse(reader.GetString(1), CultureInfo.InvariantCulture);
+   }
+
+   public readonly record struct Timestamp(long Value);
+
+   public sealed class TimestampConverter() : ValueConverter<Timestamp, long>(v => v.Value, v => new Timestamp(v));
+
+   public readonly record struct Quantity(int Value);
+
+   public readonly record struct Moment(DateTime Value);
+
+   public enum Color
+   {
+      None = 0,
+      Blue = 1,
+      Red = 2
    }
 
    // Options that are not specific to MySQL, so the executor has to copy them into its own options type.

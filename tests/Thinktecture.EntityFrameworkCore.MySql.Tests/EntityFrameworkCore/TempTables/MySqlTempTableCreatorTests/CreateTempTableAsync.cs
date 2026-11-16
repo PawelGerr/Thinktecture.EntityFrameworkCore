@@ -20,8 +20,8 @@ public sealed class CreateTempTableAsync : MySqlIntegrationTestsBase
 
    private MySqlTempTableCreator SUT => field ??= (MySqlTempTableCreator)ActDbContext.GetService<ITempTableCreator>();
 
-   public CreateTempTableAsync(MySqlContainerFixture fixture)
-      : base(fixture)
+   public CreateTempTableAsync(ITestOutputHelper testOutputHelper, MySqlContainerFixture fixture)
+      : base(testOutputHelper, fixture)
    {
       _optionsWithNonUniqueName = new TempTableCreationOptions { TableNameProvider = DefaultTempTableNameProvider.Instance, PrimaryKeyCreation = IPrimaryKeyPropertiesProvider.None };
       _options = new TempTableCreationOptions { PrimaryKeyCreation = IPrimaryKeyPropertiesProvider.None };
@@ -54,7 +54,7 @@ public sealed class CreateTempTableAsync : MySqlIntegrationTestsBase
       var statement = GetTempTableStatements().Single();
       statement.Should().StartWith("CREATE TEMPORARY TABLE `#CustomTempTable` (");
       statement.Should().Contain("`Column1` int NOT NULL");
-      statement.Should().Contain("`Column2` longtext NULL");
+      statement.Should().Contain("`Column2` longtext CHARACTER SET utf8mb4 NULL");
       statement.Should().NotContain("PRIMARY KEY");
    }
 
@@ -378,7 +378,7 @@ public sealed class CreateTempTableAsync : MySqlIntegrationTestsBase
 
       ValidateColumn(columns[0], nameof(CustomTempTable.Column1), "int", false);
       ValidateColumn(columns[1], nameof(CustomTempTable.Column2), "longtext", true, collation: "utf8mb4_bin");
-      GetTempTableStatements().Single().Should().Contain("`Column2` longtext COLLATE utf8mb4_bin NULL");
+      GetTempTableStatements().Single().Should().Contain("`Column2` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL");
    }
 
    [Fact]
@@ -537,6 +537,36 @@ public sealed class CreateTempTableAsync : MySqlIntegrationTestsBase
 
       var columns = await GetColumnsAsync(tempTable);
       ValidateColumn(columns[0], nameof(TempTable<ConvertibleClass>.Column1), "int", true, defaultValue: "1");
+   }
+
+   [Theory]
+   [InlineData("a\nb")]
+   [InlineData("a\r\nb")]
+   [InlineData("a\rb")]
+   public async Task Should_create_temp_table_with_string_default_value_with_line_break(string defaultValue)
+   {
+      ConfigureModel = builder => builder.ConfigureTempTable<string>(typeBuilder => typeBuilder.Property(t => t.Column1)
+                                                                                              .HasMaxLength(50)
+                                                                                              .HasDefaultValue(defaultValue));
+
+      await using var tempTable = await SUT.CreateTempTableAsync(GetTempTableEntityType<TempTable<string>>(), _options);
+
+      var columns = await GetColumnsAsync(tempTable);
+      ValidateColumn(columns[0], nameof(TempTable<string>.Column1), "varchar(50)", true, defaultValue: defaultValue);
+   }
+
+   [Fact]
+   public async Task Should_create_temp_table_with_default_value_with_fractional_seconds()
+   {
+      // The column is datetime(6): 123456 microseconds.
+      ConfigureModel = builder => builder.ConfigureTempTable<DateTime>(typeBuilder => typeBuilder.Property(t => t.Column1)
+                                                                                                 .HasColumnType("datetime(6)")
+                                                                                                 .HasDefaultValue(new DateTime(2024, 5, 6, 7, 8, 9).AddTicks(1234560)));
+
+      await using var tempTable = await SUT.CreateTempTableAsync(GetTempTableEntityType<TempTable<DateTime>>(), _options);
+
+      var columns = await GetColumnsAsync(tempTable);
+      ValidateColumn(columns[0], nameof(TempTable<DateTime>.Column1), "datetime(6)", false, defaultValue: "2024-05-06 07:08:09.123456");
    }
 
    [Fact]
@@ -899,6 +929,33 @@ public sealed class CreateTempTableAsync : MySqlIntegrationTestsBase
 
       await tempTable.DisposeAsync();
 
+      provider.DisposedLeases.Should().Be(1);
+   }
+
+   [Fact]
+   public async Task Should_throw_when_temp_table_name_equals_the_table_of_the_entity()
+   {
+      await SUT.Awaiting(sut => sut.CreateTempTableAsync(GetTempTableEntityType<TestEntity>(), _optionsWithNonUniqueName))
+               .Should().ThrowAsync<NotSupportedException>().WithMessage("*'TestEntities'*table of the model*");
+
+      GetTempTableStatements().Should().BeEmpty();
+      ActDbContext.Database.GetDbConnection().State.Should().Be(ConnectionState.Closed);
+   }
+
+   [Theory]
+   [InlineData("TestEntities")]
+   [InlineData("testentities")]
+   public async Task Should_throw_when_temp_table_name_equals_the_table_of_another_entity(string name)
+   {
+      ConfigureModel = builder => builder.ConfigureTempTableEntity<CustomTempTable>();
+
+      var provider = new FixedTempTableNameProvider(name);
+      var options = new TempTableCreationOptions { TableNameProvider = provider, PrimaryKeyCreation = IPrimaryKeyPropertiesProvider.None };
+
+      await SUT.Awaiting(sut => sut.CreateTempTableAsync(GetTempTableEntityType<CustomTempTable>(), options))
+               .Should().ThrowAsync<NotSupportedException>().WithMessage($"*'{name}'*table of the model*");
+
+      GetTempTableStatements().Should().BeEmpty();
       provider.DisposedLeases.Should().Be(1);
    }
 
@@ -1291,10 +1348,10 @@ public sealed class CreateTempTableAsync : MySqlIntegrationTestsBase
       var columns = (await GetColumnsAsync(tempTable)).OrderBy(c => c.Name, StringComparer.Ordinal).ToList();
       columns.Should().HaveCount(3);
 
-      var databaseCollation = await ActDbContext.Database.SqlQueryRaw<string>("SELECT @@collation_database AS `Value`").SingleAsync();
+      var tableCollation = await GetColumnCollationAsync("TestEntitiesWithCollation", nameof(TestEntityWithCollation.ColumnWithoutCollation));
 
       ValidateColumn(columns[0], nameof(TestEntityWithCollation.ColumnWithCollation), "varchar(100)", false, collation: "utf8mb4_bin");
-      ValidateColumn(columns[1], nameof(TestEntityWithCollation.ColumnWithoutCollation), "varchar(100)", false, collation: databaseCollation);
+      ValidateColumn(columns[1], nameof(TestEntityWithCollation.ColumnWithoutCollation), "varchar(100)", false, collation: tableCollation);
       ValidateColumn(columns[2], nameof(TestEntityWithCollation.Id), "char(36)", false);
    }
 
@@ -1331,6 +1388,210 @@ public sealed class CreateTempTableAsync : MySqlIntegrationTestsBase
       ValidateColumn(columns[0], $"{nameof(TestEntityWithComplexType.Boundary)}_{nameof(BoundaryValueObject.Lower)}", "int", false);
       ValidateColumn(columns[1], $"{nameof(TestEntityWithComplexType.Boundary)}_{nameof(BoundaryValueObject.Upper)}", "int", false);
       ValidateColumn(columns[2], nameof(TestEntityWithComplexType.Id), "char(36)", false);
+   }
+
+   [Fact]
+   public async Task Should_create_nullable_columns_for_members_of_nullable_ComplexTypes()
+   {
+      await using var tempTable = await SUT.CreateTempTableAsync(GetTempTableEntityType<TestEntityWithNullableComplexTypes>(), _options);
+
+      var columns = (await GetColumnsAsync(tempTable)).ToList();
+      columns.Should().HaveCount(14);
+
+      foreach (var name in new[]
+               {
+                  "OptionalBoundary_Upper", "OptionalBoundary_Lower", "OptionalPair_ReceivedAt", "OptionalPair_MessageTimestamp",
+                  "Tagged_Discriminator", "Tagged_X", "Tagged_Text", "Outer_Inner_V",
+                  "OptionalOuter_Y", "OptionalOuter_Inner_V", "OptionalConverted_ReceivedAt", "OptionalConverted_MessageTimestamp"
+               })
+      {
+         IsNullable(columns, name).Should().BeTrue(name);
+      }
+
+      IsNullable(columns, "Id").Should().BeFalse();
+      IsNullable(columns, "Outer_Z").Should().BeFalse();
+   }
+
+   [Fact]
+   public async Task Should_create_nullable_columns_for_struct_members_of_nullable_ComplexType()
+   {
+      await using var tempTable = await SUT.CreateTempTableAsync(GetTempTableEntityType<TestEntityWithStructsInOptionalComplexType>(), _options);
+
+      var columns = (await GetColumnsAsync(tempTable)).ToList();
+      columns.Should().HaveCount(10);
+
+      foreach (var name in new[]
+               {
+                  "OptionalOuter_Y", "OptionalOuter_Pair_ReceivedAt", "OptionalOuter_Pair_MessageTimestamp",
+                  "OptionalOuter_TaggedStruct_Discriminator", "OptionalOuter_TaggedStruct_X",
+                  "OptionalOuter_OptionalPair_ReceivedAt", "OptionalOuter_OptionalPair_MessageTimestamp"
+               })
+      {
+         IsNullable(columns, name).Should().BeTrue(name);
+      }
+
+      IsNullable(columns, "Id").Should().BeFalse();
+      IsNullable(columns, "RequiredPair_ReceivedAt").Should().BeFalse();
+      IsNullable(columns, "RequiredPair_MessageTimestamp").Should().BeFalse();
+   }
+
+   [Fact]
+   public async Task Should_create_temp_table_with_string_members_of_complex_type()
+   {
+      ConfigureModel = builder => TempTableWithStringComplexType.Configure(builder, "utf8mb4_bin");
+
+      await using var tempTable = await SUT.CreateTempTableAsync(GetTempTableEntityType<TempTableWithStringComplexType>(), _optionsWithNonUniqueName);
+
+      var columns = (await GetColumnsAsync(tempTable)).ToList();
+      columns.Should().HaveCount(3);
+
+      var defaultCollation = await GetDefaultCollationAsync("utf8mb4");
+      ValidateColumn(columns.Single(c => c.Name == nameof(TempTableWithStringComplexType.Id)), nameof(TempTableWithStringComplexType.Id), "char(36)", false);
+      ValidateColumn(columns.Single(c => c.Name == "Texts_WithCollation"), "Texts_WithCollation", "longtext", false, collation: "utf8mb4_bin");
+      ValidateColumn(columns.Single(c => c.Name == "Texts_WithoutCollation"), "Texts_WithoutCollation", "longtext", false, collation: defaultCollation);
+   }
+
+   [Fact]
+   public async Task Should_create_temp_table_with_string_members_of_nested_complex_type()
+   {
+      ConfigureModel = builder => TempTableWithNestedStringComplexType.Configure(builder, "utf8mb4_bin");
+
+      await using var tempTable = await SUT.CreateTempTableAsync(GetTempTableEntityType<TempTableWithNestedStringComplexType>(), _optionsWithNonUniqueName);
+
+      var columns = (await GetColumnsAsync(tempTable)).ToList();
+      columns.Should().HaveCount(3);
+
+      var defaultCollation = await GetDefaultCollationAsync("utf8mb4");
+      ValidateColumn(columns.Single(c => c.Name == nameof(TempTableWithNestedStringComplexType.Id)), nameof(TempTableWithNestedStringComplexType.Id), "char(36)", false);
+      ValidateColumn(columns.Single(c => c.Name == "Envelope_Texts_WithCollation"), "Envelope_Texts_WithCollation", "longtext", false, collation: "utf8mb4_bin");
+      ValidateColumn(columns.Single(c => c.Name == "Envelope_Texts_WithoutCollation"), "Envelope_Texts_WithoutCollation", "longtext", false, collation: defaultCollation);
+   }
+
+   [Fact]
+   public async Task Should_create_guid_column_with_charset_and_collation_of_the_table_column()
+   {
+      await using var tempTable = await SUT.CreateTempTableAsync(GetTempTableEntityType<TestEntity>(), _options);
+
+      var tableCollation = await GetColumnCollationAsync("TestEntities", nameof(TestEntity.Id));
+      var columns = await GetColumnsAsync(tempTable);
+
+      tableCollation.Should().Be("ascii_general_ci");
+      ValidateColumn(columns.Single(c => c.Name == nameof(TestEntity.Id)), nameof(TestEntity.Id), "char(36)", false, collation: tableCollation);
+   }
+
+   [Fact]
+   public async Task Should_create_string_columns_with_charset_and_collation_of_the_entity_type()
+   {
+      ConfigureModel = builder => builder.ConfigureTempTableEntity<CustomTempTable>(b =>
+                                                                                  {
+                                                                                     b.HasCharSet("latin1");
+                                                                                     b.UseCollation("latin1_general_cs");
+                                                                                     b.Property(e => e.Column2).HasMaxLength(50);
+                                                                                  });
+
+      await using var tempTable = await SUT.CreateTempTableAsync(GetTempTableEntityType<CustomTempTable>(), _optionsWithNonUniqueName);
+
+      var columns = await GetColumnsAsync(tempTable);
+      ValidateColumn(columns[1], nameof(CustomTempTable.Column2), "varchar(50)", true, collation: "latin1_general_cs");
+   }
+
+   [Fact]
+   public async Task Should_create_temp_table_with_default_value_of_text_json_and_blob_columns()
+   {
+      ConfigureModel = builder => builder.ConfigureTempTableEntity<LargeObjectDefaultsTempTable>(b =>
+                                                                                               {
+                                                                                                  b.Property(e => e.Text).HasDefaultValue("text default");
+                                                                                                  b.Property(e => e.Json).HasColumnType("json").HasDefaultValue("""{"a":1}""");
+                                                                                                  b.Property(e => e.Blob).HasDefaultValue(new byte[] { 1, 2, 3 });
+                                                                                               });
+
+      await using var tempTable = await SUT.CreateTempTableAsync(GetTempTableEntityType<LargeObjectDefaultsTempTable>(), _optionsWithNonUniqueName);
+
+      var statement = GetTempTableStatements().Single();
+      statement.Should().Contain("`Text` longtext").And.Contain("DEFAULT ('text default')");
+      statement.Should().Contain("`Json` json").And.Contain("""DEFAULT ('{"a":1}')""");
+
+      await ActDbContext.Database.ExecuteSqlRawAsync($"INSERT INTO `{tempTable.Name}` (`Id`) VALUES (1)");
+
+      (await ActDbContext.Database.SqlQueryRaw<string>($"SELECT `Text` AS `Value` FROM `{tempTable.Name}`").SingleAsync()).Should().Be("text default");
+      (await ActDbContext.Database.SqlQueryRaw<string>($"SELECT CAST(`Json` AS CHAR) AS `Value` FROM `{tempTable.Name}`").SingleAsync()).Should().Be("""{"a": 1}""");
+      (await ActDbContext.Database.SqlQueryRaw<byte[]>($"SELECT `Blob` AS `Value` FROM `{tempTable.Name}`").SingleAsync()).Should().Equal(1, 2, 3);
+   }
+
+   [Fact]
+   public async Task Should_create_temp_table_with_default_value_of_enum_column_whose_values_contain_text()
+   {
+      ConfigureModel = builder => builder.ConfigureTempTableEntity<EnumTempTable>(b => b.Property(e => e.Status).HasColumnType("enum('text','blob')").HasDefaultValue("text"));
+
+      await using var tempTable = await SUT.CreateTempTableAsync(GetTempTableEntityType<EnumTempTable>(), _options);
+
+      GetTempTableStatements().Single().Should().Contain("DEFAULT 'text'");
+      var columns = await GetColumnsAsync(tempTable);
+      ValidateColumn(columns[0], nameof(EnumTempTable.Status), "enum('text','blob')", true, defaultValue: "text");
+   }
+
+   [Fact]
+   public async Task Should_create_complex_member_columns_with_charset_and_collation_of_the_entity_type()
+   {
+      // The provider gives a member of a complex type no charset or collation of the entity type; only the table options cover it.
+      ConfigureModel = builder => builder.ConfigureTempTableEntity<TempTableWithStringComplexType>(b =>
+                                                                                                 {
+                                                                                                    b.HasCharSet("latin1");
+                                                                                                    b.UseCollation("latin1_general_cs");
+                                                                                                    b.ComplexProperty(e => e.Texts);
+                                                                                                 });
+
+      await using var tempTable = await SUT.CreateTempTableAsync(GetTempTableEntityType<TempTableWithStringComplexType>(), _optionsWithNonUniqueName);
+
+      var columns = await GetColumnsAsync(tempTable);
+      ValidateColumn(columns.Single(c => c.Name == "Texts_WithoutCollation"), "Texts_WithoutCollation", "longtext", false, collation: "latin1_general_cs");
+   }
+
+   // The provider removes such a clause from a varchar or char column type, but keeps it for an enum or set column type.
+   [Theory]
+   [InlineData("enum('a','b') CHARACTER SET latin1", "latin1_swedish_ci")]
+   [InlineData("enum('a','b') charset latin1", "latin1_swedish_ci")]
+   [InlineData("enum('a','b') COLLATE utf8mb4_unicode_ci", "utf8mb4_unicode_ci")]
+   public async Task Should_keep_charset_and_collation_of_the_column_type(string columnType, string expectedCollation)
+   {
+      ConfigureModel = builder => builder.ConfigureTempTableEntity<EnumTempTable>(b => b.Property(e => e.Status).HasColumnType(columnType));
+
+      await using var tempTable = await SUT.CreateTempTableAsync(GetTempTableEntityType<EnumTempTable>(), _options);
+
+      var columns = await GetColumnsAsync(tempTable);
+      ValidateColumn(columns[0], nameof(EnumTempTable.Status), "enum('a','b')", true, collation: expectedCollation);
+   }
+
+   [Fact]
+   public async Task Should_not_create_auto_increment_column_for_generated_DateTime_property()
+   {
+      ConfigureModel = builder => builder.ConfigureTempTableEntity<GeneratedDateTimeTempTable>(b => b.Property(e => e.CreatedAt).ValueGeneratedOnAdd());
+
+      await using var tempTable = await SUT.CreateTempTableAsync(GetTempTableEntityType<GeneratedDateTimeTempTable>(), _options);
+
+      var columns = await GetColumnsAsync(tempTable);
+      ValidateColumn(columns.Single(c => c.Name == nameof(GeneratedDateTimeTempTable.CreatedAt)), nameof(GeneratedDateTimeTempTable.CreatedAt), "datetime(6)", false);
+      columns.Should().AllSatisfy(c => c.Extra.Should().NotContain("auto_increment"));
+   }
+
+   private static bool IsNullable(List<MySqlTempTableColumn> columns, string name)
+   {
+      return columns.Single(c => c.Name == name).IsNullable;
+   }
+
+   // A column with a charset and without a collation gets the default collation of the charset, not the collation of the database.
+   private Task<string> GetDefaultCollationAsync(string charSet)
+   {
+      return ActDbContext.Database
+                         .SqlQueryRaw<string>("SELECT DEFAULT_COLLATE_NAME AS `Value` FROM information_schema.CHARACTER_SETS WHERE CHARACTER_SET_NAME = {0}", charSet)
+                         .SingleAsync();
+   }
+
+   private Task<string> GetColumnCollationAsync(string tableName, string columnName)
+   {
+      return ActDbContext.Database
+                         .SqlQueryRaw<string>("SELECT COLLATION_NAME AS `Value` FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = {0} AND COLUMN_NAME = {1}", tableName, columnName)
+                         .SingleAsync();
    }
 
    private IEntityType GetTempTableEntityType<T>()
@@ -1374,7 +1635,7 @@ public sealed class CreateTempTableAsync : MySqlIntegrationTestsBase
 
    private static DbContextOptions<MySqlTestDbContext> CreateOptions(DbConnection connection)
    {
-      return new DbContextOptionsBuilder<MySqlTestDbContext>()
+      return MySqlTestDbContext.CreateOptionsBuilder()
              .UseMySql(connection, MySqlContainerFixture.ServerVersion, builder => builder.AddBulkOperationSupport())
              .Options;
    }
@@ -1409,6 +1670,20 @@ public sealed class CreateTempTableAsync : MySqlIntegrationTestsBase
    private sealed class EnumTempTable
    {
       public string? Status { get; set; }
+   }
+
+   private sealed class GeneratedDateTimeTempTable
+   {
+      public int Id { get; set; }
+      public DateTime CreatedAt { get; set; }
+   }
+
+   private sealed class LargeObjectDefaultsTempTable
+   {
+      public int Id { get; set; }
+      public string? Text { get; set; }
+      public string? Json { get; set; }
+      public byte[]? Blob { get; set; }
    }
 
    private sealed class FixedTempTableNameProvider(string name) : ITempTableNameProvider

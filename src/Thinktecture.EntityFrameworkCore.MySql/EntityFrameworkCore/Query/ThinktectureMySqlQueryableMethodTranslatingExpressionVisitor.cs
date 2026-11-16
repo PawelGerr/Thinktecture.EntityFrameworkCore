@@ -9,7 +9,7 @@ namespace Thinktecture.EntityFrameworkCore.Query;
 /// <summary>
 /// Extends the MySQL queryable method translator with Thinktecture relational and bulk methods.
 /// </summary>
-[SuppressMessage("Usage", "EF1001:Internal EF Core API usage.")]
+[SuppressMessage("Usage", "EF1001", MessageId = "Internal EF Core API usage.")]
 public sealed class ThinktectureMySqlQueryableMethodTranslatingExpressionVisitor : MySqlQueryableMethodTranslatingExpressionVisitor
 {
    /// <summary>

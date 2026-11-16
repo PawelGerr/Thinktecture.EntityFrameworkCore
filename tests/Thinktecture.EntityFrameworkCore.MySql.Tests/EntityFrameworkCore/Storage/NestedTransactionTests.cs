@@ -18,8 +18,8 @@ public sealed class NestedTransactionTests : MySqlIntegrationTestsBase
 
    private NestedRelationalTransactionManager SUT => field ??= (NestedRelationalTransactionManager)ActDbContext.GetService<IDbContextTransactionManager>();
 
-   public NestedTransactionTests(MySqlContainerFixture fixture)
-      : base(fixture)
+   public NestedTransactionTests(ITestOutputHelper testOutputHelper, MySqlContainerFixture fixture)
+      : base(testOutputHelper, fixture)
    {
    }
 
@@ -231,9 +231,9 @@ public sealed class NestedTransactionTests : MySqlIntegrationTestsBase
                .Should().ThrowAsync<InvalidOperationException>().WithMessage("The isolation level 'RepeatableRead' of the parent transaction is not compatible to the provided isolation level 'Serializable'.");
    }
 
-   // MySQL's default isolation level is REPEATABLE READ, so a child asking for REPEATABLE READ or a weaker level is compatible.
-   // MySqlConnector reports IsolationLevel.Unspecified for a transaction that was started without a level, and the nested
-   // transaction rejects every child level below a parent reporting Unspecified (NestedDbContextTransaction.EnsureIsolationLevelCompatible).
+   // When no level is passed, MySqlConnector sends SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ and reports IsolationLevel.Unspecified.
+   // NestedDbContextTransaction.EnsureIsolationLevelCompatible treats Unspecified as RepeatableRead,
+   // so a child that asks for REPEATABLE READ or a weaker level is compatible.
    [Theory]
    [InlineData(IsolationLevel.ReadCommitted)]
    [InlineData(IsolationLevel.RepeatableRead)]
@@ -244,6 +244,15 @@ public sealed class NestedTransactionTests : MySqlIntegrationTestsBase
       await using var childTx = await SUT.BeginTransactionAsync(childIsolationLevel);
 
       childTx.GetDbTransaction().Should().Be(rootTx.GetDbTransaction());
+   }
+
+   [Fact]
+   public async Task Should_not_allow_child_with_Serializable_if_root_has_no_level()
+   {
+      await using var rootTx = await SUT.BeginTransactionAsync();
+
+      await SUT.Awaiting(sut => sut.BeginTransactionAsync(IsolationLevel.Serializable))
+               .Should().ThrowAsync<InvalidOperationException>().WithMessage("The isolation level 'RepeatableRead' of the parent transaction is not compatible to the provided isolation level 'Serializable'.");
    }
 
    [Theory]

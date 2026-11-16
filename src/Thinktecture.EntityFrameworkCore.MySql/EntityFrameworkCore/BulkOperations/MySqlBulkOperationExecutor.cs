@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.Data.Common;
 using System.Linq.Expressions;
 using System.Text;
@@ -5,32 +6,40 @@ using System.Transactions;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.EntityFrameworkCore.Storage;
-using Microsoft.Extensions.Logging;
-using Microting.EntityFrameworkCore.MySql.Infrastructure;
 using Microting.EntityFrameworkCore.MySql.Infrastructure.Internal;
 using MySqlConnector;
 using Thinktecture.EntityFrameworkCore.BulkOperations.Internal;
 using Thinktecture.EntityFrameworkCore.Data;
+using Thinktecture.EntityFrameworkCore.Infrastructure;
 using Thinktecture.EntityFrameworkCore.TempTables;
 using Thinktecture.Internal;
 
 namespace Thinktecture.EntityFrameworkCore.BulkOperations;
 
 /// <summary>
-/// Executes MySQL bulk inserts.
+/// Executes bulk operations for MySQL.
 /// </summary>
-[SuppressMessage("Usage", "EF1001:Internal EF Core API usage.")]
+[SuppressMessage("Usage", "EF1001", MessageId = "Internal EF Core API usage.")]
 public sealed class MySqlBulkOperationExecutor : IBulkInsertExecutor, ITempTableBulkInsertExecutor, IBulkUpdateExecutor, IBulkInsertOrUpdateExecutor, ITruncateTableExecutor
 {
-   private const int _MAX_PARAMETERS = 65_535;
-   private const int _MAX_ROWS_PER_BATCH = 500;
+   private const string _ORDER_COLUMN = "__ord";
+
+   // With "sql_safe_updates" MySQL rejects the UPDATE and DELETE of the staging statements (error 1175), because the optimizer may scan a small table completely.
+   // The join with the staging table limits the affected rows, so the setting is switched off for these statements only.
+   private const string _SAFE_UPDATES_OFF_HINT = "/*+ SET_VAR(sql_safe_updates = 0) */";
+
+   // MySQL rejects CREATE TEMPORARY TABLE inside an XA transaction with this error when xa_detach_on_prepare is ON (the default).
+   private const int _XA_TEMPORARY_TABLE_ERROR = 4091;
+
+   // CREATE TEMPORARY TABLE fails with this error when the session already has a table with the name.
+   private const int _TABLE_EXISTS_ERROR = 1050;
 
    private readonly DbContext _context;
    private readonly ISqlGenerationHelper _sqlGenerationHelper;
    private readonly IRelationalTypeMappingSource _typeMappingSource;
-   private readonly bool _useRowAlias;
+   private readonly IMySqlOptions _mySqlOptions;
+   private readonly MySqlDbContextOptionsExtensionOptions _options;
 
    /// <summary>
    /// Initializes a new instance of <see cref="MySqlBulkOperationExecutor" />.
@@ -39,20 +48,20 @@ public sealed class MySqlBulkOperationExecutor : IBulkInsertExecutor, ITempTable
    /// <param name="sqlGenerationHelper">SQL generation helper.</param>
    /// <param name="typeMappingSource">Type mapping source used to create command parameters.</param>
    /// <param name="mySqlOptions">MySQL provider options.</param>
+   /// <param name="options">Options of the registration of the bulk operations (insert path and parameter budget).</param>
    public MySqlBulkOperationExecutor(
       ICurrentDbContext context,
       ISqlGenerationHelper sqlGenerationHelper,
       IRelationalTypeMappingSource typeMappingSource,
-      IMySqlOptions mySqlOptions)
+      IMySqlOptions mySqlOptions,
+      MySqlDbContextOptionsExtensionOptions options)
    {
       ArgumentNullException.ThrowIfNull(context);
-      ArgumentNullException.ThrowIfNull(mySqlOptions);
+      _mySqlOptions = mySqlOptions ?? throw new ArgumentNullException(nameof(mySqlOptions));
+      _options = options ?? throw new ArgumentNullException(nameof(options));
       _context = context.Context ?? throw new ArgumentNullException(nameof(context));
       _sqlGenerationHelper = sqlGenerationHelper ?? throw new ArgumentNullException(nameof(sqlGenerationHelper));
       _typeMappingSource = typeMappingSource ?? throw new ArgumentNullException(nameof(typeMappingSource));
-
-      // VALUES(col) is deprecated since MySQL 8.0.20; the row alias syntax exists since 8.0.19 and is unsupported by MariaDB.
-      _useRowAlias = mySqlOptions.ServerVersion.Type == ServerType.MySql && mySqlOptions.ServerVersion.Version >= new Version(8, 0, 19);
    }
 
    /// <inheritdoc />
@@ -189,7 +198,21 @@ public sealed class MySqlBulkOperationExecutor : IBulkInsertExecutor, ITempTable
       var properties = mySqlOptions.PropertiesToInsert.DeterminePropertiesForInsert(entityType, null);
       properties.EnsureNoSeparateOwnedTypesInsideCollectionOwnedType();
 
-      return await ExecuteInTransactionAsync(token => InsertAsync(entityType, entities, properties, mySqlOptions, token), cancellationToken).ConfigureAwait(false);
+      // Every table is resolved once and before the first statement, so no row of the owner is written when the table of an owned type is invalid.
+      // Inlined owned types are skipped, because the root-only providers throw for every owned type.
+      var tables = new Dictionary<IEntityType, BulkOperationTableName> { [entityType] = GetTableName(mySqlOptions.TableNameProvider, entityType) };
+
+      foreach (var ownedType in properties.SelectMany(property => property.Navigations)
+                                          .Where(navigation => navigation.TargetEntityType.IsOwned() && !navigation.IsInlined())
+                                          .Select(navigation => navigation.TargetEntityType)
+                                          .Distinct())
+      {
+         tables[ownedType] = GetTableName(mySqlOptions.TableNameProvider, ownedType);
+      }
+
+      var resolvedTables = IBulkOperationTableNameProvider.Create(type => tables[type]);
+
+      return await ExecuteInTransactionAsync(token => InsertAsync(entityType, entities, properties, mySqlOptions, resolvedTables, token), cancellationToken).ConfigureAwait(false);
    }
 
    /// <inheritdoc />
@@ -203,46 +226,26 @@ public sealed class MySqlBulkOperationExecutor : IBulkInsertExecutor, ITempTable
       var entityType = _context.Model.GetEntityTypeOrTempTableEntityType<T>();
 
       // Resolved first: a temp table entity without a table name is reported as such, not as a missing key.
-      var table = mySqlOptions.TableNameProvider.GetValidTableName(entityType);
+      var table = GetTableName(mySqlOptions.TableNameProvider, entityType);
       var propertiesToUpdate = mySqlOptions.PropertiesToUpdate.DeterminePropertiesForUpdate(entityType, null);
       var keyProperties = mySqlOptions.KeyProperties.DetermineKeyProperties(entityType);
 
-      if (keyProperties.Count == 0)
-         throw new InvalidOperationException($"The entity type '{entityType.Name}' needs a primary key to perform bulk update.");
-
       propertiesToUpdate.EnsureNoSeparateOwnedTypesInsideCollectionOwnedType();
-      EnsureNoSeparateOwnedTypes(entityType);
+      EnsureNoOwnedTypes(entityType, propertiesToUpdate);
 
       var propertiesToSet = propertiesToUpdate.Where(property => !keyProperties.Contains(property.Property)).ToList();
 
       if (propertiesToSet.Count == 0)
          throw new ArgumentException("The number of properties to update cannot be 0.");
 
-      var tempTableOptions = new MySqlTempTableBulkInsertOptions
-                             {
-                                PropertiesToInsert = mySqlOptions.PropertiesToUpdate is null
-                                                        ? null
-                                                        : CompositeTempTableEntityPropertiesProvider.CreateForUpdate(mySqlOptions.PropertiesToUpdate, mySqlOptions.KeyProperties),
-                                BatchSize = mySqlOptions.BatchSize,
-                                CommandTimeout = mySqlOptions.CommandTimeout,
-                                // The update keys may not be the primary key.
-                                PrimaryKeyCreation = IPrimaryKeyPropertiesProvider.AdaptiveEntityTypeConfiguration
-                             };
+      var keys = ToPropertiesWithNavigations(keyProperties);
+      var stagingProperties = keys.Concat(propertiesToSet).ToList();
+      var staging = new StagingTable(entityType, table, keys, stagingProperties, mySqlOptions.MaxParametersPerStatement, mySqlOptions.CommandTimeout, false);
 
-      return await ExecuteInTransactionAsync(async token =>
-                                             {
-                                                // MySQL rejects temp tables inside the XA transaction of a TransactionScope.
-                                                if (Transaction.Current is not null)
-                                                   return await UpdateRowByRowAsync(entities, table, propertiesToSet, keyProperties, mySqlOptions.CommandTimeout, token).ConfigureAwait(false);
-
-                                                // Staging in a temp table turns N round trips into one set-based UPDATE.
-                                                await using var tempTable = await BulkInsertIntoTempTableAsync<T, T>(entities, tempTableOptions, static query => query, token).ConfigureAwait(false);
-                                                var statement = CreateUpdateStatement(table, tempTable.Name, propertiesToSet, keyProperties);
-
-                                                await using var command = CreateCommand(mySqlOptions.CommandTimeout);
-                                                command.CommandText = statement;
-                                                return await command.ExecuteNonQueryAsync(token).ConfigureAwait(false);
-                                             },
+      return await ExecuteInTransactionAsync(token => ExecuteWithStagingTableAsync(staging,
+                                                                                   entities,
+                                                                                   (stagingTable, innerToken) => ExecuteSqlAsync(CreateUpdateStatement(table, stagingTable, propertiesToSet, keys), innerToken),
+                                                                                   token),
                                              cancellationToken).ConfigureAwait(false);
    }
 
@@ -257,57 +260,29 @@ public sealed class MySqlBulkOperationExecutor : IBulkInsertExecutor, ITempTable
       var entityType = _context.Model.GetEntityTypeOrTempTableEntityType<T>();
 
       // Resolved first: a temp table entity without a table name is reported as such, not as a missing key.
-      var table = mySqlOptions.TableNameProvider.GetValidTableName(entityType);
-      var propertiesToInsert = mySqlOptions.PropertiesToInsert.DeterminePropertiesForInsert(entityType, null);
+      var table = GetTableName(mySqlOptions.TableNameProvider, entityType);
+      var propertiesToInsert = mySqlOptions.PropertiesToInsert.DeterminePropertiesForInsert(entityType, true);
       var propertiesToUpdate = mySqlOptions.PropertiesToUpdate.DeterminePropertiesForUpdate(entityType, true);
       var keyProperties = mySqlOptions.KeyProperties.DetermineKeyProperties(entityType);
 
-      propertiesToInsert.EnsureNoSeparateOwnedTypesInsideCollectionOwnedType();
-      propertiesToUpdate.EnsureNoSeparateOwnedTypesInsideCollectionOwnedType();
-      EnsureNoSeparateOwnedTypes(entityType);
+      EnsureNoOwnedTypes(entityType, [.. propertiesToInsert, .. propertiesToUpdate]);
 
-      // Without an explicit selection the inserted properties are updated. The update can only use the values that are inserted
-      // (the incoming row), so properties that are explicitly selected for update must be inserted as well (checked below).
-      if (mySqlOptions.PropertiesToUpdate is null)
-         propertiesToUpdate = propertiesToUpdate.Where(propertiesToInsert.Contains).ToList();
+      if (propertiesToInsert.Count == 0)
+         throw new ArgumentException("The number of properties to insert cannot be 0.");
 
-      foreach (var property in propertiesToUpdate)
-      {
-         if (!propertiesToInsert.Contains(property))
-            throw new NotSupportedException($"MySQL upsert requires update property '{property.Property.Name}' to also be selected for insertion.");
-      }
-
-      foreach (var keyProperty in keyProperties)
-      {
-         if (!propertiesToInsert.Any(property => property.Property == keyProperty))
-            throw new NotSupportedException($"MySQL upsert requires key property '{keyProperty.Name}' to be selected for insertion.");
-      }
-
-      var tableIdentifier = _sqlGenerationHelper.DelimitIdentifier(table.Name, table.Schema);
-      var insertColumns = GetColumnNames(propertiesToInsert);
-      var mappings = GetProviderMappings(propertiesToInsert);
       // The primary key is never rewritten by default, even if other properties are used as the upsert key.
       IReadOnlyList<IProperty> primaryKeyProperties = mySqlOptions.PropertiesToUpdate is null
                                                          ? entityType.FindPrimaryKey()?.Properties ?? []
                                                          : [];
-      var updateColumns = GetColumnNames(propertiesToUpdate.Where(property => !keyProperties.Contains(property.Property) && !primaryKeyProperties.Contains(property.Property)).ToList());
-      var keyColumns = GetColumnNames(keyProperties.Select(property => new PropertyWithNavigations(property, Array.Empty<Navigation>())).ToList());
-      var maximumRows = GetMaximumRows(mySqlOptions.BatchSize, propertiesToInsert.Count);
+      var propertiesToSet = propertiesToUpdate.Where(property => !keyProperties.Contains(property.Property) && !primaryKeyProperties.Contains(property.Property)).ToList();
+      var keys = ToPropertiesWithNavigations(keyProperties);
+      var stagingProperties = keys.Concat(propertiesToInsert).Concat(propertiesToSet).Distinct().ToList();
+      var staging = new StagingTable(entityType, table, keys, stagingProperties, mySqlOptions.MaxParametersPerStatement, mySqlOptions.CommandTimeout, true);
 
-      return await ExecuteInTransactionAsync(async token =>
-                                             {
-                                                using var reader = _context.GetService<IEntityDataReaderFactory>().Create(_context, entities, propertiesToInsert, ensureReadEntitiesCollection: false);
-                                                return await InsertRowsAsync(reader,
-                                                                             tableIdentifier,
-                                                                             insertColumns,
-                                                                             mappings,
-                                                                             maximumRows,
-                                                                             mySqlOptions.CommandTimeout,
-                                                                             updateColumns,
-                                                                             keyColumns,
-                                                                             false,
-                                                                             token).ConfigureAwait(false);
-                                             },
+      return await ExecuteInTransactionAsync(token => ExecuteWithStagingTableAsync(staging,
+                                                                                   entities,
+                                                                                   (stagingTable, innerToken) => UpsertFromStagingTableAsync(staging, stagingTable, propertiesToInsert, propertiesToSet, innerToken),
+                                                                                   token),
                                              cancellationToken).ConfigureAwait(false);
    }
 
@@ -352,16 +327,15 @@ public sealed class MySqlBulkOperationExecutor : IBulkInsertExecutor, ITempTable
       if (targetKeyMembers.Count != sourceKeyMembers.Count)
          throw new ArgumentException($"The number of target key properties ({targetKeyMembers.Count}) must match the number of source key properties ({sourceKeyMembers.Count}).");
 
-      var logger = _context.GetService<ILoggerFactory>().CreateLogger<MySqlBulkOperationExecutor>();
-      var translator = new EfCoreValueExpressionTranslator(logger, _context);
-      var (sql, parameters) = translator.TranslateUpdateFromQuery(sourceQuery,
-                                                                  targetKeySelector,
-                                                                  sourceKeySelector,
-                                                                  setClauseBuilder.Entries,
-                                                                  filter,
-                                                                  options?.TableNameProvider ?? IBulkOperationTableNameProvider.Default);
-      var sqlParameters = parameters.Select(parameter => (object)new MySqlParameter(parameter.Key, parameter.Value ?? DBNull.Value));
-      return await _context.Database.ExecuteSqlRawAsync(EscapeFormatString(sql), sqlParameters, cancellationToken).ConfigureAwait(false);
+      var translator = new EfCoreValueExpressionTranslator(_context);
+      var (command, parameterValues) = translator.TranslateUpdateFromQuery(sourceQuery,
+                                                                           targetKeySelector,
+                                                                           sourceKeySelector,
+                                                                           setClauseBuilder.Entries,
+                                                                           filter,
+                                                                           CreateSchemaCheckingProvider(options?.TableNameProvider));
+
+      return await translator.ExecuteNonQueryAsync(command, parameterValues, cancellationToken).ConfigureAwait(false);
    }
 
    /// <summary>
@@ -390,56 +364,143 @@ public sealed class MySqlBulkOperationExecutor : IBulkInsertExecutor, ITempTable
       if (builder.Entries.Count == 0)
          throw new ArgumentException("At least one column mapping is required.", nameof(mapPropertyCalls));
 
-      var logger = _context.GetService<ILoggerFactory>().CreateLogger<MySqlBulkOperationExecutor>();
-      var translator = new EfCoreValueExpressionTranslator(logger, _context);
-      var (sql, parameters) = translator.TranslateInsertFromQuery<TTarget, TSource>(
-                                                                                    sourceQuery,
-                                                                                    builder.Entries,
-                                                                                    options?.TableNameProvider ?? IBulkOperationTableNameProvider.Default);
-      var sqlParameters = parameters.Select(parameter => (object)new MySqlParameter(parameter.Key, parameter.Value ?? DBNull.Value));
-      return await _context.Database.ExecuteSqlRawAsync(EscapeFormatString(sql), sqlParameters, cancellationToken).ConfigureAwait(false);
-   }
+      var translator = new EfCoreValueExpressionTranslator(_context);
+      var (command, parameterValues) = translator.TranslateInsertFromQuery<TTarget, TSource>(sourceQuery,
+                                                                                             builder.Entries,
+                                                                                             CreateSchemaCheckingProvider(options?.TableNameProvider));
 
-   /// <inheritdoc />
-   public Task TruncateTableAsync<T>(CancellationToken cancellationToken = default)
-      where T : class
-   {
-      return TruncateTableAsync(typeof(T), cancellationToken);
+      return await translator.ExecuteNonQueryAsync(command, parameterValues, cancellationToken).ConfigureAwait(false);
    }
 
    /// <inheritdoc />
    /// <remarks>
-   /// Uses <c>TRUNCATE TABLE</c>, or <c>DELETE FROM</c> if a transaction is active (TRUNCATE commits implicitly)
-   /// or the table is referenced by a foreign key (TRUNCATE fails with error 1701).
-   /// <c>DELETE</c> does not reset <c>AUTO_INCREMENT</c> counters.
+   /// Throws when a transaction is active, because <c>TRUNCATE TABLE</c> commits it implicitly in MySQL.
+   /// This method is the same as <see cref="TruncateTableAsync{T}(bool, CancellationToken)"/> with <c>throwOnTransaction: true</c>.
    /// </remarks>
-   public async Task TruncateTableAsync(Type type, CancellationToken cancellationToken = default)
+   public Task TruncateTableAsync<T>(CancellationToken cancellationToken = default)
+      where T : class
+   {
+      return TruncateTableAsync(typeof(T), true, cancellationToken);
+   }
+
+   /// <inheritdoc />
+   /// <remarks>
+   /// Throws when a transaction is active, because <c>TRUNCATE TABLE</c> commits it implicitly in MySQL.
+   /// This method is the same as <see cref="TruncateTableAsync(Type, bool, CancellationToken)"/> with <c>throwOnTransaction: true</c>.
+   /// </remarks>
+   public Task TruncateTableAsync(Type type, CancellationToken cancellationToken = default)
+   {
+      return TruncateTableAsync(type, true, cancellationToken);
+   }
+
+   /// <summary>
+   /// Truncates the table of the entity of type <typeparamref name="T"/> with <c>TRUNCATE TABLE</c>.
+   /// </summary>
+   /// <param name="throwOnTransaction">
+   /// If <c>true</c>, the method throws when a transaction is active.
+   /// If <c>false</c>, <c>TRUNCATE TABLE</c> is executed inside the active transaction, and MySQL commits this transaction implicitly.
+   /// </param>
+   /// <param name="cancellationToken">Cancellation token.</param>
+   /// <typeparam name="T">Type of the entity to truncate.</typeparam>
+   /// <returns>A task that completes when the table is truncated.</returns>
+   /// <remarks>
+   /// <para>
+   /// The method detects the current transaction of the context, an ambient transaction (<see cref="Transaction.Current"/>) and a transaction that the context is enlisted in.
+   /// It cannot detect the following transactions, and in these cases <c>TRUNCATE TABLE</c> commits them implicitly without an error:
+   /// a transaction that was started with a raw <c>START TRANSACTION</c> or by <c>autocommit=0</c>,
+   /// a connection that was enlisted with <see cref="System.Data.Common.DbConnection.EnlistTransaction"/> directly while <c>UseXaTransactions=false</c>,
+   /// and a <see cref="TransactionScope"/> without <see cref="TransactionScopeAsyncFlowOption.Enabled"/> after a switch of the thread.
+   /// A transaction of <see cref="System.Data.Common.DbConnection.BeginTransaction()"/> that was not passed to <c>UseTransaction</c> is not committed silently,
+   /// because MySqlConnector rejects the command unless <c>IgnoreCommandTransaction=true</c> is set.
+   /// </para>
+   /// <para>
+   /// MySQL rejects <c>TRUNCATE TABLE</c> of a table that a foreign key of another table references with error 1701, also when the referencing table is empty.
+   /// Inside an XA transaction (a <see cref="TransactionScope"/> with <c>UseXaTransactions=true</c>, the default) MySQL rejects it with error 1399.
+   /// </para>
+   /// </remarks>
+   /// <exception cref="InvalidOperationException">The parameter <paramref name="throwOnTransaction"/> is <c>true</c> and a transaction is active.</exception>
+   /// <exception cref="NotSupportedException">The table has a schema and the schema behavior of the provider is <c>Throw</c>.</exception>
+   public Task TruncateTableAsync<T>(bool throwOnTransaction, CancellationToken cancellationToken = default)
+      where T : class
+   {
+      return TruncateTableAsync(typeof(T), throwOnTransaction, cancellationToken);
+   }
+
+   /// <summary>
+   /// Truncates the table of the entity of type <paramref name="type"/> with <c>TRUNCATE TABLE</c>.
+   /// </summary>
+   /// <param name="type">Type of the entity to truncate.</param>
+   /// <param name="throwOnTransaction">
+   /// If <c>true</c>, the method throws when a transaction is active.
+   /// If <c>false</c>, <c>TRUNCATE TABLE</c> is executed inside the active transaction, and MySQL commits this transaction implicitly.
+   /// </param>
+   /// <param name="cancellationToken">Cancellation token.</param>
+   /// <returns>A task that completes when the table is truncated.</returns>
+   /// <remarks>
+   /// <para>
+   /// The method detects the current transaction of the context, an ambient transaction (<see cref="Transaction.Current"/>) and a transaction that the context is enlisted in.
+   /// It cannot detect the following transactions, and in these cases <c>TRUNCATE TABLE</c> commits them implicitly without an error:
+   /// a transaction that was started with a raw <c>START TRANSACTION</c> or by <c>autocommit=0</c>,
+   /// a connection that was enlisted with <see cref="System.Data.Common.DbConnection.EnlistTransaction"/> directly while <c>UseXaTransactions=false</c>,
+   /// and a <see cref="TransactionScope"/> without <see cref="TransactionScopeAsyncFlowOption.Enabled"/> after a switch of the thread.
+   /// A transaction of <see cref="System.Data.Common.DbConnection.BeginTransaction()"/> that was not passed to <c>UseTransaction</c> is not committed silently,
+   /// because MySqlConnector rejects the command unless <c>IgnoreCommandTransaction=true</c> is set.
+   /// </para>
+   /// <para>
+   /// MySQL rejects <c>TRUNCATE TABLE</c> of a table that a foreign key of another table references with error 1701, also when the referencing table is empty.
+   /// Inside an XA transaction (a <see cref="TransactionScope"/> with <c>UseXaTransactions=true</c>, the default) MySQL rejects it with error 1399.
+   /// </para>
+   /// </remarks>
+   /// <exception cref="ArgumentNullException"><paramref name="type"/> is <c>null</c>.</exception>
+   /// <exception cref="InvalidOperationException">The parameter <paramref name="throwOnTransaction"/> is <c>true</c> and a transaction is active.</exception>
+   /// <exception cref="NotSupportedException">The table has a schema and the schema behavior of the provider is <c>Throw</c>.</exception>
+   public async Task TruncateTableAsync(Type type, bool throwOnTransaction, CancellationToken cancellationToken = default)
    {
       ArgumentNullException.ThrowIfNull(type);
+
+      if (throwOnTransaction && HasTransaction)
+         throw new InvalidOperationException("TRUNCATE TABLE commits the current transaction in MySQL. Complete the transaction first, or call the MySQL overload with 'throwOnTransaction: false'.");
 
       var entityType = _context.Model.GetEntityType(type);
       var tableName = entityType.GetTableName()
                       ?? throw new InvalidOperationException($"The entity '{entityType.Name}' has no table name.");
-      var delimitedTable = _sqlGenerationHelper.DelimitIdentifier(tableName, entityType.GetSchema());
+      var schema = entityType.GetSchema();
+      EnsureSchemaIsSupported(new BulkOperationTableName(tableName, schema));
 
-      // TRUNCATE commits implicitly and fails (1701) on tables referenced by foreign keys, even if the child is empty.
-      var useDelete = HasTransaction
-                      || entityType.GetReferencingForeignKeys().Any();
-      var sql = useDelete ? $"DELETE FROM {delimitedTable};" : $"TRUNCATE TABLE {delimitedTable};";
+      var sql = $"TRUNCATE TABLE {_sqlGenerationHelper.DelimitIdentifier(tableName, schema)};";
 
-      await _context.Database.ExecuteSqlRawAsync(sql, cancellationToken).ConfigureAwait(false);
+      await ExecuteSqlAsync(sql, cancellationToken).ConfigureAwait(false);
    }
 
-   // ExecuteSqlRaw passes the SQL through string.Format. Braces of the generated SQL (for example in string literals) must not be treated as placeholders.
-   private static string EscapeFormatString(string sql)
+   private BulkOperationTableName GetTableName(IBulkOperationTableNameProvider tableNameProvider, IEntityType entityType)
    {
-      return sql.Replace("{", "{{", StringComparison.Ordinal).Replace("}", "}}", StringComparison.Ordinal);
+      var table = tableNameProvider.GetValidTableName(entityType);
+      EnsureSchemaIsSupported(table);
+      return table;
    }
 
-   private static void EnsureNoSeparateOwnedTypes(IEntityType entityType)
+   private IBulkOperationTableNameProvider CreateSchemaCheckingProvider(IBulkOperationTableNameProvider? tableNameProvider)
+   {
+      tableNameProvider ??= IBulkOperationTableNameProvider.Default;
+      return IBulkOperationTableNameProvider.Create(entityType => GetTableName(tableNameProvider, entityType));
+   }
+
+   // With SchemaBehavior Throw the provider has no translator and DelimitIdentifier drops the schema, so the statement would address the current database.
+   // Ignore and Translate set a translator, which DelimitIdentifier applies.
+   private void EnsureSchemaIsSupported(BulkOperationTableName table)
+   {
+      if (!String.IsNullOrEmpty(table.Schema) && _mySqlOptions.SchemaNameTranslator is null)
+         throw new NotSupportedException($"The table '{table.Name}' has the schema '{table.Schema}', but MySQL has no schemas. Set 'SchemaBehavior' in 'UseMySql' to 'MySqlSchemaBehavior.Ignore' or 'MySqlSchemaBehavior.Translate', or remove the schema.");
+   }
+
+   // The staging table has the columns of the root table only, so bulk update and upsert reject every kind of owned type, like SQL Server and PostgreSQL.
+   private static void EnsureNoOwnedTypes(IEntityType entityType, IReadOnlyList<PropertyWithNavigations> properties)
    {
       if (HasSeparateOwnedType(entityType, entityType.GetTableName(), entityType.GetSchema()))
          throw new NotSupportedException("MySQL bulk update and upsert do not support owned entities mapped to separate tables.");
+
+      if (properties.Any(property => property.Navigations.Count != 0))
+         throw new NotSupportedException("Temp tables don't support owned entities.");
    }
 
    // Owned types nested in inlined owned types are checked as well.
@@ -519,12 +580,9 @@ public sealed class MySqlBulkOperationExecutor : IBulkInsertExecutor, ITempTable
       return columnNames;
    }
 
-   private static int GetMaximumRows(int? batchSize, int numberOfColumns)
+   private int GetRowsPerStatement(int? maxParametersPerStatement, int numberOfColumns)
    {
-      if (batchSize is <= 0)
-         throw new ArgumentOutOfRangeException(nameof(batchSize), "The batch size must be greater than 0.");
-
-      return Math.Max(1, Math.Min(batchSize ?? _MAX_ROWS_PER_BATCH, _MAX_PARAMETERS / Math.Max(1, numberOfColumns)));
+      return Math.Max(1, (maxParametersPerStatement ?? _options.MaxParametersPerStatement) / numberOfColumns);
    }
 
    // The data reader yields provider values (value converters already applied), so the mapping must describe the provider type.
@@ -546,7 +604,9 @@ public sealed class MySqlBulkOperationExecutor : IBulkInsertExecutor, ITempTable
       return mappings;
    }
 
-   private bool HasTransaction => _context.Database.CurrentTransaction is not null || Transaction.Current is not null;
+   private bool HasTransaction => _context.Database.CurrentTransaction is not null
+                                  || Transaction.Current is not null
+                                  || _context.Database.GetEnlistedTransaction() is not null;
 
    private async Task<int> ExecuteInTransactionAsync(Func<CancellationToken, Task<int>> action, CancellationToken cancellationToken)
    {
@@ -578,10 +638,18 @@ public sealed class MySqlBulkOperationExecutor : IBulkInsertExecutor, ITempTable
       var command = _context.Database.GetDbConnection().CreateCommand();
       command.Transaction = _context.Database.CurrentTransaction?.GetDbTransaction();
 
-      if (commandTimeout is not null)
-         command.CommandTimeout = (int)Math.Ceiling(commandTimeout.Value.TotalSeconds);
+      // The provider writes the timeout of the context into the connection string only when it creates the connection, so the current value is applied here.
+      var timeout = commandTimeout is null ? _context.Database.GetCommandTimeout() : ToSeconds(commandTimeout.Value);
+
+      if (timeout is not null)
+         command.CommandTimeout = timeout.Value;
 
       return command;
+   }
+
+   private static int ToSeconds(TimeSpan timeout)
+   {
+      return (int)Math.Ceiling(timeout.TotalSeconds);
    }
 
    private async Task<int> InsertAsync<T>(
@@ -589,25 +657,16 @@ public sealed class MySqlBulkOperationExecutor : IBulkInsertExecutor, ITempTable
       IEnumerable<T> entities,
       IReadOnlyList<PropertyWithNavigations> properties,
       MySqlBulkInsertOptions options,
+      IBulkOperationTableNameProvider tableNameProvider,
       CancellationToken cancellationToken)
    {
       var (ownProperties, externalProperties) = properties.SeparateProperties();
       var hasExternalProperties = externalProperties.Count != 0;
-      var table = options.TableNameProvider.GetValidTableName(entityType);
+      var table = tableNameProvider.GetValidTableName(entityType);
       var tableIdentifier = _sqlGenerationHelper.DelimitIdentifier(table.Name, table.Schema);
-      var maximumRows = GetMaximumRows(options.BatchSize, ownProperties.Count);
 
       using var reader = _context.GetService<IEntityDataReaderFactory>().Create(_context, entities, ownProperties, ensureReadEntitiesCollection: hasExternalProperties);
-      var affectedRows = await InsertRowsAsync(reader,
-                                               tableIdentifier,
-                                               GetColumnNames(ownProperties),
-                                               GetProviderMappings(ownProperties),
-                                               maximumRows,
-                                               options.CommandTimeout,
-                                               null,
-                                               null,
-                                               options.UseBulkCopy,
-                                               cancellationToken).ConfigureAwait(false);
+      var affectedRows = await InsertRowsAsync(reader, tableIdentifier, options.MaxParametersPerStatement, options.CommandTimeout, cancellationToken).ConfigureAwait(false);
 
       if (!hasExternalProperties)
          return affectedRows;
@@ -620,137 +679,167 @@ public sealed class MySqlBulkOperationExecutor : IBulkInsertExecutor, ITempTable
 
       foreach (var (navigation, ownedEntities, ownedProperties) in externalProperties.GroupExternalProperties(readEntities))
       {
-         affectedRows += await InsertAsync(navigation.TargetEntityType, ownedEntities, ownedProperties, options, cancellationToken).ConfigureAwait(false);
+         affectedRows += await InsertAsync(navigation.TargetEntityType, ownedEntities, ownedProperties, options, tableNameProvider, cancellationToken).ConfigureAwait(false);
       }
 
       return affectedRows;
    }
 
+   // The entity data reader rejects an empty property list, so there is at least one column.
    private async Task<int> InsertRowsAsync(
       IEntityDataReader reader,
       string tableIdentifier,
-      IReadOnlyList<string> columns,
-      IReadOnlyList<RelationalTypeMapping?> mappings,
-      int maximumRows,
+      int? maxParametersPerStatement,
       TimeSpan? commandTimeout,
-      IReadOnlyList<string>? updateColumns,
-      IReadOnlyList<string>? keyColumns,
-      bool useBulkCopy,
       CancellationToken cancellationToken)
    {
-      if (useBulkCopy)
-      {
-         var connection = (MySqlConnection)_context.Database.GetDbConnection();
-         var transaction = _context.Database.CurrentTransaction?.GetDbTransaction() as MySqlTransaction;
-         var data = new System.Data.DataTable();
+      var columns = GetColumnNames(reader.Properties);
 
-         for (var i = 0; i < columns.Count; i++)
-         {
-            var clrType = mappings[i]?.ClrType ?? typeof(object);
-            data.Columns.Add(columns[i], Nullable.GetUnderlyingType(clrType) ?? clrType);
-         }
+      if (_options.UseBulkCopy)
+         return await BulkCopyAsync(reader, tableIdentifier, columns, commandTimeout, cancellationToken).ConfigureAwait(false);
 
-         while (reader.Read())
-         {
-            var row = data.NewRow();
-
-            for (var i = 0; i < columns.Count; i++)
-            {
-               row[i] = reader.GetValue(i) ?? DBNull.Value;
-            }
-
-            data.Rows.Add(row);
-         }
-
-         var bulkCopy = new MySqlBulkCopy(connection, transaction)
-                        {
-                           DestinationTableName = tableIdentifier,
-                           // 0 would mean "wait forever".
-                           BulkCopyTimeout = commandTimeout is null
-                                                ? _context.Database.GetCommandTimeout() ?? 30
-                                                : (int)Math.Ceiling(commandTimeout.Value.TotalSeconds)
-                        };
-
-         for (var i = 0; i < columns.Count; i++)
-         {
-            bulkCopy.ColumnMappings.Add(new MySqlBulkCopyColumnMapping(i, columns[i]));
-         }
-
-         var result = await bulkCopy.WriteToServerAsync(data, cancellationToken).ConfigureAwait(false);
-
-         // LOAD DATA LOCAL implies IGNORE: duplicate keys and bad values become warnings and the rows are dropped.
-         if (result.Warnings.Count != 0 || result.RowsInserted != data.Rows.Count)
-         {
-            var details = String.Join("; ", result.Warnings.Take(5).Select(warning => $"{warning.Level} {warning.ErrorCode}: {warning.Message}"));
-            throw new InvalidOperationException($"MySqlBulkCopy inserted {result.RowsInserted} of {data.Rows.Count} rows. {details}");
-         }
-
-         return result.RowsInserted;
-      }
-
+      var mappings = GetProviderMappings(reader.Properties);
+      var maximumRows = GetRowsPerStatement(maxParametersPerStatement, columns.Length);
       var rows = new List<object?[]>(maximumRows);
       var affectedRows = 0;
 
-      while (reader.Read())
+      // The statement of a full batch is prepared once and executed for every full batch with new values.
+      DbCommand? preparedCommand = null;
+
+      try
       {
-         var row = new object?[columns.Count];
-
-         for (var i = 0; i < row.Length; i++)
+         while (reader.Read())
          {
-            row[i] = reader.GetValue(i);
-         }
+            var row = new object?[columns.Length];
 
-         rows.Add(row);
+            for (var i = 0; i < row.Length; i++)
+            {
+               row[i] = reader.GetValue(i);
+            }
 
-         if (rows.Count == maximumRows)
-         {
-            affectedRows += await ExecuteAndCountAsync().ConfigureAwait(false);
-            rows.Clear();
+            rows.Add(row);
+
+            if (rows.Count == maximumRows)
+            {
+               if (preparedCommand is null)
+               {
+                  preparedCommand = CreateInsertCommand(tableIdentifier, columns, mappings, rows, commandTimeout);
+                  await preparedCommand.PrepareAsync(cancellationToken).ConfigureAwait(false);
+               }
+               else
+               {
+                  SetParameterValues(preparedCommand, rows);
+               }
+
+               affectedRows += await preparedCommand.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+               rows.Clear();
+            }
          }
       }
+      finally
+      {
+         if (preparedCommand is not null)
+            await preparedCommand.DisposeAsync().ConfigureAwait(false);
+      }
 
+      // The last partial batch has another statement text, so it runs as a one-time statement.
       if (rows.Count != 0)
-         affectedRows += await ExecuteAndCountAsync().ConfigureAwait(false);
+      {
+         await using var command = CreateInsertCommand(tableIdentifier, columns, mappings, rows, commandTimeout);
+         affectedRows += await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+      }
 
       return affectedRows;
+   }
 
-      // An upsert reports 1/2/0 per row depending on insert/update/no-change; report the processed rows instead.
-      async Task<int> ExecuteAndCountAsync()
+   // The data reader yields provider values, so the values of later batches are assigned without the type mapping.
+   private static void SetParameterValues(DbCommand command, IReadOnlyList<object?[]> rows)
+   {
+      var parameterIndex = 0;
+
+      foreach (var row in rows)
       {
-         var affected = await ExecuteBatchAsync(tableIdentifier, columns, mappings, rows, commandTimeout, cancellationToken, updateColumns, keyColumns).ConfigureAwait(false);
-         return updateColumns is null ? affected : rows.Count;
+         foreach (var value in row)
+         {
+            command.Parameters[parameterIndex++].Value = value ?? DBNull.Value;
+         }
       }
    }
 
-   private async Task<int> ExecuteBatchAsync(
+   private async Task<int> BulkCopyAsync(
+      IEntityDataReader reader,
+      string tableIdentifier,
+      string[] columns,
+      TimeSpan? commandTimeout,
+      CancellationToken cancellationToken)
+   {
+      var dbConnection = _context.Database.GetDbConnection();
+      var connection = dbConnection as MySqlConnection
+                       ?? throw new NotSupportedException($"Bulk copy requires a '{typeof(MySqlConnection).FullName}'; the current connection is '{dbConnection.GetType().FullName}'.");
+
+      // Checked before MySqlBulkCopy runs, because MySqlConnector keeps a failed bulk copy in a static dictionary.
+      if (!new MySqlConnectionStringBuilder(connection.ConnectionString).AllowLoadLocalInfile)
+         throw new NotSupportedException("Bulk operations registered with 'useBulkCopy: true' use LOAD DATA LOCAL INFILE, which requires 'AllowLoadLocalInfile=true' in the connection string.");
+
+      // MySqlBulkCopy rejects YEAR columns only when it creates the column mappings itself; with explicit mappings it stores 2000 for the value 0.
+      foreach (var property in reader.Properties)
+      {
+         if (MySqlTempTableCreator.GetBaseType(property.Property.GetColumnType(property.GetStoreObject())) == "year")
+            throw new NotSupportedException($"The column of the property '{property.Property.Name}' has the type YEAR, which bulk operations registered with 'useBulkCopy: true' do not support.");
+      }
+
+      // The timeout follows the rule of the INSERT path: the timeout of the options, the timeout of the context, or the default of the connection.
+      int timeout;
+
+      await using (var command = CreateCommand(commandTimeout))
+      {
+         timeout = command.CommandTimeout;
+      }
+
+      var transaction = _context.Database.CurrentTransaction?.GetDbTransaction() as MySqlTransaction;
+      var bulkCopy = new MySqlBulkCopy(connection, transaction)
+                     {
+                        DestinationTableName = tableIdentifier,
+                        BulkCopyTimeout = timeout
+                     };
+
+      // The columns are mapped by name, because the destination may have more columns (e.g. the order column of a staging table).
+      for (var i = 0; i < columns.Length; i++)
+      {
+         bulkCopy.ColumnMappings.Add(new MySqlBulkCopyColumnMapping(i, columns[i]));
+      }
+
+      var source = new MySqlBulkCopyDataReader(reader);
+      var result = await bulkCopy.WriteToServerAsync(source, cancellationToken).ConfigureAwait(false);
+
+      // The copy ended at the failing row without an error of MySqlConnector. The caller gets the exception of the source, as on the INSERT path.
+      source.SourceException?.Throw();
+
+      // LOAD DATA LOCAL implies IGNORE: duplicate keys and bad values become warnings and the rows are dropped or changed.
+      // A note (e.g. 1265 for a decimal that is rounded to the scale of the column) is ignored, because the INSERT path accepts the same value.
+      var warnings = result.Warnings.Where(warning => !String.Equals(warning.Level, "Note", StringComparison.OrdinalIgnoreCase)).ToList();
+
+      if (warnings.Count != 0 || result.RowsInserted != reader.RowsRead)
+      {
+         var details = String.Join("; ", warnings.Take(5).Select(warning => $"{warning.Level} {warning.ErrorCode}: {warning.Message}"));
+         throw new InvalidOperationException($"MySqlBulkCopy inserted {result.RowsInserted} of {reader.RowsRead} rows. {details}");
+      }
+
+      return result.RowsInserted;
+   }
+
+   private DbCommand CreateInsertCommand(
       string tableIdentifier,
       IReadOnlyList<string> columnNames,
       IReadOnlyList<RelationalTypeMapping?> mappings,
       IReadOnlyList<object?[]> rows,
-      TimeSpan? commandTimeout,
-      CancellationToken cancellationToken,
-      IReadOnlyList<string>? updateColumnNames = null,
-      IReadOnlyList<string>? keyColumnNames = null)
+      TimeSpan? commandTimeout)
    {
-      await using var command = CreateCommand(commandTimeout);
+      var command = CreateCommand(commandTimeout);
 
-      var statement = new StringBuilder($"INSERT INTO {tableIdentifier} ");
-
-      if (columnNames.Count == 0)
+      try
       {
-         statement.Append("() VALUES ");
-
-         for (var rowIndex = 0; rowIndex < rows.Count; rowIndex++)
-         {
-            if (rowIndex != 0)
-               statement.Append(", ");
-
-            statement.Append("()");
-         }
-      }
-      else
-      {
-         statement.Append('(');
+         var statement = new StringBuilder($"INSERT INTO {tableIdentifier} (");
 
          for (var columnIndex = 0; columnIndex < columnNames.Count; columnIndex++)
          {
@@ -796,131 +885,199 @@ public sealed class MySqlBulkOperationExecutor : IBulkInsertExecutor, ITempTable
 
             statement.Append(')');
          }
-      }
 
-      if (updateColumnNames is not null)
+         command.CommandText = statement.ToString();
+         return command;
+      }
+      catch
       {
-         if (_useRowAlias)
-            statement.Append(" AS `new_row`");
-
-         statement.Append(" ON DUPLICATE KEY UPDATE ");
-
-         if (keyColumnNames is not { Count: > 0 })
-            throw new InvalidOperationException("At least one key column is required for MySQL upsert.");
-
-         if (updateColumnNames.Count == 0)
-         {
-            var delimitedKeyColumn = _sqlGenerationHelper.DelimitIdentifier(keyColumnNames[0]);
-            statement.Append(delimitedKeyColumn).Append(" = ").Append(Existing(delimitedKeyColumn));
-         }
-         else
-         {
-            // MySQL fires ON DUPLICATE KEY for any unique index; only rows matching the keys are updated.
-            var keyMatch = String.Join(" AND ", keyColumnNames.Select(key =>
-                                                                      {
-                                                                         var column = _sqlGenerationHelper.DelimitIdentifier(key);
-                                                                         return $"{Existing(column)} <=> {Incoming(column)}";
-                                                                      }));
-
-            for (var i = 0; i < updateColumnNames.Count; i++)
-            {
-               if (i != 0)
-                  statement.Append(", ");
-
-               var column = _sqlGenerationHelper.DelimitIdentifier(updateColumnNames[i]);
-               statement.Append(column).Append(" = IF(").Append(keyMatch).Append(", ").Append(Incoming(column)).Append(", ").Append(Existing(column)).Append(')');
-            }
-         }
+         command.Dispose();
+         throw;
       }
-
-      command.CommandText = statement.ToString();
-      return await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
-
-      string Existing(string column) => _useRowAlias ? $"{tableIdentifier}.{column}" : column;
-      string Incoming(string column) => _useRowAlias ? $"`new_row`.{column}" : $"VALUES({column})";
    }
 
-   private async Task<int> UpdateRowByRowAsync<T>(
+   private static List<PropertyWithNavigations> ToPropertiesWithNavigations(IReadOnlyList<IProperty> properties)
+   {
+      return properties.Select(property => new PropertyWithNavigations(property, [])).ToList();
+   }
+
+   // EF Core executes the statement, so logging, interceptors, the concurrency detector, the current transaction and the command timeout of the context apply.
+   // "Build(sql)" does not format the text, so braces in identifiers are kept.
+   private Task<int> ExecuteSqlAsync(string statement, CancellationToken cancellationToken)
+   {
+      var command = _context.GetService<IRawSqlCommandBuilder>().Build(statement);
+      return new EfCoreValueExpressionTranslator(_context).ExecuteNonQueryAsync(command, ReadOnlyDictionary<string, object?>.Empty, cancellationToken);
+   }
+
+   // Creates the staging table, fills it with the registered insert path, runs the statements of the operation and drops the staging table.
+   private async Task<int> ExecuteWithStagingTableAsync<T>(
+      StagingTable staging,
       IEnumerable<T> entities,
-      BulkOperationTableName table,
-      IReadOnlyCollection<PropertyWithNavigations> propertiesToSet,
-      IReadOnlyList<IProperty> keyProperties,
-      TimeSpan? commandTimeout,
+      Func<string, CancellationToken, Task<int>> executeStatementsAsync,
       CancellationToken cancellationToken)
    {
-      var readerProperties = propertiesToSet.Concat(keyProperties.Select(property => new PropertyWithNavigations(property, Array.Empty<Navigation>()))).ToList();
-      var columns = GetColumnNames(readerProperties);
-      var mappings = GetProviderMappings(readerProperties);
-      var statement = new StringBuilder($"UPDATE {_sqlGenerationHelper.DelimitIdentifier(table.Name, table.Schema)} SET ");
+      // The statements that EF Core executes use the command timeout of the context, so the timeout of the options is applied for the operation.
+      var previousCommandTimeout = _context.Database.GetCommandTimeout();
 
-      for (var i = 0; i < propertiesToSet.Count; i++)
+      if (staging.CommandTimeout is not null)
+         _context.Database.SetCommandTimeout(ToSeconds(staging.CommandTimeout.Value));
+
+      try
       {
-         statement.Append(i == 0 ? "" : ", ").Append(_sqlGenerationHelper.DelimitIdentifier(columns[i])).Append(" = @p").Append(i);
-      }
+         using var nameLease = ReusingTempTableNameProvider.Instance.LeaseName(_context, staging.EntityType);
+         var createStatement = CreateStagingTableStatement(staging, nameLease.Name);
+         int result;
 
-      statement.Append(" WHERE ");
-
-      for (var i = propertiesToSet.Count; i < columns.Length; i++)
-      {
-         statement.Append(i == propertiesToSet.Count ? "" : " AND ")
-                  .Append(_sqlGenerationHelper.DelimitIdentifier(columns[i]))
-                  .Append(keyProperties[i - propertiesToSet.Count].IsNullable ? " <=> @p" : " = @p")
-                  .Append(i);
-      }
-
-      await using var command = CreateCommand(commandTimeout);
-      command.CommandText = statement.ToString();
-
-      var parameters = new DbParameter[columns.Length];
-
-      for (var i = 0; i < parameters.Length; i++)
-      {
-         parameters[i] = mappings[i]?.CreateParameter(command, $"@p{i}", null) ?? command.CreateParameter();
-         parameters[i].ParameterName = $"@p{i}";
-         command.Parameters.Add(parameters[i]);
-      }
-
-      using var reader = _context.GetService<IEntityDataReaderFactory>().Create(_context, entities, readerProperties, ensureReadEntitiesCollection: false);
-      var affectedRows = 0;
-
-      while (reader.Read())
-      {
-         for (var i = 0; i < parameters.Length; i++)
+         try
          {
-            parameters[i].Value = reader.GetValue(i) ?? DBNull.Value;
+            await ExecuteSqlAsync(createStatement, cancellationToken).ConfigureAwait(false);
+
+            using var reader = _context.GetService<IEntityDataReaderFactory>().Create(_context, entities, staging.Properties, ensureReadEntitiesCollection: false);
+            await InsertRowsAsync(reader,
+                                  _sqlGenerationHelper.DelimitIdentifier(nameLease.Name),
+                                  staging.MaxParametersPerStatement,
+                                  staging.CommandTimeout,
+                                  cancellationToken).ConfigureAwait(false);
+
+            result = await executeStatementsAsync(nameLease.Name, cancellationToken).ConfigureAwait(false);
+         }
+         catch (MySqlException exception) when (exception.Number == _XA_TEMPORARY_TABLE_ERROR)
+         {
+            // MySQL rejects every access to a temporary table inside XA, so there is no table to drop.
+            throw new NotSupportedException("Bulk update and upsert cannot run inside an XA transaction, because MySQL rejects temporary tables there. Use 'UseXaTransactions=false' in the connection string, a DbContext transaction, or the server setting 'xa_detach_on_prepare=OFF'.", exception);
+         }
+         catch (MySqlException exception) when (exception.Number == _TABLE_EXISTS_ERROR)
+         {
+            // The existing table with the leased name does not belong to the operation, so it is not dropped.
+            throw;
+         }
+         catch
+         {
+            // The server may have created the table although the CREATE failed on the client (cancellation, timeout), so the drop runs after every error.
+            try
+            {
+               await DropStagingTableAsync(nameLease.Name).ConfigureAwait(false);
+            }
+            catch (Exception)
+            {
+               // The original exception is more relevant than a failed cleanup. The temporary table disappears with the session at the latest.
+            }
+
+            throw;
          }
 
-         affectedRows += await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+         await DropStagingTableAsync(nameLease.Name).ConfigureAwait(false);
+         return result;
+      }
+      finally
+      {
+         _context.Database.SetCommandTimeout(previousCommandTimeout);
+      }
+   }
+
+   // The cleanup runs also after a cancellation, so it does not use the token of the operation.
+   private Task<int> DropStagingTableAsync(string stagingTable)
+   {
+      return ExecuteSqlAsync($"DROP TEMPORARY TABLE IF EXISTS {_sqlGenerationHelper.DelimitIdentifier(stagingTable)};", CancellationToken.None);
+   }
+
+   // The SELECT copies type, charset, collation and NOT NULL of the target columns, so values are converted and keys are compared as in the target.
+   // "__ord" numbers the rows in input order and is the primary key, which "sql_require_primary_key" demands also for temporary tables.
+   private string CreateStagingTableStatement(StagingTable staging, string stagingTable)
+   {
+      var statement = new StringBuilder("CREATE TEMPORARY TABLE ");
+      statement.Append(_sqlGenerationHelper.DelimitIdentifier(stagingTable))
+               .Append(" (")
+               .Append(_sqlGenerationHelper.DelimitIdentifier(_ORDER_COLUMN))
+               .Append(" BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY");
+
+      // The unique index rejects duplicate input keys (error 1062).
+      if (HasStagingKeyIndex(staging))
+      {
+         statement.Append(", UNIQUE (")
+                  .AppendJoin(", ", GetColumnNames(staging.Keys).Select(column => _sqlGenerationHelper.DelimitIdentifier(column)))
+                  .Append(')');
       }
 
-      return affectedRows;
+      statement.Append(") SELECT ")
+               .AppendJoin(", ", GetColumnNames(staging.Properties).Select(column => _sqlGenerationHelper.DelimitIdentifier(column)))
+               .Append(" FROM ")
+               .Append(_sqlGenerationHelper.DelimitIdentifier(staging.Target.Name, staging.Target.Schema))
+               .Append(" LIMIT 0;");
+
+      return statement.ToString();
+   }
+
+   private static bool HasStagingKeyIndex(StagingTable staging)
+   {
+      return staging.Keys.All(key =>
+                              {
+                                 var storeObject = key.GetStoreObject();
+
+                                 // Several new rows of an upsert may have the key 0 of an AUTO_INCREMENT column; the INSERT generates their ids.
+                                 if (staging.IsUpsert
+                                     && key.Property.GetValueGenerationStrategy(storeObject) == MySqlValueGenerationStrategy.IdentityColumn
+                                     && MySqlPropertyExtensions.IsCompatibleAutoIncrementColumn(key.Property))
+                                    return false;
+
+                                 // MySQL cannot index a TEXT, BLOB or JSON column without a prefix length (error 1170).
+                                 return !MySqlTempTableCreator.IsTextBlobOrJson(key.Property.GetColumnType(storeObject));
+                              });
+   }
+
+   private async Task<int> UpsertFromStagingTableAsync(
+      StagingTable staging,
+      string stagingTable,
+      IReadOnlyList<PropertyWithNavigations> propertiesToInsert,
+      IReadOnlyList<PropertyWithNavigations> propertiesToSet,
+      CancellationToken cancellationToken)
+   {
+      var updatedRows = propertiesToSet.Count == 0
+                           ? 0
+                           : await ExecuteSqlAsync(CreateUpdateStatement(staging.Target, stagingTable, propertiesToSet, staging.Keys), cancellationToken).ConfigureAwait(false);
+
+      // The rows that match a target row are removed, so the remaining rows are the new ones.
+      var deleteStatement = new StringBuilder("DELETE ").Append(_SAFE_UPDATES_OFF_HINT).Append(" s FROM ");
+      deleteStatement.Append(_sqlGenerationHelper.DelimitIdentifier(stagingTable))
+                     .Append(" AS s INNER JOIN ")
+                     .Append(_sqlGenerationHelper.DelimitIdentifier(staging.Target.Name, staging.Target.Schema))
+                     .Append(" AS d ON ");
+      AppendKeyCondition(deleteStatement, staging.Keys).Append(';');
+      await ExecuteSqlAsync(deleteStatement.ToString(), cancellationToken).ConfigureAwait(false);
+
+      // InnoDB checks foreign keys row by row, so the rows are inserted in input order (a parent before its child).
+      var columns = GetColumnNames(propertiesToInsert).Select(column => _sqlGenerationHelper.DelimitIdentifier(column)).ToList();
+      var insertStatement = new StringBuilder("INSERT INTO ");
+      insertStatement.Append(_sqlGenerationHelper.DelimitIdentifier(staging.Target.Name, staging.Target.Schema))
+                     .Append(" (")
+                     .AppendJoin(", ", columns)
+                     .Append(") SELECT ")
+                     .AppendJoin(", ", columns.Select(column => $"s.{column}"))
+                     .Append(" FROM ")
+                     .Append(_sqlGenerationHelper.DelimitIdentifier(stagingTable))
+                     .Append(" AS s ORDER BY s.")
+                     .Append(_sqlGenerationHelper.DelimitIdentifier(_ORDER_COLUMN))
+                     .Append(';');
+      var insertedRows = await ExecuteSqlAsync(insertStatement.ToString(), cancellationToken).ConfigureAwait(false);
+
+      return updatedRows + insertedRows;
    }
 
    private string CreateUpdateStatement(
       BulkOperationTableName table,
-      string sourceTempTableName,
+      string stagingTable,
       IReadOnlyList<PropertyWithNavigations> propertiesToSet,
-      IReadOnlyList<IProperty> keyProperties)
+      IReadOnlyList<PropertyWithNavigations> keys)
    {
-      var setColumns = GetColumnNames(propertiesToSet);
-      var keyColumns = GetColumnNames(keyProperties.Select(property => new PropertyWithNavigations(property, Array.Empty<Navigation>())).ToList());
-      var statement = new StringBuilder("UPDATE ");
+      var statement = new StringBuilder("UPDATE ").Append(_SAFE_UPDATES_OFF_HINT).Append(' ');
 
       statement.Append(_sqlGenerationHelper.DelimitIdentifier(table.Name, table.Schema))
                .Append(" AS d INNER JOIN ")
-               .Append(_sqlGenerationHelper.DelimitIdentifier(sourceTempTableName))
+               .Append(_sqlGenerationHelper.DelimitIdentifier(stagingTable))
                .Append(" AS s ON ");
+      AppendKeyCondition(statement, keys).Append(" SET ");
 
-      for (var i = 0; i < keyColumns.Length; i++)
-      {
-         if (i != 0)
-            statement.Append(" AND ");
-
-         var column = _sqlGenerationHelper.DelimitIdentifier(keyColumns[i]);
-         statement.Append("d.").Append(column).Append(keyProperties[i].IsNullable ? " <=> s." : " = s.").Append(column);
-      }
-
-      statement.Append(" SET ");
+      var setColumns = GetColumnNames(propertiesToSet);
 
       for (var i = 0; i < setColumns.Length; i++)
       {
@@ -934,4 +1091,40 @@ public sealed class MySqlBulkOperationExecutor : IBulkInsertExecutor, ITempTable
       statement.Append(';');
       return statement.ToString();
    }
+
+   // "<=>" matches NULL with NULL for nullable keys.
+   private StringBuilder AppendKeyCondition(StringBuilder statement, IReadOnlyList<PropertyWithNavigations> keys)
+   {
+      var keyColumns = GetColumnNames(keys);
+
+      for (var i = 0; i < keyColumns.Length; i++)
+      {
+         if (i != 0)
+            statement.Append(" AND ");
+
+         var column = _sqlGenerationHelper.DelimitIdentifier(keyColumns[i]);
+         statement.Append("d.").Append(column).Append(keys[i].Property.IsNullable ? " <=> s." : " = s.").Append(column);
+      }
+
+      return statement;
+   }
+
+   /// <summary>
+   /// Describes the staging table of a bulk update or upsert.
+   /// </summary>
+   /// <param name="EntityType">Entity type whose rows are staged.</param>
+   /// <param name="Target">Resolved table that is updated.</param>
+   /// <param name="Keys">Key properties to match on.</param>
+   /// <param name="Properties">Staged properties; the keys come first.</param>
+   /// <param name="MaxParametersPerStatement">Parameter budget of the INSERT statements of the fill; <c>null</c> uses the registered value.</param>
+   /// <param name="CommandTimeout">Timeout of every statement.</param>
+   /// <param name="IsUpsert">Indication whether the operation is an upsert; an upsert stages a store-generated key without a key index.</param>
+   private sealed record StagingTable(
+      IEntityType EntityType,
+      BulkOperationTableName Target,
+      IReadOnlyList<PropertyWithNavigations> Keys,
+      IReadOnlyList<PropertyWithNavigations> Properties,
+      int? MaxParametersPerStatement,
+      TimeSpan? CommandTimeout,
+      bool IsUpsert);
 }

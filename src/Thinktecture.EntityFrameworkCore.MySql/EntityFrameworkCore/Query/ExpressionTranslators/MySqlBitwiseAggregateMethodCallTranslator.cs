@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 
 namespace Thinktecture.EntityFrameworkCore.Query.ExpressionTranslators;
 
-[SuppressMessage("Usage", "EF1001:Internal EF Core API usage.")]
+[SuppressMessage("Usage", "EF1001", MessageId = "Internal EF Core API usage.")]
 internal sealed class MySqlBitwiseAggregateMethodCallTranslator : IAggregateMethodCallTranslator
 {
    private readonly ISqlExpressionFactory _sqlExpressionFactory;
