@@ -213,6 +213,42 @@ public class BulkUpdateFromQueryAsync : IntegrationTestsBase
    }
 
    [Fact]
+   public async Task Should_update_row_When_nullable_part_of_composite_key_is_null_on_both_sides()
+   {
+      var entity = new TestEntity { Id = new Guid("8E000000-0000-0000-0000-000000000001"), Name = null, RequiredName = "RequiredName", Count = 0 };
+      ArrangeDbContext.Add(entity);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var affectedRows = await ActDbContext.TestEntities.BulkUpdateAsync(
+         ActDbContext.TestEntities,
+         e => new { e.Id, e.Name },
+         s => new { s.Id, s.Name },
+         builder => builder.Set(e => e.Count, (e, s) => 1));
+
+      TestCtxProvider.ExecutedCommands!.Last().Should().Contain("IS NULL");
+      affectedRows.Should().Be(1);
+      (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == entity.Id)).Count.Should().Be(1);
+   }
+
+   [Fact]
+   public async Task Should_not_update_row_When_single_nullable_key_is_null_on_both_sides()
+   {
+      var entity = new TestEntity { Id = new Guid("8E000000-0000-0000-0000-000000000002"), Name = null, RequiredName = "RequiredName", Count = 0 };
+      ArrangeDbContext.Add(entity);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var affectedRows = await ActDbContext.TestEntities.BulkUpdateAsync(
+         ActDbContext.TestEntities,
+         e => e.Name,
+         s => s.Name,
+         builder => builder.Set(e => e.Count, (e, s) => 1));
+
+      TestCtxProvider.ExecutedCommands!.Last().Should().NotContain("IS NULL");
+      affectedRows.Should().Be(0);
+      (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == entity.Id)).Count.Should().Be(0);
+   }
+
+   [Fact]
    public async Task Should_throw_if_no_set_entries()
    {
       var updatedEntities = new List<TestEntity>

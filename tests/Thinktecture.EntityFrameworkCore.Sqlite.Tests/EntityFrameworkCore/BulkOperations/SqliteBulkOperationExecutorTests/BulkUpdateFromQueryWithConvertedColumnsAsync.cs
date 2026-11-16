@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Thinktecture.EntityFrameworkCore.Testing;
 using Thinktecture.TestDatabaseContext;
 
 namespace Thinktecture.EntityFrameworkCore.BulkOperations.SqliteBulkOperationExecutorTests;
@@ -9,6 +10,12 @@ public class BulkUpdateFromQueryWithConvertedColumnsAsync : SchemaChangingIntegr
    public BulkUpdateFromQueryWithConvertedColumnsAsync(ITestOutputHelper testOutputHelper)
       : base(testOutputHelper)
    {
+   }
+
+   protected override void ConfigureTestDbContextProvider(SqliteTestDbContextProviderBuilder<TestDbContext> builder)
+   {
+      base.ConfigureTestDbContextProvider(builder);
+      builder.CollectExecutedCommands(true);
    }
 
    [Fact]
@@ -59,5 +66,25 @@ public class BulkUpdateFromQueryWithConvertedColumnsAsync : SchemaChangingIntegr
       affectedRows.Should().Be(1);
       (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == match.Id)).Count.Should().Be(1);
       (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == withNull.Id)).Count.Should().Be(0);
+   }
+
+   [Fact]
+   public async Task Should_not_update_row_When_nullable_part_of_composite_key_is_null_on_both_sides_and_relational_nulls()
+   {
+      Configure = builder => builder.UseSqlite(o => o.UseRelationalNulls());
+
+      var entity = new TestEntity { Id = new Guid("8D000000-0000-0000-0000-00000000000E"), Name = null, RequiredName = "RequiredName", Count = 0 };
+      ArrangeDbContext.Add(entity);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      var affectedRows = await ActDbContext.TestEntities.BulkUpdateAsync(
+         ActDbContext.TestEntities,
+         e => new { e.Id, e.Name },
+         s => new { s.Id, s.Name },
+         builder => builder.Set(e => e.Count, (e, s) => 1));
+
+      TestCtxProvider.ExecutedCommands!.Last().Should().NotContain("IS NULL");
+      affectedRows.Should().Be(0);
+      (await AssertDbContext.TestEntities.SingleAsync(e => e.Id == entity.Id)).Count.Should().Be(0);
    }
 }
