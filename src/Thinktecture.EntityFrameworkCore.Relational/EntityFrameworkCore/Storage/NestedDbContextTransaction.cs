@@ -93,6 +93,12 @@ public abstract partial class NestedDbContextTransaction : IDbContextTransaction
       var underlyingTransaction = GetUnderlyingTransaction();
       var currentIsolationLevel = underlyingTransaction.IsolationLevel;
 
+      // When no level is passed, MySqlConnector sends SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ
+      // and reports IsolationLevel.Unspecified. The providers for SQL Server, PostgreSQL and SQLite report a concrete level,
+      // so this mapping does not affect them.
+      if (currentIsolationLevel == IsolationLevel.Unspecified)
+         currentIsolationLevel = IsolationLevel.RepeatableRead;
+
       switch (isolationLevel)
       {
          case IsolationLevel.Unspecified:
