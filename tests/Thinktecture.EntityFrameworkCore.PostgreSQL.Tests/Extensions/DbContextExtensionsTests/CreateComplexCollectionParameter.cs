@@ -20,6 +20,18 @@ public class CreateComplexCollectionParameter : IntegrationTestsBase
    }
 
    [Theory]
+   [InlineData("a{b}")]
+   [InlineData("x{0}")]
+   public void Should_do_roundtrip_When_column_name_contains_braces(string columnName)
+   {
+      ConfigureModel = builder => builder.ConfigureComplexCollectionParameter<MyParameter>(typeBuilder => typeBuilder.Property(e => e.Column1).HasColumnName(columnName));
+
+      ActDbContext.CreateComplexCollectionParameter([new MyParameter(new Guid("D3E99F44-40A1-4E4E-820F-9D7C7B02AFA5"), new ConvertibleClass(42))], applyDistinct: false)
+                  .ToList()
+                  .Should().BeEquivalentTo([new MyParameter(new Guid("D3E99F44-40A1-4E4E-820F-9D7C7B02AFA5"), new ConvertibleClass(42))]);
+   }
+
+   [Theory]
    [InlineData(true)]
    [InlineData(false)]
    public async Task Should_work_with_joins(bool applyDistinct)

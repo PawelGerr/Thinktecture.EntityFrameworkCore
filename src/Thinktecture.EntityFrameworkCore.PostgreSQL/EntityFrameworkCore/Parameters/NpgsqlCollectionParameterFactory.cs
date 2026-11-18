@@ -136,7 +136,7 @@ public class NpgsqlCollectionParameterFactory : ICollectionParameterFactory
          if (applyDistinct)
             sb.Append("DISTINCT ");
 
-         sb.Append("value::").Append(columnType).Append(" AS ").Append(sqlGenerationHelper.DelimitIdentifier(columnName))
+         sb.Append("value::").Append(EscapeBraces(columnType)).Append(" AS ").Append(EscapeBraces(sqlGenerationHelper.DelimitIdentifier(columnName)))
            .Append(" FROM jsonb_array_elements_text({1}::jsonb) AS t(value)")
            .Append(" LIMIT {0}");
 
@@ -185,11 +185,11 @@ public class NpgsqlCollectionParameterFactory : ICollectionParameterFactory
             // jsonb_to_recordset matches JSON keys to column names in the AS clause.
             // System.Text.Json uses property names as JSON keys, so the AS clause must use property names
             // and alias them to column names in the SELECT for EF Core.
-            var escapedPropertyName = _sqlGenerationHelper.DelimitIdentifier(property.Name);
+            var escapedPropertyName = EscapeBraces(_sqlGenerationHelper.DelimitIdentifier(property.Name));
 
-            sb.Append(escapedPropertyName).Append(" AS ").Append(_sqlGenerationHelper.DelimitIdentifier(columnName));
+            sb.Append(escapedPropertyName).Append(" AS ").Append(EscapeBraces(_sqlGenerationHelper.DelimitIdentifier(columnName)));
 
-            recordsetClause.Append(escapedPropertyName).Append(' ').Append(columnType);
+            recordsetClause.Append(escapedPropertyName).Append(' ').Append(EscapeBraces(columnType));
 
             isFirst = false;
          }
@@ -204,6 +204,12 @@ public class NpgsqlCollectionParameterFactory : ICollectionParameterFactory
          _stringBuilderPool.Return(sb);
          _stringBuilderPool.Return(recordsetClause);
       }
+   }
+
+   // FromSqlRaw treats the statement as a String.Format template; only the placeholders {0} and {1} keep single braces.
+   private static string EscapeBraces(string value)
+   {
+      return value.Replace("{", "{{", StringComparison.Ordinal).Replace("}", "}}", StringComparison.Ordinal);
    }
 
    private static Func<IEnumerable, JsonSerializerOptions, NpgsqlJsonCollectionParameter> CreateParameterFactory<T>(
