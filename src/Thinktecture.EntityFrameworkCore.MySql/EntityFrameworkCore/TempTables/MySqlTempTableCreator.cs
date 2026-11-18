@@ -150,21 +150,31 @@ public sealed class MySqlTempTableCreator : ITempTableCreator
             {
                var mapping = _typeMappingSource.FindMapping(defaultValue.GetType(), columnType)
                              ?? _typeMappingSource.GetMappingForValue(defaultValue);
+               var providerType = mapping.Converter?.ProviderClrType ?? mapping.ClrType;
 
-               // Date and time literals have the form "TIMESTAMP '...'", which MySQL rejects as a column default. The migrations of the provider use the same clone.
-               if (mapping is IDefaultValueCompatibilityAware defaultValueCompatibleMapping)
-                  mapping = defaultValueCompatibleMapping.Clone(isDefaultValueCompatible: true);
+               // The literal of the provider formats a TimeSpan with "hh", which drops the days and the sign.
+               if ((Nullable.GetUnderlyingType(providerType) ?? providerType) == typeof(TimeSpan))
+               {
+                  var value = (TimeSpan)(mapping.Converter?.ConvertToProvider(defaultValue) ?? defaultValue);
+                  definitions.Append(" DEFAULT '").Append(MySqlTimeFormatter.Format(value)).Append('\'');
+               }
+               else
+               {
+                  // Date and time literals have the form "TIMESTAMP '...'", which MySQL rejects as a column default. The migrations of the provider use the same clone.
+                  if (mapping is IDefaultValueCompatibilityAware defaultValueCompatibleMapping)
+                     mapping = defaultValueCompatibleMapping.Clone(isDefaultValueCompatible: true);
 
-               // MySQL accepts a default of a TEXT, BLOB or JSON column as an expression only (error 1101 otherwise).
-               var isExpressionDefault = IsTextBlobOrJson(columnType);
+                  // MySQL accepts a default of a TEXT, BLOB or JSON column as an expression only (error 1101 otherwise).
+                  var isExpressionDefault = IsTextBlobOrJson(columnType);
 
-               // The provider writes a line break as CONCAT('a', CHAR(10), 'b'), which MySQL accepts as a default only in parentheses (error 1064).
-               // A quoted literal may contain the line break itself.
-               if (!isExpressionDefault && mapping is MySqlStringTypeMapping stringMapping)
-                  mapping = stringMapping.Clone(replaceLineBreaksWithCharFunction: false);
+                  // The provider writes a line break as CONCAT('a', CHAR(10), 'b'), which MySQL accepts as a default only in parentheses (error 1064).
+                  // A quoted literal may contain the line break itself.
+                  if (!isExpressionDefault && mapping is MySqlStringTypeMapping stringMapping)
+                     mapping = stringMapping.Clone(replaceLineBreaksWithCharFunction: false);
 
-               var literal = mapping.WithFractionalSecondsPrecision().GenerateSqlLiteral(defaultValue);
-               definitions.Append(isExpressionDefault ? $" DEFAULT ({literal})" : $" DEFAULT {literal}");
+                  var literal = mapping.WithFractionalSecondsPrecision().GenerateSqlLiteral(defaultValue);
+                  definitions.Append(isExpressionDefault ? $" DEFAULT ({literal})" : $" DEFAULT {literal}");
+               }
             }
          }
       }

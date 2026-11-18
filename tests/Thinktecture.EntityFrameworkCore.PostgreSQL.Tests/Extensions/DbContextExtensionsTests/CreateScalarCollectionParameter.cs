@@ -52,6 +52,16 @@ public class CreateScalarCollectionParameter : IntegrationTestsBase
                   .Should().BeEquivalentTo([value]);
    }
 
+   [Fact]
+   public void Should_do_roundtrip_When_column_name_contains_braces()
+   {
+      ConfigureModel = builder => builder.ConfigureScalarCollectionParameter<int>(typeBuilder => typeBuilder.Property(e => e.Value).HasColumnName("a{b}"));
+
+      ActDbContext.CreateScalarCollectionParameter([1, 2], applyDistinct: false)
+                  .ToList()
+                  .Should().BeEquivalentTo([1, 2]);
+   }
+
    [Theory]
    [InlineData(true)]
    [InlineData(false)]

@@ -81,8 +81,8 @@ public sealed class MySqlCollectionParameterFactory : ICollectionParameterFactor
                         ?? throw new InvalidOperationException($"Could not create StoreObjectIdentifier for table '{entityType.Name}'.");
       var columnName = property.GetColumnName(storeObject)
                        ?? throw new InvalidOperationException($"The property '{property.Name}' has no column name.");
-      var columnType = GetColumnDefinition(ctx, property, storeObject, columnName);
-      var column = _sqlGenerationHelper.DelimitIdentifier(columnName);
+      var columnType = EscapeBraces(GetColumnDefinition(ctx, property, storeObject, columnName));
+      var column = EscapeBraces(_sqlGenerationHelper.DelimitIdentifier(columnName));
       var columns = $"{column} {columnType} PATH '$' ERROR ON ERROR";
 
       return new CollectionParameterInfo(
@@ -107,18 +107,24 @@ public sealed class MySqlCollectionParameterFactory : ICollectionParameterFactor
 
          var columnName = property.GetColumnName(storeObject)
                           ?? throw new InvalidOperationException($"The property '{property.Name}' has no column name.");
-         var jsonColumn = _sqlGenerationHelper.DelimitIdentifier(property.Name);
+         var jsonColumn = EscapeBraces(_sqlGenerationHelper.DelimitIdentifier(property.Name));
          var jsonPath = _typeMappingSource.FindMapping(typeof(string))
                         ?.GenerateSqlLiteral("$." + JsonSerializer.Serialize(GetJsonPropertyName(property), _jsonSerializerOptions))
                         ?? throw new InvalidOperationException("MySQL string type mapping is unavailable.");
          var columnType = GetColumnDefinition(ctx, property, storeObject, columnName);
 
-         columns.Append(jsonColumn).Append(' ').Append(columnType).Append(" PATH ").Append(jsonPath).Append(" ERROR ON ERROR");
-         selections.Append("`collection`.").Append(jsonColumn).Append(" AS ").Append(_sqlGenerationHelper.DelimitIdentifier(columnName));
+         columns.Append(jsonColumn).Append(' ').Append(EscapeBraces(columnType)).Append(" PATH ").Append(EscapeBraces(jsonPath)).Append(" ERROR ON ERROR");
+         selections.Append("`collection`.").Append(jsonColumn).Append(" AS ").Append(EscapeBraces(_sqlGenerationHelper.DelimitIdentifier(columnName)));
       }
 
       var from = $" FROM JSON_TABLE({{1}}, '$[*]' COLUMNS ({columns})) AS `collection` LIMIT {{0}}";
       return new CollectionParameterInfo($"SELECT {selections}{from}", $"SELECT DISTINCT {selections}{from}");
+   }
+
+   // FromSqlRaw treats the statement as a String.Format template; only the placeholders {0} and {1} keep single braces.
+   private static string EscapeBraces(string value)
+   {
+      return value.Replace("{", "{{", StringComparison.Ordinal).Replace("}", "}}", StringComparison.Ordinal);
    }
 
    // ERROR ON ERROR: a value that does not fit the column type raises an error instead of becoming NULL.

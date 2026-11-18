@@ -31,6 +31,28 @@ public sealed class CreateComplexCollectionParameter : MySqlIntegrationTestsBase
    }
 
    [Theory]
+   [InlineData("a{b}")]
+   [InlineData("x{0}")]
+   public async Task Should_do_roundtrip_When_column_name_contains_braces(string columnName)
+   {
+      ConfigureModel = builder => builder.ConfigureComplexCollectionParameter<MyParameter>(typeBuilder => typeBuilder.Property(e => e.Column1).HasColumnName(columnName));
+
+      var result = await ActDbContext.CreateComplexCollectionParameter([new MyParameter(_OTHER_TEST_ENTITY_ID, new ConvertibleClass(42))], applyDistinct: false).ToListAsync();
+
+      result.Should().BeEquivalentTo([new MyParameter(_OTHER_TEST_ENTITY_ID, new ConvertibleClass(42))]);
+   }
+
+   [Fact]
+   public async Task Should_read_objects_When_json_property_name_contains_braces()
+   {
+      ConfigureModel = builder => builder.ConfigureComplexCollectionParameter<BraceNamedComplexParameter>();
+
+      var result = await ActDbContext.CreateComplexCollectionParameter([new BraceNamedComplexParameter(7)], applyDistinct: false).ToListAsync();
+
+      result.Should().BeEquivalentTo([new BraceNamedComplexParameter(7)]);
+   }
+
+   [Theory]
    [InlineData(true)]
    [InlineData(false)]
    public async Task Should_work_with_joins(bool applyDistinct)
@@ -312,3 +334,6 @@ internal sealed record JsonNamedComplexParameter(
    [property: JsonPropertyName("it's \"quoted\"")]
    int Quoted,
    int PlainValue);
+
+// A JSON property name that contains a format placeholder. The property is nullable, so a value that is not found is visible as null.
+internal sealed record BraceNamedComplexParameter([property: JsonPropertyName("x{0}")] int? Value);

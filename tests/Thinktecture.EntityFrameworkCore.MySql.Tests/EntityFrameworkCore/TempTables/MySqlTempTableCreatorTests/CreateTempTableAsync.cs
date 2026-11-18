@@ -555,6 +555,39 @@ public sealed class CreateTempTableAsync : MySqlIntegrationTestsBase
       ValidateColumn(columns[0], nameof(TempTable<string>.Column1), "varchar(50)", true, defaultValue: defaultValue);
    }
 
+   [Theory]
+   [InlineData(1_296_001_234_560L, "36:00:00.123456")] // 36 hours and 123,456 microseconds
+   [InlineData(-54_000_000_000L, "-01:30:00.000000")] // minus 90 minutes
+   public async Task Should_create_temp_table_with_time_span_default_value_When_value_is_beyond_one_day_or_negative(long ticks, string expectedDefault)
+   {
+      var defaultValue = TimeSpan.FromTicks(ticks);
+      ConfigureModel = builder => builder.ConfigureTempTable<TimeSpan>(typeBuilder => typeBuilder.Property(t => t.Column1)
+                                                                                                .HasColumnType("time(6)")
+                                                                                                .HasDefaultValue(defaultValue));
+
+      await using var tempTable = await SUT.CreateTempTableAsync(GetTempTableEntityType<TempTable<TimeSpan>>(), _options);
+
+      var columns = await GetColumnsAsync(tempTable);
+      ValidateColumn(columns[0], nameof(TempTable<TimeSpan>.Column1), "time(6)", false, defaultValue: expectedDefault);
+
+      await ActDbContext.Database.ExecuteSqlRawAsync($"INSERT INTO `{tempTable.Name}` () VALUES ()");
+      (await ActDbContext.Database.SqlQueryRaw<TimeSpan>($"SELECT `Column1` AS `Value` FROM `{tempTable.Name}`").SingleAsync()).Should().Be(defaultValue);
+   }
+
+   // Guard: a TimeSpan that is stored as bigint keeps the ticks as default.
+   [Fact]
+   public async Task Should_create_temp_table_with_ticks_default_value_When_time_span_is_converted_to_bigint()
+   {
+      ConfigureModel = builder => builder.ConfigureTempTable<TimeSpan>(typeBuilder => typeBuilder.Property(t => t.Column1)
+                                                                                                .HasConversion<long>()
+                                                                                                .HasDefaultValue(TimeSpan.FromHours(36)));
+
+      await using var tempTable = await SUT.CreateTempTableAsync(GetTempTableEntityType<TempTable<TimeSpan>>(), _options);
+
+      var columns = await GetColumnsAsync(tempTable);
+      ValidateColumn(columns[0], nameof(TempTable<TimeSpan>.Column1), "bigint", false, defaultValue: "1296000000000");
+   }
+
    [Fact]
    public async Task Should_create_temp_table_with_default_value_with_fractional_seconds()
    {

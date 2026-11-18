@@ -106,6 +106,16 @@ public sealed class CreateScalarCollectionParameter : MySqlIntegrationTestsBase
       await AssertRoundtripAsync((Array)values, false);
    }
 
+   [Fact]
+   public async Task Should_do_roundtrip_When_column_name_contains_braces()
+   {
+      ConfigureModel = builder => builder.ConfigureScalarCollectionParameter<int>(typeBuilder => typeBuilder.Property(e => e.Value).HasColumnName("a{b}"));
+
+      var result = await ActDbContext.CreateScalarCollectionParameter(new[] { 1, 2 }, applyDistinct: false).ToListAsync();
+
+      result.Should().BeEquivalentTo(new[] { 1, 2 });
+   }
+
    [Theory]
    [MemberData(nameof(MultipleValues))]
    public async Task Should_work_with_multiple_values(object values, bool applyDistinct)

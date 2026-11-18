@@ -129,9 +129,9 @@ public class SqlServerCollectionParameterFactory : ICollectionParameterFactory
       try
       {
          var storeObject = StoreObjectIdentifier.Create(entityType, StoreObjectType.Table) ?? throw new Exception($"Could not create StoreObjectIdentifier for table '{entityType.Name}'.");
-         var columnType = property.GetColumnType(storeObject);
+         var columnType = EscapeBraces(property.GetColumnType(storeObject));
          var columnName = property.GetColumnName(storeObject) ?? throw new Exception($"The property '{property.Name}' has no column name.");
-         var escapedColumnName = sqlGenerationHelper.DelimitIdentifier(columnName);
+         var escapedColumnName = EscapeBraces(sqlGenerationHelper.DelimitIdentifier(columnName));
 
          sb.Append("SELECT ");
 
@@ -183,11 +183,11 @@ public class SqlServerCollectionParameterFactory : ICollectionParameterFactory
             }
 
             var columnName = property.GetColumnName(storeObject) ?? throw new Exception($"The property '{property.Name}' has no column name.");
-            var escapedColumnName = _sqlGenerationHelper.DelimitIdentifier(columnName);
+            var escapedColumnName = EscapeBraces(_sqlGenerationHelper.DelimitIdentifier(columnName));
             var columnType = property.GetColumnType(storeObject) ?? throw new Exception($"The property '{property.Name}' has no column type.");
 
             sb.Append(escapedColumnName);
-            withClause.Append(escapedColumnName).Append(" ").Append(columnType).Append($" 'strict$.{property.Name}'");
+            withClause.Append(escapedColumnName).Append(" ").Append(EscapeBraces(columnType)).Append(" 'strict$.").Append(EscapeBraces(property.Name)).Append("'");
 
             isFirst = false;
          }
@@ -201,6 +201,12 @@ public class SqlServerCollectionParameterFactory : ICollectionParameterFactory
          _stringBuilderPool.Return(sb);
          _stringBuilderPool.Return(withClause);
       }
+   }
+
+   // FromSqlRaw treats the statement as a String.Format template; only the placeholders {0} and {1} keep single braces.
+   private static string EscapeBraces(string value)
+   {
+      return value.Replace("{", "{{", StringComparison.Ordinal).Replace("}", "}}", StringComparison.Ordinal);
    }
 
    private static Func<IEnumerable, JsonSerializerOptions, JsonCollectionParameter> CreateParameterFactory<T>(
