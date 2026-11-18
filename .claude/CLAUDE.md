@@ -58,6 +58,11 @@ Before presenting work as complete:
   pushing through. Do this immediately — do not attempt further fixes on a broken approach.
   Re-planning means stepping back to reassess the strategy, not retrying the same idea with tweaks.
 
+### Branches
+- `master` targets the newest EF Core version. A release branch `releases/<version>.x` (for example `releases/10.0.x`) targets an older EF Core version.
+- A fix for a defect that exists on a release branch and on `master` is committed on the release branch first. Then the release branch is merged into `master`, and the merge commit contains the adaptations for `master`. Do not cherry-pick the fix, because every fix commit must exist only once in the history.
+- A correction of a fix that is not pushed yet is amended into the fix commit on the release branch, and the merge into `master` is made again from the previous `master` commit. Do not add a correction commit and a second merge, so that the history has one fix commit and one merge.
+
 ### After Corrections
 - When the user corrects a mistake that reflects a project-wide pattern or convention, update the
   relevant section of CLAUDE.md.
