@@ -623,6 +623,22 @@ public class CreateTempTableAsync : SchemaChangingIntegrationTestsBase
    }
 
    [Fact]
+   public async Task Should_create_temp_table_with_default_values_containing_braces()
+   {
+      ConfigureModel = builder => builder.ConfigureTempTable<string, string>(typeBuilder =>
+                                                                             {
+                                                                                typeBuilder.Property(t => t.Column1).HasDefaultValue("{}");
+                                                                                typeBuilder.Property(t => t.Column2).HasDefaultValueSql("'{}'");
+                                                                             });
+
+      await using var tempTable = await SUT.CreateTempTableAsync(ActDbContext.GetTempTableEntityType<TempTable<string, string>>(), _optionsWithNonUniqueNameAndNoPrimaryKey);
+
+      var columns = AssertDbContext.GetTempTableColumns<TempTable<string, string>>().ToList();
+      ValidateColumn(columns[0], nameof(TempTable<string, string>.Column1), "TEXT", true, "'{}'");
+      ValidateColumn(columns[1], nameof(TempTable<string, string>.Column2), "TEXT", true, "'{}'");
+   }
+
+   [Fact]
    public async Task Should_create_temp_table_with_converter_and_default_value()
    {
       ConfigureModel = builder => builder.ConfigureTempTable<ConvertibleClass>(typeBuilder => typeBuilder.Property(t => t.Column1)

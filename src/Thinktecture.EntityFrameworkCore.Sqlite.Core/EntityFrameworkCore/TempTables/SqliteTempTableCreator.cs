@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.ObjectPool;
+using Thinktecture.Internal;
 
 namespace Thinktecture.EntityFrameworkCore.TempTables;
 
@@ -65,7 +66,7 @@ public sealed class SqliteTempTableCreator : ITempTableCreator
 
          try
          {
-            await _ctx.Database.ExecuteSqlRawAsync(sql, cancellationToken).ConfigureAwait(false);
+            await BulkOperationsSqlExecutor.ExecuteNonQueryAsync(_ctx.Database, sql, cancellationToken).ConfigureAwait(false);
          }
          catch (Exception)
          {

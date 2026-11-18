@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.SqlServer.Metadata.Internal;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.ObjectPool;
+using Thinktecture.Internal;
 
 namespace Thinktecture.EntityFrameworkCore.TempTables;
 
@@ -85,7 +86,7 @@ public sealed class SqlServerTempTableCreator : ISqlServerTempTableCreator
 
          try
          {
-            await _ctx.Database.ExecuteSqlRawAsync(sql, cancellationToken).ConfigureAwait(false);
+            await BulkOperationsSqlExecutor.ExecuteNonQueryAsync(_ctx.Database, sql, cancellationToken).ConfigureAwait(false);
          }
          catch (Exception)
          {
@@ -135,7 +136,7 @@ public sealed class SqlServerTempTableCreator : ISqlServerTempTableCreator
       var cachedStatement = _primaryKeyCache.GetOrAdd(new SqlServerTempTablePrimaryKeyCacheKey(keyProperties, checkForExistence), CreatePrimaryKeyStatement);
       var sql = cachedStatement.GetSqlStatement(_sqlGenerationHelper, tableName);
 
-      await ctx.Database.ExecuteSqlRawAsync(sql, cancellationToken).ConfigureAwait(false);
+      await BulkOperationsSqlExecutor.ExecuteNonQueryAsync(ctx.Database, sql, cancellationToken).ConfigureAwait(false);
    }
 
    private ICachedTempTableStatement CreatePrimaryKeyStatement(SqlServerTempTablePrimaryKeyCacheKey cacheKey)

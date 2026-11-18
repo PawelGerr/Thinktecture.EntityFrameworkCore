@@ -1,3 +1,4 @@
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Thinktecture.TestDatabaseContext;
 
@@ -37,5 +38,16 @@ public class TruncateTableAsync : IntegrationTestsBase
 
       var loadedEntities = await AssertDbContext.TestEntities.ToListAsync();
       loadedEntities.Should().BeEmpty();
+   }
+
+   [Fact]
+   public async Task Should_keep_braces_in_table_name()
+   {
+      // CustomTempTable is excluded from the data cleanup of the test base (NonExistingTableFilter), so the missing table does not break the cleanup.
+      ConfigureModel = builder => builder.Entity<CustomTempTable>().HasNoKey().ToTable("missing{table}");
+
+      (await SUT.Awaiting(sut => sut.TruncateTableAsync<CustomTempTable>())
+                .Should().ThrowAsync<SqlException>())
+         .Which.Message.Should().Contain("missing{table}");
    }
 }

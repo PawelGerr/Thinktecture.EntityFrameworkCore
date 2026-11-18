@@ -40,6 +40,30 @@ public class CreatePrimaryKeyAsync : IntegrationTestsBase
    }
 
    [Fact]
+   public async Task Should_create_primary_key_if_key_column_name_contains_braces()
+   {
+      ConfigureModel = builder => builder.ConfigureTempTable<int>(typeBuilder => typeBuilder.Property(t => t.Column1).HasColumnName("a{b}"));
+
+      await using var tempTableReference = await ArrangeDbContext.CreateTempTableAsync<TempTable<int>>(new TempTableCreationOptions
+                                                                                                       {
+                                                                                                          TableNameProvider = DefaultTempTableNameProvider.Instance,
+                                                                                                          PrimaryKeyCreation = IPrimaryKeyPropertiesProvider.None
+                                                                                                       });
+
+      var entityType = ActDbContext.GetTempTableEntityType<TempTable<int>>();
+      var allProperties = entityType.GetProperties().ToList();
+      await SUT.CreatePrimaryKeyAsync(ActDbContext, IPrimaryKeyPropertiesProvider.AdaptiveForced.GetPrimaryKeyProperties(entityType, allProperties), tempTableReference.Name);
+
+      var constraints = await AssertDbContext.GetTempTableConstraints<TempTable<int>>().ToListAsync();
+      constraints.Should().HaveCount(1)
+                 .And.Subject.First().CONSTRAINT_TYPE.Should().Be("PRIMARY KEY");
+
+      var keyColumns = await AssertDbContext.GetTempTableKeyColumns<TempTable<int>>().ToListAsync();
+      keyColumns.Should().HaveCount(1)
+                .And.Subject.First().COLUMN_NAME.Should().Be("a{b}");
+   }
+
+   [Fact]
    public async Task Should_create_primary_key_for_entityType()
    {
       await using var tempTableReference = await ArrangeDbContext.CreateTempTableAsync<TestEntity>(new TempTableCreationOptions

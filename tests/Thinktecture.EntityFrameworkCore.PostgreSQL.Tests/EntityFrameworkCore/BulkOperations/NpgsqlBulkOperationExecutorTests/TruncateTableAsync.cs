@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Npgsql;
 using Thinktecture.TestDatabaseContext;
 
 namespace Thinktecture.EntityFrameworkCore.BulkOperations.NpgsqlBulkOperationExecutorTests;
@@ -80,5 +81,22 @@ public class TruncateTableAsync : IntegrationTestsBase
 
       var loadedEntities = await AssertDbContext.TestEntities.ToListAsync();
       loadedEntities.Should().BeEmpty();
+   }
+
+   [Fact]
+   public async Task Should_keep_braces_in_table_name()
+   {
+      // The table does not exist. The error of the database proves that the name arrives with its braces.
+      ConfigureModel = builder => builder.Entity<BraceNamedEntity>().ToTable("missing{table}");
+
+      var exception = (await SUT.Awaiting(sut => sut.TruncateTableAsync<BraceNamedEntity>())
+                                .Should().ThrowAsync<PostgresException>()).Which;
+      exception.SqlState.Should().Be("42P01");
+      exception.MessageText.Should().Contain("missing{table}");
+   }
+
+   private sealed class BraceNamedEntity
+   {
+      public int Id { get; set; }
    }
 }

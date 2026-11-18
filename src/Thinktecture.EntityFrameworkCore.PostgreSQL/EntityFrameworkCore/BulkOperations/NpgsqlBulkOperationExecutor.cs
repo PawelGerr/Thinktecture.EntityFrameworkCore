@@ -500,7 +500,7 @@ public sealed partial class NpgsqlBulkOperationExecutor
                                  ? $"TRUNCATE TABLE {tableIdentifier} CASCADE;"
                                  : $"TRUNCATE TABLE {tableIdentifier};";
 
-      await _ctx.Database.ExecuteSqlRawAsync(truncateStatement, cancellationToken);
+      await BulkOperationsSqlExecutor.ExecuteNonQueryAsync(_ctx.Database, truncateStatement, cancellationToken);
    }
 
    /// <inheritdoc />
@@ -535,7 +535,7 @@ public sealed partial class NpgsqlBulkOperationExecutor
 
       var updateStatement = CreateUpdateCommand(entityType, tableName.Schema, tableName.Name, tempTable.Name, propertiesForUpdate, options.KeyProperties.DetermineKeyProperties(entityType));
 
-      return await _ctx.Database.ExecuteSqlRawAsync(updateStatement, cancellationToken);
+      return await BulkOperationsSqlExecutor.ExecuteNonQueryAsync(_ctx.Database, updateStatement, cancellationToken);
    }
 
    /// <inheritdoc />
@@ -572,7 +572,7 @@ public sealed partial class NpgsqlBulkOperationExecutor
       var keyProperties = options.KeyProperties.DetermineKeyProperties(entityType);
       var upsertStatement = CreateInsertOrUpdateCommand(entityType, tableName.Schema, tableName.Name, tempTable.Name, propertiesForInsert, propertiesForUpdate, keyProperties, options.ConflictDoNothing);
 
-      return await _ctx.Database.ExecuteSqlRawAsync(upsertStatement, cancellationToken);
+      return await BulkOperationsSqlExecutor.ExecuteNonQueryAsync(_ctx.Database, upsertStatement, cancellationToken);
    }
 
    private string CreateUpdateCommand(

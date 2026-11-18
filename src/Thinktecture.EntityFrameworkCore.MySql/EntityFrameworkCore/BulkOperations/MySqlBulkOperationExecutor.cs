@@ -1,4 +1,3 @@
-using System.Collections.ObjectModel;
 using System.Data.Common;
 using System.Linq.Expressions;
 using System.Text;
@@ -902,11 +901,10 @@ public sealed class MySqlBulkOperationExecutor : IBulkInsertExecutor, ITempTable
    }
 
    // EF Core executes the statement, so logging, interceptors, the concurrency detector, the current transaction and the command timeout of the context apply.
-   // "Build(sql)" does not format the text, so braces in identifiers are kept.
+   // "BulkOperationsSqlExecutor.ExecuteNonQueryAsync" does not format the text, so braces in identifiers are kept.
    private Task<int> ExecuteSqlAsync(string statement, CancellationToken cancellationToken)
    {
-      var command = _context.GetService<IRawSqlCommandBuilder>().Build(statement);
-      return new EfCoreValueExpressionTranslator(_context).ExecuteNonQueryAsync(command, ReadOnlyDictionary<string, object?>.Empty, cancellationToken);
+      return BulkOperationsSqlExecutor.ExecuteNonQueryAsync(_context.Database, statement, cancellationToken);
    }
 
    // Creates the staging table, fills it with the registered insert path, runs the statements of the operation and drops the staging table.

@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.ObjectPool;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata.Internal;
+using Thinktecture.Internal;
 
 namespace Thinktecture.EntityFrameworkCore.TempTables;
 
@@ -86,7 +87,7 @@ public sealed class NpgsqlTempTableCreator : INpgsqlTempTableCreator
 
          try
          {
-            await _ctx.Database.ExecuteSqlRawAsync(sql, cancellationToken).ConfigureAwait(false);
+            await BulkOperationsSqlExecutor.ExecuteNonQueryAsync(_ctx.Database, sql, cancellationToken).ConfigureAwait(false);
          }
          catch (Exception)
          {
@@ -133,7 +134,7 @@ public sealed class NpgsqlTempTableCreator : INpgsqlTempTableCreator
       var cachedStatement = _primaryKeyCache.GetOrAdd(new NpgsqlTempTablePrimaryKeyCacheKey(keyProperties, checkForExistence), CreatePrimaryKeyStatement);
       var sql = cachedStatement.GetSqlStatement(_sqlGenerationHelper, tableName);
 
-      await ctx.Database.ExecuteSqlRawAsync(sql, cancellationToken).ConfigureAwait(false);
+      await BulkOperationsSqlExecutor.ExecuteNonQueryAsync(ctx.Database, sql, cancellationToken).ConfigureAwait(false);
    }
 
    private ICachedTempTableStatement CreatePrimaryKeyStatement(NpgsqlTempTablePrimaryKeyCacheKey cacheKey)

@@ -457,7 +457,7 @@ public sealed partial class SqlServerBulkOperationExecutor
       var tableIdentifier = _sqlGenerationHelper.DelimitIdentifier(tableName, entityType.GetSchema());
       var truncateStatement = $"TRUNCATE TABLE {tableIdentifier};";
 
-      await _ctx.Database.ExecuteSqlRawAsync(truncateStatement, cancellationToken);
+      await BulkOperationsSqlExecutor.ExecuteNonQueryAsync(_ctx.Database, truncateStatement, cancellationToken);
    }
 
    /// <inheritdoc />
@@ -492,7 +492,7 @@ public sealed partial class SqlServerBulkOperationExecutor
 
       var mergeStatement = CreateMergeCommand(entityType, tableName.Schema, tableName.Name, tempTable.Name, options, null, propertiesForUpdate, options.KeyProperties.DetermineKeyProperties(entityType));
 
-      return await _ctx.Database.ExecuteSqlRawAsync(mergeStatement, cancellationToken);
+      return await BulkOperationsSqlExecutor.ExecuteNonQueryAsync(_ctx.Database, mergeStatement, cancellationToken);
    }
 
    /// <inheritdoc />
@@ -528,7 +528,7 @@ public sealed partial class SqlServerBulkOperationExecutor
 
       var mergeStatement = CreateMergeCommand(entityType, tableName.Schema, tableName.Name, tempTable.Name, options, propertiesForInsert, propertiesForUpdate, options.KeyProperties.DetermineKeyProperties(entityType));
 
-      return await _ctx.Database.ExecuteSqlRawAsync(mergeStatement, cancellationToken);
+      return await BulkOperationsSqlExecutor.ExecuteNonQueryAsync(_ctx.Database, mergeStatement, cancellationToken);
    }
 
    private string CreateMergeCommand<T>(

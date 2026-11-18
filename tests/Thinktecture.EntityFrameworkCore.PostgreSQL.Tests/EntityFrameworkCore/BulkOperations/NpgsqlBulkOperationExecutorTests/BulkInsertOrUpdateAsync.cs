@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Npgsql;
 using Thinktecture.EntityFrameworkCore.TempTables;
 using Thinktecture.TestDatabaseContext;
 
@@ -24,6 +25,19 @@ public class BulkInsertOrUpdateAsync : IntegrationTestsBase
       var affectedRows = await SUT.BulkInsertOrUpdateAsync(new List<TestEntity>(), new NpgsqlBulkInsertOrUpdateOptions());
 
       affectedRows.Should().Be(0);
+   }
+
+   [Fact]
+   public async Task Should_keep_braces_in_table_name_of_table_name_provider()
+   {
+      var entity = new TestEntity { Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"), RequiredName = "RequiredName" };
+      var options = new NpgsqlBulkInsertOrUpdateOptions { TableNameProvider = IBulkOperationTableNameProvider.ForRootEntity("missing{table}") };
+
+      // The table does not exist. The error of the database proves that the name arrives with its braces.
+      var exception = (await SUT.Awaiting(sut => sut.BulkInsertOrUpdateAsync([entity], options))
+                                .Should().ThrowAsync<PostgresException>()).Which;
+      exception.SqlState.Should().Be("42P01");
+      exception.MessageText.Should().Contain("missing{table}");
    }
 
    [Fact]

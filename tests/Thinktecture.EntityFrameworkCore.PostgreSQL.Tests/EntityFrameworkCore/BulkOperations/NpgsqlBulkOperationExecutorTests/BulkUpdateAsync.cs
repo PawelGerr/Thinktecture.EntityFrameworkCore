@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Npgsql;
 using Thinktecture.EntityFrameworkCore.TempTables;
 using Thinktecture.TestDatabaseContext;
 
@@ -58,6 +59,37 @@ public class BulkUpdateAsync : IntegrationTestsBase
 
       var loadedEntities = await AssertDbContext.TestEntities.ToListAsync();
       loadedEntities.Should().BeEquivalentTo([entity_1, entity_2]);
+   }
+
+   [Fact]
+   public async Task Should_update_entities_if_default_value_contains_braces()
+   {
+      // The temp table of the bulk update copies the default value of the model.
+      ConfigureModel = builder => builder.Entity<TestEntity>().Property(e => e.Name).HasDefaultValue("{}");
+
+      var entity = new TestEntity { Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"), Name = "Name", RequiredName = "RequiredName" };
+      ArrangeDbContext.Add(entity);
+      await ArrangeDbContext.SaveChangesAsync();
+
+      entity.Name = "UpdatedName";
+
+      var affectedRows = await SUT.BulkUpdateAsync([entity], new NpgsqlBulkUpdateOptions());
+
+      affectedRows.Should().Be(1);
+      (await AssertDbContext.TestEntities.SingleAsync()).Name.Should().Be("UpdatedName");
+   }
+
+   [Fact]
+   public async Task Should_keep_braces_in_table_name_of_table_name_provider()
+   {
+      var entity = new TestEntity { Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"), RequiredName = "RequiredName" };
+      var options = new NpgsqlBulkUpdateOptions { TableNameProvider = IBulkOperationTableNameProvider.ForRootEntity("missing{table}") };
+
+      // The table does not exist. The error of the database proves that the name arrives with its braces.
+      var exception = (await SUT.Awaiting(sut => sut.BulkUpdateAsync([entity], options))
+                                .Should().ThrowAsync<PostgresException>()).Which;
+      exception.SqlState.Should().Be("42P01");
+      exception.MessageText.Should().Contain("missing{table}");
    }
 
    [Fact]
