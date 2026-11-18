@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.Internal;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 using Microsoft.EntityFrameworkCore.Storage;
+using Thinktecture.Internal;
 
 namespace Thinktecture.EntityFrameworkCore.BulkOperations.Internal;
 
@@ -285,24 +286,9 @@ public sealed class EfCoreValueExpressionTranslator
    /// <param name="parameterValues">The parameter values returned with the command.</param>
    /// <param name="cancellationToken">Cancellation token.</param>
    /// <returns>The number of affected rows.</returns>
-   public async Task<int> ExecuteNonQueryAsync(IRelationalCommand command, IReadOnlyDictionary<string, object?> parameterValues, CancellationToken cancellationToken = default)
+   public Task<int> ExecuteNonQueryAsync(IRelationalCommand command, IReadOnlyDictionary<string, object?> parameterValues, CancellationToken cancellationToken = default)
    {
-      ArgumentNullException.ThrowIfNull(command);
-      ArgumentNullException.ThrowIfNull(parameterValues);
-
-      var dependencies = (IRelationalDatabaseFacadeDependencies)((IDatabaseFacadeDependenciesAccessor)_ctx.Database).Dependencies;
-      var criticalSection = dependencies.CoreOptions.AreThreadSafetyChecksEnabled ? dependencies.ConcurrencyDetector.EnterCriticalSection() : (ConcurrencyDetectorCriticalSectionDisposer?)null;
-
-      try
-      {
-         var parameterObject = new RelationalCommandParameterObject(dependencies.RelationalConnection, parameterValues, null, _ctx, dependencies.CommandLogger, CommandSource.ExecuteSqlRaw);
-
-         return await command.ExecuteNonQueryAsync(parameterObject, cancellationToken).ConfigureAwait(false);
-      }
-      finally
-      {
-         criticalSection?.Dispose();
-      }
+      return BulkOperationsSqlExecutor.ExecuteNonQueryAsync(_ctx.Database, command, parameterValues, cancellationToken);
    }
 
    // EF Core runs the postprocessor after the translation: type mapping inference, pruning, simplification and provider passes such as the OPENJSON parameter mapping of SQL Server.

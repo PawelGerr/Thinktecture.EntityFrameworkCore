@@ -35,6 +35,32 @@ public class CreatePrimaryKeyAsync : IntegrationTestsBase
    }
 
    [Fact]
+   public async Task Should_create_primary_key_if_key_column_name_contains_braces()
+   {
+      ConfigureModel = builder => builder.ConfigureTempTable<int>(typeBuilder => typeBuilder.Property(t => t.Column1).HasColumnName("a{b}"));
+
+      // Use ActDbContext for both temp table creation and PK creation
+      // because temp tables are session-scoped in PostgreSQL
+      await using var tempTableReference = await ActDbContext.CreateTempTableAsync<TempTable<int>>(new TempTableCreationOptions
+                                                                                                   {
+                                                                                                      TableNameProvider = DefaultTempTableNameProvider.Instance,
+                                                                                                      PrimaryKeyCreation = IPrimaryKeyPropertiesProvider.None
+                                                                                                   });
+
+      var entityType = ActDbContext.GetTempTableEntityType<TempTable<int>>();
+      var allProperties = entityType.GetProperties().ToList();
+      await SUT.CreatePrimaryKeyAsync(ActDbContext, IPrimaryKeyPropertiesProvider.AdaptiveForced.GetPrimaryKeyProperties(entityType, allProperties), tempTableReference.Name);
+
+      var constraints = await AssertDbContext.GetTempTableConstraints(tempTableReference.Name).ToListAsync();
+      constraints.Should().HaveCount(1)
+                 .And.Subject.First().ConstraintType.Should().Be("PRIMARY KEY");
+
+      var columns = await AssertDbContext.GetTempTableColumns(tempTableReference.Name).ToListAsync();
+      columns.Should().ContainSingle()
+             .Which.ColumnName.Should().Be("a{b}");
+   }
+
+   [Fact]
    public async Task Should_create_primary_key_with_existence_check()
    {
       // Use ActDbContext for both temp table creation and PK creation

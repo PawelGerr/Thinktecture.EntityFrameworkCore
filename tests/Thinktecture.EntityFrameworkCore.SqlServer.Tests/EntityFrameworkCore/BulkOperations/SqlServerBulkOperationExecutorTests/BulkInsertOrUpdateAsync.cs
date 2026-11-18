@@ -36,6 +36,18 @@ public class BulkInsertOrUpdateAsync : IntegrationTestsBase
    }
 
    [Fact]
+   public async Task Should_keep_braces_in_table_name_of_table_name_provider()
+   {
+      var entity = new TestEntity { Id = new Guid("40B5CA93-5C02-48AD-B8A1-12BC13313866"), RequiredName = "RequiredName" };
+      var options = new SqlServerBulkInsertOrUpdateOptions { TableNameProvider = IBulkOperationTableNameProvider.ForRootEntity("missing{table}") };
+
+      // The table does not exist. The error of the database proves that the name arrives with its braces.
+      (await SUT.Awaiting(sut => sut.BulkInsertOrUpdateAsync(new List<TestEntity> { entity }, options))
+                .Should().ThrowAsync<SqlException>())
+         .Which.Message.Should().Contain("missing{table}");
+   }
+
+   [Fact]
    public async Task Should_insert_column_with_converter()
    {
       var existingEntity = new TestEntity { Id = new Guid("79DA4171-C90B-4A5D-B0B5-D0A1E1BDF966"), RequiredName = "RequiredName" };

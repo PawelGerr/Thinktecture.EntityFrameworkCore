@@ -1,4 +1,3 @@
-using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -7,7 +6,6 @@ using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage;
 using Thinktecture.EntityFrameworkCore.Storage;
 using Microting.EntityFrameworkCore.MySql.Storage.Internal;
-using Thinktecture.EntityFrameworkCore.BulkOperations.Internal;
 using Thinktecture.EntityFrameworkCore.Internal;
 using Thinktecture.Internal;
 
@@ -211,12 +209,10 @@ public sealed class MySqlTempTableCreator : ITempTableCreator
       return entityType.ClrType != typeof(object) && entityType.Name == EntityNameProvider.GetTempTableName(entityType.ClrType);
    }
 
-   // "Build(sql)" does not format the text, so braces in a JSON default like '{}' are kept; ExecuteSqlRawAsync would apply String.Format.
-   [SuppressMessage("Usage", "EF1001", MessageId = "Internal EF Core API usage.")]
+   // "BulkOperationsSqlExecutor.ExecuteNonQueryAsync" does not format the text, so braces in a JSON default like '{}' are kept; ExecuteSqlRawAsync would apply String.Format.
    private Task<int> ExecuteSqlAsync(string statement, CancellationToken cancellationToken)
    {
-      var command = _context.GetService<IRawSqlCommandBuilder>().Build(statement);
-      return new EfCoreValueExpressionTranslator(_context).ExecuteNonQueryAsync(command, ReadOnlyDictionary<string, object?>.Empty, cancellationToken);
+      return BulkOperationsSqlExecutor.ExecuteNonQueryAsync(_context.Database, statement, cancellationToken);
    }
 
    /// <summary>

@@ -517,7 +517,7 @@ public sealed partial class SqliteBulkOperationExecutor
       var tableIdentifier = _sqlGenerationHelper.DelimitIdentifier(tableName, entityType.GetSchema());
       var truncateStatement = $"DELETE FROM {tableIdentifier};";
 
-      await _ctx.Database.ExecuteSqlRawAsync(truncateStatement, cancellationToken);
+      await BulkOperationsSqlExecutor.ExecuteNonQueryAsync(_ctx.Database, truncateStatement, cancellationToken);
    }
 
    /// <summary>

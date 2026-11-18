@@ -10,6 +10,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage;
 using Thinktecture.EntityFrameworkCore.Parameters;
 using Thinktecture.EntityFrameworkCore.TempTables;
+using Thinktecture.Internal;
 
 namespace Thinktecture.EntityFrameworkCore.Testing;
 
@@ -275,7 +276,7 @@ public interface ITestIsolationOptions
          var sqlHelper = ctx.GetService<ISqlGenerationHelper>();
 
          await ctx.Database.ExecuteSqlRawAsync(GetSqlForCleanup(), new object[] { new SqlParameter("@schema", schema) }, cancellationToken);
-         await ctx.Database.ExecuteSqlRawAsync(GetDropSchemaSql(sqlHelper, schema), cancellationToken);
+         await BulkOperationsSqlExecutor.ExecuteNonQueryAsync(ctx.Database, GetDropSchemaSql(sqlHelper, schema), cancellationToken);
       }
    }
 
