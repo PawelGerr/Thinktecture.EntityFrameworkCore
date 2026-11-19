@@ -1,10 +1,7 @@
-using System.Data;
 using System.Data.Common;
-using System.Globalization;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Logging;
-using Thinktecture.EntityFrameworkCore.Migrations;
 using Xunit.Abstractions;
 
 namespace Thinktecture.EntityFrameworkCore.Testing;
@@ -24,12 +21,7 @@ public class SqlServerTestDbContextProviderBuilder<T> : TestDbContextProviderBui
    private readonly List<Action<SqlServerDbContextOptionsBuilder, string?>> _configuresSqlServerOptionsCollection;
    private readonly List<Action<T>> _ctxInitializations;
 
-   private bool _useThinktectureSqlServerMigrationsSqlGenerator = true;
    private string? _sharedTablesSchema;
-   private IsolationLevel? _sharedTablesIsolationLevel;
-   private SqlServerLockTableOptions? _lockTable;
-   private Func<DbContextOptions<T>, IDbDefaultSchema?, T?>? _contextFactory;
-   private Func<SqlServerTestDbContextProviderOptions<T>, SqlServerTestDbContextProvider<T>?>? _providerFactory;
 
    /// <summary>
    /// Initializes new instance of <see cref="SqlServerTestDbContextProviderBuilder{T}"/>.
@@ -46,63 +38,6 @@ public class SqlServerTestDbContextProviderBuilder<T> : TestDbContextProviderBui
    }
 
    /// <summary>
-   /// Disables locking of the database during migrations and tear down.
-   /// </summary>
-   /// <returns>Current builder for chaining</returns>
-   public SqlServerTestDbContextProviderBuilder<T> DisableLockingDuringDDL()
-   {
-      _lockTable = new SqlServerLockTableOptions(false);
-
-      return this;
-   }
-
-   /// <summary>
-   /// Enables locking of the database during migrations and tear down.
-   /// This feature is enabled by default.
-   /// </summary>
-   /// <param name="tableName">The name of the lock table.</param>
-   /// <param name="schema">The schema of the lock table.</param>
-   /// <param name="maxNumberOfLockRetries">Number of retries for creation of the lock table.</param>
-   /// <param name="minRetryDelay">Minimum delay between retries.</param>
-   /// <param name="maxRetryDelay">Maximum delay between retries.</param>
-   /// <returns>Current builder for chaining</returns>
-   public SqlServerTestDbContextProviderBuilder<T> UseLockingDuringDDL(
-      string tableName,
-      string? schema,
-      int maxNumberOfLockRetries = 10,
-      TimeSpan? minRetryDelay = null,
-      TimeSpan? maxRetryDelay = null)
-   {
-      _lockTable = new SqlServerLockTableOptions(true)
-                   {
-                      Name = tableName,
-                      Schema = schema,
-                      MaxNumberOfLockRetries = maxNumberOfLockRetries
-                   };
-
-      if (minRetryDelay.HasValue)
-         _lockTable.MinRetryDelay = minRetryDelay.Value;
-
-      if (maxRetryDelay.HasValue)
-         _lockTable.MaxRetryDelay = maxRetryDelay.Value;
-
-      return this;
-   }
-
-   /// <summary>
-   /// Specifies the isolation level to use with shared tables.
-   /// Default is <see cref="IsolationLevel.ReadCommitted"/>.
-   /// </summary>
-   /// <param name="sharedTablesIsolationLevel">Isolation level to use.</param>
-   /// <returns>Current builder for chaining</returns>
-   public SqlServerTestDbContextProviderBuilder<T> UseSharedTablesIsolationLevel(IsolationLevel sharedTablesIsolationLevel)
-   {
-      _sharedTablesIsolationLevel = sharedTablesIsolationLevel;
-
-      return this;
-   }
-
-   /// <summary>
    /// Specifies the migration strategy to use.
    /// Default is <see cref="IMigrationExecutionStrategy.Migrations"/>.
    /// </summary>
@@ -116,33 +51,13 @@ public class SqlServerTestDbContextProviderBuilder<T> : TestDbContextProviderBui
    }
 
    /// <summary>
-   /// Sets the logger factory to be used by EF.
-   /// </summary>
-   /// <param name="loggerFactory">Logger factory to use.</param>
-   /// <param name="enableSensitiveDataLogging">Enables or disables sensitive data logging.</param>
-   /// <returns>Current builder for chaining.</returns>
-   public new SqlServerTestDbContextProviderBuilder<T> UseLogging(
-      ILoggerFactory? loggerFactory,
-      bool enableSensitiveDataLogging = true)
-   {
-      base.UseLogging(loggerFactory, enableSensitiveDataLogging);
-
-      return this;
-   }
-
-   /// <summary>
-   /// Sets output helper to be used by Serilog which is passed to EF.
+   /// Sets output helper to be used by Serilog which is passed to EF, and enables sensitive data logging.
    /// </summary>
    /// <param name="testOutputHelper">XUnit output.</param>
-   /// <param name="enableSensitiveDataLogging">Enables or disables sensitive data logging.</param>
-   /// <param name="outputTemplate">The serilog output template.</param>
    /// <returns>Current builder for chaining.</returns>
-   public new SqlServerTestDbContextProviderBuilder<T> UseLogging(
-      ITestOutputHelper? testOutputHelper,
-      bool enableSensitiveDataLogging = true,
-      string? outputTemplate = "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}")
+   public new SqlServerTestDbContextProviderBuilder<T> UseLogging(ITestOutputHelper? testOutputHelper)
    {
-      base.UseLogging(testOutputHelper, enableSensitiveDataLogging, outputTemplate);
+      base.UseLogging(testOutputHelper);
 
       return this;
    }
@@ -188,29 +103,6 @@ public class SqlServerTestDbContextProviderBuilder<T> : TestDbContextProviderBui
    }
 
    /// <summary>
-   /// Disables EF model cache.
-   /// </summary>
-   /// <returns>Current builder for chaining.</returns>
-   public new SqlServerTestDbContextProviderBuilder<T> DisableModelCache(bool disableModelCache = true)
-   {
-      base.DisableModelCache(disableModelCache);
-
-      return this;
-   }
-
-   /// <summary>
-   /// Indication whether the <see cref="ThinktectureSqlServerMigrationsSqlGenerator"/> should be used or not.
-   /// </summary>
-   /// <param name="useThinktectureSqlServerMigrationsSqlGenerator"></param>
-   /// <returns>Current builder for chaining.</returns>
-   public SqlServerTestDbContextProviderBuilder<T> UseThinktectureSqlServerMigrationsSqlGenerator(bool useThinktectureSqlServerMigrationsSqlGenerator = true)
-   {
-      _useThinktectureSqlServerMigrationsSqlGenerator = useThinktectureSqlServerMigrationsSqlGenerator;
-
-      return this;
-   }
-
-   /// <summary>
    /// Indication whether collect executed commands or not.
    /// </summary>
    /// <returns>Current builder for chaining</returns>
@@ -222,8 +114,7 @@ public class SqlServerTestDbContextProviderBuilder<T> : TestDbContextProviderBui
    }
 
    /// <summary>
-   /// Changes the schema if "useSharedTables" is set to <c>true</c>.
-   /// Default schema is "tests".
+   /// Sets the database schema of the tables.
    /// </summary>
    /// <param name="schema">Schema to use</param>
    /// <returns>Current builder for chaining.</returns>
@@ -249,42 +140,6 @@ public class SqlServerTestDbContextProviderBuilder<T> : TestDbContextProviderBui
       _ctxInitializations.Add(initialize);
 
       return this;
-   }
-
-   /// <summary>
-   /// Provides a custom factory to create <see cref="DbContext"/>.
-   /// </summary>
-   /// <param name="contextFactory">Factory to create the context of type <typeparamref name="T"/>.</param>
-   /// <returns>Current builder for chaining.</returns>
-   public SqlServerTestDbContextProviderBuilder<T> UseContextFactory(Func<DbContextOptions<T>, IDbDefaultSchema?, T?>? contextFactory)
-   {
-      _contextFactory = contextFactory;
-
-      return this;
-   }
-
-   /// <summary>
-   /// Delegates the creation of <see cref="SqlServerTestDbContextProvider{T}"/> to the provided <paramref name="providerFactory"/>.
-   /// </summary>
-   /// <param name="providerFactory">Factory to use for creation of <see cref="SqlServerTestDbContextProvider{T}"/>.</param>
-   /// <returns>Current builder for chaining.</returns>
-   public SqlServerTestDbContextProviderBuilder<T> UseProviderFactory(Func<SqlServerTestDbContextProviderOptions<T>, SqlServerTestDbContextProvider<T>?>? providerFactory)
-   {
-      _providerFactory = providerFactory;
-
-      return this;
-   }
-
-   /// <summary>
-   /// Gets/generates schema to be used.
-   /// </summary>
-   /// <param name="isolationOptions">Test isolation behavior.</param>
-   /// <returns>A database schema.</returns>
-   protected virtual string? DetermineSchema(ITestIsolationOptions isolationOptions)
-   {
-      return !isolationOptions.NeedsUniqueSchema
-                ? _sharedTablesSchema
-                : Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture);
    }
 
    /// <summary>
@@ -347,9 +202,7 @@ public class SqlServerTestDbContextProviderBuilder<T> : TestDbContextProviderBui
       ArgumentNullException.ThrowIfNull(builder);
 
       builder.MigrationsHistoryTable(_HISTORY_TABLE_NAME, schema);
-
-      if (_useThinktectureSqlServerMigrationsSqlGenerator)
-         builder.UseThinktectureSqlServerMigrationsSqlGenerator();
+      builder.UseThinktectureSqlServerMigrationsSqlGenerator();
 
       _configuresSqlServerOptionsCollection.ForEach(configure => configure(builder, schema));
    }
@@ -362,7 +215,7 @@ public class SqlServerTestDbContextProviderBuilder<T> : TestDbContextProviderBui
    {
       // create all dependencies immediately to decouple the provider from this builder
 
-      var schema = DetermineSchema(_isolationOptions);
+      var schema = _sharedTablesSchema;
       var masterConnection = new SqlConnection(_connectionString);
 
       try
@@ -378,16 +231,13 @@ public class SqlServerTestDbContextProviderBuilder<T> : TestDbContextProviderBui
                                                                     dbContextOptionsBuilder,
                                                                     loggingOptions,
                                                                     _ctxInitializations.ToList(),
-                                                                    schema)
+                                                                    schema,
+                                                                    _isolationOptions)
                        {
-                          IsolationOptions = _isolationOptions,
-                          ContextFactory = _contextFactory,
-                          ExecutedCommands = state.CommandCapturingInterceptor?.Commands,
-                          SharedTablesIsolationLevel = _sharedTablesIsolationLevel,
-                          LockTable = _lockTable
+                          ExecutedCommands = state.CommandCapturingInterceptor?.Commands
                        };
 
-         return _providerFactory?.Invoke(options) ?? new SqlServerTestDbContextProvider<T>(options);
+         return new SqlServerTestDbContextProvider<T>(options);
       }
       catch
       {

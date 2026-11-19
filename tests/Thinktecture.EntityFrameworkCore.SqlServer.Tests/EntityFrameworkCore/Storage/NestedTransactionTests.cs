@@ -14,7 +14,6 @@ public class NestedTransactionTests : IntegrationTestsBase
    public NestedTransactionTests(ITestOutputHelper testOutputHelper, SqlServerFixture sqlServerFixture)
       : base(testOutputHelper, sqlServerFixture)
    {
-      TestCtxProviderBuilder.UseSharedTablesIsolationLevel(IsolationLevel.Serializable);
    }
 
    [Fact]

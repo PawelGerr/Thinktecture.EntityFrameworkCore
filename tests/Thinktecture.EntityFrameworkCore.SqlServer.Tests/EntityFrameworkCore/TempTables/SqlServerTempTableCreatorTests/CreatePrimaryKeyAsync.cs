@@ -1,4 +1,3 @@
-using System.Data;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Thinktecture.TestDatabaseContext;
@@ -14,7 +13,6 @@ public class CreatePrimaryKeyAsync : IntegrationTestsBase
    public CreatePrimaryKeyAsync(ITestOutputHelper testOutputHelper, SqlServerFixture sqlServerFixture)
       : base(testOutputHelper, sqlServerFixture)
    {
-      TestCtxProviderBuilder.UseSharedTablesIsolationLevel(IsolationLevel.Serializable);
    }
 
    [Fact]

@@ -19,7 +19,6 @@ public class SqliteTestDbContextProviderBuilder<T> : TestDbContextProviderBuilde
    private readonly List<Action<T>> _ctxInitializations;
 
    private Func<DbContextOptions<T>, T?>? _contextFactory;
-   private Func<SqliteTestDbContextProviderOptions<T>, SqliteTestDbContextProvider<T>?>? _providerFactory;
 
    /// <summary>
    /// Initializes new instance of <see cref="SqliteTestDbContextProviderBuilder{T}"/>.
@@ -45,33 +44,13 @@ public class SqliteTestDbContextProviderBuilder<T> : TestDbContextProviderBuilde
    }
 
    /// <summary>
-   /// Sets the logger factory to be used by EF.
-   /// </summary>
-   /// <param name="loggerFactory">Logger factory to use.</param>
-   /// <param name="enableSensitiveDataLogging">Enables or disables sensitive data logging.</param>
-   /// <returns>Current builder for chaining.</returns>
-   public new SqliteTestDbContextProviderBuilder<T> UseLogging(
-      ILoggerFactory? loggerFactory,
-      bool enableSensitiveDataLogging = true)
-   {
-      base.UseLogging(loggerFactory, enableSensitiveDataLogging);
-
-      return this;
-   }
-
-   /// <summary>
-   /// Sets output helper to be used by Serilog which is passed to EF.
+   /// Sets output helper to be used by Serilog which is passed to EF, and enables sensitive data logging.
    /// </summary>
    /// <param name="testOutputHelper">XUnit output.</param>
-   /// <param name="enableSensitiveDataLogging">Enables or disables sensitive data logging.</param>
-   /// <param name="outputTemplate">The serilog output template.</param>
    /// <returns>Current builder for chaining.</returns>
-   public new SqliteTestDbContextProviderBuilder<T> UseLogging(
-      ITestOutputHelper? testOutputHelper,
-      bool enableSensitiveDataLogging = true,
-      string? outputTemplate = "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}")
+   public new SqliteTestDbContextProviderBuilder<T> UseLogging(ITestOutputHelper? testOutputHelper)
    {
-      base.UseLogging(testOutputHelper, enableSensitiveDataLogging, outputTemplate);
+      base.UseLogging(testOutputHelper);
 
       return this;
    }
@@ -160,18 +139,6 @@ public class SqliteTestDbContextProviderBuilder<T> : TestDbContextProviderBuilde
    public SqliteTestDbContextProviderBuilder<T> UseContextFactory(Func<DbContextOptions<T>, T?>? contextFactory)
    {
       _contextFactory = contextFactory;
-
-      return this;
-   }
-
-   /// <summary>
-   /// Delegates the creation of <see cref="SqliteTestDbContextProvider{T}"/> to the provided <paramref name="providerFactory"/>.
-   /// </summary>
-   /// <param name="providerFactory">Factory to use for creation of <see cref="SqliteTestDbContextProvider{T}"/>.</param>
-   /// <returns>Current builder for chaining.</returns>
-   public SqliteTestDbContextProviderBuilder<T> UseProviderFactory(Func<SqliteTestDbContextProviderOptions<T>, SqliteTestDbContextProvider<T>?>? providerFactory)
-   {
-      _providerFactory = providerFactory;
 
       return this;
    }
@@ -283,7 +250,7 @@ public class SqliteTestDbContextProviderBuilder<T> : TestDbContextProviderBuilde
                           ExecutedCommands = state.CommandCapturingInterceptor?.Commands
                        };
 
-         return _providerFactory?.Invoke(options) ?? new SqliteTestDbContextProvider<T>(options);
+         return new SqliteTestDbContextProvider<T>(options);
       }
       catch
       {

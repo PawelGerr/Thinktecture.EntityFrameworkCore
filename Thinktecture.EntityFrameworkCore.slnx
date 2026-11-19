@@ -43,10 +43,8 @@
     <Project Path="tests/Thinktecture.EntityFrameworkCore.Relational.Tests/Thinktecture.EntityFrameworkCore.Relational.Tests.csproj" />
     <Project Path="tests/Thinktecture.EntityFrameworkCore.Sqlite.Testing/Thinktecture.EntityFrameworkCore.Sqlite.Testing.csproj" />
     <Project Path="tests/Thinktecture.EntityFrameworkCore.Sqlite.Tests/Thinktecture.EntityFrameworkCore.Sqlite.Tests.csproj" />
-    <Project Path="tests/Thinktecture.EntityFrameworkCore.SqlServer.Testing/Thinktecture.EntityFrameworkCore.SqlServer.Testing.csproj" />
     <Project Path="tests/Thinktecture.EntityFrameworkCore.SqlServer.Tests/Thinktecture.EntityFrameworkCore.SqlServer.Tests.csproj" />
     <Project Path="tests/Thinktecture.EntityFrameworkCore.TestHelpers/Thinktecture.EntityFrameworkCore.TestHelpers.csproj" />
-    <Project Path="tests/Thinktecture.EntityFrameworkCore.Testing.Tests/Thinktecture.EntityFrameworkCore.Testing.Tests.csproj" />
     <Project Path="tests/Thinktecture.EntityFrameworkCore.Testing/Thinktecture.EntityFrameworkCore.Testing.csproj" />
     <File Path="tests/Directory.Build.props" />
   </Folder>

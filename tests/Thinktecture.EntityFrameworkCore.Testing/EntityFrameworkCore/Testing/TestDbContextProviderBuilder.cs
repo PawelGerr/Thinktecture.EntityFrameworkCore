@@ -9,12 +9,11 @@ using Xunit.Abstractions;
 namespace Thinktecture.EntityFrameworkCore.Testing;
 
 /// <summary>
-/// Base class for builders of <see cref="ITestDbContextProvider{T}"/>.
+/// Base class for the builders of the test database context providers.
 /// </summary>
 public abstract class TestDbContextProviderBuilder
 {
    private Serilog.ILogger? _serilogLogger;
-   private ILoggerFactory? _loggerFactory;
    private bool _enableSensitiveDataLogging;
    private bool _collectExecutedCommands;
    private LogLevel _migrationLogLevel = LogLevel.Information;
@@ -44,34 +43,18 @@ public abstract class TestDbContextProviderBuilder
    }
 
    /// <summary>
-   /// Sets the logger factory to be used by EF.
-   /// </summary>
-   /// <param name="loggerFactory">Logger factory to use.</param>
-   /// <param name="enableSensitiveDataLogging">Enables or disables sensitive data logging.</param>
-   protected void UseLogging(ILoggerFactory? loggerFactory, bool enableSensitiveDataLogging)
-   {
-      _loggerFactory = loggerFactory;
-      _enableSensitiveDataLogging = enableSensitiveDataLogging;
-   }
-
-   /// <summary>
-   /// Sets output helper to be used by Serilog which is passed to EF.
+   /// Sets output helper to be used by Serilog which is passed to EF, and enables sensitive data logging.
    /// </summary>
    /// <param name="testOutputHelper">XUnit output.</param>
-   /// <param name="enableSensitiveDataLogging">Enables or disables sensitive data logging.</param>
-   /// <param name="outputTemplate">The serilog output template.</param>
-   protected void UseLogging(
-      ITestOutputHelper? testOutputHelper,
-      bool enableSensitiveDataLogging,
-      string? outputTemplate)
+   protected void UseLogging(ITestOutputHelper? testOutputHelper)
    {
       _serilogLogger = testOutputHelper is null
                           ? null
                           : new LoggerConfiguration()
-                            .WriteTo.TestOutput(testOutputHelper, outputTemplate: outputTemplate ?? "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}")
+                            .WriteTo.TestOutput(testOutputHelper, outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}")
                             .CreateLogger();
 
-      UseLogging(null, enableSensitiveDataLogging);
+      _enableSensitiveDataLogging = true;
    }
 
    /// <summary>
@@ -133,7 +116,7 @@ public abstract class TestDbContextProviderBuilder
    /// <returns>A new instance of <see cref="TestingLoggingOptions"/>.</returns>
    protected TestingLoggingOptions CreateLoggingOptions()
    {
-      return CreateLoggingOptions(_loggerFactory, _serilogLogger);
+      return CreateLoggingOptions(null, _serilogLogger);
    }
 
    /// <summary>

@@ -32,8 +32,8 @@ This codebase has concurrency concerns in bulk operations, temp table management
 isolation. When modifying code in these areas:
 - Identify shared mutable state and how it is protected (e.g., temp table suffix leasing,
   connection/transaction lifecycle in context factories).
-- Consider whether new code respects existing isolation boundaries (e.g., SQL Server test lock
-  tables, `DbContext` single-thread usage).
+- Consider whether new code respects existing isolation boundaries (e.g., the SQL Server test
+  collection that runs without parallelization, `DbContext` single-thread usage).
 - When adding async code, consider: cancellation propagation, `IAsyncDisposable` cleanup ordering,
   and whether operations need to be atomic within a transaction scope.
 - Remember that `DbContext` is not thread-safe — never share instances across threads.
@@ -112,10 +112,9 @@ src/                                    # Runtime packages (7 projects)
   Thinktecture.EntityFrameworkCore.MySql/                # MySQL implementation (Microting; MariaDB is not tested)
   Thinktecture.EntityFrameworkCore.Sqlite.Core/          # SQLite foundation
   Thinktecture.EntityFrameworkCore.Sqlite/               # SQLite full package
-tests/                                  # Test projects (8 projects, mirror src/) and test infrastructure (not packed)
+tests/                                  # Test projects (6 projects, mirror src/) and shared test projects (3 projects, not packed)
   Thinktecture.EntityFrameworkCore.TestHelpers/          # Shared test entities & DbContext
   Thinktecture.EntityFrameworkCore.Testing/              # Shared integration test infrastructure
-  Thinktecture.EntityFrameworkCore.SqlServer.Testing/    # SQL Server integration test infrastructure
   Thinktecture.EntityFrameworkCore.Sqlite.Testing/       # SQLite integration test infrastructure
 samples/                                # Sample apps and benchmarks
 agent-skills/                           # Git submodule PawelGerr/agent-skills; this repo owns only skills/thinktecture-entityframeworkcore/
@@ -150,14 +149,14 @@ Relational (foundation)
        ├─ PostgreSQL (PostgreSQL/Npgsql impl)
        ├─ MySql (MySQL/Microting impl)
        └─ Sqlite.Core → Sqlite
-tests/: Testing (shared test infrastructure) ← SqlServer.Testing, Sqlite.Testing (not packed)
+tests/: Testing (shared test infrastructure) ← Sqlite.Testing, SqlServer.Tests (not packed)
 ```
 
 ### Key Configuration Files
 
 | File | Purpose |
 |------|---------|
-| `Thinktecture.EntityFrameworkCore.slnx` | Solution file (21 projects) |
+| `Thinktecture.EntityFrameworkCore.slnx` | Solution file (19 projects) |
 | `Directory.Build.props` | Root MSBuild props (version, TFM, lang version) |
 | `Directory.Packages.props` | Centralized NuGet versions |
 | `src/Directory.Build.props` | Symbol packages and package assets (Source Link is part of the .NET SDK) |
@@ -288,7 +287,7 @@ private NpgsqlBulkOperationExecutor SUT => field ??= ActDbContext.GetService<Npg
 - **Collection parameters**: `JSON_TABLE(@json, '$[*]' COLUMNS (... PATH '$' ERROR ON ERROR))` with a `LIMIT` of the element count. The columns carry the charset and the collation of the model, like temp tables. `ERROR ON ERROR` raises error 3156, 3666 or 3669 for a value that does not fit the column type, instead of a NULL; JSON `null` stays NULL. `ERROR ON EMPTY` is not used, because a `JsonSerializerOptions` that omits null properties would fail. `decimal`, `TimeSpan`, `DateTime` and `DateTimeOffset` are serialized as strings that MySQL parses, because `JSON_TABLE` reads numbers as DOUBLE and rejects the .NET formats. A `DateTimeOffset` is written as its UTC value `yyyy-MM-dd HH:mm:ss.ffffff` without an offset, because `JSON_TABLE` converts a value with an offset into the session time zone and the provider stores UTC. `byte[]` is not supported: System.Text.Json writes Base64 text, which never equals a binary column. Paths of complex parameters honor `PropertyNamingPolicy` and `[JsonPropertyName]`. A `_bin` collation of the parameter against a `_ci` column compares case-sensitively and cannot use the index. Guid collections with `GuidFormat=Binary16` raise error 3669. `EF.Parameter(list)` needs `EnablePrimitiveCollectionsSupport()` of Microting, also in plain EF Core queries; without it the query fails with "... Primitive collections support has not been enabled.". With it, Microting translates the parameter to its own `JSON_TABLE` (test `Should_update_rows_When_collection_parameter_is_EF_Parameter`).
 - **Window functions**: `RowNumber` of the Relational package, `Sum`/`Average`/`Max`/`Min` in `MySqlWindowAggregateDbFunctionsExtensions` (1 to 5 partition columns, with or without ordering) and `NTile` in `MySqlDbFunctionsExtensions` (0 to 5 partition columns, ordering optional, returns `int`). `ROW_NUMBER()` is wrapped in `CAST(... AS signed)`, because MySQL returns BIGINT UNSIGNED. `MAX`/`MIN` over a Guid (`char(36)`) need no cast.
 - **Bitwise aggregates**: `EF.Functions.BitOr`/`BitAnd`/`BitXor` (`MySqlAggregateDbFunctionsExtensions`, translator `MySqlBitwiseAggregateMethodCallTranslator`, always on) emit `BIT_OR`/`BIT_AND`/`BIT_XOR`, cast back to the type mapping of the input, inside a `CASE` that returns NULL for an empty group. Reason: `BIT_*` returns BIGINT UNSIGNED, and for an empty group `BIT_AND` returns all ones and `BIT_OR`/`BIT_XOR` return 0. The aggregate is declared with the CLR type `ulong`, so the conversion emits `CAST(... AS signed)` also for a `long` input. With the CLR type `long`, the SQL has no `CAST` for a `long` input, and `GetInt64` of MySqlConnector throws `OverflowException` for the BIGINT UNSIGNED value of a negative result. `DISTINCT` is dropped for OR/AND and throws `NotSupportedException` for XOR.
-- **Not available for MySQL**: a migrations generator with `IfExists()`/`IfNotExists()`, tenant database support, table hints, a `MySql.Testing` package and `AddRowNumberSupport`.
+- **Not available for MySQL**: a migrations generator with `IfExists()`/`IfNotExists()`, tenant database support, table hints, a `MySql.Testing` project and `AddRowNumberSupport`.
 - **Not tested**: MariaDB, MySQL below 8.0.19, GTID with statement-based binary logging, and bulk copy into a table without insertable columns.
 
 ### PostgreSQL `max`/`min` over `uuid`
@@ -505,7 +504,6 @@ Key patterns (read templates for full code):
 | `PostgreSQL.Tests` | PostgreSQL features | PostgreSQL (Testcontainers or configured) |
 | `MySql.Tests` | MySQL features | MySQL 8.4 (Testcontainers or configured) |
 | `Sqlite.Tests` | SQLite features | SQLite (in-memory) |
-| `Testing.Tests` | Testing infrastructure | Varies |
 | `TestHelpers` | Shared entities & DbContext (not a test project) | N/A |
 
 ### Naming & Structure
@@ -534,7 +532,7 @@ public class IntegrationTestsBase : SqlServerDbContextIntegrationTests<TestDbCon
 }
 ```
 
-- Inherits `SqlServerDbContextIntegrationTests<TestDbContext>` (from `tests/Thinktecture.EntityFrameworkCore.SqlServer.Testing`)
+- Inherits `SqlServerDbContextIntegrationTests<TestDbContext>` (in `EntityFrameworkCore/Testing/` of the same project)
 - `ArrangeDbContext`, `ActDbContext`, `AssertDbContext` accessed via `TestCtxProvider` property
 - `ExecutedCommands` accessed via `TestCtxProvider.ExecutedCommands`
 - Per-test config: `ConfigureModel` and `Configure` properties set in builder's `InitializeContext()`

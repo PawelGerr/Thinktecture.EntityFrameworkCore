@@ -9,7 +9,7 @@ namespace Thinktecture.EntityFrameworkCore.Testing;
 /// Provides instances of <see cref="DbContext"/> for testing purposes.
 /// </summary>
 /// <typeparam name="T">Type of the database context.</typeparam>
-public class SqliteTestDbContextProvider<T> : ITestDbContextProvider<T>
+public class SqliteTestDbContextProvider<T> : IAsyncDisposable, IDisposable
    where T : DbContext
 {
    private readonly Lock _lock = new();
@@ -33,13 +33,19 @@ public class SqliteTestDbContextProvider<T> : ITestDbContextProvider<T>
    /// </summary>
    public SqliteConnection MasterConnection { get; }
 
-   /// <inheritdoc />
+   /// <summary>
+   /// Database context for setting up the test data.
+   /// </summary>
    public T ArrangeDbContext => _arrangeDbContext ??= CreateDbContext(true);
 
-   /// <inheritdoc />
+   /// <summary>
+   /// Database context for the actual test.
+   /// </summary>
    public T ActDbContext => _actDbContext ??= CreateDbContext(true);
 
-   /// <inheritdoc />
+   /// <summary>
+   /// Database context for making assertions.
+   /// </summary>
    public T AssertDbContext => _assertDbContext ??= CreateDbContext(true);
 
    /// <summary>
@@ -76,13 +82,21 @@ public class SqliteTestDbContextProvider<T> : ITestDbContextProvider<T>
       _contextFactory = options.ContextFactory;
    }
 
-   /// <inheritdoc />
+   /// <summary>
+   /// Creates a new <see cref="DbContext"/> with a new connection.
+   /// </summary>
    public T CreateDbContext()
    {
       return CreateDbContext(false);
    }
 
-   /// <inheritdoc />
+   /// <summary>
+   /// Creates a new <see cref="DbContext"/>.
+   /// </summary>
+   /// <param name="useMasterConnection">
+   /// Indication whether to use the master connection or a new one.
+   /// </param>
+   /// <returns>A new instance of <typeparamref name="T"/>.</returns>
    public T CreateDbContext(bool useMasterConnection)
    {
       bool isFirstCtx;
@@ -166,8 +180,7 @@ public class SqliteTestDbContextProvider<T> : ITestDbContextProvider<T>
    }
 
    /// <summary>
-   /// Rollbacks transaction if shared tables are used
-   /// otherwise the migrations are rolled back and all tables, functions, views and the newly generated schema are deleted.
+   /// Disposes of the contexts, and of the master connection when the provider owns it.
    /// </summary>
    public void Dispose()
    {
@@ -195,7 +208,7 @@ public class SqliteTestDbContextProvider<T> : ITestDbContextProvider<T>
    /// <summary>
    /// Disposes of inner resources.
    /// </summary>
-   /// <param name="disposing">Indication whether this method is being called by the method <see cref="SqliteDbContextIntegrationTests{T}.Dispose()"/>.</param>
+   /// <param name="disposing">Indication whether this method is being called by the method <see cref="Dispose()"/>.</param>
    protected virtual void Dispose(bool disposing)
    {
       DisposeAsync(disposing).AsTask().ConfigureAwait(false).GetAwaiter().GetResult();
@@ -204,7 +217,7 @@ public class SqliteTestDbContextProvider<T> : ITestDbContextProvider<T>
    /// <summary>
    /// Disposes of inner resources.
    /// </summary>
-   /// <param name="disposing">Indication whether this method is being called by the method <see cref="SqliteDbContextIntegrationTests{T}.Dispose()"/>.</param>
+   /// <param name="disposing">Indication whether this method is being called by the method <see cref="DisposeAsync()"/>.</param>
    protected virtual async ValueTask DisposeAsync(bool disposing)
    {
       if (!disposing)

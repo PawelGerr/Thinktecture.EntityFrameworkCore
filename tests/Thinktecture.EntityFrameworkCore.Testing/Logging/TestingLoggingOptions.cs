@@ -1,20 +1,14 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Serilog;
-using Thinktecture.EntityFrameworkCore.Testing;
 
 namespace Thinktecture.Logging;
 
 /// <summary>
-/// Options provided to <see cref="ITestDbContextProvider{T}"/>
+/// Logging options for the test database context providers.
 /// </summary>
 public class TestingLoggingOptions : IDisposable
 {
-   /// <summary>
-   /// Options without concrete logger.
-   /// </summary>
-   public static readonly TestingLoggingOptions Empty = Create(null, null, false, LogLevel.Information);
-
    /// <summary>
    /// Logger factory.
    /// </summary>

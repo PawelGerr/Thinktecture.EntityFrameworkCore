@@ -8,7 +8,7 @@ namespace Thinktecture.EntityFrameworkCore.Testing;
 /// </summary>
 /// <typeparam name="T">Type of the database context.</typeparam>
 // ReSharper disable once UnusedMember.Global
-public abstract class SqliteDbContextIntegrationTests<T> : ITestDbContextProvider<T>, IAsyncLifetime
+public abstract class SqliteDbContextIntegrationTests<T> : IAsyncLifetime, IAsyncDisposable, IDisposable
    where T : DbContext
 {
    private SqliteTestDbContextProvider<T>? _testCtxProvider;
@@ -39,13 +39,19 @@ public abstract class SqliteDbContextIntegrationTests<T> : ITestDbContextProvide
       }
    }
 
-   /// <inheritdoc />
+   /// <summary>
+   /// Database context for setting up the test data.
+   /// </summary>
    public T ArrangeDbContext => TestCtxProvider.ArrangeDbContext;
 
-   /// <inheritdoc />
+   /// <summary>
+   /// Database context for the actual test.
+   /// </summary>
    public T ActDbContext => TestCtxProvider.ActDbContext;
 
-   /// <inheritdoc />
+   /// <summary>
+   /// Database context for making assertions.
+   /// </summary>
    public T AssertDbContext => TestCtxProvider.AssertDbContext;
 
    /// <summary>
@@ -66,13 +72,21 @@ public abstract class SqliteDbContextIntegrationTests<T> : ITestDbContextProvide
    {
    }
 
-   /// <inheritdoc />
+   /// <summary>
+   /// Creates a new <see cref="DbContext"/> with a new connection.
+   /// </summary>
    public T CreateDbContext()
    {
       return TestCtxProvider.CreateDbContext();
    }
 
-   /// <inheritdoc />
+   /// <summary>
+   /// Creates a new <see cref="DbContext"/>.
+   /// </summary>
+   /// <param name="useMasterConnection">
+   /// Indication whether to use the master connection or a new one.
+   /// </param>
+   /// <returns>A new instance of <typeparamref name="T"/>.</returns>
    public T CreateDbContext(bool useMasterConnection)
    {
       return TestCtxProvider.CreateDbContext(useMasterConnection);
@@ -85,8 +99,7 @@ public abstract class SqliteDbContextIntegrationTests<T> : ITestDbContextProvide
    }
 
    /// <summary>
-   /// Rollbacks transaction if shared tables are used
-   /// otherwise the migrations are rolled back and all tables, functions, views and the newly generated schema are deleted.
+   /// Disposes of the <see cref="SqliteTestDbContextProvider{T}"/>, which disposes of the contexts, and of the master connection when the provider owns it.
    /// </summary>
    public void Dispose()
    {

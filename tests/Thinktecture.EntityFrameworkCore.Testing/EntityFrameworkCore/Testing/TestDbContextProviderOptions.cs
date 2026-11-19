@@ -4,7 +4,7 @@ using Thinktecture.Logging;
 namespace Thinktecture.EntityFrameworkCore.Testing;
 
 /// <summary>
-/// Options for the <see cref="ITestDbContextProvider{T}"/>.
+/// Options for the test database context providers.
 /// </summary>
 /// <typeparam name="T"></typeparam>
 public abstract class TestDbContextProviderOptions<T>
